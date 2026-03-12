@@ -33,6 +33,7 @@ import com.demonlab.lune.BuildConfig
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.theme.LuneTheme
+import androidx.compose.ui.platform.LocalUriHandler
 
 class AboutActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -142,12 +143,16 @@ fun AboutScreen() {
             Spacer(modifier = Modifier.height(32.dp))
 
             // Buttons
+            val uriHandler = LocalUriHandler.current
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Button(
-                    onClick = { /* Github */ },
+                    onClick = { 
+                        uriHandler.openUri("https://github.com/MrDemonc/Lune/tree/main")
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -163,7 +168,9 @@ fun AboutScreen() {
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Button(
-                    onClick = { /* PayPal */ },
+                    onClick = { 
+                        uriHandler.openUri("https://paypal.me/TommyZambrano")
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp)
                 ) {
