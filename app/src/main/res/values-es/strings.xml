@@ -1,0 +1,158 @@
+<resources>
+    <string name="app_name">Lune</string>
+    <string name="settings">Configuración</string>
+    <string name="whatsapp_audio">Audio de WhatsApp</string>
+    <string name="show_whatsapp_audio_desc">Mostrar archivos de audio de las carpetas de WhatsApp</string>
+    <string name="about">Acerca de</string>
+    <string name="version">Versión</string>
+    <string name="license">Licencia</string>
+    <string name="author">Autor</string>
+    <string name="hifi_audio">Audio Hi-Fi</string>
+    <string name="hifi_desc">Activar detección e insignias Hi-Fi</string>
+    <string name="download_covers">Descargar carátulas</string>
+    <string name="download_covers_desc">Descargar carátulas de internet si faltan</string>
+
+    <!-- UI/Player Strings -->
+    <string name="eq_title">Ecualizador</string>    
+    <string name="eq_empty_hint">Reproduce una canción para configurar el Ecualizador</string>
+    <string name="bass_label">BASS</string>
+    <string name="spatial_audio_label">Audio Espacial</string>
+    <string name="restore_defaults">Restaurar por defecto</string>
+    
+    <!-- EQ Bands -->
+    <string name="band_sub_bass">Sub Bajos</string>
+    <string name="band_bass">Bajos</string>
+    <string name="band_mid">Medios</string>
+    <string name="band_presence">Presencia</string>
+    <string name="band_brilliance">Brillos</string>
+
+    <!-- Metadata Editor -->
+    <string name="edit_title">Título</string>
+    <string name="edit_artist">Artista</string>
+    <string name="edit_album">Álbum</string>
+    <string name="edit_genre">Género</string>
+    <string name="save_changes">Guardar Cambios</string>
+    <string name="restore">Restaurar</string>
+
+    <!-- Library Tabs -->
+    <string name="tab_resume">Resumen</string>
+    <string name="resume_recommendations">Recomendaciones</string>
+    <string name="resume_top_playlists">Listas más escuchadas</string>
+    <string name="resume_recently_added">Agregadas Recientemente</string>
+    <string name="tab_all">Todo</string>
+    <string name="tab_favorites">Favoritos</string>
+    <string name="tab_songs">Canciones</string>
+    <string name="tab_albums">Artistas</string>
+
+    <!-- Player Options -->
+    <string name="option_shuffle">Shuffle</string>
+    <string name="option_crossfade">Crossfade</string>
+    <string name="option_automix">Automix</string>
+    <string name="option_timer">Timer</string>
+    <string name="unknown_artist">Artista Desconocido</string>
+    <string name="unknown_album">Álbum Desconocido</string>
+
+    <!-- Accessibility / Icons -->
+    <string name="cd_menu">Menú</string>
+    <string name="cd_edit">Editar</string>
+    <string name="cd_previous">Anterior</string>
+    <string name="cd_next">Siguiente</string>
+    <string name="cd_back">Atrás</string>
+    <string name="cd_restore">Restaurar</string>
+    
+    <!-- Other UI -->
+    <string name="filter_folders">Filtrar Carpetas</string>
+    <string name="option_favorite">Favorito</string>
+
+    <string name="language">Idioma</string>
+    <string name="select_language">Seleccionar idioma</string>
+    <string name="lang_system">Sistema</string>
+    <string name="lang_english">Inglés</string>
+    <string name="lang_spanish">Español</string>
+
+    <string name="ok">Aceptar</string>
+    <string name="cd_edit_folders">Editar carpetas</string>
+    <string name="cd_activate_eq">Activar EQ</string>
+    <string name="cd_play_pause">Reproducir/Pausa</string>
+    <string name="cd_change_cover">Cambiar portada</string>
+    <string name="playlists">Listas</string>
+    <string name="playlist">Lista</string>
+    <string name="add_to_playlist">Añadir a lista</string>
+    <string name="create_playlist">Crear Lista</string>
+    <string name="playlist_name">Nombre de la lista</string>
+    <string name="edit_playlist_name">Editar nombre de lista</string>
+    <string name="cancel">Cancelar</string>
+    <string name="create">Crear</string>
+    <string name="save">Guardar</string>
+    <string name="no_playlists">No hay listas creadas aún</string>
+    <string name="no_songs_in_playlist">No hay canciones en esta lista</string>
+    <string name="theme_auto">Automático (Sistema)</string>
+    <string name="theme_light">Modo Claro</string>
+    <string name="theme_dark">Modo Oscuro</string>
+    <string name="add_songs">Añadir Canciones</string>
+    <string name="search_songs">Buscar canciones…</string>
+    <string name="save_selection">Guardar</string>
+    <string name="delete_song">Eliminar del dispositivo</string>
+    <string name="delete_song_warning">¿Estás seguro? Esta canción se eliminará permanentemente de tu dispositivo.</string>
+    <string name="restore_music">Restaurar</string>
+    <string name="song_deleted">Canción eliminada</string>
+    <string name="play_playlist">Reproducir Lista</string>
+    <string name="edit_name">Editar nombre</string>
+    <string name="search">Buscar</string>
+    <string name="search_hint">Buscar canciones, artistas o listas...</string>
+    <string name="cd_add_to_playlist">Añadir a lista</string>
+    <string name="delete_playlist">Eliminar Lista</string>
+    <string name="delete_playlist_confirm">¿Estás seguro de que deseas eliminar esta lista?</string>
+    <string name="delete">Eliminar</string>
+    <string name="custom_title">Título personalizado</string>
+    <string name="custom_title_desc">Cambia el título de la barra principal</string>
+    <string name="restore_default_title">Restaurar original</string>
+    <string name="categories">Categorías</string>
+    <string name="edit_information">Editar Información</string>
+    <string name="info_updated">Información actualizada</string>
+    <string name="player_queue">Cola</string>
+    <string name="player_options">Opciones</string>
+    <string name="option_repeat_one">Repetir una</string>
+    <string name="option_repeat_all">Repetir todo</string>
+    <string name="option_repeat_off">No repetir</string>
+    <string name="output_speaker">Teléfono</string>
+    <string name="output_headphones">Audífonos</string>
+    <string name="output_bluetooth">Bluetooth</string>
+    <string name="queue_now_playing">Reproduciendo ahora</string>
+    <string name="queue_up_next">Siguientes</string>
+    <string name="option_visualizer">Visualizador</string>
+    <string name="visualizer_full_player">Mostrar en Reproductor Grande</string>
+    <string name="visualizer_mini_player">Mostrar en Mini Player</string>
+    <string name="credits">Créditos</string>
+    <string name="credits_desc">Pruebas, sugerencias de diseño y logo</string>
+    <string name="creator_desc">Creador y mantenedor de lune music player</string>
+    <string name="github">GitHub</string>
+    <string name="donation">Donation</string>
+
+    <!-- Users -->
+    <string name="demon">MrDemonc</string>
+    <string name="desukia">Desukia</string>
+
+    <!-- Open Source Libraries -->
+    <string name="open_source_libraries">Bibliotecas de Código Abierto</string>
+    <string name="coil_desc">Carga de imágenes para Android respaldada por Kotlin Coroutines.\nLicencia: Apache License 2.0</string>
+    <string name="okhttp_desc">Cliente HTTP y HTTP/2 para aplicaciones Android y Java.\nLicencia: Apache License 2.0</string>
+    <string name="gson_desc">Biblioteca de serialización/deserialización de Java para convertir objetos Java a JSON y viceversa.\nLicencia: Apache License 2.0</string>
+    <string name="room_desc">La biblioteca de persistencia Room proporciona una capa de abstracción sobre SQLite.\nLicencia: Apache License 2.0</string>
+    <string name="compose_desc">El moderno kit de herramientas de Android para crear interfaces de usuario nativas.\nLicencia: Apache License 2.0</string>
+
+    <string name="permissions">Permisos</string>
+    <string name="permissions_desc">Información sobre los permisos utilizados</string>
+    <string name="perm_storage_title">Acceso al Almacenamiento</string>
+    <string name="perm_storage_desc">Necesario para escanear archivos de música y gestionar carpetas en tu dispositivo.</string>
+    <string name="perm_notifications_title">Notificaciones</string>
+    <string name="perm_notifications_desc">Requerido para mostrar controles de reproducción e información en la barra de notificaciones.</string>
+    <string name="perm_internet_title">Internet</string>
+    <string name="perm_internet_desc">Utilizado para obtener carátulas de álbumes e información de artistas de fuentes externas.</string>
+    <string name="perm_bluetooth_title">Bluetooth</string>
+    <string name="perm_bluetooth_desc">Requerido para detectar y gestionar conexiones con dispositivos de audio bluetooth.</string>
+    <string name="perm_audio_service_title">Servicio de Reproducción</string>
+    <string name="perm_audio_service_desc">Permite que la aplicación siga reproduciendo música en segundo plano o con la pantalla apagada.</string>
+    <string name="perm_record_audio_title">Grabar Audio</string>
+    <string name="perm_record_audio_desc">Necesario para que el visualizador de audio procese y muestre datos de frecuencia en tiempo real.</string>
+</resources>

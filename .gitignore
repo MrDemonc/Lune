@@ -1,0 +1,41 @@
+# Gradle
+.gradle/
+build/
+app/release/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Local configuration
+local.properties
+
+# Log Files
+*.log
+
+# Android Captures
+captures/
+
+# External Native Build
+.externalNativeBuild/
+.cxx/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services
+google-services.json
+
+# Crashlytics
+com_crashlytics_export_strings.xml
+
+# Secrets
+secrets.properties

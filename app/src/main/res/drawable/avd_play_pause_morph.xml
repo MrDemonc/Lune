@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:drawable="@drawable/ic_play_pause_morph">
+
+    <target android:name="path1">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <objectAnimator
+                    android:propertyName="pathData"
+                    android:duration="350"
+                    android:valueFrom="M 8.0,5.0 L 19.0,12.0 A 0.01,0.01 0 0,1 19.0,12.0 L 19.0,12.0 A 0.01,0.01 0 0,1 19.0,12.0 L 8.0,19.0 A 0.01,0.01 0 0,1 8.0,19.0 L 8.0,5.0 A 0.01,0.01 0 0,1 8.0,5.0 z"
+                    android:valueTo="M13.81,3.23 L20.88,10.95 A2.08,2.08 0 0,1 20.75,13.89 L13.15,20.86 A2.08,2.08 0 0,1 10.21,20.73 L3.13,13.01 A2.08,2.08 0 0,1 3.26,10.07 L10.87,3.10 A2.08,2.08 0 0,1 13.81,3.23 z"
+                    android:valueType="pathType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"/>
+                <objectAnimator
+                    android:propertyName="pathData"
+                    android:duration="350"
+                    android:valueFrom="M13.81,3.23 L20.88,10.95 A2.08,2.08 0 0,1 20.75,13.89 L13.15,20.86 A2.08,2.08 0 0,1 10.21,20.73 L3.13,13.01 A2.08,2.08 0 0,1 3.26,10.07 L10.87,3.10 A2.08,2.08 0 0,1 13.81,3.23 z"
+                    android:valueTo="M 7.0,5.0 L 9.0,5.0 A 1.0,1.0 0 0,1 10.0,6.0 L 10.0,18.0 A 1.0,1.0 0 0,1 9.0,19.0 L 7.0,19.0 A 1.0,1.0 0 0,1 6.0,18.0 L 6.0,6.0 A 1.0,1.0 0 0,1 7.0,5.0 z"
+                    android:valueType="pathType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"/>
+            </set>
+        </aapt:attr>
+    </target>
+
+    <target android:name="path2">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <objectAnimator
+                    android:propertyName="pathData"
+                    android:duration="350"
+                    android:valueFrom="M 8.0,5.0 L 19.0,12.0 A 0.01,0.01 0 0,1 19.0,12.0 L 19.0,12.0 A 0.01,0.01 0 0,1 19.0,12.0 L 8.0,19.0 A 0.01,0.01 0 0,1 8.0,19.0 L 8.0,5.0 A 0.01,0.01 0 0,1 8.0,5.0 z"
+                    android:valueTo="M6.83,4.71 L17.30,4.78 A2.08,2.08 0 0,1 19.36,6.88 L19.28,17.19 A2.08,2.08 0 0,1 17.19,19.26 L6.72,19.18 A2.08,2.08 0 0,1 4.65,17.08 L4.73,6.77 A2.08,2.08 0 0,1 6.83,4.71 z"
+                    android:valueType="pathType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"/>
+                <objectAnimator
+                    android:propertyName="pathData"
+                    android:duration="350"
+                    android:valueFrom="M6.83,4.71 L17.30,4.78 A2.08,2.08 0 0,1 19.36,6.88 L19.28,17.19 A2.08,2.08 0 0,1 17.19,19.26 L6.72,19.18 A2.08,2.08 0 0,1 4.65,17.08 L4.73,6.77 A2.08,2.08 0 0,1 6.83,4.71 z"
+                    android:valueTo="M 15.0,5.0 L 17.0,5.0 A 1.0,1.0 0 0,1 18.0,6.0 L 18.0,18.0 A 1.0,1.0 0 0,1 17.0,19.0 L 15.0,19.0 A 1.0,1.0 0 0,1 14.0,18.0 L 14.0,6.0 A 1.0,1.0 0 0,1 15.0,5.0 z"
+                    android:valueType="pathType"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"/>
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>

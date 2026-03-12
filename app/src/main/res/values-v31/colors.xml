@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background is dark neutral -->
+    <color name="launcher_background">@android:color/system_neutral1_900</color>
+    <!-- Soft tone is light accent (diamonds) -->
+    <color name="launcher_soft_tone">@android:color/system_accent1_200</color>
+    <!-- Dark tone is primary accent (musical note) -->
+    <color name="launcher_dark_tone">@android:color/system_accent1_600</color>
+</resources>
