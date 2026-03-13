@@ -28,6 +28,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
+import kotlinx.coroutines.launch
+import com.demonlab.lune.tools.PlaylistBackupManager
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +77,42 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showCustomTitleDialog by remember { mutableStateOf(false) }
     val currentLanguage = settingsManager.language
     var customTitle by remember { mutableStateOf(settingsManager.customTitle) }
+    val scope = rememberCoroutineScope()
+    val backupManager = remember { PlaylistBackupManager(context) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                    val success = backupManager.exportPlaylists(outputStream)
+                    Toast.makeText(
+                        context,
+                        if (success) context.getString(R.string.export_success) else context.getString(R.string.export_error),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            scope.launch {
+                context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    val success = backupManager.importPlaylists(inputStream)
+                    Toast.makeText(
+                        context,
+                        if (success) context.getString(R.string.import_success) else context.getString(R.string.import_error),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -301,6 +342,54 @@ fun SettingsScreen(onBack: () -> Unit) {
                     }
                 },
                 modifier = Modifier.clickable { showLanguageDialog = true }
+            )
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.export_playlists)) },
+                supportingContent = { Text(stringResource(R.string.export_playlists_desc)) },
+                leadingContent = {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            Icon(
+                                Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.clickable { 
+                    exportLauncher.launch("playlists_backup.json")
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.import_playlists)) },
+                supportingContent = { Text(stringResource(R.string.import_playlists_desc)) },
+                leadingContent = {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.clickable { 
+                    importLauncher.launch(arrayOf("application/json", "application/octet-stream"))
+                }
             )
 
             ListItem(

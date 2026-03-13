@@ -196,6 +196,7 @@ class MusicService : Service() {
 
     fun playSong(song: Song) {
         isCrossfading = false
+        PlaybackManager.getInstance(applicationContext).isTransitioning = false
         monitorJob?.cancel()
         requestAudioFocus()
 
@@ -275,6 +276,7 @@ class MusicService : Service() {
     private fun performCrossfade(nextSong: Song) {
         isCrossfading = true
         val playbackManager = PlaybackManager.getInstance(applicationContext)
+        playbackManager.isTransitioning = true
         val fadeDurationMs = 12000L // 12s per user request
         
         secondaryPlayer?.setOnCompletionListener(null)
@@ -354,6 +356,7 @@ class MusicService : Service() {
             }
             
             isCrossfading = false
+            playbackManager.isTransitioning = false
             PlaybackManager.getInstance(applicationContext).updateCurrentSongState(nextSong)
             
             val art = fetchAlbumArt(nextSong)

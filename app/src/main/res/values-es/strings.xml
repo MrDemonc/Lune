@@ -50,6 +50,8 @@
     <string name="option_automix">Automix</string>
     <string name="option_timer">Timer</string>
     <string name="option_lyrics">Lyrics</string>
+    <string name="transition_mixing">Mezclando</string>
+    <string name="transition_crossfade">Crossfade</string>
     <string name="unknown_artist">Artista Desconocido</string>
     <string name="unknown_album">Álbum Desconocido</string>
 
@@ -157,4 +159,15 @@
     <string name="perm_audio_service_desc">Permite que la aplicación siga reproduciendo música en segundo plano o con la pantalla apagada.</string>
     <string name="perm_record_audio_title">Grabar Audio</string>
     <string name="perm_record_audio_desc">Necesario para que el visualizador de audio procese y muestre datos de frecuencia en tiempo real.</string>
+
+    <!-- Playlist Export/Import -->
+    <string name="export_playlists">Exportar Listas</string>
+    <string name="export_playlists_desc">Guardar tus listas en un archivo</string>
+    <string name="import_playlists">Importar Listas</string>
+    <string name="import_playlists_desc">Restaurar listas desde un archivo</string>
+    <string name="export_success">Listas exportadas con éxito</string>
+    <string name="export_error">Error al exportar listas</string>
+    <string name="import_success">Listas importadas con éxito</string>
+    <string name="import_error">Error al importar listas</string>
+    <string name="no_file_selected">No se seleccionó ningún archivo</string>
 </resources>

@@ -40,6 +40,8 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.theme.LuneTheme
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import java.util.regex.Pattern
 
 data class LyricsLine(val timeMs: Long, val text: String)
@@ -158,6 +160,81 @@ fun LyricsScreen(onBack: () -> Unit) {
                 }
             }
 
+            Box(modifier = Modifier.weight(1f)) {
+                val isTransitioning = playbackManager.isTransitioning
+                
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isTransitioning,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "MixingAnimation")
+                            val rotation by infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 360f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(2000, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                ),
+                                label = "LogoRotation"
+                            )
+                            val bounceOffset by infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = -20f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(1000, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "TextBounce"
+                            )
+                            
+                            Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(id = com.demonlab.lune.R.drawable.ic_logo_diamonds),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                    modifier = Modifier.fillMaxSize().graphicsLayer { rotationZ = rotation }
+                                )
+                                Icon(
+                                    painter = painterResource(id = com.demonlab.lune.R.drawable.ic_logo_note),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.fillMaxSize(0.6f)
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            val transitionText = if (playbackManager.isAutomix) {
+                                stringResource(com.demonlab.lune.R.string.transition_mixing)
+                            } else {
+                                stringResource(com.demonlab.lune.R.string.transition_crossfade)
+                            }
+                            
+                            Text(
+                                text = transitionText,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.graphicsLayer {
+                                    translationY = bounceOffset
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = !isTransitioning,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+
             if (lyricsLines.size < 2 && !rawLyrics.isNullOrBlank()) {
                 // If we found 0 or only 1 synced line, but we have a raw string, show it.
                 val displayLines = rawLyrics.lines()
@@ -253,6 +330,8 @@ fun LyricsScreen(onBack: () -> Unit) {
             }
         }
     }
+}
+}
 }
 
 private fun parseLyrics(raw: String?): List<LyricsLine> {

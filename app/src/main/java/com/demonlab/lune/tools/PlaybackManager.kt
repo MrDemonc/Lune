@@ -47,6 +47,7 @@ class PlaybackManager private constructor(private val context: Context) {
     var isAutomix by mutableStateOf(settings.isAutomix)
     var repeatMode by mutableStateOf(settings.repeatMode) // 0: Off, 1: One, 2: All
     var isQueueFinished by mutableStateOf(false) // true when last song ended naturally
+    var isTransitioning by mutableStateOf(false) 
     
     var isEqEnabled by mutableStateOf(settings.isEqEnabled)
         private set

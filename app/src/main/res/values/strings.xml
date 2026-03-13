@@ -50,6 +50,8 @@
     <string name="option_automix">Automix</string>
     <string name="option_timer">Timer</string>
     <string name="option_lyrics">Lyrics</string>
+    <string name="transition_mixing">Mixing</string>
+    <string name="transition_crossfade">Crossfade</string>
     <string name="unknown_artist">Unknown Artist</string>
     <string name="unknown_album">Unknown Album</string>
     
@@ -158,4 +160,15 @@
     <string name="perm_audio_service_desc">Enables the app to continue playing music while in the background or with the screen off.</string>
     <string name="perm_record_audio_title">Audio Record</string>
     <string name="perm_record_audio_desc">Necessary for the audio visualizer to process and display real-time frequency data.</string>
+
+    <!-- Playlist Export/Import -->
+    <string name="export_playlists">Export Playlists</string>
+    <string name="export_playlists_desc">Save your playlists to a file</string>
+    <string name="import_playlists">Import Playlists</string>
+    <string name="import_playlists_desc">Restore playlists from a file</string>
+    <string name="export_success">Playlists exported successfully</string>
+    <string name="export_error">Error exporting playlists</string>
+    <string name="import_success">Playlists imported successfully</string>
+    <string name="import_error">Error importing playlists</string>
+    <string name="no_file_selected">No file selected</string>
 </resources>

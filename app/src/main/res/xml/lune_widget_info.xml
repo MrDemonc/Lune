@@ -5,5 +5,7 @@
     android:updatePeriodMillis="86400000"
     android:initialLayout="@layout/lune_widget_layout"
     android:resizeMode="horizontal|vertical"
+    android:previewImage="@drawable/ic_launcher_foreground"
+    android:previewLayout="@layout/lune_widget_layout"
     android:widgetCategory="home_screen">
 </appwidget-provider>

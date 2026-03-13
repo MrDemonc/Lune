@@ -141,7 +141,7 @@ class Lune : AppCompatActivity() {
 
             // LIFTED STATES & LOGIC
             val rawAllSongs = musicViewModel.filteredSongs
-            var selectedFolder by remember(sTabResume) { mutableStateOf(sTabResume) }
+            var selectedFolder by rememberSaveable { mutableStateOf(sTabResume) }
             var showFolderSheet by remember { mutableStateOf(false) }
             val hiddenFolders = remember { mutableStateOf(settingsManager.hiddenFolders) }
             
@@ -207,6 +207,7 @@ class Lune : AppCompatActivity() {
                 val observer = LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_RESUME && hasPermission) {
                         musicViewModel.loadSongs()
+                        musicViewModel.loadPlaylists()
                     }
                 }
                 lifecycleOwner.lifecycle.addObserver(observer)
@@ -449,15 +450,7 @@ fun MainScreen(
         }
     }
 
-    // Restore last session on first load
-    LaunchedEffect(Unit) {
-        if (settingsManager.lastPlayedSongId != -1L) {
-            val lastCat = settingsManager.lastCategory
-            if (lastCat.isNotEmpty() && lastCat != selectedFolder) {
-                onSelectedFolderChange(lastCat)
-            }
-        }
-    }
+
 
     if (selectedAlbum != null) {
         BackHandler {
