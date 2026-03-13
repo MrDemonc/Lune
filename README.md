@@ -33,19 +33,19 @@
 ## 📱 ScreenShot
 
 <p align="center">
-  <img src="readme-res/1.jpg" width="180">
-  <img src="readme-res/2.jpg" width="180">
-  <img src="readme-res/3.jpg" width="180">
-  <img src="readme-res/4.jpg" width="180">
-  <img src="readme-res/5.jpg" width="180">
+  <img src="readme-res/1.jpg" width="140">
+  <img src="readme-res/2.jpg" width="140">
+  <img src="readme-res/3.jpg" width="140">
+  <img src="readme-res/4.jpg" width="140">
+  <img src="readme-res/5.jpg" width="140">
 </p>
 
 <p align="center">
-  <img src="readme-res/6.jpg" width="180">
-  <img src="readme-res/7.jpg" width="180">
-  <img src="readme-res/8.jpg" width="180">
-  <img src="readme-res/9.jpg" width="180">
-  <img src="readme-res/10.jpg" width="180">
+  <img src="readme-res/6.jpg" width="140">
+  <img src="readme-res/7.jpg" width="140">
+  <img src="readme-res/8.jpg" width="140">
+  <img src="readme-res/9.jpg" width="140">
+  <img src="readme-res/10.jpg" width="140">
 </p>
 
 ## 🛠 Build Requirements
