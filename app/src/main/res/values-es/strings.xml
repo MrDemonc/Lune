@@ -49,6 +49,7 @@
     <string name="option_crossfade">Crossfade</string>
     <string name="option_automix">Automix</string>
     <string name="option_timer">Timer</string>
+    <string name="option_lyrics">Lyrics</string>
     <string name="unknown_artist">Artista Desconocido</string>
     <string name="unknown_album">Álbum Desconocido</string>
 
@@ -77,7 +78,7 @@
     <string name="cd_change_cover">Cambiar portada</string>
     <string name="playlists">Listas</string>
     <string name="playlist">Lista</string>
-    <string name="add_to_playlist">Añadir a lista</string>
+    <string name="add_to_playlist">Lista</string>
     <string name="create_playlist">Crear Lista</string>
     <string name="playlist_name">Nombre de la lista</string>
     <string name="edit_playlist_name">Editar nombre de lista</string>
@@ -140,6 +141,7 @@
     <string name="gson_desc">Biblioteca de serialización/deserialización de Java para convertir objetos Java a JSON y viceversa.\nLicencia: Apache License 2.0</string>
     <string name="room_desc">La biblioteca de persistencia Room proporciona una capa de abstracción sobre SQLite.\nLicencia: Apache License 2.0</string>
     <string name="compose_desc">El moderno kit de herramientas de Android para crear interfaces de usuario nativas.\nLicencia: Apache License 2.0</string>
+    <string name="jaudiotagger_desc">Librería de etiquetado de audio para editar y leer formatos de etiquetas como ID3, Vorbis y FLAC.\nLicencia: LGPL v2.1</string>
 
     <string name="permissions">Permisos</string>
     <string name="permissions_desc">Información sobre los permisos utilizados</string>

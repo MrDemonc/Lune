@@ -17,5 +17,6 @@ data class Song(
     val folderName: String,
     val isHiFi: Boolean = false,
     val coverUrl: String? = null,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val lyrics: String? = null
 )

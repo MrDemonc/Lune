@@ -287,6 +287,19 @@ fun AboutScreen() {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Jaudiotagger
+                Text(
+                    text = "Jaudiotagger",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.jaudiotagger_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
                 // Jetpack Compose
                 Text(
                     text = "Jetpack Compose",

@@ -49,12 +49,28 @@
             android:exported="false"
             android:label="@string/permissions"
             android:theme="@style/Theme.Lune" />
+        <activity
+            android:name=".ui.activities.LyricsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Lune" />
 
         <service
             android:name=".tools.MusicService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".tools.LuneWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.demonlab.lune.WIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lune_widget_info" />
+        </receiver>
 
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

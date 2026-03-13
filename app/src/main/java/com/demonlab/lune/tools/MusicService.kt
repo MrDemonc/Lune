@@ -21,6 +21,15 @@ import android.media.audiofx.Virtualizer
 import android.media.AudioManager
 import android.media.AudioFocusRequest
 import android.media.AudioAttributes
+import android.media.MediaMetadataRetriever
+import java.io.File
+import java.util.regex.Pattern
+import android.util.Log
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.graphics.Bitmap
+import android.widget.RemoteViews
+import android.media.AudioDeviceInfo
 
 class MusicService : Service() {
     private var mediaPlayer: MediaPlayer? = null
@@ -37,6 +46,9 @@ class MusicService : Service() {
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
     private var wasPlayingBeforeLoss = false
+    private var widgetUpdateJob: Job? = null
+    private var lastSongForBlur: Song? = null
+    private var lastBlurredBitmap: Bitmap? = null
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -209,6 +221,8 @@ class MusicService : Service() {
                     val art = fetchAlbumArt(song)
                     updateMetadata(song, art)
                     showNotification(song, true, art)
+                    PlaybackManager.getInstance(applicationContext).clearLyrics()
+                    extractLyrics(song)
                 }
             }
             setOnErrorListener { _, _, _ -> 
@@ -248,6 +262,7 @@ class MusicService : Service() {
                     if (duration > triggerMs && remaining in 1..triggerMs && mp.currentPosition > (duration / 2)) {
                         val nextSong = playbackManager.getNextSong()
                         if (nextSong != null) {
+                            Log.d("MusicService", "Crossfade triggered for next song: ${nextSong.title}")
                             performCrossfade(nextSong)
                         }
                     }
@@ -272,9 +287,14 @@ class MusicService : Service() {
             start()
             setOnCompletionListener {
                 if (!isCrossfading) {
-                    playbackManager.playNextFromService(true)
+                    PlaybackManager.getInstance(applicationContext).playNextFromService(true)
                 }
             }
+        }
+        
+        playbackManager.clearLyrics()
+        serviceScope.launch {
+            extractLyrics(nextSong)
         }
 
         serviceScope.launch {
@@ -334,12 +354,13 @@ class MusicService : Service() {
             }
             
             isCrossfading = false
-            playbackManager.updateCurrentSongState(nextSong)
+            PlaybackManager.getInstance(applicationContext).updateCurrentSongState(nextSong)
             
             val art = fetchAlbumArt(nextSong)
             updateMetadata(nextSong, art)
             updatePlaybackState()
             showNotification(nextSong, true, art)
+            extractLyrics(nextSong) // Keep one at the end just in case or for state sync
             startCrossfadeMonitor() 
         }
     }
@@ -370,6 +391,8 @@ class MusicService : Service() {
         secondaryPlayer?.pause()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         updatePlaybackState()
+        stopWidgetUpdateTimer()
+        updateWidget()
         serviceScope.launch {
             val song = currentSong() ?: return@launch
             val art = fetchAlbumArt(song)
@@ -382,6 +405,8 @@ class MusicService : Service() {
         secondaryPlayer?.start()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(true)
         updatePlaybackState()
+        startWidgetUpdateTimer()
+        updateWidget()
         serviceScope.launch {
             val song = currentSong() ?: return@launch
             val art = fetchAlbumArt(song)
@@ -410,6 +435,152 @@ class MusicService : Service() {
             val art = fetchAlbumArt(song)
             showNotification(song, false, art)
         }
+    }
+
+    private fun extractLyrics(song: Song) {
+        Log.d("MusicService", "Extracting lyrics for: ${song.title}")
+        serviceScope.launch(Dispatchers.IO) {
+            val playbackManager = PlaybackManager.getInstance(applicationContext)
+            
+            withContext(Dispatchers.Main) {
+                playbackManager.updateLyrics(null)
+            }
+            
+            // 1. Try to find a .lrc file in the same directory
+            val songFile = File(song.path)
+            val lrcFile = File(songFile.parent, songFile.nameWithoutExtension + ".lrc")
+            
+            if (lrcFile.exists()) {
+                try {
+                    Log.d("MusicService", "Found .lrc file: ${lrcFile.absolutePath}")
+                    val lrcContent = lrcFile.readText()
+                    withContext(Dispatchers.Main) {
+                        playbackManager.updateLyrics(lrcContent)
+                    }
+                    return@launch
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            
+            // 2. Try to extract embedded lyrics via Jaudiotagger (Best for FLAC/Vorbis)
+            try {
+                val f = File(song.path)
+                val audioFile = org.jaudiotagger.audio.AudioFileIO.read(f)
+                val tag = audioFile.tag
+                if (tag != null) {
+                    val embedded = tag.getFirst(org.jaudiotagger.tag.FieldKey.LYRICS)
+                    
+                    if (!embedded.isNullOrBlank()) {
+                        Log.i("MusicService", "Jaudiotagger extraction success. Length: ${embedded.length}")
+                        withContext(Dispatchers.Main) {
+                            playbackManager.updateLyrics(embedded)
+                        }
+                        return@launch
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MusicService", "Jaudiotagger failed: ${e.message}")
+            }
+
+            // 3. Fallback to MediaMetadataRetriever (Native)
+            val retriever = MediaMetadataRetriever()
+            try {
+                retriever.setDataSource(applicationContext, song.uri)
+                var embeddedLyrics = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    retriever.extractMetadata(13 /* MediaMetadataRetriever.METADATA_KEY_LYRIC */)
+                } else null
+                
+                // FLAC/Vorbis Fallback: If still null, try reading the file header for "LYRICS=" or "UNSYNCEDLYRICS="
+                Log.i("MusicService", "Extracted lyrics length from retriever: ${embeddedLyrics?.length ?: 0}")
+                
+                if (embeddedLyrics.isNullOrBlank()) {
+                    Log.i("MusicService", "No lyrics in retriever, trying manual scan on ${song.path}")
+                    embeddedLyrics = tryExtractManual(song.path)
+                }
+                
+                Log.i("MusicService", "Final extracted lyrics length: ${embeddedLyrics?.length ?: 0}")
+                if (embeddedLyrics != null) {
+                    Log.i("MusicService", "Final lyrics snippet: ${embeddedLyrics.take(50)}...")
+                }
+
+                withContext(Dispatchers.Main) {
+                    playbackManager.updateLyrics(embeddedLyrics)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                retriever.release()
+            }
+        }
+    }
+
+    private fun tryExtractManual(path: String): String? {
+        try {
+            val file = File(path)
+            if (!file.exists()) return null
+            
+            // Read first 1MB. FLAC/MP3 metadata blocks are usually within this range.
+            val bufferSize = 1024 * 1024
+            val buffer = ByteArray(bufferSize.coerceAtMost(file.length().toInt()))
+            file.inputStream().use { it.read(buffer) }
+            
+            val tags = listOf("UNSYNCEDLYRICS=", "LYRICS=", "USLT=", "unsyncedlyrics=", "lyrics=")
+            for (tag in tags) {
+                val tagBytes = tag.toByteArray(Charsets.UTF_8)
+                val index = findBytes(buffer, tagBytes)
+                if (index != -1) {
+                    // Vorbis Comment Check: The 4 bytes before the tag name often store the length (Little Endian)
+                    // Format: [Length (4 bytes)] [NAME=VALUE]
+                    // Since 'index' points to 'NAME', the length field is at index-4
+                    if (index >= 4) {
+                        val len = (buffer[index - 4].toInt() and 0xFF) or
+                                 ((buffer[index - 3].toInt() and 0xFF) shl 8) or
+                                 ((buffer[index - 2].toInt() and 0xFF) shl 16) or
+                                 ((buffer[index - 1].toInt() and 0xFF) shl 24)
+                        
+                        // If length is plausible (e.g. 100 bytes to 128KB), use it
+                        if (len in tagBytes.size..131072) {
+                            val totalLength = len - tagBytes.size
+                            if (index + tagBytes.size + totalLength <= buffer.size) {
+                                val result = String(buffer, index + tagBytes.size, totalLength, Charsets.UTF_8).trim()
+                                Log.i("MusicService", "SUCCESS: Extracted via Vorbis length: ${result.length} chars")
+                                return result
+                            }
+                        }
+                    }
+
+                    // Fallback to previous regex if Vorbis check fails
+                    val start = index + tagBytes.size
+                    val length = (65536).coerceAtMost(buffer.size - start)
+                    val raw = String(buffer, start, length, Charsets.UTF_8)
+                    val nextTagPattern = Pattern.compile("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\r?\\n[A-Z0-9_]{3,}=")
+                    val matcher = nextTagPattern.matcher(raw)
+                    val end = if (matcher.find()) matcher.start() else raw.length
+                    
+                    val result = raw.substring(0, end).trim()
+                    if (result.length > 5) return result
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    private fun findBytes(haystack: ByteArray, needle: ByteArray): Int {
+        if (needle.isEmpty()) return -1
+        for (i in 0..haystack.size - needle.size) {
+            var found = true
+            for (j in needle.indices) {
+                if (haystack[i + j] != needle[j]) {
+                    found = false
+                    break
+                }
+            }
+            if (found) return i
+        }
+        return -1
     }
 
     private fun updateMetadata(song: Song, art: android.graphics.Bitmap? = null) {
@@ -527,5 +698,124 @@ class MusicService : Service() {
 
     fun setSpatialAudioEnabled(enabled: Boolean) {
         virtualizer?.enabled = enabled
+    }
+
+    private fun startWidgetUpdateTimer() {
+        widgetUpdateJob?.cancel()
+        widgetUpdateJob = serviceScope.launch {
+            while (isActive) {
+                if (isPlaying()) {
+                    updateWidget()
+                }
+                delay(1000)
+            }
+        }
+    }
+
+    private fun stopWidgetUpdateTimer() {
+        widgetUpdateJob?.cancel()
+    }
+
+    private fun updateWidget() {
+        val song = currentSong()
+        val isPlaying = isPlaying()
+        val progress = if (duration() > 0) currentPosition().toFloat() / duration() else 0f
+        
+        serviceScope.launch {
+            val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
+            val componentName = ComponentName(applicationContext, LuneWidgetProvider::class.java)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+            
+            if (appWidgetIds.isEmpty()) return@launch
+
+            val views = RemoteViews(packageName, R.layout.lune_widget_layout)
+            
+            if (song != null) {
+                views.setTextViewText(R.id.widget_title, song.title)
+                views.setTextViewText(R.id.widget_artist, song.artist)
+                views.setProgressBar(R.id.widget_progress, 100, (progress * 100).toInt(), false)
+                views.setImageViewResource(R.id.widget_play_pause, 
+                    if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play)
+                
+                // Audio Output
+                views.setImageViewResource(R.id.widget_output_icon, getOutputIconRes())
+                views.setTextViewText(R.id.widget_output_text, getOutputName())
+
+                // Fetch and round art
+                val art = fetchAlbumArt(song)
+                if (art != null) {
+                    val roundedArt = LuneWidgetProvider.getRoundedCornerBitmap(art, 40) // 40px radius
+                    views.setImageViewBitmap(R.id.widget_cover, roundedArt)
+                    
+                    // Handle blurred background
+                    if (lastSongForBlur != song || lastBlurredBitmap == null) {
+                        lastSongForBlur = song
+                        lastBlurredBitmap = LuneWidgetProvider.getBlurredBitmap(this@MusicService, art, 25, 25)
+                    }
+                    
+                    lastBlurredBitmap?.let {
+                        views.setImageViewBitmap(R.id.widget_blurred_background, it)
+                        views.setViewVisibility(R.id.widget_blurred_background, android.view.View.VISIBLE)
+                        views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.VISIBLE)
+                    }
+                } else {
+                    views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
+                    views.setViewVisibility(R.id.widget_blurred_background, android.view.View.GONE)
+                    views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.GONE)
+                }
+            } else {
+                views.setTextViewText(R.id.widget_title, getString(R.string.no_song_playing))
+                views.setTextViewText(R.id.widget_artist, "")
+                views.setProgressBar(R.id.widget_progress, 100, 0, false)
+                views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
+                views.setViewVisibility(R.id.widget_blurred_background, android.view.View.GONE)
+                views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.GONE)
+            }
+
+            // Button Intents
+            views.setOnClickPendingIntent(R.id.widget_play_pause, getWidgetServicePendingIntent(if (isPlaying) ACTION_PAUSE else ACTION_PLAY))
+            views.setOnClickPendingIntent(R.id.widget_prev, getWidgetServicePendingIntent(ACTION_PREVIOUS))
+            views.setOnClickPendingIntent(R.id.widget_next, getWidgetServicePendingIntent(ACTION_NEXT))
+            
+            // Open App
+            val intent = Intent(applicationContext, Lune::class.java)
+            val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+            views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+
+            appWidgetManager.updateAppWidget(appWidgetIds, views)
+        }
+    }
+
+    private fun getWidgetServicePendingIntent(action: String): PendingIntent {
+        val intent = Intent(this, MusicService::class.java).apply {
+            this.action = action
+        }
+        return PendingIntent.getService(this, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun getOutputIconRes(): Int {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            for (device in devices) {
+                when (device.type) {
+                    AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> return R.drawable.ic_bluetooth
+                    AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_USB_HEADSET -> return R.drawable.ic_headphones
+                }
+            }
+        }
+        return R.drawable.ic_speaker
+    }
+
+    private fun getOutputName(): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            for (device in devices) {
+                when (device.type) {
+                    AudioDeviceInfo.TYPE_BLUETOOTH_A2DP, AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> return getString(R.string.output_bluetooth)
+                    AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_USB_HEADSET -> return getString(R.string.output_headphones)
+                }
+            }
+        }
+        return getString(R.string.output_speaker)
     }
 }

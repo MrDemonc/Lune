@@ -153,7 +153,7 @@ class MusicProvider(private val context: Context) {
                     albumId
                 )
 
-                songList.add(Song(id, albumId, title, artist, album, duration, contentUri, data, dateAdded, albumArtUri, genre, folderName, isHiFi, coverUrl, isFavorite))
+                songList.add(Song(id, albumId, title, artist, album, duration, contentUri, data, dateAdded, albumArtUri, genre, folderName, isHiFi, coverUrl, isFavorite, null))
             }
         }
         saveToCache(songList)

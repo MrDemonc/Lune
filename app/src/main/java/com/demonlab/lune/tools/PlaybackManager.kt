@@ -3,7 +3,9 @@ package com.demonlab.lune.tools
 import android.content.*
 import android.content.IntentFilter
 import android.os.Build
+import android.util.Log
 import android.os.IBinder
+import androidx.annotation.OptIn
 import com.demonlab.lune.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +30,8 @@ class PlaybackManager private constructor(private val context: Context) {
     var currentSong by mutableStateOf<Song?>(null)
         private set
     var isPlaying by mutableStateOf(false)
+        private set
+    var currentLyrics by mutableStateOf<String?>(null)
         private set
     var activePlaylist by mutableStateOf<List<Song>>(emptyList())
         private set
@@ -449,6 +453,16 @@ class PlaybackManager private constructor(private val context: Context) {
     /** Called after a metadata edit — updates currentSong without changing isPlaying */
     fun updateCurrentSongMetadata(song: Song) {
         currentSong = song
+    }
+
+    fun updateLyrics(lyrics: String?) {
+        Log.i("PlaybackManager", "Updating lyrics. Length: ${lyrics?.length ?: 0}")
+        currentLyrics = lyrics
+    }
+
+    fun clearLyrics() {
+        Log.i("PlaybackManager", "Clearing lyrics")
+        currentLyrics = null
     }
 
     /** Called by MusicService after a crossfade completes — updates state without re-triggering playSong */

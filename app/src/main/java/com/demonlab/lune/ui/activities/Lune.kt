@@ -56,6 +56,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
@@ -1103,7 +1104,7 @@ fun MainScreen(
                     },
                     onTogglePlay = { 
                         if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                        onIsPlayingChange(!isPlaying)
+                    onIsPlayingChange(!isPlaying)
                     },
                     onMinimize = { onIsPlayerExpandedChange(false) },
                     onNext = playNext,
@@ -1111,7 +1112,11 @@ fun MainScreen(
                     onRefreshSongs = onRefreshSongs,
                     showWaveform = playbackManager.isFullPlayerVisualizerEnabled,
                     onToggleWaveform = {}, // Not used anymore as we have settings sheet
-                    visualizerData = visualizerData
+                    visualizerData = visualizerData,
+                    onShowLyrics = {
+                        val intent = Intent(context, LyricsActivity::class.java)
+                        context.startActivity(intent)
+                    }
                 )
             }
         }
@@ -1431,7 +1436,7 @@ fun SongOptionsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = 0.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -1738,7 +1743,8 @@ fun FullPlayer(
     onRefreshSongs: (() -> Unit)? = null,
     showWaveform: Boolean,
     onToggleWaveform: () -> Unit,
-    visualizerData: FloatArray
+    visualizerData: FloatArray,
+    onShowLyrics: () -> Unit
 ) {
     val context = LocalContext.current
     val coverProvider = remember { CoverProvider() }
@@ -2086,6 +2092,10 @@ fun FullPlayer(
                 onShowVisualizerSettings = {
                     showOptionsSheet = false
                     showVisualizerSettings = true
+                },
+                onShowLyrics = {
+                    showOptionsSheet = false
+                    onShowLyrics()
                 }
             )
         }
@@ -2239,7 +2249,8 @@ fun PlayerOptionsBottomSheet(
     onRefreshSongs: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     onAddToPlaylistClick: () -> Unit,
-    onShowVisualizerSettings: () -> Unit
+    onShowVisualizerSettings: () -> Unit,
+    onShowLyrics: () -> Unit
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -2324,7 +2335,7 @@ fun PlayerOptionsBottomSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 // Timer
@@ -2360,6 +2371,16 @@ fun PlayerOptionsBottomSheet(
                     label = stringResource(R.string.option_visualizer),
                     active = playbackManager.isFullPlayerVisualizerEnabled || playbackManager.isMiniPlayerVisualizerEnabled,
                     onClick = onShowVisualizerSettings
+                )
+
+                // Lyrics
+                val hasLyrics = playbackManager.currentLyrics != null
+                OptionButton(
+                    icon = Icons.Default.Lyrics,
+                    label = stringResource(R.string.option_lyrics),
+                    active = hasLyrics,
+                    enabled = hasLyrics,
+                    onClick = onShowLyrics
                 )
             }
         }
@@ -2420,14 +2441,16 @@ fun OptionButton(
     label: String,
     active: Boolean,
     onClick: () -> Unit,
-    sublabel: String? = null
+    sublabel: String? = null,
+    enabled: Boolean = true
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
             onClick = onClick,
+            enabled = enabled,
             shape = CircleShape,
             color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(56.dp).alpha(if (enabled) 1f else 0.5f)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -2921,7 +2944,7 @@ fun PlaylistListScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "$songCount • ${formatDuration(totalDuration)}",
+                            "$songCount • ${formatLongDuration(totalDuration)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -3301,10 +3324,13 @@ fun PlaylistDetailView(
         }
     }
 
+    val backgroundCover = remember(songs) {
+        songs.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.fillMaxSize()) {
             // No top toolbar, gesture back navigation only
-            Spacer(modifier = Modifier.height(16.dp))
 
             LazyColumn(
                 state = listState,
@@ -3313,18 +3339,53 @@ fun PlaylistDetailView(
             ) {
                 // Collapsing Header as an item
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .graphicsLayer {
-                                alpha = headerAlpha
-                                scaleX = headerScale
-                                scaleY = headerScale
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        if (backgroundCover != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(350.dp)
+                                    .offset(y = (-50).dp)
+                                    .graphicsLayer {
+                                        alpha = headerAlpha
+                                    }
+                            ) {
+                                AsyncImage(
+                                    model = backgroundCover,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Transparent,
+                                                    Color.Transparent,
+                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                                    MaterialTheme.colorScheme.surface
+                                                ),
+                                                startY = 0f
+                                            )
+                                        )
+                                )
                             }
-                            .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.height(60.dp))
+                        }
+                        
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer {
+                                    alpha = headerAlpha
+                                    scaleX = headerScale
+                                    scaleY = headerScale
+                                }
+                                .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(modifier = Modifier.height(55.dp))
                         PlaylistPreviewCovers(
                             playlistId = playlist.id,
                             viewModel = viewModel,
@@ -3465,6 +3526,7 @@ fun PlaylistDetailView(
                     }
                 }
 
+                }
                 if (songs.isEmpty()) {
                     item {
                         Box(
@@ -3564,9 +3626,12 @@ fun AlbumDetailView(
 
     BackHandler(onBack = onBack)
 
+    val backgroundCover = remember(album) {
+        album.songs.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Spacer(modifier = Modifier.height(16.dp))
             
             LazyColumn(
                 state = listState,
@@ -3575,18 +3640,53 @@ fun AlbumDetailView(
             ) {
                 // Collapsing Header
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .graphicsLayer {
-                                alpha = headerAlpha
-                                scaleX = headerScale
-                                scaleY = headerScale
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        if (backgroundCover != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(350.dp)
+                                    .offset(y = (-50).dp)
+                                    .graphicsLayer {
+                                        alpha = headerAlpha
+                                    }
+                            ) {
+                                AsyncImage(
+                                    model = backgroundCover,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = listOf(
+                                                    Color.Transparent,
+                                                    Color.Transparent,
+                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                                    MaterialTheme.colorScheme.surface
+                                                ),
+                                                startY = 0f
+                                            )
+                                        )
+                                )
                             }
-                            .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.height(60.dp))
+                        }
+                        
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer {
+                                    alpha = headerAlpha
+                                    scaleX = headerScale
+                                    scaleY = headerScale
+                                }
+                                .padding(bottom = 24.dp, start = 24.dp, end = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(modifier = Modifier.height(55.dp))
                         
                         val albumCoverBytes = remember(album) {
                             album.songs.firstOrNull()?.let { 
@@ -3713,6 +3813,7 @@ fun AlbumDetailView(
                     }
                 }
 
+                }
                 if (album.songs.isEmpty()) {
                     item {
                         Box(

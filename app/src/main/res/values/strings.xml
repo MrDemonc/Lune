@@ -49,6 +49,7 @@
     <string name="option_crossfade">Crossfade</string>
     <string name="option_automix">Automix</string>
     <string name="option_timer">Timer</string>
+    <string name="option_lyrics">Lyrics</string>
     <string name="unknown_artist">Unknown Artist</string>
     <string name="unknown_album">Unknown Album</string>
     
@@ -77,7 +78,7 @@
     <string name="cd_change_cover">Change cover</string>
     <string name="playlists">Playlists</string>
     <string name="playlist">Playlist</string>
-    <string name="add_to_playlist">Add to playlist</string>
+    <string name="add_to_playlist">Playlist</string>
     <string name="create_playlist">Create Playlist</string>
     <string name="playlist_name">Playlist Name</string>
     <string name="edit_playlist_name">Edit Playlist Name</string>
@@ -116,7 +117,8 @@
     <string name="option_repeat_all">Repeat All</string>
     <string name="option_repeat_off">Off</string>
     <string name="output_speaker">Speaker</string>
-    <string name="output_headphones">Headphones</string>
+    <string name="output_headphones">Auriculares</string>
+    <string name="no_song_playing">Sin reproducción</string>
     <string name="output_bluetooth">Bluetooth</string>
     <string name="queue_now_playing">Now Playing</string>
     <string name="queue_up_next">Up Next</string>
@@ -140,6 +142,7 @@
     <string name="gson_desc">A Java serialization/deserialization library to convert Java Objects into JSON and back.\nLicense: Apache License 2.0</string>
     <string name="room_desc">The Room persistence library provides an abstraction layer over SQLite.\nLicense: Apache License 2.0</string>
     <string name="compose_desc">Android’s modern toolkit for building native UI.\nLicense: Apache License 2.0</string>
+    <string name="jaudiotagger_desc">Audio Tagging library for editing and reading tagging formats such as ID3, Vorbis, and FLAC.\nLicense: LGPL v2.1</string>
 
     <string name="permissions">Permissions</string>
     <string name="permissions_desc">Information about used permissions</string>

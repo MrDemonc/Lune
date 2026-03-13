@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="12dp"
+    android:viewportWidth="200"
+    android:viewportHeight="12">
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 0,6 C 5,0 15,12 20,6 C 25,0 35,12 40,6 C 45,0 55,12 60,6 C 65,0 75,12 80,6 C 85,0 95,12 100,6 C 105,0 115,12 120,6 C 125,0 135,12 140,6 C 145,0 155,12 160,6 C 165,0 175,12 180,6 C 185,0 195,12 200,6" />
+</vector>
