@@ -56,6 +56,17 @@ To build Lune from source, ensure your environment meets the following requireme
 - **Android SDK 36**: The project targets and compiles with the latest Android 15 APIs (SDK 36).
 - **Gradle**: Uses the provided Gradle wrapper (8.x+).
 
+Create this file for signing release
+
+**keystore.properties**:
+
+```bash
+storeFile=key-file.jks
+storePassword=password
+keyAlias=alias
+keyPassword=password
+```
+
 ## 🚀 How to Build
 
 1. **Clone the repository**:
