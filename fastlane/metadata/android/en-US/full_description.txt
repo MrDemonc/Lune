@@ -1,0 +1,16 @@
+Lune is a minimalist and elegant music player for Android, designed with a focus on aesthetics and a premium user experience. It features a modern Jetpack Compose UI, dynamic color support, and a unique high-quality dark defocus widget system.
+
+- Modern UI
+- Widget
+- Live Lyrics
+- Dynamic Themes
+- Queue Control
+- Playlist
+- Automix and Crossfade
+- Timer playback
+- Equalize
+- Vizulizer
+- Sample button theme
+- HI-FI audio
+- Custom tittle
+- Cover download
