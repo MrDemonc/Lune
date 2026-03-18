@@ -1,0 +1,16 @@
+Lune es un reproductor de música minimalista y elegante para Android, diseñado con un enfoque en la estética y una experiencia de usuario premium. Cuenta con una interfaz moderna de Jetpack Compose, soporte para colores dinámicos y un exclusivo sistema de widgets con efecto de desenfoque oscuro de alta calidad.
+
+- Interfaz moderna
+- Widgets
+- Letras en vivo
+- Temas dinámicos
+- Control de cola de reproducción
+- Lista de reproducción
+- Mezcla automática y fundido cruzado
+- Reproducción con temporizador
+- Ecualizador
+- Visualizador
+- Boton para alternar de temas
+- Audio de alta fidelidad
+- Título personalizado
+- Descarga de carátulas
