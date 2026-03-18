@@ -11,6 +11,9 @@
     <string name="hifi_desc">Enable Hi-Fi detection and badges</string>
     <string name="download_covers">Download Covers</string>
     <string name="download_covers_desc">Fetch album art from internet if missing</string>
+    <string name="general">General</string>
+    <string name="backup">Backup</string>
+    <string name="security">Security</string>
 
     <!-- UI/Player Strings -->
     <string name="eq_title">Equalizer</string>
@@ -72,6 +75,7 @@
     <string name="lang_system">System Default</string>
     <string name="lang_english">English</string>
     <string name="lang_spanish">Spanish</string>
+    <string name="lang_portuguese">Portuguese</string>
 
     <string name="ok">OK</string>
     <string name="cd_edit_folders">Edit folders</string>
@@ -113,6 +117,7 @@
     <string name="categories">Categories</string>
     <string name="edit_information">Edit Information</string>
     <string name="info_updated">Information updated</string>
+    <string name="info_restored">Information restored</string>
     <string name="player_queue">Queue</string>
     <string name="player_options">Options</string>
     <string name="option_repeat_one">Repeat One</string>
@@ -145,6 +150,7 @@
     <string name="room_desc">The Room persistence library provides an abstraction layer over SQLite.\nLicense: Apache License 2.0</string>
     <string name="compose_desc">Android’s modern toolkit for building native UI.\nLicense: Apache License 2.0</string>
     <string name="jaudiotagger_desc">Audio Tagging library for editing and reading tagging formats such as ID3, Vorbis, and FLAC.\nLicense: LGPL v2.1</string>
+    <string name="quicksand_desc">Quicksand is a sans-serif typeface designed by Andrew Paglinawan.\nLicense: SIL Open Font License, 1.1</string>
 
     <string name="permissions">Permissions</string>
     <string name="permissions_desc">Information about used permissions</string>
@@ -171,4 +177,47 @@
     <string name="import_success">Playlists imported successfully</string>
     <string name="import_error">Error importing playlists</string>
     <string name="no_file_selected">No file selected</string>
+    <string name="song_singular">song</string>
+    <string name="song_plural">songs</string>
+    <string name="no_music_available">No music available</string>
+    <string name="permission_required">Permission required</string>
+
+    <!-- Welcome Card -->
+    <string name="welcome_morning">Good Morning</string>
+    <string name="welcome_noon">Good Day</string>
+    <string name="welcome_afternoon">Good Afternoon</string>
+    <string name="welcome_evening">Good Evening</string>
+    <string name="welcome_night">Good Night</string>
+    <string name="welcome_early_morning">Good Early Morning</string>
+    <string name="stats_listening_today">Listening time today</string>
+    <string name="stats_hours_unit">%dh</string>
+    <string name="stats_minutes_unit">%dm</string>
+    <string name="stats_seconds_unit">%ds</string>
+    <string name="total_songs">Total songs</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_description">The most advanced music player for your device.</string>
+    <string name="onboarding_start_button">Start</string>
+    <string name="onboarding_perm_audio_title">Record Audio</string>
+    <string name="onboarding_perm_required">Permission Required</string>
+    <string name="onboarding_perm_audio_desc">Necessary for the audio visualizer to process and display real-time frequency data while you listen to your music.</string>
+    <string name="onboarding_grant_button">Grant Permission</string>
+    <string name="onboarding_next_button">Next</string>
+    <string name="onboarding_perm_bluetooth_title">Bluetooth</string>
+    <string name="onboarding_perm_bluetooth_desc">Required to detect and manage connections with bluetooth audio devices for a better listening experience.</string>
+    <string name="onboarding_perm_notifications_title">Notifications</string>
+    <string name="onboarding_perm_notifications_desc">Necessary to show the music player controls in the status bar and lock screen, allowing you to control playback at any time.</string>
+    <string name="onboarding_perm_music_title">Music &amp; Audio</string>
+    <string name="onboarding_perm_music_desc">Essential to scan, index, and playback your music collection stored on this device.</string>
+    <string name="onboarding_perm_manage_files_title">Manage Files</string>
+    <string name="onboarding_perm_manage_files_desc">Necessary to manage and organize all your audio files, playlists, and backups across your entire storage seamlessly.</string>
+    <string name="onboarding_welcome_back">Welcome to Lune</string>
+    <string name="onboarding_listen_style">Listen with style</string>
+    <string name="onboarding_feature_hifi">HiFi Audio Support</string>
+    <string name="onboarding_feature_covers">Cover Art Downloads</string>
+    <string name="onboarding_feature_title">Customizable Title</string>
+    <string name="onboarding_feature_lyrics">Dynamic Lyrics</string>
+    <string name="onboarding_feature_mix">Crossfade &amp; Automix</string>
+    <string name="onboarding_feature_more">And much more…</string>
+    <string name="onboarding_finish_button">Finish</string>
 </resources>

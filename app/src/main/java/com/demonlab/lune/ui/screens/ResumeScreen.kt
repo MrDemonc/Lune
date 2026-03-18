@@ -10,6 +10,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -19,6 +23,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import com.demonlab.lune.tools.PlaybackManager
+import java.util.Calendar
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,7 +80,10 @@ fun ResumeScreen(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         
-        Spacer(modifier = Modifier.height(8.dp))
+        WelcomeCard(
+            playbackManager = PlaybackManager.getInstance(androidx.compose.ui.platform.LocalContext.current),
+            totalSongs = allSongs.size
+        )
 
         // Recommendations Section
         if (recommendations.isNotEmpty()) {
@@ -241,6 +252,122 @@ fun HorizontalPlaylistCard(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+@Composable
+fun WelcomeCard(playbackManager: PlaybackManager, totalSongs: Int) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val greeting = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..5 -> context.getString(R.string.welcome_early_morning)
+            in 6..11 -> context.getString(R.string.welcome_morning)
+            in 12..13 -> context.getString(R.string.welcome_noon)
+            in 14..18 -> context.getString(R.string.welcome_afternoon)
+            in 19..22 -> context.getString(R.string.welcome_evening)
+            else -> context.getString(R.string.welcome_night)
+        }
+    }
+
+    val dailyTimeMs = playbackManager.dailyListeningTime
+    val hours = (dailyTimeMs / (1000 * 60 * 60)).toInt()
+    val minutes = ((dailyTimeMs / (1000 * 60)) % 60).toInt()
+    val seconds = ((dailyTimeMs / 1000) % 60).toInt()
+
+    val timeString = when {
+        hours > 0 -> context.getString(R.string.stats_hours_unit, hours)
+        minutes > 0 -> context.getString(R.string.stats_minutes_unit, minutes)
+        else -> context.getString(R.string.stats_seconds_unit, seconds)
+    }
+
+    val (timeIcon, iconColor) = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..5 -> Icons.Default.NightsStay to Color(0xFF9575CD) // Purple-ish
+            in 6..11 -> Icons.Default.WbSunny to Color(0xFFFFB300) // Amber
+            in 12..13 -> Icons.Default.LightMode to Color(0xFFFFD600) // Yellow
+            in 14..18 -> Icons.Default.WbSunny to Color(0xFFFB8C00) // Orange
+            in 19..22 -> Icons.Default.WbTwilight to Color(0xFFFF8A65) // Deep Orange/Sunset
+            else -> Icons.Default.NightsStay to Color(0xFF5C6BC0) // Indigo
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        ),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            iconColor.copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = greeting,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = timeIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = iconColor
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_logo_diamonds),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.stats_listening_today) + ": " + timeString,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.total_songs) + ": $totalSongs",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

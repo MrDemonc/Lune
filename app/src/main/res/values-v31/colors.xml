@@ -6,4 +6,8 @@
     <color name="launcher_soft_tone">@android:color/system_accent1_200</color>
     <!-- Dark tone is primary accent (musical note) -->
     <color name="launcher_dark_tone">@android:color/system_accent1_600</color>
+
+    <!-- Widget Specific Dynamic Colors -->
+    <color name="widget_control_bg">@android:color/system_accent1_100</color>
+    <color name="widget_control_icon">@android:color/system_accent1_900</color>
 </resources>

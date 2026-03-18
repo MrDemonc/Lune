@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Headphones
@@ -20,7 +21,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import android.media.audiofx.Visualizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import java.util.Calendar
 
 class PlaybackManager private constructor(private val context: Context) {
     private val settings = SettingsManager.getInstance(context)
@@ -61,6 +63,12 @@ class PlaybackManager private constructor(private val context: Context) {
     )
     var activeEqPresetName by mutableStateOf(settings.activeEqPresetName)
         private set
+
+    var dailyListeningTime by mutableLongStateOf(settings.dailyListeningTime)
+        private set
+
+    private val managerScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var statsJob: Job? = null
     
     var sleepTimerMinutes by mutableStateOf(0) // 0 means off
     private var sleepTimerHandler: android.os.Handler? = null
@@ -211,21 +219,22 @@ class PlaybackManager private constructor(private val context: Context) {
                 activeCategory = category
                 settings.activeCategory = category
             }
-            
-            // Sync shuffle state for this playlist/context
-            if (playlistId != null) {
-                isShuffle = settings.getPlaylistShuffle(playlistId)
-            } else {
-                isShuffle = settings.isShuffle
-            }
-            
-            if (isShuffle) updateShuffledQueue()
         }
+        
+        // Sync shuffle state for this playlist/context (Moved outside if to catch state changes)
+        if (playlistId != null) {
+            isShuffle = settings.getPlaylistShuffle(playlistId)
+        } else {
+            isShuffle = settings.isShuffle
+        }
+        
+        if (isShuffle) updateShuffledQueue()
         
         isQueueFinished = false
         settings.lastPlayedSongId = song.id
         if (playlistId != null) settings.lastPlaylistId = playlistId else settings.lastPlaylistId = -1L
         
+        startStatsTracking()
         // Ensure currentShufflePosition is updated
         if (isShuffle && (shuffledIndices.size != activePlaylist.size)) {
             updateShuffledQueue()
@@ -345,10 +354,6 @@ class PlaybackManager private constructor(private val context: Context) {
         shuffledIndices = allIndices
     }
 
-    fun restoreLastSong(song: Song) {
-        currentSong = song
-        isPlaying = false
-    }
 
     fun playNextFromService(isNaturalEnd: Boolean = false) {
         if (activePlaylist.isEmpty()) return
@@ -451,9 +456,19 @@ class PlaybackManager private constructor(private val context: Context) {
         }
     }
 
-    /** Called after a metadata edit — updates currentSong without changing isPlaying */
-    fun updateCurrentSongMetadata(song: Song) {
-        currentSong = song
+    /** Called after a metadata edit — updates currentSong and queue without changing isPlaying */
+    fun updateSongMetadata(song: Song) {
+        if (currentSong?.id == song.id) {
+            currentSong = song
+        }
+        
+        // Update the song in the active playlist (queue)
+        val newList = activePlaylist.map { 
+            if (it.id == song.id) song else it 
+        }
+        if (newList != activePlaylist) {
+            activePlaylist = newList
+        }
     }
 
     fun updateLyrics(lyrics: String?) {
@@ -482,11 +497,11 @@ class PlaybackManager private constructor(private val context: Context) {
     fun pause() {
         isPlaying = false
         musicService?.pause()
+        stopStatsTracking()
     }
 
     fun resume() {
         if (isQueueFinished && activePlaylist.isNotEmpty()) {
-            // Restart the queue from the beginning, respecting shuffle
             isQueueFinished = false
             val firstSong = if (isShuffle) {
                 updateShuffledQueue(keepCurrentFirst = false)
@@ -499,11 +514,48 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         isPlaying = true
         musicService?.resume()
+        startStatsTracking()
     }
 
     fun stop() {
         isPlaying = false
         musicService?.stopSelf()
+        stopStatsTracking()
+    }
+
+    private fun startStatsTracking() {
+        if (statsJob != null) return
+        statsJob = managerScope.launch {
+            while (isActive) {
+                delay(1000)
+                updateStats()
+            }
+        }
+    }
+
+    private fun stopStatsTracking() {
+        statsJob?.cancel()
+        statsJob = null
+    }
+
+    private fun updateStats() {
+        val now = System.currentTimeMillis()
+        if (!isSameDay(now, settings.lastStatsResetTimestamp)) {
+            dailyListeningTime = 0
+            settings.dailyListeningTime = 0
+            settings.lastStatsResetTimestamp = now
+        } else {
+            dailyListeningTime += 1000
+            settings.dailyListeningTime = dailyListeningTime
+        }
+    }
+
+    private fun isSameDay(t1: Long, t2: Long): Boolean {
+        if (t2 == 0L) return false
+        val cal1 = Calendar.getInstance().apply { timeInMillis = t1 }
+        val cal2 = Calendar.getInstance().apply { timeInMillis = t2 }
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+               cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
     }
 
     fun toggleShuffle() {

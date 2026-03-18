@@ -12,6 +12,10 @@ class SettingsManager(context: Context) {
     private val _customTitleFlow = MutableStateFlow(prefs.getString("custom_title", "") ?: "")
     val customTitleFlow: StateFlow<String> = _customTitleFlow.asStateFlow()
 
+    var isFirstRun: Boolean
+        get() = prefs.getBoolean("is_first_run", true)
+        set(value) = prefs.edit().putBoolean("is_first_run", value).apply()
+
     var optionsOrder: String
         get() = prefs.getString("options_order", "like,shuffle,repeat,crossfade,automix,timer,eq") ?: "like,shuffle,repeat,crossfade,automix,timer,eq"
         set(value) = prefs.edit().putString("options_order", value).apply()
@@ -117,6 +121,14 @@ class SettingsManager(context: Context) {
     var isMiniPlayerVisualizerEnabled: Boolean
         get() = prefs.getBoolean("is_mini_player_visualizer_enabled", false)
         set(value) = prefs.edit().putBoolean("is_mini_player_visualizer_enabled", value).apply()
+
+    var dailyListeningTime: Long
+        get() = prefs.getLong("daily_listening_time", 0L)
+        set(value) = prefs.edit().putLong("daily_listening_time", value).apply()
+
+    var lastStatsResetTimestamp: Long
+        get() = prefs.getLong("last_stats_reset_timestamp", 0L)
+        set(value) = prefs.edit().putLong("last_stats_reset_timestamp", value).apply()
 
     fun getPlaylistShuffle(playlistId: Long): Boolean {
         return prefs.getBoolean("shuffle_playlist_$playlistId", false)

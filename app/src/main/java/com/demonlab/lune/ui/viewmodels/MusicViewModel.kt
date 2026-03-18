@@ -37,13 +37,17 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            val synced = withContext(Dispatchers.IO) {
-                musicProvider.syncSongs()
-            }
-            if (synced != allSongs) {
-                allSongs = synced
-            }
+            syncSongsInternal()
             isLoading = false
+        }
+    }
+
+    private suspend fun syncSongsInternal() {
+        val synced = withContext(Dispatchers.IO) {
+            musicProvider.syncSongs()
+        }
+        if (synced != allSongs) {
+            allSongs = synced
         }
     }
 
@@ -66,7 +70,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 coverUri = coverUri?.toString()
             )
             if (success) {
-                loadSongs() // Refresh list to show overrides
+                syncSongsInternal()
                 onSuccess()
             }
         }
@@ -76,7 +80,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val success = metadataManager.clearMetadataOverride(song.id)
             if (success) {
-                loadSongs() // Refresh list to fetch original metadata
+                syncSongsInternal()
                 onSuccess()
             }
         }

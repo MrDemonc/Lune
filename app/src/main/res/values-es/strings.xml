@@ -11,6 +11,9 @@
     <string name="hifi_desc">Activar detección e insignias Hi-Fi</string>
     <string name="download_covers">Descargar carátulas</string>
     <string name="download_covers_desc">Descargar carátulas de internet si faltan</string>
+    <string name="general">General</string>
+    <string name="backup">Respaldo</string>
+    <string name="security">Seguridad</string>
 
     <!-- UI/Player Strings -->
     <string name="eq_title">Ecualizador</string>    
@@ -72,6 +75,7 @@
     <string name="lang_system">Sistema</string>
     <string name="lang_english">Inglés</string>
     <string name="lang_spanish">Español</string>
+    <string name="lang_portuguese">Portugués</string>
 
     <string name="ok">Aceptar</string>
     <string name="cd_edit_folders">Editar carpetas</string>
@@ -113,6 +117,7 @@
     <string name="categories">Categorías</string>
     <string name="edit_information">Editar Información</string>
     <string name="info_updated">Información actualizada</string>
+    <string name="info_restored">Información restaurada</string>
     <string name="player_queue">Cola</string>
     <string name="player_options">Opciones</string>
     <string name="option_repeat_one">Repetir una</string>
@@ -144,6 +149,7 @@
     <string name="room_desc">La biblioteca de persistencia Room proporciona una capa de abstracción sobre SQLite.\nLicencia: Apache License 2.0</string>
     <string name="compose_desc">El moderno kit de herramientas de Android para crear interfaces de usuario nativas.\nLicencia: Apache License 2.0</string>
     <string name="jaudiotagger_desc">Librería de etiquetado de audio para editar y leer formatos de etiquetas como ID3, Vorbis y FLAC.\nLicencia: LGPL v2.1</string>
+    <string name="quicksand_desc">Quicksand es un tipo de letra sans-serif diseñado por Andrew Paglinawan.\nLicencia: SIL Open Font License, 1.1</string>
 
     <string name="permissions">Permisos</string>
     <string name="permissions_desc">Información sobre los permisos utilizados</string>
@@ -170,4 +176,47 @@
     <string name="import_success">Listas importadas con éxito</string>
     <string name="import_error">Error al importar listas</string>
     <string name="no_file_selected">No se seleccionó ningún archivo</string>
+    <string name="song_singular">canción</string>
+    <string name="song_plural">canciones</string>
+    <string name="no_music_available">No hay música disponible</string>
+    <string name="permission_required">Permiso requerido</string>
+
+    <!-- Welcome Card -->
+    <string name="welcome_morning">Buen día</string>
+    <string name="welcome_noon">Buen medio día</string>
+    <string name="welcome_afternoon">Buenas tardes</string>
+    <string name="welcome_evening">Buenas noches</string>
+    <string name="welcome_night">Buenas noches</string>
+    <string name="welcome_early_morning">Buena madrugada</string>
+    <string name="stats_listening_today">Tiempo escuchado hoy</string>
+    <string name="stats_hours_unit">%dh</string>
+    <string name="stats_minutes_unit">%dm</string>
+    <string name="stats_seconds_unit">%ds</string>
+    <string name="total_songs">Total de canciones</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_description">El reproductor de música más avanzado para tu dispositivo.</string>
+    <string name="onboarding_start_button">Comenzar</string>
+    <string name="onboarding_perm_audio_title">Grabar Audio</string>
+    <string name="onboarding_perm_required">Permiso necesario</string>
+    <string name="onboarding_perm_audio_desc">Necesario para que el visualizador de audio procese y muestre datos de frecuencia en tiempo real mientras escuchas tu música.</string>
+    <string name="onboarding_grant_button">Conceder Permiso</string>
+    <string name="onboarding_next_button">Siguiente</string>
+    <string name="onboarding_perm_bluetooth_title">Bluetooth</string>
+    <string name="onboarding_perm_bluetooth_desc">Requerido para detectar y gestionar conexiones con dispositivos de audio bluetooth para una mejor experiencia.</string>
+    <string name="onboarding_perm_notifications_title">Notificaciones</string>
+    <string name="onboarding_perm_notifications_desc">Necesario para mostrar los controles del reproductor de música en la barra de estado y pantalla de bloqueo, permitiéndote controlar la reproducción en cualquier momento.</string>
+    <string name="onboarding_perm_music_title">Música y Archivos</string>
+    <string name="onboarding_perm_music_desc">Esencial para escanear, indexar y reproducir tu colección de música almacenada en este dispositivo.</string>
+    <string name="onboarding_perm_manage_files_title">Gestionar Archivos</string>
+    <string name="onboarding_perm_manage_files_desc">Necesario para gestionar y organizar todos tus archivos de audio, listas de reproducción y copias de seguridad en todo tu almacenamiento sin problemas.</string>
+    <string name="onboarding_welcome_back">Bienvenido a Lune</string>
+    <string name="onboarding_listen_style">Escucha con estilo</string>
+    <string name="onboarding_feature_hifi">Soporte de audio HiFi</string>
+    <string name="onboarding_feature_covers">Descarga de carátulas</string>
+    <string name="onboarding_feature_title">Título personalizado</string>
+    <string name="onboarding_feature_lyrics">Letras dinámicas</string>
+    <string name="onboarding_feature_mix">Crossfade y Automix</string>
+    <string name="onboarding_feature_more">Y mucho más…</string>
+    <string name="onboarding_finish_button">Finalizar</string>
 </resources>

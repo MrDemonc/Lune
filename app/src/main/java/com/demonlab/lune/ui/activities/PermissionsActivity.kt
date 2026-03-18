@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -86,11 +88,20 @@ fun PermissionsScreen(onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.cd_back),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -138,45 +149,91 @@ fun PermissionsScreen(onBack: () -> Unit) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            items(permissions) { permission ->
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            permission.title,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    supportingContent = {
-                        Text(
-                            permission.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    leadingContent = {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    permission.icon,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
+            items(permissions.size) { index ->
+                val permission = permissions[index]
+                val position = when {
+                    permissions.size == 1 -> PermissionSectionPosition.SINGLE
+                    index == 0 -> PermissionSectionPosition.FIRST
+                    index == permissions.size - 1 -> PermissionSectionPosition.LAST
+                    else -> PermissionSectionPosition.MIDDLE
+                }
+
+                PermissionsPreferenceItem(
+                    headlineText = permission.title,
+                    supportingText = permission.description,
+                    icon = permission.icon,
+                    position = position
                 )
             }
         }
+    }
+}
+
+enum class PermissionSectionPosition {
+    FIRST, MIDDLE, LAST, SINGLE
+}
+
+@Composable
+fun PermissionsPreferenceItem(
+    headlineText: String,
+    supportingText: String,
+    icon: ImageVector,
+    position: PermissionSectionPosition
+) {
+    val shape = when (position) {
+        PermissionSectionPosition.FIRST -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+        PermissionSectionPosition.MIDDLE -> RoundedCornerShape(4.dp)
+        PermissionSectionPosition.LAST -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
+        PermissionSectionPosition.SINGLE -> RoundedCornerShape(28.dp)
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 1.dp),
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        tonalElevation = 1.dp
+    ) {
+        ListItem(
+            headlineContent = { 
+                Text(
+                    headlineText, 
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                ) 
+            },
+            supportingContent = { 
+                Text(
+                    supportingText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ) 
+            },
+            leadingContent = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            },
+            colors = ListItemDefaults.colors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            )
+        )
     }
 }
 

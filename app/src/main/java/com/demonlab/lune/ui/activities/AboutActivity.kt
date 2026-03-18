@@ -12,6 +12,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -73,11 +74,20 @@ fun AboutScreen() {
                         }
                         context.startActivity(intent)
                     }) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = "System Settings",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = "System Settings",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -300,7 +310,6 @@ fun AboutScreen() {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Jetpack Compose
                 Text(
                     text = "Jetpack Compose",
                     style = MaterialTheme.typography.titleMedium,
@@ -308,6 +317,19 @@ fun AboutScreen() {
                 )
                 Text(
                     text = stringResource(R.string.compose_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Quicksand Font
+                Text(
+                    text = "Quicksand Font",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.quicksand_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

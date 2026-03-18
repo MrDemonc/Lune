@@ -11,7 +11,6 @@
         android:id="@+id/widget_blurred_background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="-1dp"
         android:scaleType="centerCrop"
         android:visibility="gone" />
 
@@ -20,155 +19,168 @@
         android:id="@+id/widget_dark_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="-1dp"
         android:background="#E6000000"
         android:visibility="gone" />
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         android:padding="12dp">
 
-    <!-- Top Section: Cover, Metadata, and Output Pill -->
-    <RelativeLayout
-        android:id="@+id/top_section"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <!-- Cover Art -->
-        <RelativeLayout
-            android:id="@+id/cover_container"
-            android:layout_width="125dp"
-            android:layout_height="125dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true">
-
-            <ImageView
-                android:id="@+id/widget_cover"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_launcher_foreground" />
-        </RelativeLayout>
-
-        <!-- Metadata and Output Indicator -->
+        <!-- Top Section: Cover and Metadata (Responsive & Left Aligned) -->
         <LinearLayout
-            android:id="@+id/metadata_container"
+            android:id="@+id/top_section"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/cover_container"
-            android:layout_marginStart="16dp"
-            android:layout_centerVertical="true"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Song Title"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/widget_artist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
-                android:text="Artist Name"
-                android:textColor="#BBBBBB"
-                android:textSize="13sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <!-- Output Indicator Pill -->
-            <LinearLayout
-                android:id="@+id/widget_output_pill"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/widget_pill_background"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/widget_output_icon"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/ic_speaker"
-                    android:alpha="0.9" />
-
-                <TextView
-                    android:id="@+id/widget_output_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="Speaker"
-                    android:textColor="@android:color/white"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:alpha="0.9" />
-            </LinearLayout>
-        </LinearLayout>
-    </RelativeLayout>
-
-    <!-- Bottom Section Stacked -->
-    <LinearLayout
-        android:id="@+id/bottom_section"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="vertical">
-
-        <!-- Thick Rounded Progress Bar -->
-        <ProgressBar
-            android:id="@+id/widget_progress"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_marginBottom="12dp"
-            android:progressDrawable="@drawable/widget_progress_curvy"
-            android:progress="30"
-            android:max="100" />
-
-        <!-- Centered Navigation Controls -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="start|center_vertical"
             android:orientation="horizontal">
 
-            <ImageButton
-                android:id="@+id/widget_prev"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@android:color/transparent"
-                android:scaleType="fitCenter"
-                android:src="@android:drawable/ic_media_previous"
-                android:contentDescription="Previous" />
+            <!-- Cover Art (Pinned to Left & Smaller) -->
+            <RelativeLayout
+                android:id="@+id/cover_container"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:layout_marginEnd="12dp">
 
-            <ImageButton
-                android:id="@+id/widget_play_pause"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginStart="32dp"
-                android:layout_marginEnd="32dp"
-                android:background="@android:color/transparent"
-                android:scaleType="fitCenter"
-                android:src="@android:drawable/ic_media_play"
-                android:contentDescription="Play/Pause" />
+                <ImageView
+                    android:id="@+id/widget_cover"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_launcher_foreground" />
+            </RelativeLayout>
 
-            <ImageButton
-                android:id="@+id/widget_next"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@android:color/transparent"
-                android:scaleType="fitCenter"
-                android:src="@android:drawable/ic_media_next"
-                android:contentDescription="Next" />
+            <!-- Metadata and Output Indicator (Left Aligned) -->
+            <LinearLayout
+                android:id="@+id/metadata_container"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="start|center_vertical">
+
+                <TextView
+                    android:id="@+id/widget_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Song Title"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:gravity="start" />
+
+                <TextView
+                    android:id="@+id/widget_artist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Artist Name"
+                    android:textColor="#BBBBBB"
+                    android:textSize="13sp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:gravity="start" />
+
+                <!-- Output Indicator Pill (Left Aligned) -->
+                <LinearLayout
+                    android:id="@+id/widget_output_pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/widget_pill_background"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="10dp">
+
+                    <ImageView
+                        android:id="@+id/widget_output_icon"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_speaker" />
+
+                    <TextView
+                        android:id="@+id/widget_output_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="Speaker"
+                        android:textColor="@android:color/white"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="8dp" />
+
+        <!-- Bottom Section: Progress and Controls -->
+        <LinearLayout
+            android:id="@+id/bottom_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Thick Rounded Progress Bar -->
+            <ProgressBar
+                android:id="@+id/widget_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:layout_marginBottom="12dp"
+                android:progressDrawable="@drawable/widget_progress_curvy"
+                android:progress="30"
+                android:max="100" />
+
+            <!-- Centered Navigation Controls -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/widget_prev"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_control_circle"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@android:drawable/ic_media_previous"
+                    android:tint="@color/widget_control_icon"
+                    android:contentDescription="Previous" />
+
+                <ImageButton
+                    android:id="@+id/widget_play_pause"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginEnd="24dp"
+                    android:background="@drawable/widget_control_circle"
+                    android:padding="12dp"
+                    android:scaleType="fitCenter"
+                    android:src="@android:drawable/ic_media_play"
+                    android:tint="@color/widget_control_icon"
+                    android:contentDescription="Play/Pause" />
+
+                <ImageButton
+                    android:id="@+id/widget_next"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/widget_control_circle"
+                    android:padding="10dp"
+                    android:scaleType="fitCenter"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="@color/widget_control_icon"
+                    android:contentDescription="Next" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-
-    </RelativeLayout>
 </RelativeLayout>

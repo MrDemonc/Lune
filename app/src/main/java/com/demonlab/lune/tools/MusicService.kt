@@ -42,6 +42,11 @@ class MusicService : Service() {
     internal var equalizer: Equalizer? = null
     internal var bassBoost: BassBoost? = null
     internal var virtualizer: Virtualizer? = null
+    
+    private var secondaryEqualizer: Equalizer? = null
+    private var secondaryBassBoost: BassBoost? = null
+    private var secondaryVirtualizer: Virtualizer? = null
+
     private lateinit var settingsManager: SettingsManager
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
@@ -143,13 +148,19 @@ class MusicService : Service() {
         }
     }
 
-    private fun setupAudioFx(sessionId: Int) {
+    private fun setupAudioFx(sessionId: Int, isSecondary: Boolean = false) {
         try {
-            equalizer?.release()
-            bassBoost?.release()
-            virtualizer?.release()
+            if (isSecondary) {
+                secondaryEqualizer?.release()
+                secondaryBassBoost?.release()
+                secondaryVirtualizer?.release()
+            } else {
+                equalizer?.release()
+                bassBoost?.release()
+                virtualizer?.release()
+            }
             
-            equalizer = Equalizer(0, sessionId).apply {
+            val eq = Equalizer(0, sessionId).apply {
                 enabled = settingsManager.isEqEnabled
                 val storedBands = settingsManager.eqBandLevels.split(",").filter { it.isNotEmpty() }
                 if (storedBands.size == numberOfBands.toInt()) {
@@ -161,18 +172,28 @@ class MusicService : Service() {
                 }
             }
             
-            bassBoost = BassBoost(0, sessionId).apply {
+            val bb = BassBoost(0, sessionId).apply {
                 enabled = settingsManager.isBassBoostEnabled
                 if (strengthSupported) {
-                    setStrength(900.toShort()) // High strength for retumbo effect
+                    setStrength(900.toShort())
                 }
             }
             
-            virtualizer = Virtualizer(0, sessionId).apply {
+            val virt = Virtualizer(0, sessionId).apply {
                 enabled = settingsManager.isSpatialAudioEnabled
                 if (strengthSupported) {
-                    setStrength(1000.toShort()) // Gives deeper bass feel
+                    setStrength(1000.toShort())
                 }
+            }
+
+            if (isSecondary) {
+                secondaryEqualizer = eq
+                secondaryBassBoost = bb
+                secondaryVirtualizer = virt
+            } else {
+                equalizer = eq
+                bassBoost = bb
+                virtualizer = virt
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -213,7 +234,7 @@ class MusicService : Service() {
             setOnPreparedListener {
                 start()
                 val sessionId = audioSessionId
-                setupAudioFx(sessionId)
+                setupAudioFx(sessionId, false)
                 setVolume(1f, 1f)
                 updatePlaybackState()
                 
@@ -279,83 +300,104 @@ class MusicService : Service() {
         playbackManager.isTransitioning = true
         val fadeDurationMs = 12000L // 12s per user request
         
-        secondaryPlayer?.setOnCompletionListener(null)
-        secondaryPlayer?.setOnErrorListener(null)
-        secondaryPlayer?.release()
-        secondaryPlayer = MediaPlayer().apply {
-            setDataSource(applicationContext, nextSong.uri)
-            setVolume(0f, 0f)
-            prepare() // Secondary can prepare synchronously as it's not blocking the active track
-            start()
-            setOnCompletionListener {
-                if (!isCrossfading) {
-                    PlaybackManager.getInstance(applicationContext).playNextFromService(true)
-                }
-            }
-        }
-        
-        playbackManager.clearLyrics()
-        serviceScope.launch {
-            extractLyrics(nextSong)
-        }
-
-        serviceScope.launch {
-            val steps = 100 // More steps for longer 12s fade
-            val interval = fadeDurationMs / steps
-            val isAutomix = PlaybackManager.getInstance(applicationContext).isAutomix
+            secondaryPlayer?.setOnCompletionListener(null)
+            secondaryPlayer?.setOnErrorListener(null)
+            secondaryPlayer?.release()
             
-            for (i in 1..steps) {
-                if (!isCrossfading) break
-                
-                // If paused, wait here without completing the crossfade
-                while (!PlaybackManager.getInstance(applicationContext).isPlaying && isCrossfading) {
-                    delay(500)
-                }
-                if (!isCrossfading) break
-                
-                val normalizedNext = i.toFloat() / steps
-                
-                // Next song fades in normally
-                val volNext = normalizedNext * normalizedNext
-                
-                // Current song volume logic
-                val volCurrent = if (isAutomix) {
-                    // Spotify-style: Keep current song at 100% for first 66 steps (approx 8s), then fade
-                    if (i < 66) {
-                        1.0f
-                    } else {
-                        val fadeProgress = (i - 66).toFloat() / (steps - 66)
-                        (1f - fadeProgress) * (1f - fadeProgress)
+            secondaryPlayer = MediaPlayer()
+            
+            playbackManager.clearLyrics()
+            serviceScope.launch {
+                extractLyrics(nextSong)
+            }
+
+            serviceScope.launch {
+                withContext(Dispatchers.IO) {
+                    try {
+                        secondaryPlayer?.setDataSource(applicationContext, nextSong.uri)
+                        secondaryPlayer?.setVolume(0f, 0f)
+                        secondaryPlayer?.prepare() 
+                    } catch (e: Exception) {
+                        Log.e("MusicService", "Failed to prepare secondary player", e)
                     }
-                } else {
-                    // Standard symmetric crossfade
-                    val normalizedCurrent = 1f - normalizedNext
-                    normalizedCurrent * normalizedCurrent
                 }
                 
-                mediaPlayer?.setVolume(volCurrent, volCurrent)
-                secondaryPlayer?.setVolume(volNext, volNext)
-                delay(interval)
-            }
-            
-            if (!isCrossfading) return@launch
+                val sessionId = secondaryPlayer?.audioSessionId ?: 0
+                if (sessionId != 0) {
+                    setupAudioFx(sessionId, true)
+                }
+                
+                secondaryPlayer?.start()
+                secondaryPlayer?.setOnCompletionListener {
+                    if (!isCrossfading) {
+                        PlaybackManager.getInstance(applicationContext).playNextFromService(true)
+                    }
+                }
 
-            val oldPlayer = mediaPlayer
-            mediaPlayer = secondaryPlayer
-            secondaryPlayer = null
-            
-            // Re-apply AudioFx to the new primary player
-            mediaPlayer?.audioSessionId?.let { setupAudioFx(it) }
-            
-            mediaPlayer?.setVolume(1f, 1f)
+                val steps = 100 
+                val interval = fadeDurationMs / steps
+                val isAutomix = PlaybackManager.getInstance(applicationContext).isAutomix
+                
+                for (i in 1..steps) {
+                    if (!isCrossfading) break
+                    
+                    while (!PlaybackManager.getInstance(applicationContext).isPlaying && isCrossfading) {
+                        delay(500)
+                    }
+                    if (!isCrossfading) break
+                    
+                    val normalizedNext = i.toFloat() / steps
+                    
+                    // Crossfade curves
+                    val volNext: Float
+                    val volCurrent: Float
+                    
+                    if (isAutomix) {
+                        // Constant Power Crossfade for Automix: Sum of squares = 1.0
+                        // This prevents volume spikes and dips.
+                        val angle = (normalizedNext * Math.PI / 2)
+                        volNext = Math.sin(angle).toFloat()
+                        volCurrent = Math.cos(angle).toFloat()
+                    } else {
+                        // Standard symmetric crossfade (Power curve)
+                        volNext = normalizedNext * normalizedNext
+                        val normalizedCurrent = 1f - normalizedNext
+                        volCurrent = normalizedCurrent * normalizedCurrent
+                    }
+                    
+                    mediaPlayer?.setVolume(volCurrent, volCurrent)
+                    secondaryPlayer?.setVolume(volNext, volNext)
+                    delay(interval)
+                }
+                
+                if (!isCrossfading) return@launch
 
-            withContext(Dispatchers.IO) {
-                oldPlayer?.setOnCompletionListener(null)
-                oldPlayer?.setOnErrorListener(null)
-                oldPlayer?.release()
-            }
-            
-            isCrossfading = false
+                val oldPlayer = mediaPlayer
+                mediaPlayer = secondaryPlayer
+                secondaryPlayer = null
+                
+                // Swap effects: release old primary, promote secondary to primary
+                equalizer?.release()
+                bassBoost?.release()
+                virtualizer?.release()
+                
+                equalizer = secondaryEqualizer
+                bassBoost = secondaryBassBoost
+                virtualizer = secondaryVirtualizer
+                
+                secondaryEqualizer = null
+                secondaryBassBoost = null
+                secondaryVirtualizer = null
+                
+                mediaPlayer?.setVolume(1f, 1f)
+
+                withContext(Dispatchers.IO) {
+                    oldPlayer?.setOnCompletionListener(null)
+                    oldPlayer?.setOnErrorListener(null)
+                    oldPlayer?.release()
+                }
+                
+                isCrossfading = false
             playbackManager.isTransitioning = false
             PlaybackManager.getInstance(applicationContext).updateCurrentSongState(nextSong)
             
@@ -630,7 +672,7 @@ class MusicService : Service() {
         }
 
         val intent = Intent(this, Lune::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         }
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent, PendingIntent.FLAG_IMMUTABLE
@@ -678,6 +720,9 @@ class MusicService : Service() {
         equalizer?.release()
         bassBoost?.release()
         virtualizer?.release()
+        secondaryEqualizer?.release()
+        secondaryBassBoost?.release()
+        secondaryVirtualizer?.release()
         mediaPlayer?.release()
         secondaryPlayer?.release()
         mediaSession?.release()
@@ -781,7 +826,9 @@ class MusicService : Service() {
             views.setOnClickPendingIntent(R.id.widget_next, getWidgetServicePendingIntent(ACTION_NEXT))
             
             // Open App
-            val intent = Intent(applicationContext, Lune::class.java)
+            val intent = Intent(applicationContext, Lune::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
             val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE)
             views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 

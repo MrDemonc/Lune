@@ -43,7 +43,9 @@ class LuneWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.lune_widget_layout)
 
             // Open App on click
-            val openAppIntent = Intent(context, Lune::class.java)
+            val openAppIntent = Intent(context, Lune::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
             val openAppPendingIntent = PendingIntent.getActivity(context, 0, openAppIntent, PendingIntent.FLAG_IMMUTABLE)
             views.setOnClickPendingIntent(R.id.widget_root, openAppPendingIntent)
 

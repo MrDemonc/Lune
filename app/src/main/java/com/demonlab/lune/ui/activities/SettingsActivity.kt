@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.theme.LuneTheme
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.demonlab.lune.BuildConfig
 
 class SettingsActivity : AppCompatActivity() {
@@ -126,7 +127,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                     val languages = listOf(
                         "system" to stringResource(R.string.lang_system),
                         "en" to stringResource(R.string.lang_english),
-                        "es" to stringResource(R.string.lang_spanish)
+                        "es" to stringResource(R.string.lang_spanish),
+                        "pt-BR" to stringResource(R.string.lang_portuguese)
                     )
                     languages.forEach { (code, label) ->
                         Row(
@@ -211,11 +213,20 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = stringResource(R.string.cd_back),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack, 
+                                    contentDescription = stringResource(R.string.cd_back),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -232,212 +243,180 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.hifi_audio)) },
-                supportingContent = { Text(stringResource(R.string.hifi_desc)) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.MusicNote,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+            // General Section
+            SettingsSection(title = stringResource(R.string.general)) {
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.hifi_audio),
+                    supportingText = stringResource(R.string.hifi_desc),
+                    icon = Icons.Default.MusicNote,
+                    position = SectionPosition.FIRST,
+                    trailingContent = {
+                        Switch(
+                            checked = showHiFi,
+                            onCheckedChange = {
+                                showHiFi = it
+                                settingsManager.enableHiFi = it
+                            }
+                        )
                     }
-                },
-                trailingContent = {
-                    Switch(
-                        checked = showHiFi,
-                        onCheckedChange = {
-                            showHiFi = it
-                            settingsManager.enableHiFi = it
-                        }
-                    )
-                }
-            )
-
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.download_covers)) },
-                supportingContent = { Text(stringResource(R.string.download_covers_desc)) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.CloudDownload,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                )
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.download_covers),
+                    supportingText = stringResource(R.string.download_covers_desc),
+                    icon = Icons.Default.CloudDownload,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = {
+                        Switch(
+                            checked = showDownloadCovers,
+                            onCheckedChange = {
+                                showDownloadCovers = it
+                                settingsManager.downloadCovers = it
+                            }
+                        )
                     }
-                },
-                trailingContent = {
-                    Switch(
-                        checked = showDownloadCovers,
-                        onCheckedChange = {
-                            showDownloadCovers = it
-                            settingsManager.downloadCovers = it
-                        }
-                    )
-                }
-            )
-
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.custom_title)) },
-                supportingContent = { Text(if (customTitle.isEmpty()) "Lune" else customTitle) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.clickable { showCustomTitleDialog = true }
-            )
-
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.language)) },
-                supportingContent = {
-                    val label = when(currentLanguage) {
+                )
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.custom_title),
+                    supportingText = if (customTitle.isEmpty()) "Lune" else customTitle,
+                    icon = Icons.Default.Edit,
+                    position = SectionPosition.MIDDLE,
+                    onClick = { showCustomTitleDialog = true }
+                )
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.language),
+                    supportingText = when(currentLanguage) {
                         "en" -> stringResource(R.string.lang_english)
                         "es" -> stringResource(R.string.lang_spanish)
+                        "pt-BR" -> stringResource(R.string.lang_portuguese)
                         else -> stringResource(R.string.lang_system)
-                    }
-                    Text(label)
-                },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.Language,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.clickable { showLanguageDialog = true }
-            )
+                    },
+                    icon = Icons.Default.Language,
+                    position = SectionPosition.LAST,
+                    onClick = { showLanguageDialog = true }
+                )
+            }
 
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.export_playlists)) },
-                supportingContent = { Text(stringResource(R.string.export_playlists_desc)) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.CloudDownload,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.clickable { 
-                    exportLauncher.launch("playlists_backup.json")
-                }
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.import_playlists)) },
-                supportingContent = { Text(stringResource(R.string.import_playlists_desc)) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.clickable { 
-                    importLauncher.launch(arrayOf("application/json", "application/octet-stream"))
-                }
-            )
+            // Backup Section
+            SettingsSection(title = stringResource(R.string.backup)) {
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.export_playlists),
+                    supportingText = stringResource(R.string.export_playlists_desc),
+                    icon = Icons.Default.CloudDownload,
+                    position = SectionPosition.FIRST,
+                    onClick = { exportLauncher.launch("playlists_backup.json") }
+                )
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.import_playlists),
+                    supportingText = stringResource(R.string.import_playlists_desc),
+                    icon = Icons.Default.Refresh,
+                    position = SectionPosition.LAST,
+                    onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
+                )
+            }
 
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.permissions)) },
-                supportingContent = { Text(stringResource(R.string.permissions_desc)) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.Security,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.clickable {
-                    context.startActivity(Intent(context, PermissionsActivity::class.java))
-                }
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.about)) },
-                leadingContent = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.clickable { 
-                    context.startActivity(Intent(context, AboutActivity::class.java))
-                }
-            )
+            // Security Section
+            SettingsSection(title = stringResource(R.string.security)) {
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.permissions),
+                    supportingText = stringResource(R.string.permissions_desc),
+                    icon = Icons.Default.Security,
+                    position = SectionPosition.SINGLE,
+                    onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // About Section
+            SettingsSection(title = stringResource(R.string.about)) {
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.about),
+                    icon = Icons.Default.Info,
+                    position = SectionPosition.SINGLE,
+                    onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+enum class SectionPosition {
+    FIRST, MIDDLE, LAST, SINGLE
+}
+
+@Composable
+fun SettingsSection(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+            fontWeight = FontWeight.Bold
+        )
+        content()
+    }
+}
+
+@Composable
+fun SettingsPreferenceItem(
+    headlineText: String,
+    supportingText: String? = null,
+    icon: ImageVector,
+    position: SectionPosition,
+    onClick: (() -> Unit)? = null,
+    trailingContent: @Composable (() -> Unit)? = null
+) {
+    val shape = when (position) {
+        SectionPosition.FIRST -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+        SectionPosition.MIDDLE -> RoundedCornerShape(4.dp)
+        SectionPosition.LAST -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp)
+        SectionPosition.SINGLE -> RoundedCornerShape(28.dp)
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 1.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        tonalElevation = 1.dp
+    ) {
+        ListItem(
+            headlineContent = { Text(headlineText, fontWeight = FontWeight.Bold) },
+            supportingContent = supportingText?.let { { Text(it) } },
+            leadingContent = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                        Icon(
+                            icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            },
+            trailingContent = trailingContent,
+            colors = ListItemDefaults.colors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            )
+        )
     }
 }
