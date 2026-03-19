@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.net.Uri
 import android.widget.Toast
+import android.app.Activity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
@@ -23,6 +24,9 @@ import com.demonlab.lune.tools.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -58,8 +62,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -136,10 +142,32 @@ import com.demonlab.lune.ui.theme.LuneTheme
 import com.demonlab.lune.ui.screens.OnboardingScreen
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import com.demonlab.lune.tools.ImageAnalyzer
+import android.graphics.drawable.BitmapDrawable
+import coil.imageLoader
+import coil.request.ImageRequest
 
 class Lune : AppCompatActivity() {
+    companion object {
+        const val ACTION_VIEW_PLAYLISTS = "com.demonlab.lune.ACTION_VIEW_PLAYLISTS"
+    }
+
+    private var shortcutFolder = mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action == ACTION_VIEW_PLAYLISTS) {
+            shortcutFolder.value = "PLAYLISTS"
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
         val settingsManager = SettingsManager.getInstance(this)
         enableEdgeToEdge()
         setContent {
@@ -177,6 +205,15 @@ class Lune : AppCompatActivity() {
 
             val rawAllSongs = musicViewModel.filteredSongs
             var selectedFolder by rememberSaveable { mutableStateOf(TAB_RESUME) }
+            
+            // Handle Shortcut Navigation
+            LaunchedEffect(shortcutFolder.value) {
+                shortcutFolder.value?.let {
+                    selectedFolder = it
+                    shortcutFolder.value = null
+                }
+            }
+            
             var showFolderSheet by remember { mutableStateOf(false) }
             val hiddenFolders = remember { mutableStateOf(settingsManager.hiddenFolders) }
             
@@ -2012,6 +2049,32 @@ fun FullPlayer(
         }
     }
 
+    val activity = context as? Activity
+    
+    val isCinematic = settingsManager.isCinematicPlayerEnabled
+    
+    DisposableEffect(isCinematic) {
+        val window = activity?.window
+        if (window != null) {
+            val controller = WindowCompat.getInsetsController(window, window.decorView)
+            if (isCinematic) {
+                controller.hide(WindowInsetsCompat.Type.statusBars())
+                controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                controller.show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
+        onDispose {
+            if (isCinematic) {
+                val window = activity?.window
+                if (window != null) {
+                    val controller = WindowCompat.getInsetsController(window, window.decorView)
+                    controller.show(WindowInsetsCompat.Type.statusBars())
+                }
+            }
+        }
+    }
+
     val playbackManager = remember { PlaybackManager.getInstance(context) }
     val sheetPeekHeight = 0.dp
     val sheetFullHeight = 0.dp
@@ -2035,6 +2098,50 @@ fun FullPlayer(
     
 
 
+    val infiniteTransition = rememberInfiniteTransition(label = "CoverAnimation")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1.2f,
+        targetValue = 1.45f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(18000, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Scale"
+    )
+    val offsetX by infiniteTransition.animateFloat(
+        initialValue = -150f,
+        targetValue = 150f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(23000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "OffsetX"
+    )
+    val offsetY by infiniteTransition.animateFloat(
+        initialValue = -120f,
+        targetValue = 120f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(29000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "OffsetY"
+    )
+
+    var focalPoint by remember { mutableStateOf(Offset(0.5f, 0.5f)) }
+    
+    LaunchedEffect(song.id) {
+        val loader = context.imageLoader
+        val request = ImageRequest.Builder(context)
+            .data(song.coverUrl ?: song.albumArtUri)
+            .size(100, 100)
+            .allowHardware(false)
+            .build()
+        val result = loader.execute(request)
+        (result.drawable as? BitmapDrawable)?.bitmap?.let { bitmap ->
+            focalPoint = ImageAnalyzer.findFocalPoint(bitmap)
+        }
+    }
+
     val isSystemDark = isSystemInDarkTheme()
     val isDarkTheme = when (settingsManager.themeMode) {
         1 -> false
@@ -2047,8 +2154,52 @@ fun FullPlayer(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface) // Opaque base
     ) {
-        if (isDarkTheme) {
-            // Multi-theme Dynamic Blur Background (Full Screen, No Gradient)
+        if (isCinematic) {
+            // Cinematic Background (Ken Burns + Gradient)
+            AsyncImage(
+                model = song.coverUrl ?: onlineCoverUrl ?: song.albumArtUri,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.6f)
+                    .align(Alignment.TopCenter)
+                    .clipToBounds()
+                    .graphicsLayer {
+                        val baseScale = scale - 1f
+                        val maxTransX = (size.width * baseScale) / 2f
+                        val maxTransY = (size.height * baseScale) / 2f
+                        val targetTransX = (0.5f - focalPoint.x) * size.width * baseScale + (offsetX * baseScale)
+                        val targetTransY = (0.5f - focalPoint.y) * size.height * baseScale + (offsetY * baseScale)
+                        translationX = targetTransX.coerceIn(-maxTransX, maxTransX)
+                        translationY = targetTransY.coerceIn(-maxTransY, maxTransY)
+                        scaleX = scale
+                        scaleY = scale
+                    },
+                contentScale = ContentScale.Crop
+            )
+
+            val surf = MaterialTheme.colorScheme.surface
+            val mAlpha = if (isDarkTheme) 0.6f else 0.3f
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.00f to Color.Transparent,
+                            0.10f to Color.Transparent,
+                            0.25f to surf.copy(alpha = mAlpha * 0.2f),
+                            0.35f to surf.copy(alpha = mAlpha * 0.5f),
+                            0.42f to surf.copy(alpha = mAlpha * 0.85f),
+                            0.48f to surf.copy(alpha = mAlpha + (1f - mAlpha) * 0.4f),
+                            0.52f to surf.copy(alpha = mAlpha + (1f - mAlpha) * 0.75f),
+                            0.56f to surf.copy(alpha = mAlpha + (1f - mAlpha) * 0.9f),
+                            0.60f to surf,
+                            1.00f to surf
+                        )
+                    )
+            )
+        } else if (isDarkTheme) {
+            // Classic Dark Background (Blurred Image)
             AsyncImage(
                 model = song.coverUrl ?: song.albumArtUri,
                 contentDescription = null,
@@ -2072,22 +2223,35 @@ fun FullPlayer(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Center-aligned visual filler for top (since minimize icon is removed)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Surface(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp)),
-                color = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                AsyncImage(
-                    model = song.coverUrl ?: onlineCoverUrl ?: song.albumArtUri,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+            if (isCinematic) {
+                // Header Spacer
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Cinematic layout filler
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .fillMaxWidth()
                 )
+            } else {
+                // Classic Header Spacer
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Classic Cover Art
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(28.dp)),
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    AsyncImage(
+                        model = song.coverUrl ?: onlineCoverUrl ?: song.albumArtUri,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
 
             Column(

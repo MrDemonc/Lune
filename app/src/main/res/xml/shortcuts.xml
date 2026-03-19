@@ -1,0 +1,13 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="playlists"
+        android:enabled="true"
+        android:icon="@drawable/ic_playlist"
+        android:shortcutShortLabel="@string/shortcut_playlists">
+        <intent
+            android:action="com.demonlab.lune.ACTION_VIEW_PLAYLISTS"
+            android:targetPackage="com.demonlab.lune"
+            android:targetClass="com.demonlab.lune.ui.activities.Lune" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

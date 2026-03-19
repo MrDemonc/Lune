@@ -12,6 +12,9 @@
     <string name="download_covers">Download Covers</string>
     <string name="download_covers_desc">Fetch album art from internet if missing</string>
     <string name="general">General</string>
+    <string name="cinematic_player">Cinematic Player</string>
+    <string name="cinematic_player_desc">Enables an immersive interface with moving cover art and smooth gradients.</string>
+    <string name="shortcut_playlists">Playlists</string>
     <string name="backup">Backup</string>
     <string name="security">Security</string>
 

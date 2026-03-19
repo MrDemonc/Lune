@@ -12,6 +12,9 @@
     <string name="download_covers">Descargar carátulas</string>
     <string name="download_covers_desc">Descargar carátulas de internet si faltan</string>
     <string name="general">General</string>
+    <string name="cinematic_player">Reproductor Cinemático</string>
+    <string name="cinematic_player_desc">Habilita una interfaz inmersiva con carátula en movimiento y degradado suave.</string>
+    <string name="shortcut_playlists">Playlists</string>
     <string name="backup">Respaldo</string>
     <string name="security">Seguridad</string>
 

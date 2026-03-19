@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Palette
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.compose.material3.*
@@ -74,6 +76,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showWhatsapp by remember { mutableStateOf(settingsManager.showWhatsappAudio) }
     var showHiFi by remember { mutableStateOf(settingsManager.enableHiFi) }
     var showDownloadCovers by remember { mutableStateOf(settingsManager.downloadCovers) }
+    var isCinematicEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showCustomTitleDialog by remember { mutableStateOf(false) }
     val currentLanguage = settingsManager.language
@@ -273,6 +276,21 @@ fun SettingsScreen(onBack: () -> Unit) {
                             onCheckedChange = {
                                 showDownloadCovers = it
                                 settingsManager.downloadCovers = it
+                            }
+                        )
+                    }
+                )
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.cinematic_player),
+                    supportingText = stringResource(R.string.cinematic_player_desc),
+                    icon = Icons.Default.AutoAwesome,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = {
+                        Switch(
+                            checked = isCinematicEnabled,
+                            onCheckedChange = {
+                                isCinematicEnabled = it
+                                settingsManager.isCinematicPlayerEnabled = it
                             }
                         )
                     }

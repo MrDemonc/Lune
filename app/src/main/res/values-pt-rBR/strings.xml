@@ -12,6 +12,9 @@
     <string name="download_covers">Baixar Capas</string>
     <string name="download_covers_desc">Buscar capas de álbum na internet se estiverem faltando</string>
     <string name="general">Geral</string>
+    <string name="cinematic_player">Player Cinemático</string>
+    <string name="cinematic_player_desc">Habilita uma interface imersiva com arte de capa em movimento e gradientes suaves.</string>
+    <string name="shortcut_playlists">Playlists</string>
     <string name="backup">Backup</string>
     <string name="security">Segurança</string>
 

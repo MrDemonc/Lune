@@ -122,6 +122,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("is_mini_player_visualizer_enabled", false)
         set(value) = prefs.edit().putBoolean("is_mini_player_visualizer_enabled", value).apply()
 
+    var isCinematicPlayerEnabled: Boolean
+        get() = prefs.getBoolean("is_cinematic_player_enabled", false)
+        set(value) = prefs.edit().putBoolean("is_cinematic_player_enabled", value).apply()
+
     var dailyListeningTime: Long
         get() = prefs.getLong("daily_listening_time", 0L)
         set(value) = prefs.edit().putLong("daily_listening_time", value).apply()
