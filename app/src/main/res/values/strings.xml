@@ -123,6 +123,7 @@
     <string name="info_restored">Information restored</string>
     <string name="player_queue">Queue</string>
     <string name="player_options">Options</string>
+    <string name="option_share">Share</string>
     <string name="option_repeat_one">Repeat One</string>
     <string name="option_repeat_all">Repeat All</string>
     <string name="option_repeat_off">Off</string>

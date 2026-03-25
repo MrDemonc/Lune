@@ -24,6 +24,7 @@ import com.demonlab.lune.tools.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -80,6 +81,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.rotate
@@ -777,47 +784,32 @@ fun MainScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         item {
-                            val interactionSource = remember { MutableInteractionSource() }
-                            val isPressed by interactionSource.collectIsPressedAsState()
-                            val scale by animateFloatAsState(
-                                targetValue = if (isPressed) 0.92f else 1f,
-                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                                label = "EditChipScale"
-                            )
                             FilterChip(
                                 selected = false,
                                 onClick = { onShowFolderSheetChange(true) },
                                 label = { Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_folders), modifier = Modifier.size(16.dp)) },
-                                shape = MaterialTheme.shapes.medium,
-                                interactionSource = interactionSource,
-                                modifier = Modifier.graphicsLayer {
-                                    scaleX = scale
-                                    scaleY = scale
-                                },
+                                shape = RoundedCornerShape(percent = 50),
+                                modifier = Modifier.bounceClick(),
                                 colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                    labelColor = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                             )
                         }
                         items(folders) { folder ->
                             val isCurrentContext = playbackManager.activeCategory == folder && playbackManager.currentSong != null
                             val isSelected = selectedFolder == folder
-                            val interactionSource = remember { MutableInteractionSource() }
-                            val isPressed by interactionSource.collectIsPressedAsState()
-                            val scale by animateFloatAsState(
-                                targetValue = if (isPressed) 0.92f else if (isSelected) 1.05f else 1f,
-                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                                label = "CategoryChipScale"
-                            )
+                            
+                            val surfaceColor = MaterialTheme.colorScheme.surface
+                            val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
+                            val isDark = luma < 0.5f
+                            val selectedBg = if (isDark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary
+                            val onSelected = if (isDark) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary
 
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { onSelectedFolderChange(folder) },
-                                interactionSource = interactionSource,
-                                modifier = Modifier.graphicsLayer {
-                                    scaleX = scale
-                                    scaleY = scale
-                                },
+                                modifier = Modifier.bounceClick(),
                                 label = { 
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         val label = when(folder) {
@@ -837,12 +829,18 @@ fun MainScreen(
                                             Box(
                                                 modifier = Modifier
                                                     .size(6.dp)
-                                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                                    .background(if (isSelected) onSelected else MaterialTheme.colorScheme.primary, CircleShape)
                                             )
                                         }
                                     }
                                 },
-                                shape = MaterialTheme.shapes.medium
+                                shape = RoundedCornerShape(percent = 50),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                                    labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    selectedContainerColor = selectedBg,
+                                    selectedLabelColor = onSelected
+                                )
                             )
                         }
                     }
@@ -2254,31 +2252,73 @@ fun FullPlayer(
                 }
             }
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            val playbackManager = PlaybackManager.getInstance(LocalContext.current)
+            
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    song.title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.basicMarquee()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    song.artist,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.basicMarquee()
-                )
+                Column(
+                    modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    // Título Arriba
+                    Text(
+                        song.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Start,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth().basicMarquee()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Píldora de Artista Alineada a la Izquierda
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(percent = 50),
+                        modifier = Modifier.widthIn(max = 280.dp)
+                    ) {
+                        Text(
+                            song.artist,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Start,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).basicMarquee()
+                        )
+                    }
+                }
+
+                // Botón de Favorito a la derecha
+                // Botón de Favorito a la derecha con animación Surface
+                Surface(
+                    onClick = { 
+                        playbackManager.toggleFavorite {
+                            onRefreshSongs?.invoke()
+                        }
+                    },
+                    shape = CircleShape,
+                    color = Color.Transparent,
+                    modifier = Modifier.size(48.dp).bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = stringResource(R.string.option_favorite),
+                            tint = if (song.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
             }
 
             Column {
+
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -2325,20 +2365,42 @@ fun FullPlayer(
                     )
                 }
 
+                // Tiempos separados en píldoras individuales abajo de la barra
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                        .padding(top = 2.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        formatDuration((song.duration * progress).toLong()),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "-${formatDuration((song.duration * (1 - progress)).toLong())}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // Píldora Tiempo Actual (Izquierda)
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(percent = 50)
+                    ) {
+                        Text(
+                            text = formatDuration((song.duration * progress).toLong()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    // Píldora Tiempo Total (Derecha)
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(percent = 50)
+                    ) {
+                        Text(
+                            text = formatDuration(song.duration),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
 
@@ -2347,29 +2409,28 @@ fun FullPlayer(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Outlined.SkipPrevious, 
-                                contentDescription = stringResource(R.string.cd_previous), 
-                                modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                Surface(
+                    onClick = onPrevious,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier.size(64.dp).bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Outlined.SkipPrevious, 
+                            contentDescription = stringResource(R.string.cd_previous), 
+                            modifier = Modifier.size(36.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
 
                 @OptIn(ExperimentalAnimationGraphicsApi::class)
                 Surface(
                     onClick = onTogglePlay,
-                    shape = RoundedCornerShape(28.dp),
+                    shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(80.dp).bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val avd = AnimatedImageVector.animatedVectorResource(R.drawable.avd_play_pause_morph)
@@ -2382,20 +2443,19 @@ fun FullPlayer(
                     }
                 }
 
-                IconButton(onClick = onNext, modifier = Modifier.size(56.dp)) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Outlined.SkipNext, 
-                                contentDescription = stringResource(R.string.cd_next), 
-                                modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                Surface(
+                    onClick = onNext,
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier.size(64.dp).bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Outlined.SkipNext, 
+                            contentDescription = stringResource(R.string.cd_next), 
+                            modifier = Modifier.size(36.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -2463,31 +2523,81 @@ fun FullPlayer(
                         }
                     }
                 } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                    val isVisible = remember { androidx.compose.animation.core.MutableTransitionState(false) }.apply { targetState = true }
+                    
+                    androidx.compose.animation.AnimatedVisibility(
+                        visibleState = isVisible,
+                        enter = androidx.compose.animation.scaleIn(
+                            initialScale = 0.5f,
+                            animationSpec = androidx.compose.animation.core.spring(
+                                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                                stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+                            )
+                        ) + androidx.compose.animation.fadeIn(),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Audio Output Button
-                        PlayerActionButton(
-                            icon = playbackManager.currentOutputIcon,
-                            label = playbackManager.currentOutputName,
-                            onClick = { showVolumeBar = true }
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 32.dp),
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Audio Output Button
+                            PlayerActionButton(
+                                icon = playbackManager.currentOutputIcon,
+                                label = playbackManager.currentOutputName,
+                                onClick = { showVolumeBar = true },
+                                shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp),
+                                modifier = Modifier.weight(1f)
+                            )
 
-                        // Queue Button
-                        PlayerActionButton(
-                            icon = Icons.Default.QueueMusic,
-                            label = stringResource(R.string.player_queue),
-                            onClick = { showQueueSheet = true }
-                        )
+                            // Queue Button
+                            PlayerActionButton(
+                                icon = Icons.Default.QueueMusic,
+                                label = stringResource(R.string.player_queue),
+                                onClick = { showQueueSheet = true },
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.weight(1f)
+                            )
 
-                        // Options Button
-                        PlayerActionButton(
-                            icon = Icons.Default.MoreHoriz,
-                            label = stringResource(R.string.player_options),
-                            onClick = { showOptionsSheet = true }
-                        )
+                            // Share Button
+                            PlayerActionButton(
+                                icon = Icons.Default.Share,
+                                label = stringResource(R.string.option_share),
+                                onClick = {
+                                    try {
+                                        val file = java.io.File(song.path)
+                                        if (file.exists()) {
+                                            val contentUri = FileProvider.getUriForFile(
+                                                context,
+                                                "com.demonlab.lune.fileprovider",
+                                                file
+                                            )
+                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                type = "audio/*"
+                                                putExtra(Intent.EXTRA_STREAM, contentUri)
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.option_share)))
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                },
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.weight(1f)
+                            )
+    
+                            // Options Button
+                            PlayerActionButton(
+                                icon = Icons.Default.MoreHoriz,
+                                label = stringResource(R.string.player_options),
+                                onClick = { showOptionsSheet = true },
+                                shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 28.dp, bottomEnd = 28.dp),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -2568,32 +2678,31 @@ fun FullPlayer(
 fun PlayerActionButton(
     icon: ImageVector,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    modifier: Modifier = Modifier
 ) {
+    // Detectamos si el esquema de la interfaz está en modo oscuro calculando la luminancia del color de fondo (Surface)
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
+    val isDark = luma < 0.5f
+    val bgColor = if (isDark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary
+
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
-        shape = RoundedCornerShape(16.dp)
+        color = bgColor,
+        shape = shape,
+        modifier = modifier.bounceClick()
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier.padding(vertical = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 icon,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 80.dp)
+                contentDescription = label,
+                modifier = Modifier.size(22.dp),
+                tint = androidx.compose.ui.graphics.Color.White
             )
         }
     }
@@ -5077,4 +5186,30 @@ fun ScrollToCurrentButton(
             }
         }
     }
+}
+
+fun Modifier.bounceClick(scaleDown: Float = 0.85f): Modifier = composed {
+    var isPressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isPressed) scaleDown else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+        ),
+        label = "bounce"
+    )
+
+    this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .pointerInput(Unit) {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false)
+                isPressed = true
+                waitForUpOrCancellation()
+                isPressed = false
+            }
+        }
 }

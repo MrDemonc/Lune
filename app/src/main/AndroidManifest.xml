@@ -87,6 +87,16 @@
                 android:name="androidx.appcompat.app.AppLocalesMetadataHolderService.OPT_IN"
                 android:value="true" />
         </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.demonlab.lune.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
     </application>
 
 </manifest>

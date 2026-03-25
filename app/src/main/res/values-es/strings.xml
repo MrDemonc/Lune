@@ -123,6 +123,7 @@
     <string name="info_restored">Información restaurada</string>
     <string name="player_queue">Cola</string>
     <string name="player_options">Opciones</string>
+    <string name="option_share">Compartir</string>
     <string name="option_repeat_one">Repetir una</string>
     <string name="option_repeat_all">Repetir todo</string>
     <string name="option_repeat_off">No repetir</string>
