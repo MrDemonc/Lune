@@ -2786,35 +2786,49 @@ fun FullPlayer(
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    var totalDragY = 0f
-                    var gestureConsumed = false
-                    detectDragGestures(
-                        onDragStart = {
-                            totalDragY = 0f
-                            gestureConsumed = false
-                        },
-                        onDrag = { _, dragAmount ->
-                            if (!gestureConsumed) {
-                                totalDragY += dragAmount.y
-                                val absY = kotlin.math.abs(totalDragY)
-                                val absX = kotlin.math.abs(dragAmount.x)
-                                // Vertical swipe downward only → minimize
-                                if (absY > 60 && absY > absX * 1.5f && totalDragY > 0) {
-                                    onMinimize()
-                                    gestureConsumed = true
-                                }
+        } else if (isDarkTheme) {
+            // Classic Dark Background (Blurred Image)
+            AsyncImage(
+                model = song.coverUrl ?: song.albumArtUri,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(80.dp)
+                    .alpha(0.2f),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+        val swipeToMinimizeModifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                var totalDragY = 0f
+                var gestureConsumed = false
+                detectDragGestures(
+                    onDragStart = {
+                        totalDragY = 0f
+                        gestureConsumed = false
+                    },
+                    onDrag = { _, dragAmount ->
+                        if (!gestureConsumed) {
+                            totalDragY += dragAmount.y
+                            val absY = kotlin.math.abs(totalDragY)
+                            val absX = kotlin.math.abs(dragAmount.x)
+                            // Vertical swipe downward only → minimize
+                            if (absY > 60 && absY > absX * 1.5f && totalDragY > 0) {
+                                onMinimize()
+                                gestureConsumed = true
                             }
                         }
-                    )
-                }
-                .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+                    }
+                )
+            }
+            .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+
+        val coverContent: @Composable () -> Unit = {
             if (isCinematic) {
                 // Header Spacer
                 Spacer(modifier = Modifier.height(16.dp))
@@ -2913,8 +2927,10 @@ fun FullPlayer(
                     }
                 }
             }
+        }
 
-            val playbackManager = PlaybackManager.getInstance(LocalContext.current)
+        val controlsContent: @Composable () -> Unit = {
+            val playbackManagerInstance = PlaybackManager.getInstance(LocalContext.current)
             
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
@@ -2973,8 +2989,8 @@ fun FullPlayer(
 
                 Surface(
                     onClick = { 
-                        playbackManager.toggleFavorite {
-                            playbackManager.currentSong?.let { song ->
+                        playbackManagerInstance.toggleFavorite {
+                            playbackManagerInstance.currentSong?.let { song ->
                                 onSyncFavorite?.invoke(song.id, song.isFavorite)
                             }
                         }
@@ -3010,8 +3026,8 @@ fun FullPlayer(
                         amplitude = { 1f }
                     )
                     
-                    val infiniteTransition = rememberInfiniteTransition(label = "thumbRotation")
-                    val rotation by infiniteTransition.animateFloat(
+                    val thumbInfiniteTransition = rememberInfiniteTransition(label = "thumbRotation")
+                    val rotation by thumbInfiniteTransition.animateFloat(
                         initialValue = 0f,
                         targetValue = 360f,
                         animationSpec = infiniteRepeatable(
@@ -3161,11 +3177,11 @@ fun FullPlayer(
                 label = "VolumeBarTransition"
             ) { isVolumeVisible ->
                 if (isVolumeVisible) {
-                    var sliderValue by remember { mutableStateOf(playbackManager.currentVolumePercent) }
+                    var sliderValue by remember { mutableStateOf(playbackManagerInstance.currentVolumePercent) }
                     
                     // Sync local state when manager state changes (e.g. hardware buttons)
-                    LaunchedEffect(playbackManager.currentVolumePercent) {
-                        sliderValue = playbackManager.currentVolumePercent
+                    LaunchedEffect(playbackManagerInstance.currentVolumePercent) {
+                        sliderValue = playbackManagerInstance.currentVolumePercent
                     }
 
                     Row(
@@ -3191,7 +3207,7 @@ fun FullPlayer(
                             value = sliderValue,
                             onValueChange = { 
                                 sliderValue = it
-                                playbackManager.setVolume(it)
+                                playbackManagerInstance.setVolume(it)
                             },
                             thumb = {}, // Remove thumb
                             modifier = Modifier.weight(0.5f),
@@ -3243,8 +3259,8 @@ fun FullPlayer(
                             ) {
                                 // Audio Output Button
                                 PlayerActionButton(
-                                    icon = playbackManager.currentOutputIcon,
-                                    label = playbackManager.currentOutputName,
+                                    icon = playbackManagerInstance.currentOutputIcon,
+                                    label = playbackManagerInstance.currentOutputName,
                                     onClick = { showVolumeBar = true },
                                     shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp),
                                     modifier = Modifier.weight(1f)
@@ -3260,6 +3276,7 @@ fun FullPlayer(
                                 )
 
                                 // Share Button
+                                val activityContext = LocalContext.current
                                 PlayerActionButton(
                                     icon = Icons.Default.Share,
                                     label = stringResource(R.string.option_share),
@@ -3268,7 +3285,7 @@ fun FullPlayer(
                                             val file = java.io.File(song.path)
                                             if (file.exists()) {
                                                 val contentUri = FileProvider.getUriForFile(
-                                                    context,
+                                                    activityContext,
                                                     "com.demonlab.lune.fileprovider",
                                                     file
                                                 )
@@ -3277,7 +3294,7 @@ fun FullPlayer(
                                                     putExtra(Intent.EXTRA_STREAM, contentUri)
                                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                                 }
-                                                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.option_share)))
+                                                activityContext.startActivity(Intent.createChooser(shareIntent, activityContext.getString(R.string.option_share)))
                                             }
                                         } catch (e: Exception) {
                                             e.printStackTrace()
@@ -3313,6 +3330,48 @@ fun FullPlayer(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+
+        if (isLandscape) {
+            Row(
+                modifier = swipeToMinimizeModifier,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        coverContent()
+                    }
+                }
+                Spacer(modifier = Modifier.width(24.dp))
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    controlsContent()
+                }
+            }
+        } else {
+            Column(
+                modifier = swipeToMinimizeModifier,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                coverContent()
+                controlsContent()
+            }
+        }
+
+        if (showQueueSheet) {
+            QueueBottomSheet(
+                playbackManager = playbackManager,
+                onDismiss = { showQueueSheet = false }
+            )
         }
 
         if (showQueueSheet) {
