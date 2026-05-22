@@ -2639,7 +2639,7 @@ fun FullPlayer(
             }
         }
     }
-
+    
     val playbackManager = remember { PlaybackManager.getInstance(context) }
     val sheetPeekHeight = 0.dp
     val sheetFullHeight = 0.dp
@@ -2661,7 +2661,7 @@ fun FullPlayer(
     val peekHeightPx = with(density) { sheetPeekHeight.toPx() }
     val fullHeightPx = with(density) { sheetFullHeight.toPx() }
     
-
+    
     val infiniteTransition = rememberInfiniteTransition(label = "CoverAnimation")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1.2f,
@@ -2690,7 +2690,7 @@ fun FullPlayer(
         ),
         label = "OffsetY"
     )
-
+    
     var focalPoint by remember { mutableStateOf(Offset(0.5f, 0.5f)) }
     
     LaunchedEffect(song.id) {
@@ -2705,14 +2705,14 @@ fun FullPlayer(
             focalPoint = ImageAnalyzer.findFocalPoint(bitmap)
         }
     }
-
+    
     val isSystemDark = isSystemInDarkTheme()
     val isDarkTheme = when (settingsManager.themeMode) {
         1 -> false
         2 -> true
         else -> isSystemDark
     }
-
+    
     val infiniteSpinTransition = rememberInfiniteTransition(label = "PlayerCoverSpin")
     val spinRotation by infiniteSpinTransition.animateFloat(
         initialValue = 0f,
@@ -2723,7 +2723,7 @@ fun FullPlayer(
         ),
         label = "SpinAnimation"
     )
-
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2752,7 +2752,7 @@ fun FullPlayer(
                     },
                 contentScale = ContentScale.Crop
             )
-
+    
             val surf = MaterialTheme.colorScheme.surface
             val mAlpha = if (isDarkTheme) 0.6f else 0.3f
             Box(
@@ -2773,7 +2773,6 @@ fun FullPlayer(
                         )
                     )
             )
-
         } else if (isDarkTheme) {
             // Classic Dark Background (Blurred Image)
             AsyncImage(
@@ -2786,10 +2785,10 @@ fun FullPlayer(
                 contentScale = ContentScale.Crop
             )
         }
-
+    
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-
+    
         val swipeToMinimizeModifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
@@ -2815,7 +2814,7 @@ fun FullPlayer(
                 )
             }
             .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
-
+    
         val coverContent: @Composable () -> Unit = {
             if (isCinematic) {
                 // Header Spacer
@@ -2849,12 +2848,12 @@ fun FullPlayer(
                                 }
                             )
                         },
-   
+    
                 )
             } else {
                 // Classic Header Spacer
                 Spacer(modifier = Modifier.height(16.dp))
-
+    
                 // Classic Cover Art
                 Box(
                     modifier = Modifier
@@ -2916,7 +2915,7 @@ fun FullPlayer(
                 }
             }
         }
-
+    
         val controlsContent: @Composable () -> Unit = {
             val playbackManagerInstance = PlaybackManager.getInstance(LocalContext.current)
             
@@ -2939,9 +2938,9 @@ fun FullPlayer(
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.fillMaxWidth().basicMarquee()
                     )
-
+    
                     Spacer(modifier = Modifier.height(8.dp))
-
+    
                     // Píldora de Artista Alineada a la Izquierda
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
@@ -2959,7 +2958,7 @@ fun FullPlayer(
                         )
                     }
                 }
-
+    
                 // Botón de Favorito a la derecha con animación Surface
                 val surfaceColor = MaterialTheme.colorScheme.surface
                 val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
@@ -2974,7 +2973,7 @@ fun FullPlayer(
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 }
-
+    
                 Surface(
                     onClick = { 
                         playbackManagerInstance.toggleFavorite {
@@ -2997,9 +2996,9 @@ fun FullPlayer(
                     }
                 }
             }
-
+    
             Column {
-
+    
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -3024,7 +3023,7 @@ fun FullPlayer(
                         ),
                         label = "thumbRotation"
                     )
-
+    
                     Slider(
                         value = progress,
                         onValueChange = onProgressChange,
@@ -3045,7 +3044,7 @@ fun FullPlayer(
                         )
                     )
                 }
-
+    
                 // Tiempos separados en píldoras individuales abajo de la barra
                 Row(
                     modifier = Modifier
@@ -3068,7 +3067,7 @@ fun FullPlayer(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
-
+    
                     // Píldora Tiempo Total (Derecha)
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
@@ -3084,7 +3083,7 @@ fun FullPlayer(
                     }
                 }
             }
-
+    
             val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
             val activeContainerColor = if (useCustomControlsColor) {
                 activePrimary.copy(alpha = 0.2f)
@@ -3096,7 +3095,7 @@ fun FullPlayer(
             } else {
                 MaterialTheme.colorScheme.onSurface
             }
-
+    
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -3118,7 +3117,7 @@ fun FullPlayer(
                         )
                     }
                 }
-
+    
                 @OptIn(ExperimentalAnimationGraphicsApi::class)
                 Surface(
                     onClick = onTogglePlay,
@@ -3136,7 +3135,7 @@ fun FullPlayer(
                         )
                     }
                 }
-
+    
                 Surface(
                     onClick = onNext,
                     shape = CircleShape,
@@ -3154,9 +3153,9 @@ fun FullPlayer(
                     }
                 }
             }
-
+    
             Spacer(modifier = Modifier.width(16.dp))
-
+    
             androidx.compose.animation.AnimatedContent(
                 targetState = showVolumeBar,
                 transitionSpec = {
@@ -3171,7 +3170,7 @@ fun FullPlayer(
                     LaunchedEffect(playbackManagerInstance.currentVolumePercent) {
                         sliderValue = playbackManagerInstance.currentVolumePercent
                     }
-
+    
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -3253,7 +3252,7 @@ fun FullPlayer(
                                     shape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp, topEnd = 4.dp, bottomEnd = 4.dp),
                                     modifier = Modifier.weight(1f)
                                 )
-
+    
                                 // Queue Button
                                 PlayerActionButton(
                                     icon = Icons.Default.QueueMusic,
@@ -3262,7 +3261,7 @@ fun FullPlayer(
                                     shape = RoundedCornerShape(4.dp),
                                     modifier = Modifier.weight(1f)
                                 )
-
+    
                                 // Share Button
                                 val activityContext = LocalContext.current
                                 PlayerActionButton(
@@ -3307,7 +3306,7 @@ fun FullPlayer(
             }
             
             Spacer(modifier = Modifier.height(8.dp))
-
+    
             if (showWaveform) {
                 WaveformVisualizer(
                     modifier = Modifier
@@ -3319,7 +3318,7 @@ fun FullPlayer(
                 )
             }
         }
-
+    
         if (isLandscape) {
             Row(
                 modifier = swipeToMinimizeModifier,
@@ -3354,16 +3353,14 @@ fun FullPlayer(
                 controlsContent()
             }
         }
-
+    
         if (showQueueSheet) {
             QueueBottomSheet(
                 playbackManager = playbackManager,
                 onDismiss = { showQueueSheet = false }
             )
         }
-
-
-
+    
         if (showOptionsSheet) {
             PlayerOptionsBottomSheet(
                 playbackManager = playbackManager,
@@ -3386,7 +3383,7 @@ fun FullPlayer(
                 }
             )
         }
-
+    
         if (showAddToPlaylistInPlayer) {
             val currentSong = playbackManager.currentSong
             if (currentSong != null) {
@@ -3406,7 +3403,7 @@ fun FullPlayer(
                 )
             }
         }
-
+    
         if (showVisualizerSettings) {
             VisualizerSettingsBottomSheet(
                 playbackManager = playbackManager,
