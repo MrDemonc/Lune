@@ -2773,18 +2773,6 @@ fun FullPlayer(
                         )
                     )
             )
-        } else if (isDarkTheme) {
-            // Classic Dark Background (Blurred Image)
-            AsyncImage(
-                model = song.coverUrl ?: song.albumArtUri,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(80.dp)
-                    .alpha(0.2f),
-                contentScale = ContentScale.Crop
-            )
-        }
 
         } else if (isDarkTheme) {
             // Classic Dark Background (Blurred Image)
@@ -3365,13 +3353,6 @@ fun FullPlayer(
                 coverContent()
                 controlsContent()
             }
-        }
-
-        if (showQueueSheet) {
-            QueueBottomSheet(
-                playbackManager = playbackManager,
-                onDismiss = { showQueueSheet = false }
-            )
         }
 
         if (showQueueSheet) {
