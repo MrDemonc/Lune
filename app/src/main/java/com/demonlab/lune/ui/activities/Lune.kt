@@ -2730,15 +2730,14 @@ fun FullPlayer(
             .background(MaterialTheme.colorScheme.surface) // Opaque base
     ) {
         if (isCinematic) {
-            // Cinematic Background (Ken Burns + Gradient)
+            // Apple Music style: full-screen blurred album art + dark scrim + bottom gradient
             AsyncImage(
                 model = song.coverUrl ?: song.albumArtUri,
                 contentDescription = null,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.6f)
-                    .align(Alignment.TopCenter)
+                    .fillMaxSize()              // ← Full screen
                     .clipToBounds()
+                    .blur(48.dp)               // ← Soft blur across the entire screen
                     .graphicsLayer {
                         val baseScale = scale - 1f
                         val maxTransX = (size.width * baseScale) / 2f
@@ -2752,24 +2751,23 @@ fun FullPlayer(
                     },
                 contentScale = ContentScale.Crop
             )
-    
-            val surf = MaterialTheme.colorScheme.surface
-            val mAlpha = if (isDarkTheme) 0.6f else 0.3f
+            // Solid dark background: adds contrast to the cover and text
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.40f))
+            )
+            // Gradient only on the bottom half for the controls
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            0.00f to Color.Transparent,
-                            0.10f to Color.Transparent,
-                            0.25f to surf.copy(alpha = mAlpha * 0.2f),
-                            0.35f to surf.copy(alpha = mAlpha * 0.5f),
-                            0.42f to surf.copy(alpha = mAlpha * 0.85f),
-                            0.48f to surf.copy(alpha = mAlpha + (1f - mAlpha) * 0.4f),
-                            0.52f to surf.copy(alpha = mAlpha + (1f - mAlpha) * 0.75f),
-                            0.56f to surf.copy(alpha = mAlpha + (1f - mAlpha) * 0.9f),
-                            0.60f to surf,
-                            1.00f to surf
+                            0.0f to Color.Transparent,
+                            0.50f to Color.Transparent,
+                            0.72f to Color.Black.copy(alpha = 0.35f),
+                            0.88f to Color.Black.copy(alpha = 0.65f),
+                            1.0f to Color.Black.copy(alpha = 0.80f)
                         )
                     )
             )
