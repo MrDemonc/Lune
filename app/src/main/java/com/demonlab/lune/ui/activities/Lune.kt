@@ -2751,12 +2751,6 @@ fun FullPlayer(
                     },
                 contentScale = ContentScale.Crop
             )
-            // Solid dark background: adds contrast to the cover and text
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.40f))
-            )
             // Gradient only on the bottom half for the controls
             Box(
                 modifier = Modifier
@@ -2779,7 +2773,7 @@ fun FullPlayer(
                 modifier = Modifier
                     .fillMaxSize()
                     .blur(80.dp)
-                    .alpha(0.2f),
+                    .alpha(0.6f),
                 contentScale = ContentScale.Crop
             )
         }
