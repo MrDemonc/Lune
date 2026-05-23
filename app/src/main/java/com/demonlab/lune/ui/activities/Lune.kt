@@ -2772,7 +2772,7 @@ fun FullPlayer(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .alpha(0.08f),
+                    .alpha(0.02f),
                 contentScale = ContentScale.Crop
             )
         }
