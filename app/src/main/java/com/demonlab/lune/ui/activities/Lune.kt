@@ -2804,7 +2804,6 @@ fun FullPlayer(
                             totalDragY += dragAmount.y
                             val absY = kotlin.math.abs(totalDragY)
                             val absX = kotlin.math.abs(dragAmount.x)
-                            // Vertical swipe downward only → minimize
                             if (absY > 60 && absY > absX * 1.5f && totalDragY > 0) {
                                 onMinimize()
                                 gestureConsumed = true
@@ -2813,104 +2812,79 @@ fun FullPlayer(
                     }
                 )
             }
-            .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+            .then(
+                if (isLandscape)
+                    Modifier.padding(top = 16.dp, bottom = 8.dp, start = 24.dp, end = 24.dp)
+                else
+                    Modifier.padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+            )
     
         val coverContent: @Composable () -> Unit = {
-            if (isCinematic) {
-                // Header Spacer
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Cinematic layout filler
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .fillMaxWidth()
-                        .scale(coverScale)
-                        .pointerInput(Unit) {
-                            var totalDragX = 0f
-                            var gestureConsumed = false
-                            detectDragGestures(
-                                onDragStart = {
-                                    totalDragX = 0f
-                                    gestureConsumed = false
-                                },
-                                onDrag = { _, dragAmount ->
-                                    if (!gestureConsumed) {
-                                        totalDragX += dragAmount.x
-                                        val absX = kotlin.math.abs(totalDragX)
-                                        val absY = kotlin.math.abs(dragAmount.y)
-                                        // Horizontal swipe only (covers next/previous)
-                                        if (absX > 60 && absX > absY * 1.5f) {
-                                            if (totalDragX < 0) onNext() else onPrevious()
-                                            gestureConsumed = true
-                                        }
+            // El Box de la portada es el mismo en cinemático y clásico.
+            // En cinemático la imagen de fondo ya está en la capa de fondo (Background Layer),
+            // así que la portada "real" aquí siempre se muestra.
+            Spacer(modifier = Modifier.height(if (isLandscape) 0.dp else 16.dp))
+        
+            Box(
+                modifier = Modifier
+                    .then(
+                        if (isLandscape)
+                            // En landscape limitamos la altura para que no ocupe toda la pantalla
+                            Modifier.fillMaxHeight(0.80f).aspectRatio(1f)
+                        else
+                            // En portrait ocupamos el ancho disponible
+                            Modifier.fillMaxWidth().aspectRatio(1f)
+                    )
+                    .scale(coverScale)
+                    .pointerInput(Unit) {
+                        var totalDragX = 0f
+                        var gestureConsumed = false
+                        detectDragGestures(
+                            onDragStart = {
+                                totalDragX = 0f
+                                gestureConsumed = false
+                            },
+                            onDrag = { _, dragAmount ->
+                                if (!gestureConsumed) {
+                                    totalDragX += dragAmount.x
+                                    val absX = kotlin.math.abs(totalDragX)
+                                    val absY = kotlin.math.abs(dragAmount.y)
+                                    if (absX > 60 && absX > absY * 1.5f) {
+                                        if (totalDragX < 0) onNext() else onPrevious()
+                                        gestureConsumed = true
                                     }
                                 }
-                            )
-                        },
-    
-                )
-            } else {
-                // Classic Header Spacer
-                Spacer(modifier = Modifier.height(16.dp))
-    
-                // Classic Cover Art
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .scale(coverScale)
-                        .pointerInput(Unit) {
-                            var totalDragX = 0f
-                            var gestureConsumed = false
-                            detectDragGestures(
-                                onDragStart = {
-                                    totalDragX = 0f
-                                    gestureConsumed = false
-                                },
-                                onDrag = { _, dragAmount ->
-                                    if (!gestureConsumed) {
-                                        totalDragX += dragAmount.x
-                                        val absX = kotlin.math.abs(totalDragX)
-                                        val absY = kotlin.math.abs(dragAmount.y)
-                                        // Horizontal swipe only (covers next/previous)
-                                        if (absX > 60 && absX > absY * 1.5f) {
-                                            if (totalDragX < 0) onNext() else onPrevious()
-                                            gestureConsumed = true
-                                        }
-                                    }
-                                }
-                            )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (coverShape == 2 && coverVinylEffect) {
-                        VinylRecordAsyncCover(
-                            model = song.coverUrl ?: song.albumArtUri,
-                            rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                            modifier = Modifier.fillMaxSize()
+                            }
                         )
-                    } else {
-                        val activeShape = when (coverShape) {
-                            1 -> RoundedCornerShape(0.dp)
-                            2 -> CircleShape
-                            else -> RoundedCornerShape(28.dp)
-                        }
-                        Surface(
-                            shape = activeShape,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            tonalElevation = 8.dp
-                        ) {
-                            AsyncImage(
-                                model = song.coverUrl ?: song.albumArtUri,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (coverShape == 2 && coverVinylEffect) {
+                    VinylRecordAsyncCover(
+                        model = song.coverUrl ?: song.albumArtUri,
+                        rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    val activeShape = when (coverShape) {
+                        1 -> RoundedCornerShape(0.dp)
+                        2 -> CircleShape
+                        else -> RoundedCornerShape(28.dp)
+                    }
+                    Surface(
+                        shape = activeShape,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        tonalElevation = 8.dp
+                    ) {
+                        AsyncImage(
+                            model = song.coverUrl ?: song.albumArtUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
