@@ -2737,7 +2737,7 @@ fun FullPlayer(
                 modifier = Modifier
                     .fillMaxSize()              // ← Full screen
                     .clipToBounds()
-                    .blur(48.dp)               // ← Soft blur across the entire screen
+                    .blur(20.dp)               // ← Soft blur across the entire screen
                     .graphicsLayer {
                         val baseScale = scale - 1f
                         val maxTransX = (size.width * baseScale) / 2f
@@ -2766,14 +2766,13 @@ fun FullPlayer(
                     )
             )
         } else if (isDarkTheme) {
-            // Classic Dark Background (Blurred Image)
+            // Normal dark: subtle ambient glow without blur
             AsyncImage(
                 model = song.coverUrl ?: song.albumArtUri,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(80.dp)
-                    .alpha(0.6f),
+                    .alpha(0.08f),
                 contentScale = ContentScale.Crop
             )
         }
