@@ -47,4 +47,4 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Lune ${{ steps.version.outputs.version }}
-          files: app/build/outputs/apk/release/*apk
+          files: app/build/outputs/apk/debug/*apk
