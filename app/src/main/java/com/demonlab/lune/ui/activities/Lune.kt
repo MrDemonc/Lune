@@ -2811,9 +2811,9 @@ fun FullPlayer(
             )
     
         val coverContent: @Composable () -> Unit = {
-            // El Box de la portada es el mismo en cinemático y clásico.
-            // En cinemático la imagen de fondo ya está en la capa de fondo (Background Layer),
-            // así que la portada "real" aquí siempre se muestra.
+            // The cover art box is the same in both cinematic and classic modes.
+            // In cinematic, the background image is already rendered in the background layer,
+            // so the "real" cover art is always shown here on top.
             Spacer(modifier = Modifier.height(if (isLandscape) 0.dp else 16.dp))
         
             Box(
@@ -2893,7 +2893,7 @@ fun FullPlayer(
                     modifier = Modifier.weight(1f).padding(end = 12.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    // Título Arriba
+                    // Song title
                     Text(
                         song.title,
                         style = MaterialTheme.typography.titleLarge,
@@ -2906,7 +2906,7 @@ fun FullPlayer(
     
                     Spacer(modifier = Modifier.height(8.dp))
     
-                    // Píldora de Artista Alineada a la Izquierda
+                    // Artist pill aligned to the left
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(percent = 50),
@@ -2924,7 +2924,7 @@ fun FullPlayer(
                     }
                 }
     
-                // Botón de Favorito a la derecha con animación Surface
+                // Favorite button on the right with animated Surface
                 val surfaceColor = MaterialTheme.colorScheme.surface
                 val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
                 val isDark = luma < 0.5f
@@ -3010,7 +3010,7 @@ fun FullPlayer(
                     )
                 }
     
-                // Tiempos separados en píldoras individuales abajo de la barra
+                // Time labels displayed as individual pills below the progress bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3019,7 +3019,7 @@ fun FullPlayer(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Píldora Tiempo Actual (Izquierda)
+                    // Current time pill (left)
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(percent = 50)
@@ -3033,7 +3033,7 @@ fun FullPlayer(
                         )
                     }
     
-                    // Píldora Tiempo Total (Derecha)
+                    // Total time pill (right)
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(percent = 50)
@@ -3387,7 +3387,7 @@ fun PlayerActionButton(
     shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
     modifier: Modifier = Modifier
 ) {
-    // Detectamos si el esquema de la interfaz está en modo oscuro calculando la luminancia del color de fondo (Surface)
+    // Detect dark mode by calculating the luminance of the Surface background color
     val surfaceColor = MaterialTheme.colorScheme.surface
     val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
     val isDark = luma < 0.5f
