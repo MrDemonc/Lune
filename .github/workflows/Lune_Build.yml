@@ -17,40 +17,24 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Setup Keystore
+      - name: Decode keystore
         run: |
-          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "No keystore secret found. Generating a temporary keystore for the fork..."
-            keytool -genkey -v -keystore app/keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias lune_key -storepass "lunepass" -keypass "lunepass" -dname "CN=Lune Fork, OU=Lune, O=Lune, L=Unknown, ST=Unknown, C=US"
-            echo "storeFile=keystore.jks" > keystore.properties
-            echo "storePassword=lunepass" >> keystore.properties
-            echo "keyAlias=lune_key" >> keystore.properties
-            echo "keyPassword=lunepass" >> keystore.properties
-          else
-            echo "Decoding repository keystore..."
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
-            echo "storeFile=keystore.jks" > keystore.properties
-            echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> keystore.properties
-            echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
-            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
-          fi
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
+      - name: Create keystore.properties
+        run: |
+          cat <<EOF > keystore.properties
+          storeFile=keystore.jks
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD}}
+          EOF
 
       - name: Read versionName
         id: version
         run: |
           VERSION=$(grep versionName app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Modify Application ID and Name for Parallel Install
-        run: |
-          # Cambiamos el applicationId para que Android lo instale como una app separada
-          sed -i 's/applicationId = "com.demonlab.lune"/applicationId = "com.demonlab.lune.fork"/g' app/build.gradle.kts
-          # Cambiamos el nombre base de la app para distinguirla en el cajón de aplicaciones
-          sed -i 's/<string name="app_name">Lune<\/string>/<string name="app_name">Lune Fork<\/string>/g' app/src/main/res/values/strings.xml
-          # Cambiamos el FileProvider authority en el Manifest para evitar conflicto de instalación
-          sed -i 's/android:authorities="com.demonlab.lune.fileprovider"/android:authorities="com.demonlab.lune.fork.fileprovider"/g' app/src/main/AndroidManifest.xml
-          # Cambiamos el FileProvider authority en el código Kotlin
-          sed -i 's/"com.demonlab.lune.fileprovider"/"com.demonlab.lune.fork.fileprovider"/g' app/src/main/java/com/demonlab/lune/ui/player/PlayerComponents.kt
 
       - name: Make gradlew executable
         run: chmod +x gradlew
@@ -61,6 +45,6 @@ jobs:
       - name: Create Github Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.version }}-fork
-          name: Lune Fork ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Lune ${{ steps.version.outputs.version }}
           files: app/build/outputs/apk/release/*apk
