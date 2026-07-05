@@ -94,7 +94,8 @@
             android:name=".tools.MusicService"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="mediaPlayback">
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>

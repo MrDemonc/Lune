@@ -111,6 +111,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Repeat
@@ -234,6 +235,8 @@ class Lune : AppCompatActivity() {
             var useCustomColors by remember { mutableStateOf(settingsManager.useCustomColors) }
             var customColorPalette by remember { mutableIntStateOf(settingsManager.customColorPalette) }
             var useAmoledPitchBlack by remember { mutableStateOf(settingsManager.useAmoledPitchBlack) }
+            var isSectionCustomizationEnabled by remember { mutableStateOf(settingsManager.isSectionCustomizationEnabled) }
+            var hiddenSectionTabs by remember { mutableStateOf(settingsManager.hiddenSectionTabs) }
 
             if (showOnboarding) {
                 LuneTheme(
@@ -267,6 +270,20 @@ class Lune : AppCompatActivity() {
             // Sync hidden folders when songs update (e.g. initial scan)
             LaunchedEffect(rawAllSongs) {
                 hiddenFolders.value = settingsManager.hiddenFolders
+            }
+
+            // Restore playback state once songs are loaded
+            LaunchedEffect(musicViewModel.allSongs) {
+                if (musicViewModel.allSongs.isNotEmpty() && !playbackManager.stateRestored) {
+                    playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                }
+            }
+
+            // Sync favorite status from external sources (notification, system media)
+            LaunchedEffect(Unit) {
+                playbackManager.favoriteChanged.collect { (songId, isFavorite) ->
+                    musicViewModel.syncFavoriteStatusInMemory(songId, isFavorite)
+                }
             }
             
             val currentSong = playbackManager.currentSong
@@ -335,6 +352,9 @@ class Lune : AppCompatActivity() {
             val lifecycleOwner = LocalLifecycleOwner.current
             DisposableEffect(lifecycleOwner) {
                 val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_PAUSE) {
+                        playbackManager.savePlaybackState()
+                    }
                     if (event == Lifecycle.Event.ON_RESUME) {
                         useCustomColors = settingsManager.useCustomColors
                         customColorPalette = settingsManager.customColorPalette
@@ -347,6 +367,8 @@ class Lune : AppCompatActivity() {
                         isControlsFilled = settingsManager.isControlsFilled
                         useCustomControlsColor = settingsManager.useCustomControlsColor
                         controlsColorPalette = settingsManager.controlsColorPalette
+                        isSectionCustomizationEnabled = settingsManager.isSectionCustomizationEnabled
+                        hiddenSectionTabs = settingsManager.hiddenSectionTabs
                         if (hasPermission) {
                             musicViewModel.loadSongs()
                             musicViewModel.loadPlaylists()
@@ -360,13 +382,19 @@ class Lune : AppCompatActivity() {
             // Sync Progress
             LaunchedEffect(isPlaying) {
                 if (isPlaying) {
+                    var saveCounter = 0
                     while (isPlaying) {
                         playbackProgress = playbackManager.getProgress()
+                        saveCounter++
+                        if (saveCounter >= 10) { // Save position every ~5 seconds
+                            saveCounter = 0
+                            playbackManager.savePlaybackState(wasPlaying = true)
+                        }
                         kotlinx.coroutines.delay(500)
                     }
                 } else {
-                    // When playback stops (natural end), reset progress
-                    if (playbackManager.getProgress() >= 0.90f || playbackManager.getProgress() < 0.01f) {
+                    // Only reset progress when the queue actually ended, not on user pause
+                    if (playbackManager.isQueueFinished) {
                         playbackProgress = 0f
                     }
                 }
@@ -391,12 +419,16 @@ class Lune : AppCompatActivity() {
             val visibleFolders = remember(allFolders, hiddenFolders.value) {
                 allFolders.filter { !hiddenFolders.value.contains(it) }
             }
-            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists) {
+            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs) {
                 val hasFavorites = rawAllSongs.any { it.isFavorite }
                 val base = mutableListOf("RESUME", "ALL", "PLAYLISTS")
                 if (hasFavorites) base.add("FAVORITES")
                 base.add("ALBUMS")
                 if (visibleFolders.isNotEmpty()) base.add("FOLDERS")
+                if (isSectionCustomizationEnabled) {
+                    base.removeAll(hiddenSectionTabs)
+                    if ("RESUME" !in base) base.add(0, "RESUME")
+                }
                 base
             }
             val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
@@ -435,6 +467,7 @@ class Lune : AppCompatActivity() {
                     rawAllSongs = rawAllSongs,
                     filteredSongs = filteredSongs,
                     folders = folders,
+                    isSectionCustomizationEnabled = isSectionCustomizationEnabled,
                     allFolders = allFolders,
                     allAlbums = allAlbumsList,
                     selectedFolder = selectedFolder,
@@ -479,6 +512,7 @@ fun MainScreen(
     rawAllSongs: List<Song>,
     filteredSongs: List<Song>,
     folders: List<String>,
+    isSectionCustomizationEnabled: Boolean,
     allFolders: List<String>,
     allAlbums: List<String>,
     selectedFolder: String,
@@ -522,6 +556,7 @@ fun MainScreen(
     val sTabFavorites = stringResource(R.string.tab_favorites)
     val sTabFolders = stringResource(R.string.tab_folders)
     val sTabAlbums = stringResource(R.string.tab_albums)
+    val sTabAlbumsReal = stringResource(R.string.tab_albums_real)
     val sTabPlaylists = stringResource(R.string.playlists)
 
     val visibleFolders = remember(allFolders, hiddenFolders.value) {
@@ -551,9 +586,74 @@ fun MainScreen(
     var showMenu by remember { mutableStateOf(false) }
     var selectedAlbum by remember { mutableStateOf<Album?>(null) }
     var selectedFolderItem by remember { mutableStateOf<String?>(null) }
+    var isAlbumView by remember { mutableStateOf(settingsManager.albumBrowseMode) }
+    var folderHierarchyMode by remember { mutableStateOf(settingsManager.folderHierarchyMode) }
 
     val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
         rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+    }
+
+    data class FolderEntry(val name: String, val depth: Int, val isVirtual: Boolean)
+
+    val hierarchyEntries = remember(visibleFolders, rawAllSongs, folderHierarchyMode) {
+        if (!folderHierarchyMode) {
+            visibleFolders.sorted().map { FolderEntry(it, 0, false) }
+        } else {
+            val dirMap = visibleFolders.mapNotNull { folder ->
+                rawAllSongs.firstOrNull { it.folderName == folder }
+                    ?.let { folder to it.path.substringBeforeLast("/") }
+            }.toMap()
+
+            val songDirDepths = dirMap.values.map { it.count { c -> c == '/' } }
+            val minDepth = if (songDirDepths.isEmpty()) 0 else songDirDepths.min()
+
+            val virtualParents = mutableMapOf<String, String>()
+            for ((folder, dir) in dirMap) {
+                val depth = dir.count { c -> c == '/' }
+                val parentPath = dir.substringBeforeLast("/")
+                val parentName = parentPath.substringAfterLast("/")
+                if (parentName !in visibleFolders && depth > minDepth) {
+                    virtualParents[parentName] = parentPath
+                }
+            }
+
+            val allNames = dirMap.keys + virtualParents.keys
+
+            val childrenMap = mutableMapOf<String, MutableList<String>>()
+            val roots = mutableListOf<String>()
+
+            for ((folder, dir) in dirMap) {
+                val parentDir = dir.substringBeforeLast("/")
+                val parentName = parentDir.substringAfterLast("/")
+                if (parentName in allNames) {
+                    childrenMap.getOrPut(parentName) { mutableListOf() }.add(folder)
+                } else {
+                    roots.add(folder)
+                }
+            }
+
+            for ((parentName, parentPath) in virtualParents) {
+                val grandParentDir = parentPath.substringBeforeLast("/")
+                val grandParentName = grandParentDir.substringAfterLast("/")
+                if (grandParentName in allNames) {
+                    childrenMap.getOrPut(grandParentName) { mutableListOf() }.add(parentName)
+                } else {
+                    roots.add(parentName)
+                }
+            }
+
+            val entries = mutableListOf<FolderEntry>()
+            fun addEntry(name: String, depth: Int) {
+                val isVirtual = name !in visibleFolders
+                entries.add(FolderEntry(name, depth, isVirtual))
+                childrenMap[name]?.sorted()?.forEach { addEntry(it, depth + 1) }
+            }
+            roots.sorted().forEach { addEntry(it, 0) }
+            visibleFolders.filter { it !in dirMap }.sorted().forEach {
+                entries.add(FolderEntry(it, 0, false))
+            }
+            entries
+        }
     }
 
     val contextId = remember(selectedFolder) {
@@ -588,25 +688,50 @@ fun MainScreen(
     }
 
     
-    val albums = remember(rawAllSongs, hiddenFolders.value) {
-        rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
-            .groupBy { it.artist }
-            .map { (artistName, songs) -> 
-                Album(
-                    id = artistName.hashCode().toLong(),
-                    name = artistName, 
-                    artist = "", 
-                    albumArtUri = songs.first().albumArtUri, 
-                    coverUrl = songs.first().coverUrl, 
-                    songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
-                ) 
-            }
-            .sortedBy { it.name }
+    val albums = remember(rawAllSongs, hiddenFolders.value, isAlbumView) {
+        if (isAlbumView) {
+            rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+                .groupBy { it.album }
+                .map { (albumName, songs) ->
+                    Album(
+                        id = albumName.hashCode().toLong(),
+                        name = albumName,
+                        artist = songs.first().artist,
+                        albumArtUri = songs.first().albumArtUri,
+                        coverUrl = songs.first().coverUrl,
+                        songs = songs.sortedBy { it.title }
+                    )
+                }
+                .sortedBy { it.name }
+        } else {
+            rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+                .groupBy { it.artist }
+                .map { (artistName, songs) -> 
+                    Album(
+                        id = artistName.hashCode().toLong(),
+                        name = artistName, 
+                        artist = "", 
+                        albumArtUri = songs.first().albumArtUri, 
+                        coverUrl = songs.first().coverUrl, 
+                        songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
+                    ) 
+                }
+                .sortedBy { it.name }
+        }
     }
 
     LaunchedEffect(selectedFolder) {
         if (selectedFolder.isNotEmpty()) {
             settingsManager.lastCategory = selectedFolder
+        }
+    }
+
+    LaunchedEffect(folders) {
+        if (isSectionCustomizationEnabled && selectedFolder !in folders && selectedFolder.isNotEmpty()) {
+            onSelectedFolderChange("RESUME")
+        }
+        if (isSectionCustomizationEnabled && playbackManager.activeCategory != null && playbackManager.activeCategory !in folders) {
+            playbackManager.stopAndClearQueue()
         }
     }
 
@@ -695,6 +820,8 @@ fun MainScreen(
     var showSearchScreen by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val scrollToCurrentTrigger = remember { mutableStateOf(0) }
+
         Scaffold(
             snackbarHost = { 
                 SnackbarHost(
@@ -917,7 +1044,7 @@ fun MainScreen(
                                         "RESUME" -> sTabResume
                                         "ALL" -> sTabAll
                                         "FAVORITES" -> sTabFavorites
-                                        "ALBUMS" -> sTabAlbums
+                                        "ALBUMS" -> if (isAlbumView) sTabAlbumsReal else sTabAlbums
                                         "PLAYLISTS" -> sTabPlaylists
                                         "FOLDERS" -> sTabFolders
                                         else -> folder
@@ -983,7 +1110,7 @@ fun MainScreen(
                                                         modifier = Modifier.size(20.dp)
                                                     )
                                                     "ALBUMS" -> Icon(
-                                                        imageVector = Icons.Default.Person,
+                                                        imageVector = if (isAlbumView) Icons.Default.Album else Icons.Default.Person,
                                                         contentDescription = label,
                                                         tint = iconTint,
                                                         modifier = Modifier.size(20.dp)
@@ -1118,7 +1245,6 @@ fun MainScreen(
                                     onCurrentSongChange(song)
                                     playbackManager.play(song, listContext, -100L, category = "ALL", shuffleMode = playbackManager.isShuffle)
                                     onIsPlayingChange(true)
-                                    onIsPlayerExpandedChange(true)
                                 },
                                 onPlaylistClick = { playlist ->
                                     selectedPlaylist = playlist
@@ -1150,6 +1276,12 @@ fun MainScreen(
                                             val newStyle = if (viewStyle == 0) 1 else 0
                                             viewStyle = newStyle
                                             settingsManager.albumViewStyle = newStyle
+                                        },
+                                        isAlbumView = isAlbumView,
+                                        onToggleAlbumView = {
+                                            val newMode = !isAlbumView
+                                            isAlbumView = newMode
+                                            settingsManager.albumBrowseMode = newMode
                                         }
                                     )
                                 }
@@ -1160,14 +1292,14 @@ fun MainScreen(
                                             albums = albums,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
+                                            activePlaylistId = if (isAlbumView) currentSong?.album?.hashCode()?.toLong() else currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = albums,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
+                                            activePlaylistId = if (isAlbumView) currentSong?.album?.hashCode()?.toLong() else currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     }
                                 }
@@ -1248,47 +1380,209 @@ fun MainScreen(
                                                 )
                                             }
                                         }
-                                        Surface(
-                                            onClick = { onShowFolderSheetChange(true) },
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    Icons.Default.FilterList,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Surface(
+                                                onClick = {
+                                                    folderHierarchyMode = !folderHierarchyMode
+                                                    settingsManager.folderHierarchyMode = folderHierarchyMode
+                                                },
+                                                shape = CircleShape,
+                                                color = if (folderHierarchyMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        if (folderHierarchyMode) Icons.AutoMirrored.Filled.List else Icons.Default.Folder,
+                                                        contentDescription = null,
+                                                        tint = if (folderHierarchyMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                            Surface(
+                                                onClick = { onShowFolderSheetChange(true) },
+                                                shape = CircleShape,
+                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        Icons.Default.FilterList,
+                                                        contentDescription = null,
+                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                val parentFolders = remember(hierarchyEntries) {
+                                    hierarchyEntries.filterIndexed { index, entry ->
+                                        index + 1 < hierarchyEntries.size && hierarchyEntries[index + 1].depth > entry.depth
+                                    }.map { it.name }.toSet()
+                                }
+
+                                var expandedFolders by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+                                val filteredHierarchy = remember(hierarchyEntries, expandedFolders) {
+                                    val result = mutableListOf<FolderEntry>()
+                                    var i = 0
+                                    while (i < hierarchyEntries.size) {
+                                        val entry = hierarchyEntries[i]
+                                        result.add(entry)
+                                        val nextIdx = i + 1
+                                        if (nextIdx < hierarchyEntries.size && hierarchyEntries[nextIdx].depth > entry.depth) {
+                                            if (entry.name !in expandedFolders) {
+                                                while (i + 1 < hierarchyEntries.size && hierarchyEntries[i + 1].depth > entry.depth) {
+                                                    i++
+                                                }
+                                            }
+                                        }
+                                        i++
+                                    }
+                                    result
+                                }
+
+                                val folderDirMap = remember(visibleFolders, rawAllSongs) {
+                                    visibleFolders.mapNotNull { folder ->
+                                        rawAllSongs.firstOrNull { it.folderName == folder }
+                                            ?.let { folder to it.path.substringBeforeLast("/") }
+                                    }.toMap()
+                                }
+
+                                val isFolderCategory = playbackManager.activeCategory == "FOLDERS"
+                                val playingFolderName = remember(playbackManager.activePlaylistId, visibleFolders) {
+                                    if (playbackManager.activeCategory == "FOLDERS" && playbackManager.activePlaylistId != null) {
+                                        visibleFolders.firstOrNull { it.hashCode().toLong() == playbackManager.activePlaylistId }
+                                    } else null
+                                }
+
+                                val ancestorNames = remember(playingFolderName, folderDirMap) {
+                                    val playingDir = playingFolderName?.let { folderDirMap[it] } ?: return@remember emptySet()
+                                    folderDirMap.filter { (name, dir) ->
+                                        name != playingFolderName && playingDir.startsWith(dir + "/")
+                                    }.keys
+                                }
+
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
                                 ) {
-                                    itemsIndexed(visibleFolders) { index, folder ->
-                                        val songCount = visibleSongs.count { it.folderName == folder }
-                                        ListItem(
-                                            headlineContent = { Text(folder, fontWeight = FontWeight.SemiBold) },
-                                            supportingContent = {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("$songCount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                }
-                                            },
-                                            leadingContent = {
-                                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(56.dp)) {
-                                                    Box(contentAlignment = Alignment.Center) {
-                                                        Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(24.dp))
+                                    if (folderHierarchyMode) {
+                                        itemsIndexed(filteredHierarchy) { index, entry ->
+                                            val songCount = visibleSongs.count { it.folderName == entry.name }
+                                            val hasChildren = entry.name in parentFolders
+                                            val isPlaying = isFolderCategory && playbackManager.activePlaylistId == entry.name.hashCode().toLong()
+                                            val isAncestor = entry.name in ancestorNames
+                                            ListItem(
+                                                headlineContent = { Text(entry.name, fontWeight = FontWeight.SemiBold) },
+                                                supportingContent = {
+                                                    if (!entry.isVirtual) {
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                                            Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text("$songCount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        }
                                                     }
-                                                }
-                                            },
-                                            modifier = Modifier.clickable { selectedFolderItem = folder }
-                                        )
+                                                },
+                                                leadingContent = {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Surface(
+                                                            shape = CircleShape,
+                                                            color = if (entry.isVirtual) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.secondaryContainer,
+                                                            modifier = Modifier.size(56.dp)
+                                                        ) {
+                                                            Box(contentAlignment = Alignment.Center) {
+                                                                Icon(
+                                                                    Icons.Default.Folder,
+                                                                    contentDescription = null,
+                                                                    tint = if (entry.isVirtual) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSecondaryContainer,
+                                                                    modifier = Modifier.size(24.dp)
+                                                                )
+                                                            }
+                                                        }
+                                                        if (isPlaying) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .align(Alignment.BottomEnd)
+                                                                    .size(14.dp)
+                                                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                trailingContent = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        if (isAncestor) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(8.dp)
+                                                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                                            )
+                                                            Spacer(Modifier.width(4.dp))
+                                                        }
+                                                        if (hasChildren) {
+                                                            IconButton(onClick = {
+                                                                expandedFolders = if (entry.name in expandedFolders) {
+                                                                    expandedFolders - entry.name
+                                                                } else {
+                                                                    expandedFolders + entry.name
+                                                                }
+                                                            }) {
+                                                                Icon(
+                                                                    if (entry.name in expandedFolders) Icons.Default.ArrowDropDown else Icons.Default.ArrowRight,
+                                                                    contentDescription = null,
+                                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .padding(start = (entry.depth * 24).dp)
+                                                    .then(
+                                                        if (entry.isVirtual) Modifier else Modifier.clickable { selectedFolderItem = entry.name }
+                                                    )
+                                            )
+                                        }
+                                    } else {
+                                        itemsIndexed(hierarchyEntries) { index, entry ->
+                                            val songCount = visibleSongs.count { it.folderName == entry.name }
+                                            val isPlaying = isFolderCategory && playbackManager.activePlaylistId == entry.name.hashCode().toLong()
+                                            ListItem(
+                                                headlineContent = { Text(entry.name, fontWeight = FontWeight.SemiBold) },
+                                                supportingContent = {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text("$songCount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
+                                                },
+                                                leadingContent = {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(56.dp)) {
+                                                            Box(contentAlignment = Alignment.Center) {
+                                                                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(24.dp))
+                                                            }
+                                                        }
+                                                        if (isPlaying) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .align(Alignment.BottomEnd)
+                                                                    .size(14.dp)
+                                                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                modifier = Modifier
+                                                    .padding(start = (entry.depth * 24).dp)
+                                                    .clickable { selectedFolderItem = entry.name }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1385,7 +1679,6 @@ fun MainScreen(
                                                     playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
                                                     onIsPlayingChange(true)
                                                 }
-                                                onIsPlayerExpandedChange(true)
                                             },
                                             onOptionsClick = {
                                                 optionsSong = song
@@ -1408,16 +1701,14 @@ fun MainScreen(
                                         if (idx != -1) idx + (if (showSimplifiedHeader) 1 else 0) else -1
                                     } else -1
                                 }
-                                
-                                ScrollToCurrentButton(
-                                    listState = pageMainListState,
-                                    targetIndex = targetIndex,
-                                    label = stringResource(R.string.queue_now_playing),
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = bottomPadding + 16.dp)
-                                )
-                                
+
+                                LaunchedEffect(scrollToCurrentTrigger.value) {
+                                    if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                                        pageMainListState.animateScrollToItem(targetIndex)
+                                        scrollToCurrentTrigger.value = 0
+                                    }
+                                }
+
                                 FastScrollbar(
                                     listState = pageMainListState,
                                     items = pageSortedSongs,
@@ -1494,7 +1785,8 @@ fun MainScreen(
                         playbackManager.toggleFavorite(song)?.let { updated ->
                             musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                         }
-                    }
+                    },
+                    scrollToCurrentTrigger = scrollToCurrentTrigger
                 )
             }
         }
@@ -1512,8 +1804,9 @@ fun MainScreen(
             }
             
             lastAlbum?.let { albumRender ->
-                val albumSongs = remember(albumRender.name, visibleSongs) {
-                    visibleSongs.filter { it.artist == albumRender.name }
+                val albumSongs = remember(albumRender.name, visibleSongs, isAlbumView) {
+                    if (isAlbumView) visibleSongs.filter { it.album == albumRender.name }
+                    else visibleSongs.filter { it.artist == albumRender.name }
                 }
                 AlbumDetailView(
                     album = albumRender,
@@ -1537,7 +1830,8 @@ fun MainScreen(
                         playbackManager.toggleFavorite(song)?.let { updated ->
                             musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                         }
-                    }
+                    },
+                    scrollToCurrentTrigger = scrollToCurrentTrigger
                 )
             }
         }
@@ -1580,88 +1874,112 @@ fun MainScreen(
                         playbackManager.toggleFavorite(song)?.let { updated ->
                             musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                         }
-                    }
+                    },
+                    scrollToCurrentTrigger = scrollToCurrentTrigger
                 )
             }
         }
 
-        val miniPlayerShape = if (isButtonNavigation) {
-            RoundedCornerShape(20.dp)
-        } else {
-            RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-        }
+        val miniPlayerShape = RoundedCornerShape(20.dp)
 
         // Mini Player
-        AnimatedVisibility(
-            visible = currentSong != null && !isPlayerExpanded,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it }),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .then(
-                    if (isButtonNavigation) {
-                        Modifier
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = bottomInset + 8.dp)
-                    } else {
-                        Modifier
-                    }
-                )
-                .clip(miniPlayerShape)
-        ) {
-            val song = currentSong
-            if (song != null) {
-                val isDarkThemeMini = when (themeMode) {
-                    1 -> false
-                    2 -> true
-                    else -> isSystemInDarkTheme()
-                }
-                val miniPrefs = LocalContext.current.getSharedPreferences("lune_settings", android.content.Context.MODE_PRIVATE)
-                var blurEnabled by remember { mutableStateOf(settingsManager.isBlurEnabled) }
-                var blurDarkMode by remember { mutableStateOf(settingsManager.isBlurDarkMode) }
-                var blurLightMode by remember { mutableStateOf(settingsManager.isBlurLightMode) }
-                DisposableEffect(miniPrefs) {
-                    val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                        when (key) {
-                            "is_blur_enabled" -> blurEnabled = miniPrefs.getBoolean("is_blur_enabled", true)
-                            "is_blur_dark_mode" -> blurDarkMode = miniPrefs.getBoolean("is_blur_dark_mode", true)
-                            "is_blur_light_mode" -> blurLightMode = miniPrefs.getBoolean("is_blur_light_mode", false)
-                        }
-                    }
-                    miniPrefs.registerOnSharedPreferenceChangeListener(listener)
-                    onDispose { miniPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
-                }
-                val hasBlurBackgroundMini = blurEnabled &&
-                    (if (isDarkThemeMini) blurDarkMode else blurLightMode)
 
-                MiniPlayer(
-                    song = song,
-                    isPlaying = isPlaying,
-                    showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
-                    visualizerData = visualizerData,
-                    currentOutputIcon = playbackManager.currentOutputIcon,
-                    coverShape = coverShape,
-                    coverScale = coverScale,
-                    coverSpin = coverSpin,
-                    coverVinylEffect = coverVinylEffect,
-                    controlsIconStyle = controlsIconStyle,
-                    isControlsFilled = isControlsFilled,
-                    useCustomControlsColor = useCustomControlsColor,
-                    controlsColorPalette = controlsColorPalette,
-                    shape = miniPlayerShape,
-                    hasBlurBackground = hasBlurBackgroundMini,
-                    isDarkTheme = isDarkThemeMini,
-                    onTogglePlay = { 
-                        if (settingsManager.isHapticVibrationEnabled) {
-                            vibrator.triggerLightVibration()
+        if (currentSong != null && !isPlayerExpanded) {
+            val song = currentSong!!
+            val isDarkThemeMini = when (themeMode) {
+                1 -> false
+                2 -> true
+                else -> isSystemInDarkTheme()
+            }
+            val miniPrefs = LocalContext.current.getSharedPreferences("lune_settings", android.content.Context.MODE_PRIVATE)
+            var blurEnabled by remember { mutableStateOf(settingsManager.isBlurEnabled) }
+            var blurDarkMode by remember { mutableStateOf(settingsManager.isBlurDarkMode) }
+            var blurLightMode by remember { mutableStateOf(settingsManager.isBlurLightMode) }
+            DisposableEffect(miniPrefs) {
+                val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    when (key) {
+                        "is_blur_enabled" -> blurEnabled = miniPrefs.getBoolean("is_blur_enabled", true)
+                        "is_blur_dark_mode" -> blurDarkMode = miniPrefs.getBoolean("is_blur_dark_mode", true)
+                        "is_blur_light_mode" -> blurLightMode = miniPrefs.getBoolean("is_blur_light_mode", false)
+                    }
+                }
+                miniPrefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose { miniPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
+            }
+            val hasBlurBackgroundMini = blurEnabled &&
+                (if (isDarkThemeMini) blurDarkMode else blurLightMode)
+
+            AnimatedContent(
+                targetState = settingsManager.isMiniPlayerMinimized,
+                transitionSpec = {
+                    fadeIn(tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300, easing = FastOutSlowInEasing)) togetherWith
+                    fadeOut(tween(150)) + scaleOut(targetScale = 0.8f, animationSpec = tween(250, easing = FastOutSlowInEasing)) using
+                    SizeTransform(clip = false) { _, _ ->
+                        tween(300, easing = FastOutSlowInEasing)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                label = "miniPlayerTransition"
+            ) { minimized ->
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    if (minimized) {
+                        MiniPlayerMinimized(
+                            song = song,
+                            coverShape = coverShape,
+                            coverScale = coverScale,
+                            coverSpin = coverSpin,
+                            coverVinylEffect = coverVinylEffect,
+                            hasBlurBackground = hasBlurBackgroundMini,
+                            isDarkTheme = isDarkThemeMini,
+                            isPlaying = isPlaying,
+                            onRestore = { settingsManager.isMiniPlayerMinimized = false },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 12.dp, bottom = bottomInset + 12.dp)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 25.dp, end = 25.dp)
+                                .padding(bottom = bottomInset + 8.dp)
+                        ) {
+                            MiniPlayer(
+                                song = song,
+                                isPlaying = isPlaying,
+                                showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
+                                visualizerData = visualizerData,
+                                currentOutputIcon = playbackManager.currentOutputIcon,
+                                coverShape = coverShape,
+                                coverScale = coverScale,
+                                coverSpin = coverSpin,
+                                coverVinylEffect = coverVinylEffect,
+                                controlsIconStyle = controlsIconStyle,
+                                isControlsFilled = isControlsFilled,
+                                useCustomControlsColor = useCustomControlsColor,
+                                controlsColorPalette = controlsColorPalette,
+                                shape = miniPlayerShape,
+                                hasBlurBackground = hasBlurBackgroundMini,
+                                isDarkTheme = isDarkThemeMini,
+                                onTogglePlay = { 
+                                    if (settingsManager.isHapticVibrationEnabled) {
+                                        vibrator.triggerLightVibration()
+                                    }
+                                    if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                                    onIsPlayingChange(!isPlaying)
+                                },
+                                onExpand = { onIsPlayerExpandedChange(true) },
+                                onPrevious = playPrevious,
+                                onNext = playNext,
+                                onSearchClick = { showSearchScreen = true },
+                                onScrollToCurrent = { scrollToCurrentTrigger.value++ },
+                                onMinimize = { settingsManager.isMiniPlayerMinimized = true }
+                            )
                         }
-                        if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                        onIsPlayingChange(!isPlaying)
-                    },
-                    onExpand = { onIsPlayerExpandedChange(true) },
-                    onPrevious = playPrevious,
-                    onNext = playNext
-                )
+                    }
+                }
             }
         }
 
@@ -1748,6 +2066,7 @@ fun MainScreen(
             },
             onNavigateToAlbum = { album ->
                 selectedAlbum = album
+                isAlbumView = album.artist.isNotEmpty()
                 showSearchScreen = false
                 onSelectedFolderChange("ALBUMS")
             },
@@ -1794,12 +2113,12 @@ fun MainScreen(
                         }
                     )
                 },
-                onSave = { updatedTitle, updatedArtist, updatedCoverUri ->
+                onSave = { updatedTitle, updatedArtist, updatedAlbum, updatedCoverUri ->
                     musicViewModel.updateMetadata(
                         song = song,
                         title = updatedTitle,
                         artist = updatedArtist,
-                        album = song.album,
+                        album = updatedAlbum,
                         genre = song.genre,
                         coverUri = updatedCoverUri,
                         onSuccess = {
@@ -1861,9 +2180,9 @@ fun MainScreen(
                         val song = songToDelete!!
                         showDeleteDialog = false
                         
-                        // Fix: If current song is deleted, skip to next
+                        // Fix: If current song is deleted, skip to next (respect pause state)
                         if (currentSong?.id == song.id) {
-                            playbackManager.playNextFromService()
+                            playbackManager.playNextFromService(startPlayback = isPlaying)
                         }
                         
                         musicViewModel.prepareDeleteSong(song)

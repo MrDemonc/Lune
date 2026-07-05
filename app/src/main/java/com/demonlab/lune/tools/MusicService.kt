@@ -1,7 +1,10 @@
 package com.demonlab.lune.tools
 
 import android.app.*
+import android.content.Context
 import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
@@ -73,6 +76,7 @@ class MusicService : MediaBrowserServiceCompat() {
     private var lastBlurredBitmap: Bitmap? = null
     private var lastSongForRounded: Song? = null
     private var cachedRoundedArt: Bitmap? = null
+    private var becomingNoisyReceiver: BroadcastReceiver? = null
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -108,15 +112,29 @@ class MusicService : MediaBrowserServiceCompat() {
         const val ACTION_PAUSE = "com.demonlab.lune.ACTION_PAUSE"
         const val ACTION_PREVIOUS = "com.demonlab.lune.ACTION_PREVIOUS"
         const val ACTION_NEXT = "com.demonlab.lune.ACTION_NEXT"
+        const val ACTION_SHUFFLE = "com.demonlab.lune.ACTION_SHUFFLE"
+        const val ACTION_FAVORITE = "com.demonlab.lune.ACTION_FAVORITE"
+        const val PAUSE_TIMEOUT_MS = 5 * 60 * 1000L
     }
 
     inner class MusicBinder : Binder() {
         fun getService(): MusicService = this@MusicService
     }
 
+    private var pauseTimeoutJob: Job? = null
+
     override fun onCreate() {
         super.onCreate()
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+
+        becomingNoisyReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY && isPlaying()) {
+                    pause()
+                }
+            }
+        }
+        registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
 
         mediaSession = MediaSessionCompat(this, "MusicService").apply {
             setCallback(object : MediaSessionCompat.Callback() {
@@ -129,6 +147,24 @@ class MusicService : MediaBrowserServiceCompat() {
                     PlaybackManager.getInstance(applicationContext).playPreviousFromService()
                 }
                 override fun onSeekTo(pos: Long) { seekTo(pos.toInt()) }
+                override fun onCustomAction(action: String?, extras: Bundle?) {
+                    val pm = PlaybackManager.getInstance(applicationContext)
+                    when (action) {
+                        "shuffle" -> {
+                            pm.toggleShuffle()
+                            pm.currentSong?.let { showNotification(it, isPlaying()) }
+                            updatePlaybackState()
+                        }
+                        "favorite" -> {
+                            pm.toggleFavorite(onFavoriteToggled = { updatedSong ->
+                                val provider = MusicProvider(applicationContext)
+                                provider.updateSongInCache(updatedSong)
+                                showNotification(updatedSong, isPlaying())
+                                updatePlaybackState()
+                            })
+                        }
+                    }
+                }
 
                 override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
                     if (mediaId == null) return
@@ -171,6 +207,17 @@ class MusicService : MediaBrowserServiceCompat() {
         }
         sessionToken = mediaSession?.sessionToken
         settingsManager = SettingsManager.getInstance(this)
+
+        serviceScope.launch {
+            PlaybackManager.getInstance(this@MusicService).refreshNotification.collect {
+                val pm = PlaybackManager.getInstance(this@MusicService)
+                val song = pm.currentSong
+                if (song != null) {
+                    showNotification(song, isPlaying())
+                }
+                updatePlaybackState()
+            }
+        }
     }
 
     private fun requestAudioFocus(): Boolean {
@@ -206,23 +253,23 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private fun setupAudioFx(sessionId: Int, isSecondary: Boolean = false) {
-        try {
-            if (isSecondary) {
-                secondaryEqualizer?.release()
-                secondaryBassBoost?.release()
-                secondaryVirtualizer?.release()
-                loudnessEffect?.release(true)
-                reverbEffect?.release(true)
-                dynamicsEffect?.release(true)
-            } else {
-                equalizer?.release()
-                bassBoost?.release()
-                virtualizer?.release()
-                loudnessEffect?.release(false)
-                reverbEffect?.release(false)
-                dynamicsEffect?.release(false)
-            }
+        if (isSecondary) {
+            secondaryEqualizer?.release()
+            secondaryBassBoost?.release()
+            secondaryVirtualizer?.release()
+            loudnessEffect?.release(true)
+            reverbEffect?.release(true)
+            dynamicsEffect?.release(true)
+        } else {
+            equalizer?.release()
+            bassBoost?.release()
+            virtualizer?.release()
+            loudnessEffect?.release(false)
+            reverbEffect?.release(false)
+            dynamicsEffect?.release(false)
+        }
 
+        try {
             val eq = Equalizer(0, sessionId).apply {
                 enabled = settingsManager.isEqEnabled
                 val storedBands = settingsManager.eqBandLevels.split(",").filter { it.isNotEmpty() }
@@ -234,27 +281,33 @@ class MusicService : MediaBrowserServiceCompat() {
                     }
                 }
             }
+            if (isSecondary) secondaryEqualizer = eq else equalizer = eq
+        } catch (e: Exception) { e.printStackTrace() }
 
+        try {
             val bb = BassBoost(0, sessionId).apply {
-                enabled = false
+                enabled = settingsManager.isBassBoostEnabled
+                if (enabled && strengthSupported) setStrength(settingsManager.bassBoostLevel.toShort())
             }
+            if (isSecondary) secondaryBassBoost = bb else bassBoost = bb
+        } catch (e: Exception) { e.printStackTrace() }
 
+        try {
             val virt = Virtualizer(0, sessionId).apply {
                 enabled = settingsManager.isSpatialAudioEnabled
                 if (strengthSupported) {
-                    val s = 800.toShort()
-                    setStrength(s)
-                    currentSpatialStrength = s
+                    setStrength(800.toShort())
+                    currentSpatialStrength = 800.toShort()
                 }
             }
+            if (isSecondary) secondaryVirtualizer = virt else virtualizer = virt
+        } catch (e: Exception) { e.printStackTrace() }
 
+        try {
             if (isSecondary) {
                 loudnessEffect?.setup(sessionId, true, settingsManager.isLoudnessEnabled, settingsManager.loudnessGain)
                 reverbEffect?.setup(sessionId, true, settingsManager.reverbPreset)
                 dynamicsEffect?.setup(sessionId, true, settingsManager.dynamicsPreset)
-                secondaryEqualizer = eq
-                secondaryBassBoost = bb
-                secondaryVirtualizer = virt
             } else {
                 val loud = LoudnessEffect().apply {
                     setup(sessionId, false, settingsManager.isLoudnessEnabled, settingsManager.loudnessGain)
@@ -268,25 +321,45 @@ class MusicService : MediaBrowserServiceCompat() {
                     setup(sessionId, false, settingsManager.dynamicsPreset)
                 }
                 dynamicsEffect = dyn
-                equalizer = eq
-                bassBoost = bb
-                virtualizer = virt
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
+        val pm = PlaybackManager.getInstance(this)
 
         when (action) {
             ACTION_PLAY -> resume()
             ACTION_PAUSE -> pause()
-            ACTION_PREVIOUS -> PlaybackManager.getInstance(this).playPreviousFromService()
-            ACTION_NEXT -> PlaybackManager.getInstance(this).playNextFromService()
+            ACTION_PREVIOUS -> pm.playPreviousFromService()
+            ACTION_NEXT -> pm.playNextFromService()
+            ACTION_SHUFFLE -> {
+                pm.toggleShuffle()
+                currentSong()?.let { showNotification(it, isPlaying()) }
+                updatePlaybackState()
+            }
+            ACTION_FAVORITE -> {
+                pm.toggleFavorite(onFavoriteToggled = { updatedSong ->
+                    val provider = MusicProvider(this)
+                    provider.updateSongInCache(updatedSong)
+                    showNotification(updatedSong, isPlaying())
+                })
+            }
         }
-        return START_NOT_STICKY
+        return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val notification = NotificationCompat.Builder(this, "music_playback_channel")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setOngoing(true)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.no_song_playing))
+            .setSilent(true)
+            .build()
+        startForeground(1, notification)
+        super.onTaskRemoved(rootIntent)
     }
 
 
@@ -490,8 +563,10 @@ class MusicService : MediaBrowserServiceCompat() {
     fun crossfadeToSong(song: Song) {
         if (!isCrossfading) {
             val mp = mediaPlayer
-            val remaining = if (mp != null) (mp.duration - mp.currentPosition).toLong() else 12000L
-            performCrossfade(song, if (remaining in 1..12000L) remaining else 12000L)
+            val fadeMs = if (settingsManager.isCrossfadeCustomDuration)
+                settingsManager.crossfadeDurationSeconds * 1000L else 12000L
+            val remaining = if (mp != null) (mp.duration - mp.currentPosition).toLong() else fadeMs
+            performCrossfade(song, if (remaining in 1..fadeMs) remaining else fadeMs)
         }
     }
 
@@ -505,7 +580,8 @@ class MusicService : MediaBrowserServiceCompat() {
                 if (mp != null && mp.isPlaying && (playbackManager.isCrossfade || playbackManager.isAutomix) && !isCrossfading) {
                     val remaining = mp.duration - mp.currentPosition
                     val duration = mp.duration
-                    val maxTriggerMs = 12000L // Standard transition duration: 12 seconds
+                    val maxTriggerMs = if (settingsManager.isCrossfadeCustomDuration)
+                        settingsManager.crossfadeDurationSeconds * 1000L else 12000L
 
                     // Only fire if we have enough time left and are nearing the end
                     if (duration > maxTriggerMs && remaining in 1..maxTriggerMs && mp.currentPosition > (duration / 2)) {
@@ -575,9 +651,6 @@ class MusicService : MediaBrowserServiceCompat() {
                 }
 
                 val sessionId = secondaryPlayer?.audioSessionId ?: 0
-                if (sessionId != 0) {
-                    setupAudioFx(sessionId, true)
-                }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try {
@@ -618,11 +691,12 @@ class MusicService : MediaBrowserServiceCompat() {
 
                     val progress = i.toFloat() / steps
 
-                    // Asymmetric crossfade: outgoing track fades out fast (quadratic),
-                    // incoming track fades in complementary. Cross point at ~30%,
-                    // avoids the muddy overlap of a constant-power curve.
+                    // Smoother fade-in for the incoming track to compensate for RAW audio loudness
+                    // and apply a headroom factor if EQ is enabled to prevent jarring volume jumps
+                    // when the EQ is finally applied at the end of the transition.
+                    val targetEqFactor = if (settingsManager.isEqEnabled || settingsManager.isBassBoostEnabled) 0.6f else 1.0f
                     val volCurrent = (1 - progress) * (1 - progress)
-                    val volNext = 1 - ((1 - progress) * (1 - progress))
+                    val volNext = (progress * progress) * targetEqFactor
 
                     mediaPlayer?.setVolume(volCurrent, volCurrent)
                     secondaryPlayer?.setVolume(volNext, volNext)
@@ -642,12 +716,10 @@ class MusicService : MediaBrowserServiceCompat() {
                 reverbEffect?.release(false)
                 dynamicsEffect?.release(false)
 
-                equalizer = secondaryEqualizer
-                bassBoost = secondaryBassBoost
-                virtualizer = secondaryVirtualizer
-                loudnessEffect?.handover()
-                reverbEffect?.handover()
-                dynamicsEffect?.handover()
+                val newSessionId = mediaPlayer?.audioSessionId ?: 0
+                if (newSessionId != 0) {
+                    setupAudioFx(newSessionId, false)
+                }
 
                 secondaryEqualizer = null
                 secondaryBassBoost = null
@@ -669,6 +741,8 @@ class MusicService : MediaBrowserServiceCompat() {
                     oldPlayer?.release()
                 }
 
+                isCrossfading = false
+                playbackManager.isTransitioning = false
                 PlaybackManager.getInstance(applicationContext).updateCurrentSongState(nextSong)
 
                 val art = fetchAlbumArt(nextSong)
@@ -693,7 +767,7 @@ class MusicService : MediaBrowserServiceCompat() {
     private suspend fun fetchAlbumArt(song: Song): android.graphics.Bitmap? {
         val loader = this.imageLoader
         val request = ImageRequest.Builder(this)
-            .data(song.coverUrl ?: song.albumArtUri)
+            .data(song.coverUrl ?: song.uri)
             .allowHardware(false)
             .build()
 
@@ -712,6 +786,20 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     fun pause() {
+        pauseTimeoutJob?.cancel()
+        pauseTimeoutJob = serviceScope.launch {
+            delay(PAUSE_TIMEOUT_MS)
+            PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            mediaSession?.release()
+            stopSelf()
+        }
+
         mediaPlayer?.pause()
         secondaryPlayer?.pause()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
@@ -726,6 +814,7 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     fun resume() {
+        pauseTimeoutJob?.cancel()
         requestAudioFocus()
         mediaPlayer?.start()
         secondaryPlayer?.start()
@@ -785,6 +874,62 @@ class MusicService : MediaBrowserServiceCompat() {
             val song = currentSong() ?: return@launch
             val art = fetchAlbumArt(song)
             showNotification(song, false, art)
+        }
+    }
+
+    fun restorePlayback(song: Song, positionMs: Long, andPlay: Boolean) {
+        isCrossfading = false
+        PlaybackManager.getInstance(applicationContext).isTransitioning = false
+        monitorJob?.cancel()
+        requestAudioFocus()
+
+        mediaPlayer?.setOnCompletionListener(null)
+        mediaPlayer?.setOnErrorListener(null)
+        mediaPlayer?.release()
+        secondaryPlayer?.setOnCompletionListener(null)
+        secondaryPlayer?.setOnErrorListener(null)
+        secondaryPlayer?.release()
+        secondaryPlayer = null
+
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(applicationContext, song.uri)
+            setOnPreparedListener {
+                seekTo(positionMs.toInt())
+                start()
+                if (!andPlay) pause()
+                val sessionId = audioSessionId
+                setupAudioFx(sessionId, false)
+                setVolume(1f, 1f)
+                applyBalance(PlaybackManager.getInstance(applicationContext).balance)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        val pm = PlaybackManager.getInstance(applicationContext)
+                        val speed = pm.playbackSpeed
+                        val pitch = pm.playbackPitch
+                        if (speed != 1.0f || pitch != 1.0f) {
+                            val params = playbackParams
+                            params.speed = speed
+                            params.pitch = pitch
+                            playbackParams = params
+                        }
+                    } catch (e: Exception) {}
+                }
+                updatePlaybackState()
+                serviceScope.launch {
+                    val art = fetchAlbumArt(song)
+                    updateMetadata(song, art)
+                    showNotification(song, andPlay, art)
+                    PlaybackManager.getInstance(applicationContext).clearLyrics()
+                    extractLyrics(song)
+                }
+            }
+            setOnErrorListener { _, _, _ -> true }
+            prepareAsync()
+            setOnCompletionListener {
+                if (!isCrossfading) {
+                    PlaybackManager.getInstance(applicationContext).playNextFromService(true)
+                }
+            }
         }
     }
 
@@ -939,6 +1084,7 @@ class MusicService : MediaBrowserServiceCompat() {
             .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
             .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ARTIST, song.artist)
             .putLong(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_DURATION, song.duration.toLong())
+            .putLong("is_favorite", if (song.isFavorite) 1L else 0L)
 
         art?.let {
             metadataBuilder.putBitmap(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ALBUM_ART, it)
@@ -951,15 +1097,36 @@ class MusicService : MediaBrowserServiceCompat() {
         val state = if (isPlaying()) android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING
                     else android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
 
+        val pm = PlaybackManager.getInstance(this)
+        val currentSong = pm.currentSong
+        val extras = Bundle().apply {
+            putBoolean("shuffle_mode", pm.isShuffle)
+            putInt("repeat_mode", pm.repeatMode)
+        }
+
         val stateBuilder = android.support.v4.media.session.PlaybackStateCompat.Builder()
             .setActions(
                 android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY or
                 android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE or
                 android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                 android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_SEEK_TO
+                android.support.v4.media.session.PlaybackStateCompat.ACTION_SEEK_TO or
+                android.support.v4.media.session.PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE
             )
             .setState(state, currentPosition().toLong(), 1.0f)
+            .setExtras(extras)
+
+        val shuffleAction = android.support.v4.media.session.PlaybackStateCompat.CustomAction.Builder(
+            "shuffle", "Shuffle",
+            if (pm.isShuffle) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle
+        ).build()
+        stateBuilder.addCustomAction(shuffleAction)
+
+        val favIcon = if (currentSong?.isFavorite == true) R.drawable.ic_favorite else R.drawable.ic_favorite_border
+        val favoriteAction = android.support.v4.media.session.PlaybackStateCompat.CustomAction.Builder(
+            "favorite", "Favorite", favIcon
+        ).build()
+        stateBuilder.addCustomAction(favoriteAction)
 
         mediaSession?.setPlaybackState(stateBuilder.build())
     }
@@ -996,6 +1163,22 @@ class MusicService : MediaBrowserServiceCompat() {
             )
         }
 
+        val pm = PlaybackManager.getInstance(this)
+        val isShuffleOn = pm.isShuffle
+        val isFav = song.isFavorite
+
+        val shuffleAction = NotificationCompat.Action(
+            if (isShuffleOn) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle,
+            "Shuffle",
+            getServicePendingIntent(ACTION_SHUFFLE)
+        )
+
+        val favoriteAction = NotificationCompat.Action(
+            if (isFav) R.drawable.ic_favorite else R.drawable.ic_favorite_border,
+            "Favorite",
+            getServicePendingIntent(ACTION_FAVORITE)
+        )
+
         val notification = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setLargeIcon(art)
@@ -1007,8 +1190,10 @@ class MusicService : MediaBrowserServiceCompat() {
             .addAction(android.R.drawable.ic_media_previous, "Previous", getServicePendingIntent(ACTION_PREVIOUS))
             .addAction(playPauseAction)
             .addAction(android.R.drawable.ic_media_next, "Next", getServicePendingIntent(ACTION_NEXT))
+            .addAction(shuffleAction)
+            .addAction(favoriteAction)
             .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(0, 1, 2)
+                .setShowActionsInCompactView(0, 1, 2, 3, 4)
                 .setMediaSession(mediaSession?.sessionToken))
             .build()
 
@@ -1023,6 +1208,7 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     override fun onDestroy() {
+        becomingNoisyReceiver?.let { unregisterReceiver(it) }
         equalizer?.release()
         bassBoost?.release()
         virtualizer?.release()
@@ -1036,6 +1222,7 @@ class MusicService : MediaBrowserServiceCompat() {
         secondaryPlayer?.release()
         mediaSession?.release()
         spatialRampJob?.cancel()
+        pauseTimeoutJob?.cancel()
         serviceScope.cancel()
         super.onDestroy()
     }

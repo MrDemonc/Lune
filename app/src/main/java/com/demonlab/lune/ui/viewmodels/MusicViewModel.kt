@@ -116,11 +116,20 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 coverUri = coverUri?.toString()
             )
             if (success) {
-                syncSongsInternal()
+                allSongs = allSongs.map {
+                    if (it.id == song.id) it.copy(
+                        title = title,
+                        artist = artist,
+                        album = album,
+                        genre = genre ?: it.genre,
+                        coverUrl = coverUri?.toString() ?: it.coverUrl
+                    ) else it
+                }
                 onSuccess()
+                syncSongsInternal()
             }
         }
-    } // added missing brace
+    }
 
     fun restoreOriginalMetadata(song: Song, onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -185,6 +194,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private suspend fun awaitLoadPlaylists() {
+        val (newPlaylists, newMappings) = withContext(Dispatchers.IO) {
+            val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
+            Pair(db.playlistDao().getAllPlaylists(), db.playlistDao().getAllPlaylistMappings())
+        }
+        playlists = newPlaylists
+        playlistMappings = newMappings
+    }
+
     fun addSongToPlaylist(playlistId: Long, songId: Long, onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
@@ -192,7 +210,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     com.demonlab.lune.data.PlaylistSong(playlistId, songId)
                 )
             }
-            loadPlaylists()
+            awaitLoadPlaylists()
             onComplete?.invoke()
         }
     }
@@ -204,7 +222,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 val playlistSongs = songIds.map { com.demonlab.lune.data.PlaylistSong(playlistId, it) }
                 db.playlistDao().addSongsToPlaylist(playlistSongs)
             }
-            loadPlaylists()
+            awaitLoadPlaylists()
             onComplete?.invoke()
         }
     }
@@ -214,7 +232,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
                 db.playlistDao().removeSongsFromPlaylist(playlistId, songIds)
             }
-            loadPlaylists()
+            awaitLoadPlaylists()
             onComplete?.invoke()
         }
     }
@@ -224,7 +242,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().removeSongFromPlaylist(playlistId, songId)
             }
-            loadPlaylists()
+            awaitLoadPlaylists()
             onComplete?.invoke()
         }
     }
@@ -341,8 +359,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val context = getApplication<Application>()
         val settingsManager = SettingsManager.getInstance(context)
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            val deleted = withContext(Dispatchers.IO) {
                 try {
+                    var success = false
+
                     // 1. Try to delete via SAF if we have a folder URI
                     val folderUriString = settingsManager.musicFolderUri as String?
                     if (folderUriString != null) {
@@ -351,36 +371,38 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         if (tree != null && tree.canWrite()) {
                             val fileName = java.io.File(songData).name
                             val fileInSaf = tree.findFile(fileName)
-                            fileInSaf?.delete()
+                            if (fileInSaf?.delete() == true) success = true
                         }
                     }
 
                     // 2. Delete from MediaStore
-                    // On Android 11+, this might throw a RecoverableSecurityException if not owner
-                    context.contentResolver.delete(
-                        songUri,
-                        null,
-                        null
-                    )
+                    val rows = context.contentResolver.delete(songUri, null, null)
+                    if (rows > 0) success = true
                     
-                    // 3. Fallback: direct file delete (will only work if owner or on older APIs)
+                    // 3. Fallback: direct file delete
                     val file = java.io.File(songData)
-                    if (file.exists()) {
-                        file.delete()
+                    if (file.exists() && file.delete()) success = true
+                    
+                    // 4. Delete metadata overrides (only if deletion succeeded)
+                    if (success) {
+                        val db = com.demonlab.lune.data.MusicDatabase.getDatabase(context)
+                        val override = db.songOverrideDao().getOverrideForSong(songId)
+                        if (override != null) {
+                            db.songOverrideDao().deleteOverride(override)
+                        }
                     }
                     
-                    // 4. Delete metadata overrides
-                    val db = com.demonlab.lune.data.MusicDatabase.getDatabase(context)
-                    val override = db.songOverrideDao().getOverrideForSong(songId)
-                    if (override != null) {
-                        db.songOverrideDao().deleteOverride(override)
-                    }
+                    success
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    false
                 }
             }
+            
+            if (deleted) {
+                loadSongs()
+            }
             visuallyDeletedIds.remove(songId)
-            loadSongs()
         }
     }
 

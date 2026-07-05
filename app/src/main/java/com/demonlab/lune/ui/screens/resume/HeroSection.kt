@@ -343,7 +343,7 @@ private fun ContinueListeningCard(
             modifier = Modifier.padding(12.dp)
         ) {
             AsyncImage(
-                model = song.albumArtUri ?: song.coverUrl,
+                model = song.coverUrl ?: song.uri,
                 contentDescription = null,
                 modifier = Modifier
                     .size(56.dp)

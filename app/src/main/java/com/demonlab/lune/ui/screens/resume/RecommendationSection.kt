@@ -76,7 +76,7 @@ private fun CompactSongTile(
             modifier = Modifier.padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp)
         ) {
             AsyncImage(
-                model = song.albumArtUri ?: song.coverUrl,
+                model = song.coverUrl ?: song.uri,
                 contentDescription = null,
                 modifier = Modifier
                     .size(36.dp)

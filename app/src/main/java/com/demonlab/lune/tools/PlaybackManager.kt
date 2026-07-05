@@ -20,6 +20,9 @@ import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.ui.graphics.vector.ImageVector
 import android.media.audiofx.Visualizer
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.*
 import java.util.Calendar
@@ -30,6 +33,9 @@ class PlaybackManager private constructor(private val context: Context) {
     private var musicService: MusicService? = null
     private var isBound = false
     private var pendingPlaySong: Song? = null
+    private var pendingRestoreSong: Song? = null
+    private var pendingRestorePosition: Long = 0L
+    private var pendingRestorePlay: Boolean = false
     var currentSong by mutableStateOf<Song?>(null)
         private set
     var isPlaying by mutableStateOf(false)
@@ -62,6 +68,10 @@ class PlaybackManager private constructor(private val context: Context) {
     
     var isEqEnabled by mutableStateOf(settings.isEqEnabled)
         private set
+    var eqBandsCount: Short by mutableStateOf(0)
+        private set
+    var eqBandsRange: ShortArray? by mutableStateOf(null)
+        private set
     var isBassBoostEnabled by mutableStateOf(settings.isBassBoostEnabled)
         private set
     var isSpatialAudioEnabled by mutableStateOf(settings.isSpatialAudioEnabled)
@@ -70,13 +80,108 @@ class PlaybackManager private constructor(private val context: Context) {
     private var frontQueueInsertCount = 0
     private var bassBoostOffset: Short = 0
 
+    val playbackStateSaver = PlaybackStateSaver(
+        context.getSharedPreferences("lune_state", Context.MODE_PRIVATE)
+    )
+    var stateRestored by mutableStateOf(false)
+        private set
+
     fun resetQueueCounts() {
         frontQueueInsertCount = 0
+    }
+
+    fun refreshActivePlaylist(newSongs: List<Song>) {
+        if (activePlaylistId == null) return
+        activePlaylist = newSongs
+        if (isShuffle) {
+            updateShuffledQueue(keepCurrentFirst = true)
+        }
+    }
+
+    fun savePlaybackState(wasPlaying: Boolean = isPlaying) {
+        val pos = musicService?.currentPosition()?.toLong() ?: 0L
+        playbackStateSaver.save(
+            SavedPlaybackState(
+                currentSongId = currentSong?.id ?: -1L,
+                playbackPositionMs = pos,
+                queueIds = activePlaylist.map { it.id },
+                playlistId = activePlaylistId,
+                playlistName = activePlaylistName,
+                playlistCategory = activeCategory,
+                shuffledIndices = if (isShuffle) shuffledIndices else emptyList(),
+                shufflePosition = if (isShuffle) currentShufflePosition else -1,
+                frontQueueInsertCount = frontQueueInsertCount,
+                wasPlaying = wasPlaying,
+                queueSections = queueSections
+            )
+        )
+    }
+
+    fun restorePlaybackState(songs: List<Song>) {
+        val saved = playbackStateSaver.restore() ?: run {
+            stateRestored = true
+            return
+        }
+        if (saved.currentSongId == -1L || saved.queueIds.isEmpty()) {
+            stateRestored = true
+            return
+        }
+        val restoredSongs = saved.queueIds.mapNotNull { id -> songs.find { it.id == id } }
+        if (restoredSongs.isEmpty()) {
+            stateRestored = true
+            return
+        }
+        val restoredCurrent = restoredSongs.find { it.id == saved.currentSongId }
+            ?: restoredSongs.first()
+
+        // Read shuffle preference for this playlist
+        val plId = saved.playlistId
+        val shuffle = if (plId != null) settings.getPlaylistShuffle(plId) else settings.isShuffle
+
+        currentSong = restoredCurrent
+        activePlaylist = restoredSongs
+        activePlaylistId = saved.playlistId
+        activePlaylistName = saved.playlistName
+        queueSections = saved.queueSections
+        if (saved.playlistCategory != null) {
+            activeCategory = saved.playlistCategory
+            settings.activeCategory = saved.playlistCategory
+        }
+
+        isShuffle = shuffle
+
+        if (shuffle && saved.shuffledIndices.isNotEmpty()) {
+            // Validate and restore shuffled indices
+            val validIndices = saved.shuffledIndices.filter { it < restoredSongs.size }
+            if (validIndices.isNotEmpty()) {
+                shuffledIndices = validIndices
+                currentShufflePosition = saved.shufflePosition.coerceIn(0, validIndices.size - 1)
+            } else {
+                updateShuffledQueue(keepCurrentFirst = false)
+            }
+        } else {
+            updateShuffledQueue(keepCurrentFirst = false)
+        }
+
+        frontQueueInsertCount = saved.frontQueueInsertCount
+        isQueueFinished = false
+        stateRestored = true
+
+        // Restore playback position (always paused — user taps play to resume)
+        if (musicService != null) {
+            musicService?.restorePlayback(restoredCurrent, saved.playbackPositionMs, andPlay = false)
+        } else {
+            pendingRestoreSong = restoredCurrent
+            pendingRestorePosition = saved.playbackPositionMs
+            pendingRestorePlay = false
+        }
     }
 
     var playbackSpeed by mutableStateOf(settings.playbackSpeed)
         private set
     var playbackPitch by mutableStateOf(settings.playbackPitch)
+        private set
+    var isTuning432 by mutableStateOf(settings.isTuning432)
         private set
     var reverbPreset by mutableStateOf(settings.reverbPreset)
         private set
@@ -115,6 +220,12 @@ class PlaybackManager private constructor(private val context: Context) {
     private var visualizer: Visualizer? = null
     private var lastMagnitudes = FloatArray(48) { 0.1f }
     private val smoothingFactor = 1f // 0.7f for very fast and reactive movement
+
+    private val _favoriteChanged = MutableSharedFlow<Pair<Long, Boolean>>(extraBufferCapacity = 1)
+    val favoriteChanged: SharedFlow<Pair<Long, Boolean>> = _favoriteChanged.asSharedFlow()
+
+    private val _refreshNotification = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val refreshNotification: SharedFlow<Unit> = _refreshNotification.asSharedFlow()
 
 
 
@@ -158,6 +269,10 @@ class PlaybackManager private constructor(private val context: Context) {
             pendingPlaySong?.let { 
                 musicService?.playSong(it)
                 pendingPlaySong = null
+            }
+            pendingRestoreSong?.let { song ->
+                musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
+                pendingRestoreSong = null
             }
         }
 
@@ -324,6 +439,8 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+
+        savePlaybackState(wasPlaying = true)
     }
 
     fun startVisualizer() {
@@ -441,11 +558,13 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
 
-    fun playNextFromService(isNaturalEnd: Boolean = false) {
+    fun playNextFromService(isNaturalEnd: Boolean = false, startPlayback: Boolean = true) {
         if (activePlaylist.isEmpty()) return
         
         if (repeatMode == 1) { // Repeat One
-            currentSong?.let { play(it) }
+            if (startPlayback) {
+                currentSong?.let { play(it) }
+            }
             return
         }
 
@@ -465,6 +584,7 @@ class PlaybackManager private constructor(private val context: Context) {
                     // Natural end of queue: show Play icon and reset progress
                     isPlaying = false
                     isQueueFinished = true
+                    playbackStateSaver.clear()
                     musicService?.resetPlayerProgress()
                     return
                 }
@@ -484,12 +604,17 @@ class PlaybackManager private constructor(private val context: Context) {
                 // Natural end of queue: show Play icon and reset progress
                 isPlaying = false
                 isQueueFinished = true
+                playbackStateSaver.clear()
                 musicService?.resetPlayerProgress()
                 return
             }
         }
 
-        play(nextSong)
+        if (startPlayback) {
+            play(nextSong)
+        } else {
+            currentSong = nextSong
+        }
     }
 
     fun playPreviousFromService() {
@@ -588,6 +713,7 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun pause() {
+        savePlaybackState(wasPlaying = false)
         flushPendingStats()
         isPlaying = false
         musicService?.pause()
@@ -616,6 +742,16 @@ class PlaybackManager private constructor(private val context: Context) {
         isPlaying = false
         musicService?.stopSelf()
         stopStatsTracking()
+    }
+
+    fun stopAndClearQueue() {
+        stop()
+        activePlaylist = emptyList()
+        activePlaylistId = null
+        activePlaylistName = null
+        activeCategory = null
+        currentSong = null
+        settings.activeCategory = ""
     }
 
     private fun startStatsTracking() {
@@ -738,6 +874,8 @@ class PlaybackManager private constructor(private val context: Context) {
         settings.isShuffle = isShuffle
 
         if (isShuffle) updateShuffledQueue()
+
+        _refreshNotification.tryEmit(Unit)
     }
 
     fun toggleCrossfade() {
@@ -759,6 +897,11 @@ class PlaybackManager private constructor(private val context: Context) {
     fun getEqBandLevelRange(): ShortArray? = musicService?.equalizer?.bandLevelRange
     fun getEqCenterFreq(band: Short): Int = musicService?.equalizer?.getCenterFreq(band) ?: 0
     fun getEqBandLevel(band: Short): Short = musicService?.equalizer?.getBandLevel(band) ?: 0
+
+    fun refreshEqState() {
+        eqBandsCount = musicService?.equalizer?.numberOfBands ?: 0
+        eqBandsRange = musicService?.equalizer?.bandLevelRange
+    }
 
     fun toggleEq() {
         isEqEnabled = !isEqEnabled
@@ -1061,6 +1204,13 @@ class PlaybackManager private constructor(private val context: Context) {
         musicService?.setPlaybackParams(playbackSpeed, pitch)
     }
 
+    fun toggleTuning432() {
+        isTuning432 = !isTuning432
+        settings.isTuning432 = isTuning432
+        val target = if (isTuning432) 432f / 440f else 1.0f
+        updatePitch(target)
+    }
+
     fun getProgress(): Float {
         musicService?.let {
             val duration = it.duration()
@@ -1092,6 +1242,8 @@ class PlaybackManager private constructor(private val context: Context) {
         val metadataManager = MetadataManager(context)
         kotlinx.coroutines.MainScope().launch {
             metadataManager.updateFavoriteStatus(targetSong.id, newFavoriteStatus)
+            _favoriteChanged.emit(targetSong.id to newFavoriteStatus)
+            _refreshNotification.tryEmit(Unit)
             onFavoriteToggled?.invoke(updatedSong)
         }
         

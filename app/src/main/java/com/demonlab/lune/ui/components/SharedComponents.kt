@@ -1,6 +1,7 @@
 package com.demonlab.lune.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -167,12 +169,30 @@ fun SongItem(
                 }
             },
             supportingContent = {
-                Text(
-                    "${formatDuration(song.duration)} • ${song.artist}",
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (currentlyPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (settingsManager.isBitrateOnList && (song.bitrate != null || song.format.isNotEmpty())) {
+                    Column {
+                        Text(
+                            "${formatDuration(song.duration)} • ${song.artist}",
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (currentlyPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        val bitrateText = if (song.bitrate != null) "${song.format} | ${song.bitrate / 1000}kbps" else song.format
+                        Text(
+                            bitrateText,
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                } else {
+                    Text(
+                        "${formatDuration(song.duration)} • ${song.artist}",
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (currentlyPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             },
             leadingContent = {
                 Box(contentAlignment = Alignment.Center) {
@@ -181,7 +201,7 @@ fun SongItem(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         modifier = Modifier.size(48.dp)
                     ) {
-                        val model = song.coverUrl ?: song.albumArtUri
+                        val model = song.coverUrl ?: song.uri
                         AsyncImage(
                             model = model,
                             contentDescription = null,
@@ -254,6 +274,8 @@ fun AlbumsListHeader(
     albumCount: Int,
     viewStyle: Int,
     onToggleViewStyle: () -> Unit,
+    isAlbumView: Boolean,
+    onToggleAlbumView: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -265,13 +287,14 @@ fun AlbumsListHeader(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
+                onClick = onToggleAlbumView,
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        Icons.Default.Person,
+                        if (isAlbumView) Icons.Default.Album else Icons.Default.Person,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
@@ -281,7 +304,7 @@ fun AlbumsListHeader(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = stringResource(R.string.tab_albums),
+                    text = if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -294,19 +317,37 @@ fun AlbumsListHeader(
             }
         }
 
-        Surface(
-            onClick = onToggleViewStyle,
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            modifier = Modifier.size(36.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    if (viewStyle == 0) Icons.Default.ViewCarousel else Icons.Default.GridView,
-                    contentDescription = "Toggle View Style",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                onClick = onToggleAlbumView,
+                shape = CircleShape,
+                color = if (isAlbumView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        if (isAlbumView) Icons.Default.Person else Icons.Default.Album,
+                        contentDescription = null,
+                        tint = if (isAlbumView) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Surface(
+                onClick = onToggleViewStyle,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        if (viewStyle == 0) Icons.Default.ViewCarousel else Icons.Default.GridView,
+                        contentDescription = "Toggle View Style",
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -529,7 +570,7 @@ fun FolderFilterContent(
                 ListItem(
                     headlineContent = { Text(folder) },
                     trailingContent = {
-                        Switch(
+                        BouncySwitch(
                             checked = !isHidden,
                             onCheckedChange = { isVisible ->
                                 val newHidden = hiddenFolders.value.toMutableSet()
@@ -744,4 +785,35 @@ fun VinylRecordAsyncCover(
                 .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
         )
     }
+}
+
+@Composable
+fun BouncySwitch(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    thumbContent: @Composable (() -> Unit)? = null
+) {
+    val scale = remember { Animatable(initialValue = 1f) }
+
+    LaunchedEffect(checked) {
+        scale.snapTo(1f)
+        scale.animateTo(
+            targetValue = 1.12f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh)
+        )
+        scale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+        )
+    }
+
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier.graphicsLayer(scaleX = scale.value, scaleY = scale.value),
+        enabled = enabled,
+        thumbContent = thumbContent
+    )
 }

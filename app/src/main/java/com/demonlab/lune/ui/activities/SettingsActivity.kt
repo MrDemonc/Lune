@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.compose.material3.*
+import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -205,7 +206,8 @@ fun SettingsScreen(
                         "pt-BR" to stringResource(R.string.lang_portuguese),
                         "fr" to stringResource(R.string.lang_french),
                         "zh" to stringResource(R.string.lang_chinese),
-                        "de" to stringResource(R.string.lang_german)
+                        "de" to stringResource(R.string.lang_german),
+                        "ru" to stringResource(R.string.lang_russian)
                     )
                     languages.forEach { (code, label) ->
                         Row(
@@ -336,7 +338,7 @@ fun SettingsScreen(
                     icon = Icons.Default.MusicNote,
                     position = SectionPosition.FIRST,
                     trailingContent = {
-                        Switch(
+                        BouncySwitch(
                             checked = showHiFi,
                             onCheckedChange = {
                                 showHiFi = it
@@ -369,6 +371,7 @@ fun SettingsScreen(
                         "fr" -> stringResource(R.string.lang_french)
                         "zh" -> stringResource(R.string.lang_chinese)
                         "de" -> stringResource(R.string.lang_german)
+                        "ru" -> stringResource(R.string.lang_russian)
                         else -> stringResource(R.string.lang_system)
                     },
                     icon = Icons.Default.Language,

@@ -71,6 +71,7 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 - **Vizulizer**: Bar display that moves to the rhythm of the music.
 - **Sample button theme**: A simple button that allows you to change the application's light or dark mode (includes automatic mode, taking the system mode).
 - **HI-FI audio**: The application supports audio in HI-FI formats.
+- **Audio formats**: Built on Android's `MediaPlayer`, supporting MP3, AAC (`.aac`/`.m4a`), FLAC, Vorbis (`.ogg`), Opus, WAV, ALAC, AMR, MIDI, and MP2.
 - **Language**: Available in Spanish and English.
 - **Custom tittle**: Customize the application title from the settings.
 
@@ -98,6 +99,14 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
   <img src="readme-res/13.png" width="140">
   <img src="readme-res/14.png" width="140">
   <img src="readme-res/15.png" width="140">
+</p>
+
+<p align="center">
+  <img src="readme-res/16.png" width="140">
+  <img src="readme-res/17.png" width="140">
+  <img src="readme-res/18.png" width="140">
+  <img src="readme-res/19.png" width="140">
+  <img src="readme-res/20.png" width="140">
 </p>
 
 ## 🛠 Build Requirements

@@ -2,6 +2,7 @@ package com.demonlab.lune.tools
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +64,18 @@ class SettingsManager(context: Context) {
         get() = prefs.getInt("album_view_style", 0) // 0 = Grid, 1 = Carousel
         set(value) = prefs.edit().putInt("album_view_style", value).apply()
 
+    var albumBrowseMode: Boolean
+        get() = prefs.getBoolean("album_browse_mode", false) // false = Artists, true = Albums
+        set(value) = prefs.edit().putBoolean("album_browse_mode", value).apply()
+
+    var isSectionCustomizationEnabled: Boolean
+        get() = prefs.getBoolean("section_customization_enabled", false)
+        set(value) = prefs.edit().putBoolean("section_customization_enabled", value).apply()
+
+    var hiddenSectionTabs: Set<String>
+        get() = prefs.getStringSet("hidden_section_tabs", emptySet()) ?: emptySet()
+        set(value) = prefs.edit().putStringSet("hidden_section_tabs", value).apply()
+
     var isSortAscending: Boolean
         get() = prefs.getBoolean("is_sort_ascending", true)
         set(value) = prefs.edit().putBoolean("is_sort_ascending", value).apply()
@@ -82,6 +95,14 @@ class SettingsManager(context: Context) {
     var isCrossfade: Boolean
         get() = prefs.getBoolean("is_crossfade", false)
         set(value) = prefs.edit().putBoolean("is_crossfade", value).apply()
+
+    var isCrossfadeCustomDuration: Boolean
+        get() = prefs.getBoolean("is_crossfade_custom_duration", false)
+        set(value) = prefs.edit().putBoolean("is_crossfade_custom_duration", value).apply()
+
+    var crossfadeDurationSeconds: Int
+        get() = prefs.getInt("crossfade_duration_seconds", 12)
+        set(value) = prefs.edit().putInt("crossfade_duration_seconds", value).apply()
 
     var isAutomix: Boolean
         get() = prefs.getBoolean("is_automix", false)
@@ -174,6 +195,38 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("is_song_info_enabled", false)
         set(value) = prefs.edit().putBoolean("is_song_info_enabled", value).apply()
 
+    private val _isBitrateOnList = mutableStateOf(prefs.getBoolean("is_bitrate_on_list", true))
+    var isBitrateOnList: Boolean
+        get() = _isBitrateOnList.value
+        set(value) {
+            _isBitrateOnList.value = value
+            prefs.edit().putBoolean("is_bitrate_on_list", value).apply()
+        }
+
+    private val _isBitrateOnPlayer = mutableStateOf(prefs.getBoolean("is_bitrate_on_player", true))
+    var isBitrateOnPlayer: Boolean
+        get() = _isBitrateOnPlayer.value
+        set(value) {
+            _isBitrateOnPlayer.value = value
+            prefs.edit().putBoolean("is_bitrate_on_player", value).apply()
+        }
+
+    private val _isOptionsBarVisible = mutableStateOf(prefs.getBoolean("is_options_bar_visible", true))
+    var isOptionsBarVisible: Boolean
+        get() = _isOptionsBarVisible.value
+        set(value) {
+            _isOptionsBarVisible.value = value
+            prefs.edit().putBoolean("is_options_bar_visible", value).apply()
+        }
+
+    private val _isMiniPlayerMinimized = mutableStateOf(prefs.getBoolean("is_mini_player_minimized", false))
+    var isMiniPlayerMinimized: Boolean
+        get() = _isMiniPlayerMinimized.value
+        set(value) {
+            _isMiniPlayerMinimized.value = value
+            prefs.edit().putBoolean("is_mini_player_minimized", value).apply()
+        }
+
     var isBlurEnabled: Boolean
         get() = prefs.getBoolean("is_blur_enabled", true)
         set(value) = prefs.edit().putBoolean("is_blur_enabled", value).apply()
@@ -230,6 +283,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("show_all_folders_on_start", false)
         set(value) = prefs.edit().putBoolean("show_all_folders_on_start", value).apply()
 
+    var folderHierarchyMode: Boolean
+        get() = prefs.getBoolean("folder_hierarchy_mode", false)
+        set(value) = prefs.edit().putBoolean("folder_hierarchy_mode", value).apply()
+
     var useCustomColors: Boolean
         get() = prefs.getBoolean("use_custom_colors", false)
         set(value) = prefs.edit().putBoolean("use_custom_colors", value).apply()
@@ -285,6 +342,10 @@ class SettingsManager(context: Context) {
     var playbackPitch: Float
         get() = prefs.getFloat("playback_pitch", 1.0f)
         set(value) = prefs.edit().putFloat("playback_pitch", value).apply()
+
+    var isTuning432: Boolean
+        get() = prefs.getBoolean("tuning_432", false)
+        set(value) = prefs.edit().putBoolean("tuning_432", value).apply()
 
     var reverbPreset: Int
         get() = prefs.getInt("reverb_preset", 0)

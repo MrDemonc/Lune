@@ -36,7 +36,6 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.FastScrollbar
-import com.demonlab.lune.ui.components.ScrollToCurrentButton
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistOptionsAndRename
@@ -59,7 +58,8 @@ fun PlaylistDetailView(
     currentlyPlayingId: Long?,
     bottomPadding: Dp,
     viewModel: MusicViewModel,
-    onFavoriteClick: ((Song) -> Unit)? = null
+    onFavoriteClick: ((Song) -> Unit)? = null,
+    scrollToCurrentTrigger: MutableState<Int>
 ) {
     val playbackManager = PlaybackManager.getInstance(LocalContext.current)
     val settingsManager = SettingsManager.getInstance(LocalContext.current)
@@ -92,7 +92,7 @@ fun PlaylistDetailView(
     }
 
     val backgroundCover = remember(songs) {
-        songs.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri }
+        songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -377,10 +377,18 @@ fun PlaylistDetailView(
                 onDismiss = { showAddSongsDialog = false },
                 onSave = { toAdd, toRemove ->
                     if (toAdd.isNotEmpty()) {
-                        viewModel.addSongsToPlaylist(playlist.id, toAdd)
+                        viewModel.addSongsToPlaylist(playlist.id, toAdd) {
+                            if (playbackManager.activePlaylistId == playlist.id) {
+                                playbackManager.refreshActivePlaylist(viewModel.getSongsForPlaylistSync(playlist.id))
+                            }
+                        }
                     }
                     if (toRemove.isNotEmpty()) {
-                        viewModel.removeSongsFromPlaylist(playlist.id, toRemove)
+                        viewModel.removeSongsFromPlaylist(playlist.id, toRemove) {
+                            if (playbackManager.activePlaylistId == playlist.id) {
+                                playbackManager.refreshActivePlaylist(viewModel.getSongsForPlaylistSync(playlist.id))
+                            }
+                        }
                     }
                     showAddSongsDialog = false
                 }
@@ -391,16 +399,14 @@ fun PlaylistDetailView(
             val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
             if (idx != -1) idx + 1 else -1
         }
-        
-        ScrollToCurrentButton(
-            listState = listState,
-            targetIndex = targetIndex,
-            label = stringResource(R.string.queue_now_playing),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = bottomPadding + 16.dp)
-        )
-        
+
+        LaunchedEffect(scrollToCurrentTrigger.value) {
+            if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                listState.animateScrollToItem(targetIndex)
+                scrollToCurrentTrigger.value = 0
+            }
+        }
+
         FastScrollbar(
             listState = listState,
             items = sortedSongs,
@@ -425,7 +431,8 @@ fun AlbumDetailView(
     onSortClick: () -> Unit,
     currentlyPlayingId: Long?,
     bottomPadding: Dp,
-    onFavoriteClick: ((Song) -> Unit)? = null
+    onFavoriteClick: ((Song) -> Unit)? = null,
+    scrollToCurrentTrigger: MutableState<Int>
 ) {
     val context = LocalContext.current
     val playbackManager = PlaybackManager.getInstance(context)
@@ -459,7 +466,7 @@ fun AlbumDetailView(
     BackHandler(onBack = onBack)
 
     val backgroundCover = remember(album) {
-        album.songs.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri }
+        album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -521,7 +528,7 @@ fun AlbumDetailView(
                         
                         val albumCoverBytes = remember(album) {
                             album.songs.firstOrNull()?.let { 
-                                it.coverUrl ?: it.albumArtUri 
+                                it.coverUrl ?: it.uri 
                             }
                         }
                         
@@ -546,6 +553,19 @@ fun AlbumDetailView(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                         )
+
+                        if (album.artist.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = album.artist,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -676,7 +696,11 @@ fun AlbumDetailView(
                             modifier = Modifier.fillParentMaxHeight(0.6f).fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No hay canciones de este artista", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                if (album.artist.isNotEmpty()) "No hay canciones de este álbum"
+                                else "No hay canciones de este artista",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                         }
                     }
                 } else {
@@ -702,16 +726,14 @@ fun AlbumDetailView(
             val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
             if (idx != -1) idx + 1 else -1
         }
-        
-        ScrollToCurrentButton(
-            listState = listState,
-            targetIndex = targetIndex,
-            label = stringResource(R.string.queue_now_playing),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = bottomPadding + 16.dp)
-        )
-        
+
+        LaunchedEffect(scrollToCurrentTrigger.value) {
+            if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                listState.animateScrollToItem(targetIndex)
+                scrollToCurrentTrigger.value = 0
+            }
+        }
+
         FastScrollbar(
             listState = listState,
             items = sortedSongs,
@@ -736,7 +758,8 @@ fun FolderDetailView(
     onSortClick: () -> Unit,
     currentlyPlayingId: Long?,
     bottomPadding: Dp,
-    onFavoriteClick: ((Song) -> Unit)? = null
+    onFavoriteClick: ((Song) -> Unit)? = null,
+    scrollToCurrentTrigger: MutableState<Int>
 ) {
     val playbackManager = PlaybackManager.getInstance(LocalContext.current)
     val settingsManager = SettingsManager.getInstance(LocalContext.current)
@@ -767,11 +790,11 @@ fun FolderDetailView(
     }
 
     val backgroundCover = remember(songs) {
-        songs.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri }
+        songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
     }
 
     val covers = remember(songs) {
-        songs.map { it.coverUrl ?: it.albumArtUri }.distinct().take(4)
+        songs.map { it.coverUrl ?: it.uri }.distinct().take(4)
     }
 
     val folderId = folderName.hashCode().toLong()
@@ -1082,19 +1105,17 @@ fun FolderDetailView(
                 }
             }
         }
-
         val targetIndex = remember(sortedSongs, currentlyPlayingId) {
             val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
             if (idx != -1) idx + 1 else -1
         }
-        ScrollToCurrentButton(
-            listState = listState,
-            targetIndex = targetIndex,
-            label = stringResource(R.string.queue_now_playing),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = bottomPadding + 16.dp)
-        )
+
+        LaunchedEffect(scrollToCurrentTrigger.value) {
+            if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                listState.animateScrollToItem(targetIndex)
+                scrollToCurrentTrigger.value = 0
+            }
+        }
 
         FastScrollbar(
             listState = listState,
