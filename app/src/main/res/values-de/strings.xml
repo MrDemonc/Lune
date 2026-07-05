@@ -62,6 +62,8 @@
     <string name="option_lyrics">Liedtext</string>
     <string name="transition_mixing">Mischen</string>
     <string name="transition_crossfade">Crossfade</string>
+    <string name="crossfade_time">Crossfade-Dauer</string>
+    <string name="crossfade_time_desc">Übergangsdauer für Crossfade festlegen</string>
     <string name="unknown_artist">Unbekannter Künstler</string>
     <string name="unknown_song">Unbekannter Song</string>
 
@@ -82,6 +84,7 @@
     <string name="lang_french">Französisch</string>
     <string name="lang_chinese">Chinesisch</string>
     <string name="lang_german">Deutsch</string>
+    <string name="lang_russian">Russisch</string>
 
     <string name="ok">OK</string>
     <string name="cd_activate_eq">EQ aktivieren</string>
@@ -108,11 +111,21 @@
     <string name="song_deleted">Song gelöscht</string>
     <string name="edit_name">Namen bearbeiten</string>
     <string name="search">Suchen</string>
+    <string name="search_filter">Ergebnisse filtern</string>
+    <string name="search_filter_all">Alle</string>
+    <string name="search_filter_playlist">Playlist</string>
+    <string name="search_filter_album">Album</string>
+    <string name="search_filter_artist">Künstler</string>
+    <string name="search_filter_folder">Ordner</string>
+    <string name="search_filter_cancel">Abbrechen</string>
     <string name="search_hint">Songs, Künstler oder Alben suchen...</string>
     <string name="delete_playlist">Playlist löschen</string>
     <string name="delete_playlist_confirm">Bist du sicher, dass du diese Playlist löschen möchtest?</string>
     <string name="delete">Löschen</string>
     <string name="custom_title">Benutzerdefinierter Titel</string>
+    <string name="section_customization">Abschnitte anpassen</string>
+    <string name="section_customization_desc">Wähle aus, welche Abschnitts-Tabs angezeigt werden</string>
+    <string name="section_customization_albums">Künstler / Alben</string>
     <string name="customization">Personalisierung</string>
     <string name="customization_desc">Passe Stil, Titel und Farben der App an</string>
     <string name="use_custom_colors">Benutzerdefinierte Farben verwenden</string>
@@ -123,7 +136,11 @@
     <string name="haptic_vibration">Haptisches Feedback</string>
     <string name="haptic_vibration_desc">Sanftes Vibrieren bei Player-Steuerung</string>
     <string name="song_info">Song-Info</string>
-    <string name="song_info_desc">Audioformat und Bitrate im Player anzeigen</string>
+    <string name="song_info_desc">Audioformat und Bitrate im Player und in der Liste anzeigen</string>
+    <string name="show_in_song_list">In der Liste anzeigen</string>
+    <string name="show_in_full_player">Im Player anzeigen</string>
+    <string name="show_options">Optionen anzeigen</string>
+    <string name="hide_options">Optionen ausblenden</string>
     <string name="cover_player">Cover-Player</string>
     <string name="cover_player_desc">Cover-Form, -Größe und -Drehung anpassen</string>
     <string name="shape_default">Standard</string>
@@ -305,4 +322,8 @@
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
     <string name="copied">In die Zwischenablage kopiert</string>
+    <string name="internal_storage">Interner Speicher</string>
+    <string name="sd_card">SD-Karte</string>
+    <string name="folder_browser_title">Ordnerbrowser</string>
+    <string name="no_songs_folder">Keine Songs in diesem Ordner gefunden</string>
 </resources>

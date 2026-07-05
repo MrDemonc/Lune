@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ import com.demonlab.lune.R
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.theme.LuneTheme
+import kotlinx.coroutines.delay
 
 class EqualizerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -244,8 +247,8 @@ fun EqualizerScreen(onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            val numBands = playbackManager.getEqNumberOfBands()
-            val bandRange = playbackManager.getEqBandLevelRange()
+            val numBands = playbackManager.eqBandsCount
+            val bandRange = playbackManager.eqBandsRange
             val friendlyNames = listOf(
                 stringResource(R.string.band_sub_bass),
                 stringResource(R.string.band_bass),
@@ -253,6 +256,17 @@ fun EqualizerScreen(onBack: () -> Unit) {
                 stringResource(R.string.band_presence),
                 stringResource(R.string.band_brilliance)
             )
+
+            LaunchedEffect(playbackManager.currentSong, playbackManager.isPlaying) {
+                playbackManager.refreshEqState()
+                if (playbackManager.isPlaying) {
+                    while (playbackManager.eqBandsCount <= 0 || playbackManager.eqBandsRange == null) {
+                        delay(200)
+                        playbackManager.refreshEqState()
+                        if (playbackManager.eqBandsCount > 0 && playbackManager.eqBandsRange != null) break
+                    }
+                }
+            }
 
             if (numBands > 0 && bandRange != null) {
                 val minLevel = bandRange[0]
@@ -360,7 +374,7 @@ fun EqualizerScreen(onBack: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                     color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Switch(
+                BouncySwitch(
                     checked = playbackManager.isBassBoostEnabled,
                     onCheckedChange = { playbackManager.toggleBassBoost() },
                     enabled = isEnabled,
@@ -382,7 +396,7 @@ fun EqualizerScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.spatial_audio_label), style = MaterialTheme.typography.titleMedium)
-                Switch(
+                BouncySwitch(
                     checked = playbackManager.isSpatialAudioEnabled,
                     onCheckedChange = { playbackManager.toggleSpatialAudio() },
                     thumbContent = {
@@ -419,7 +433,7 @@ fun EqualizerScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.width(48.dp)
                     )
-                    Switch(
+                    BouncySwitch(
                         checked = playbackManager.isLoudnessEnabled,
                         onCheckedChange = { playbackManager.toggleLoudness() },
                         thumbContent = {
@@ -586,6 +600,21 @@ fun EqualizerScreen(onBack: () -> Unit) {
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.width(52.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    SuggestionChip(
+                        onClick = {
+                            playbackManager.toggleTuning432()
+                        },
+                        label = { Text("432Hz") },
+                        shape = RoundedCornerShape(16.dp),
+                        border = if (playbackManager.isTuning432) null else
+                            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        colors = if (playbackManager.isTuning432)
+                            SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                labelColor = MaterialTheme.colorScheme.onPrimary
+                            ) else SuggestionChipDefaults.suggestionChipColors()
                     )
                     if (pitchValue != 1.0f) {
                         Spacer(modifier = Modifier.width(8.dp))

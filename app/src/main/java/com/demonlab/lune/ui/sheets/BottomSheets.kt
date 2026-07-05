@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.LastPage
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,7 +90,7 @@ fun SongOptionsBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = song.coverUrl ?: song.albumArtUri ?: R.drawable.ic_launcher_foreground,
+                    model = song.coverUrl ?: song.uri ?: R.drawable.ic_launcher_foreground,
                     contentDescription = null,
                     modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
@@ -274,7 +275,7 @@ fun SortBottomSheet(
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Switch(
+                        BouncySwitch(
                             checked = isSortAscending,
                             onCheckedChange = {
                                 onSortSettingsChange(sortOption, it)
@@ -471,7 +472,7 @@ fun EqBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.bass_label), style = MaterialTheme.typography.titleMedium)
-                Switch(
+                BouncySwitch(
                     checked = playbackManager.isBassBoostEnabled,
                     onCheckedChange = { playbackManager.toggleBassBoost() },
                     thumbContent = {
@@ -492,7 +493,7 @@ fun EqBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.spatial_audio_label), style = MaterialTheme.typography.titleMedium)
-                Switch(
+                BouncySwitch(
                     checked = playbackManager.isSpatialAudioEnabled,
                     onCheckedChange = { playbackManager.toggleSpatialAudio() },
                     thumbContent = {
@@ -583,18 +584,19 @@ fun QueueBottomSheet(
                     }
                 )
             },
-            onSave = { updatedTitle, updatedArtist, updatedCoverUri ->
+            onSave = { updatedTitle, updatedArtist, updatedAlbum, updatedCoverUri ->
                 musicViewModel.updateMetadata(
                     song = optionsSong!!,
                     title = updatedTitle,
                     artist = updatedArtist,
-                    album = optionsSong!!.album,
+                    album = updatedAlbum,
                     genre = optionsSong!!.genre,
                     coverUri = updatedCoverUri,
                     onSuccess = {
                         val updatedSong = optionsSong!!.copy(
                             title = updatedTitle,
                             artist = updatedArtist,
+                            album = updatedAlbum,
                             coverUrl = updatedCoverUri?.toString() ?: optionsSong!!.coverUrl
                         )
                         playbackManager.updateSongMetadata(updatedSong)
@@ -1016,7 +1018,7 @@ fun VisualizerSettingsBottomSheet(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.visualizer_full_player)) },
                 trailingContent = {
-                    Switch(
+                    BouncySwitch(
                         checked = playbackManager.isFullPlayerVisualizerEnabled,
                         onCheckedChange = { toggleVisualizer(true) },
                         thumbContent = {
@@ -1034,7 +1036,7 @@ fun VisualizerSettingsBottomSheet(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.visualizer_mini_player)) },
                 trailingContent = {
-                    Switch(
+                    BouncySwitch(
                         checked = playbackManager.isMiniPlayerVisualizerEnabled,
                         onCheckedChange = { toggleVisualizer(false) },
                         thumbContent = {
@@ -1058,10 +1060,11 @@ fun EditSongBottomSheet(
     song: Song,
     onDismiss: () -> Unit,
     onRestore: () -> Unit,
-    onSave: (title: String, artist: String, coverUri: Uri?) -> Unit
+    onSave: (title: String, artist: String, album: String, coverUri: Uri?) -> Unit
 ) {
     var title by remember { mutableStateOf(song.title) }
     var artist by remember { mutableStateOf(song.artist) }
+    var album by remember { mutableStateOf(song.album) }
     var selectedCoverUri by remember { mutableStateOf<Uri?>(null) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -1168,10 +1171,21 @@ fun EditSongBottomSheet(
                 singleLine = true
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = album,
+                onValueChange = { album = it },
+                label = { Text(stringResource(R.string.edit_album)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onSave(title, artist, selectedCoverUri) },
+                onClick = { onSave(title, artist, album, selectedCoverUri) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

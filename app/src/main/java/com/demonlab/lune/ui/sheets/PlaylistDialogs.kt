@@ -111,7 +111,7 @@ fun AddSongsToPlaylistDialog(
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 AsyncImage(
-                                    model = song.coverUrl ?: song.albumArtUri,
+                                    model = song.coverUrl ?: song.uri,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
@@ -238,6 +238,10 @@ fun AddToPlaylistDialog(
                                             viewModel.getPlaylistsContainingSong(song.id) {
                                                 containingPlaylistIds = it
                                                 playbackManager.checkPlaylistStatus()
+                                                if (playbackManager.activePlaylistId == playlist.id) {
+                                                    val updated = viewModel.getSongsForPlaylistSync(playlist.id)
+                                                    playbackManager.refreshActivePlaylist(updated)
+                                                }
                                                 onDismiss()
                                             }
                                         }
@@ -273,6 +277,10 @@ fun AddToPlaylistDialog(
                                                 viewModel.getPlaylistsContainingSong(song.id) {
                                                     containingPlaylistIds = it
                                                     playbackManager.checkPlaylistStatus()
+                                                    if (playbackManager.activePlaylistId == playlist.id) {
+                                                        val updated = viewModel.getSongsForPlaylistSync(playlist.id)
+                                                        playbackManager.refreshActivePlaylist(updated)
+                                                    }
                                                     onDismiss()
                                                 }
                                             }

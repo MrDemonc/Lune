@@ -61,7 +61,7 @@ private fun RecentlyAddedRow(
             modifier = Modifier.padding(8.dp)
         ) {
             AsyncImage(
-                model = song.albumArtUri ?: song.coverUrl,
+                model = song.coverUrl ?: song.uri,
                 contentDescription = null,
                 modifier = Modifier
                     .size(44.dp)

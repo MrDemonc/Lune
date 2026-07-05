@@ -56,12 +56,14 @@
 
     <!-- Player Options -->
     <string name="option_shuffle">Aleatorio</string>
-    <string name="option_crossfade">Fundido cruzado</string>
+    <string name="option_crossfade">Transición</string>
     <string name="option_automix">Mezcla automática</string>
     <string name="option_timer">Temporizador</string>
     <string name="option_lyrics">Letras</string>
     <string name="transition_mixing">Mezclando</string>
-    <string name="transition_crossfade">Fundido cruzado</string>
+    <string name="transition_crossfade">Transición</string>
+    <string name="crossfade_time">Tiempo de Crossfade</string>
+    <string name="crossfade_time_desc">Establecer la duración de la transición</string>
     <string name="unknown_artist">Artista desconocido</string>
     <string name="unknown_song">Canción desconocida</string>
 
@@ -82,6 +84,7 @@
     <string name="lang_french">Francés</string>
     <string name="lang_chinese">Chino</string>
     <string name="lang_german">Alemán</string>
+    <string name="lang_russian">Ruso</string>
 
     <string name="ok">Aceptar</string>
     <string name="cd_activate_eq">Activar EQ</string>
@@ -113,18 +116,25 @@
     <string name="delete_playlist_confirm">¿Estás seguro de que deseas eliminar esta lista?</string>
     <string name="delete">Eliminar</string>
     <string name="custom_title">Título personalizado</string>
+    <string name="section_customization">Personalizar secciones</string>
+    <string name="section_customization_desc">Elige qué pestañas de sección mostrar</string>
+    <string name="section_customization_albums">Artistas / Álbumes</string>
     <string name="customization">Personalización</string>
     <string name="customization_desc">Personaliza el estilo de la app, el título y los colores</string>
     <string name="use_custom_colors">Usar colores personalizados</string>
     <string name="use_custom_colors_desc">Sobrescribe el color dinámico con colores preestablecidos</string>
     <string name="amoled_pitch_black">Pantalla AMOLED (Negro puro)</string>
     <string name="amoled_pitch_black_desc">Usa fondo negro puro en el modo oscuro</string>
-    <string name="media_player">Reproductor de Medios</string>
+    <string name="media_player">Reproductor multimedia</string>
     <string name="haptic_vibration">Vibración óptica</string>
     <string name="haptic_vibration_desc">Vibración ligera al usar los controles del reproductor</string>
     <string name="song_info">Información de Canción</string>
-    <string name="song_info_desc">Muestra el formato y la tasa de bits en el reproductor</string>
-    <string name="cover_player">Carátula del reproductor</string>
+    <string name="song_info_desc">Muestra el formato y la tasa de bits en el reproductor y la lista</string>
+    <string name="show_in_song_list">Mostrar en lista</string>
+    <string name="show_in_full_player">Mostrar en reproductor</string>
+    <string name="show_options">Mostrar opciones</string>
+    <string name="hide_options">Ocultar opciones</string>
+    <string name="cover_player">Reproductor de carátula</string>
     <string name="cover_player_desc">Personaliza la forma, tamaño y rotación de la carátula</string>
     <string name="shape_default">Por defecto</string>
     <string name="shape_square">Cuadrada</string>
@@ -140,7 +150,7 @@
     <string name="circular_effects">Efectos circulares</string>
     <string name="cover_spin_desc">Gira la carátula de forma continua al reproducir</string>
     <string name="cover_vinyl_desc">Agrega un anillo con textura de disco de vinilo</string>
-    <string name="controls_player">Controles del reproductor</string>
+    <string name="controls_player">Control del reproductor</string>
     <string name="controls_player_desc">Personaliza los botones anterior y siguiente</string>
     <string name="controls_preview">Vista previa de controles</string>
     <string name="controls_style_title">Estilo de botones</string>
@@ -168,7 +178,7 @@
     <string name="queue_up_next">Siguientes</string>
     <string name="option_visualizer">Visualizador</string>
     <string name="visualizer_full_player">Mostrar en Reproductor Grande</string>
-    <string name="visualizer_mini_player">Mostrar en Mini Player</string>
+    <string name="visualizer_mini_player">Mostrar en mini reproductor</string>
     <string name="credits">Créditos</string>
     <string name="credits_desc">Pruebas, sugerencias de diseño y logo</string>
     <string name="creator_desc">Creador y mantenedor de lune music player</string>
@@ -297,6 +307,13 @@
     <string name="search_shuffle">Aleatorio</string>
     <string name="playing_from">Sonando desde: %s</string>
     <string name="playing_from_search">Resultado de búsqueda</string>
+    <string name="search_filter">Filtrar resultados</string>
+    <string name="search_filter_all">Todo</string>
+    <string name="search_filter_playlist">Lista</string>
+    <string name="search_filter_album">Álbum</string>
+    <string name="search_filter_artist">Artista</string>
+    <string name="search_filter_folder">Carpeta</string>
+    <string name="search_filter_cancel">Cancelar</string>
     <string name="option_speed">Velocidad</string>
     <string name="preset_name">Nombre del preset</string>
     <string name="cd_save_preset">Guardar preset</string>
@@ -313,4 +330,8 @@
     <string name="exporting_backup">Exportando copia de seguridad, por favor espere...</string>
     <string name="importing_backup">Importando copia de seguridad, por favor espere...</string>
     <string name="finalizing_backup">Finalizando restauración, por favor espere...</string>
+    <string name="internal_storage">Almacenamiento interno</string>
+    <string name="sd_card">Tarjeta SD</string>
+    <string name="folder_browser_title">Explorador de carpetas</string>
+    <string name="no_songs_folder">No se encontraron canciones en esta carpeta</string>
 </resources>

@@ -21,14 +21,20 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
 import androidx.compose.material.icons.filled.FormatAlignCenter
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Lyrics
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -49,6 +55,9 @@ import com.demonlab.lune.tools.SettingsManager
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import coil.request.ImageRequest
+import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import java.util.regex.Pattern
 
 data class LyricsLine(val timeMs: Long, val text: String)
@@ -74,14 +83,15 @@ class LyricsActivity : ComponentActivity() {
                 useCustomColors = useCustomColors,
                 customColorPalette = customColorPalette
             ) {
-                LyricsScreen(onBack = { finish() })
+                LyricsScreen(onBack = { finish() }, isDarkTheme = targetDarkTheme)
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun LyricsScreen(onBack: () -> Unit) {
+fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
     val song = playbackManager.currentSong ?: return
@@ -112,6 +122,9 @@ fun LyricsScreen(onBack: () -> Unit) {
     var speedIndex by remember { mutableIntStateOf(lyricsSettings.lyricsSpeedIndex) }
     val alignments = listOf(TextAlign.Start, TextAlign.Center)
     val speedOptions = listOf("1", "2", "3", "5")
+    var isLyricsMiniPlayerMinimized by remember { mutableStateOf(false) }
+    val playNext: () -> Unit = { playbackManager.playNextFromService() }
+    val playPrevious: () -> Unit = { playbackManager.playPreviousFromService() }
     
     // Sync progress periodically. This runs constantly to keep the playback position updated.
     LaunchedEffect(Unit) {
@@ -136,29 +149,43 @@ fun LyricsScreen(onBack: () -> Unit) {
         }
     }
 
+    val isBlurActive = lyricsSettings.isBlurEnabled && if (isDarkTheme) lyricsSettings.isBlurDarkMode else lyricsSettings.isBlurLightMode
+    val lyricsTextColor = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSurface
+    val lyricsMutedColor = if (isBlurActive) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val lyricsMuted2Color = if (isBlurActive) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val lyricsMuted08Color = if (isBlurActive) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Blurred Background
-        Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = song.coverUrl ?: song.albumArtUri,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(50.dp)
-                    .alpha(0.5f),
-                contentScale = ContentScale.Crop
-            )
+        if (isBlurActive) {
+            // Blurred Background
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = song.coverUrl ?: song.uri,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(50.dp)
+                        .alpha(0.5f),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.6f),
+                                    Color.Black.copy(alpha = 0.8f)
+                                )
+                            )
+                        )
+                )
+            }
+        } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.6f),
-                                Color.Black.copy(alpha = 0.8f)
-                            )
-                        )
-                    )
+                    .background(MaterialTheme.colorScheme.surface)
             )
         }
 
@@ -171,20 +198,33 @@ fun LyricsScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Surface(
+                        shape = CircleShape,
+                        color = if (isBlurActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
                         song.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = lyricsTextColor,
                         maxLines = 1
                     )
                     Text(
                         song.artist,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = lyricsMuted2Color,
                         maxLines = 1
                     )
                 }
@@ -286,7 +326,7 @@ fun LyricsScreen(onBack: () -> Unit) {
                                     lineHeight = 28.sp,
                                     textAlign = alignments[textAlignIndex]
                                 ),
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = lyricsMuted08Color,
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
                         }
@@ -300,7 +340,7 @@ fun LyricsScreen(onBack: () -> Unit) {
                     Text(
                         "No lyrics found",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = lyricsMuted2Color
                     )
                 }
             } else {
@@ -313,7 +353,7 @@ fun LyricsScreen(onBack: () -> Unit) {
                     itemsIndexed(lyricsLines) { index, line ->
                         val isActive = index == activeIndex
                         val color by animateColorAsState(
-                            targetValue = if (isActive) Color.White else Color.White.copy(alpha = 0.3f),
+                            targetValue = if (isActive) lyricsTextColor else lyricsMutedColor,
                             animationSpec = tween(300),
                             label = "LyricColor"
                         )
@@ -361,68 +401,305 @@ fun LyricsScreen(onBack: () -> Unit) {
             }
         }
         }
+
+        // Mini Player
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            contentAlignment = Alignment.BottomEnd
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                AnimatedVisibility(
-                    visible = isOptionsExpanded,
-                    enter = fadeIn() + slideInHorizontally { it / 2 },
-                    exit = fadeOut() + slideOutHorizontally { it / 2 }
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(28.dp),
-                        color = Color(0xCC333333),
-                        modifier = Modifier.height(56.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = {
-                                val next = (textAlignIndex + 1) % alignments.size
-                                textAlignIndex = next
-                                lyricsSettings.lyricsTextAlignment = next
-                            }) {
+            AnimatedContent(
+                targetState = isLyricsMiniPlayerMinimized,
+                transitionSpec = {
+                    fadeIn(tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)) togetherWith
+                    fadeOut(tween(150)) + scaleOut(targetScale = 0.8f, animationSpec = tween(250)) using
+                    SizeTransform(clip = false) { _, _ -> tween(300) }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = "lyricsMiniPlayerTransition"
+            ) { minimized ->
+                if (minimized) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            onClick = { isLyricsMiniPlayerMinimized = false },
+                            shape = CircleShape,
+                            color = if (isBlurActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
+                            tonalElevation = if (isBlurActive) 0.dp else 8.dp,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 16.dp, bottom = 24.dp)
+                                .size(52.dp)
+                                .shadow(6.dp, CircleShape)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                if (isBlurActive) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .blur(40.dp)
+                                            .alpha(if (isDarkTheme) 0.2f else 0.35f)
+                                    ) {
+                                        val miniCtx = LocalContext.current
+                                        val blurRequest = remember(song.id, miniCtx) {
+                                            ImageRequest.Builder(miniCtx)
+                                                .data(song.coverUrl ?: song.uri ?: com.demonlab.lune.R.drawable.ic_launcher_foreground)
+                                                .crossfade(true)
+                                                .build()
+                                        }
+                                        AsyncImage(
+                                            model = blurRequest,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    if (!isDarkTheme) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color.Black.copy(alpha = 0.28f))
+                                        )
+                                    }
+                                }
                                 Icon(
-                                    imageVector = if (alignments[textAlignIndex] == TextAlign.Start) Icons.AutoMirrored.Filled.FormatAlignLeft else Icons.Default.FormatAlignCenter,
+                                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            IconButton(onClick = {
-                                val next = (speedIndex + 1) % speedOptions.size
-                                speedIndex = next
-                                lyricsSettings.lyricsSpeedIndex = next
-                            }) {
-                                Text(
-                                    text = "${speedOptions[speedIndex]}x",
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.titleMedium
                                 )
                             }
                         }
                     }
-                }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 24.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (isBlurActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
+                            tonalElevation = if (isBlurActive) 0.dp else 8.dp
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (isBlurActive) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .blur(80.dp)
+                                            .alpha(if (isDarkTheme) 0.2f else 0.35f)
+                                    ) {
+                                        val blurReq = remember(song.id, song.coverUrl) {
+                                            ImageRequest.Builder(context)
+                                                .data(song.coverUrl ?: song.uri ?: com.demonlab.lune.R.drawable.ic_launcher_foreground)
+                                                .crossfade(true)
+                                                .build()
+                                        }
+                                        AsyncImage(
+                                            model = blurReq,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    if (!isDarkTheme) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color.Black.copy(alpha = 0.28f))
+                                        )
+                                    }
+                                }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                ) {
+                                    // Progress bar area
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        Column(modifier = Modifier.fillMaxSize()) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                LinearWavyProgressIndicator(
+                                                    progress = { currentProgress },
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 4.dp),
+                                                    color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                                    trackColor = if (isBlurActive) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
+                                                    amplitude = { 1f }
+                                                )
+                                                Slider(
+                                                    value = currentProgress,
+                                                    onValueChange = { playbackManager.seekTo(it) },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    thumb = {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(14.dp)
+                                                                .background(
+                                                                    color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                                                    shape = RoundedCornerShape(5.dp)
+                                                                )
+                                                        )
+                                                    },
+                                                    colors = SliderDefaults.colors(
+                                                        activeTrackColor = Color.Transparent,
+                                                        inactiveTrackColor = Color.Transparent
+                                                    )
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
 
-                FloatingActionButton(
-                    onClick = { isOptionsExpanded = !isOptionsExpanded },
-                    containerColor = Color(0xCC333333),
-                    shape = CircleShape,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isOptionsExpanded) Icons.Default.Close else Icons.Default.Add,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
+                                        IconButton(
+                                            onClick = { isLyricsMiniPlayerMinimized = true },
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .size(24.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.KeyboardArrowDown,
+                                                contentDescription = "Minimize",
+                                                tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+
+                                    // Controls row
+                                    val activePrimary = getControlsPrimaryColor(
+                                        useCustomControlsColor = false,
+                                        controlsColorPalette = 0
+                                    )
+                                    val pillMiniColor = if (isBlurActive) {
+                                        if (isDarkTheme) Color.Black.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.4f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                    }
+                                    val pillMiniIconTint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Text align button
+                                        Surface(
+                                            onClick = {
+                                                val next = (textAlignIndex + 1) % alignments.size
+                                                textAlignIndex = next
+                                                lyricsSettings.lyricsTextAlignment = next
+                                            },
+                                            shape = CircleShape,
+                                            color = pillMiniColor,
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .bounceClick()
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = if (alignments[textAlignIndex] == TextAlign.Start) Icons.AutoMirrored.Filled.FormatAlignLeft else Icons.Default.FormatAlignCenter,
+                                                    contentDescription = null,
+                                                    tint = pillMiniIconTint,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.weight(1f))
+
+                                        // Prev / PlayPause / Next
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Surface(
+                                                onClick = playPrevious,
+                                                shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
+                                                color = pillMiniColor,
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .bounceClick()
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.SkipPrevious,
+                                                        contentDescription = null,
+                                                        tint = pillMiniIconTint,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                            Surface(
+                                                onClick = { if (isPlaying) playbackManager.pause() else playbackManager.resume() },
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = pillMiniColor,
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .bounceClick()
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = pillMiniIconTint,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                            Surface(
+                                                onClick = playNext,
+                                                shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
+                                                color = pillMiniColor,
+                                                modifier = Modifier
+                                                    .size(40.dp)
+                                                    .bounceClick()
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.SkipNext,
+                                                        contentDescription = null,
+                                                        tint = pillMiniIconTint,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.weight(1f))
+
+                                        // Speed button
+                                        Surface(
+                                            onClick = {
+                                                val next = (speedIndex + 1) % speedOptions.size
+                                                speedIndex = next
+                                                lyricsSettings.lyricsSpeedIndex = next
+                                            },
+                                            shape = CircleShape,
+                                            color = pillMiniColor,
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .bounceClick()
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    text = "${speedOptions[speedIndex]}x",
+                                                    color = pillMiniIconTint,
+                                                    style = MaterialTheme.typography.titleSmall
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -431,11 +708,37 @@ fun LyricsScreen(onBack: () -> Unit) {
 private fun parseLyrics(raw: String?): List<LyricsLine> {
     if (raw == null) return emptyList()
     
+    val wordLevelPattern = Pattern.compile("<(\\d{2}):(\\d{2})\\.(\\d{2,3})>")
+    val labelPattern = Regex("^[A-Za-z0-9]+:\\s*")
+    
+    val normalizedLines = raw.lines().mapNotNull { line ->
+        val wMatcher = wordLevelPattern.matcher(line)
+        if (!wMatcher.find()) return@mapNotNull line
+
+        val min = wMatcher.group(1)?.toLong() ?: return@mapNotNull null
+        val sec = wMatcher.group(2)?.toLong() ?: return@mapNotNull null
+        val msPart = wMatcher.group(3) ?: return@mapNotNull null
+        val ms = when (msPart.length) {
+            1 -> msPart.toLong() * 100
+            2 -> msPart.toLong() * 10
+            else -> msPart.toLong()
+        }
+        val totalMs = (min * 60 * 1000) + (sec * 1000) + ms
+
+        val textOnly = wMatcher.reset(line).replaceAll("").trim()
+        val cleanText = textOnly.replaceFirst(labelPattern, "").trim()
+        if (cleanText.isEmpty()) return@mapNotNull null
+
+        "[%02d:%02d.%02d]%s".format(
+            totalMs / 60000, (totalMs % 60000) / 1000, (totalMs % 1000) / 10,
+            cleanText
+        )
+    }.joinToString("\n")
+    
     val lines = mutableListOf<LyricsLine>()
-    // More lenient pattern to match [00:00.00] or [00:00:00] or [00:00]
     val pattern = Pattern.compile("\\[(\\d{2}):(\\d{2})[.:](\\d{2,3})?\\](.*)")
     
-    raw.lines().forEach { line ->
+    normalizedLines.lines().forEach { line ->
         val matcher = pattern.matcher(line)
         if (matcher.find()) {
             val min = matcher.group(1)?.toLong() ?: 0L
@@ -450,7 +753,6 @@ private fun parseLyrics(raw: String?): List<LyricsLine> {
             }
             val totalMs = (min * 60 * 1000) + (sec * 1000) + ms
             
-            // Only add if it's not a metadata tag (redundant check but safer)
             if (!text.startsWith("[ti:") && !text.startsWith("[ar:") && !text.startsWith("[al:") && !text.startsWith("[by:")) {
                 lines.add(LyricsLine(totalMs, text))
             }
@@ -458,7 +760,6 @@ private fun parseLyrics(raw: String?): List<LyricsLine> {
     }
     
     val sorted = lines.sortedBy { it.timeMs }.toMutableList()
-    // Add instrumental intro if there's a gap at start
     if (sorted.isNotEmpty() && sorted[0].timeMs > 2000) {
         sorted.add(0, LyricsLine(0, ""))
     }

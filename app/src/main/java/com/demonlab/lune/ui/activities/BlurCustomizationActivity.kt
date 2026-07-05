@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.*
+import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -131,7 +132,7 @@ fun BlurCustomizationScreen(
                     icon = Icons.Default.BlurOn,
                     position = masterPosition,
                     trailingContent = {
-                        Switch(
+                        BouncySwitch(
                             checked = isBlurEnabled,
                             onCheckedChange = {
                                 isBlurEnabled = it
@@ -160,7 +161,7 @@ fun BlurCustomizationScreen(
                             icon = Icons.Default.DarkMode,
                             position = SectionPosition.MIDDLE,
                             trailingContent = {
-                                Switch(
+                                BouncySwitch(
                                     checked = isBlurDarkMode,
                                     onCheckedChange = {
                                         isBlurDarkMode = it
@@ -187,7 +188,7 @@ fun BlurCustomizationScreen(
                             icon = Icons.Default.LightMode,
                             position = SectionPosition.LAST,
                             trailingContent = {
-                                Switch(
+                                BouncySwitch(
                                     checked = isBlurLightMode,
                                     onCheckedChange = {
                                         isBlurLightMode = it
@@ -221,7 +222,7 @@ fun BlurCustomizationScreen(
                         icon = Icons.Default.ColorLens,
                         position = SectionPosition.FIRST,
                         trailingContent = {
-                            Switch(
+                            BouncySwitch(
                                 checked = isBlurControlsEnabled,
                                 enabled = isBlurEnabled,
                                 onCheckedChange = {
@@ -245,7 +246,7 @@ fun BlurCustomizationScreen(
                         icon = Icons.Default.AutoAwesome,
                         position = SectionPosition.LAST,
                         trailingContent = {
-                            Switch(
+                            BouncySwitch(
                                 checked = isBlurCinematicMode,
                                 enabled = isBlurEnabled,
                                 onCheckedChange = {

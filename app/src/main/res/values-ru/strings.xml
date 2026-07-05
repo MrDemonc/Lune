@@ -1,0 +1,335 @@
+<resources>
+    <string name="app_name">Lune</string>
+    <string name="settings">Настройки</string>
+    <string name="about">О приложении</string>
+    <string name="version">Версия</string>
+    <string name="license">Лицензия</string>
+    <string name="author">Автор</string>
+    <string name="hifi_audio">Hi-Fi Аудио</string>
+    <string name="hifi_desc">Включает обнаружение Hi-Fi и значков</string>
+
+    <string name="general">Основное</string>
+    <string name="cinematic_player">Кинематографический плеер</string>
+    <string name="cinematic_player_desc">Включает иммерсивный интерфейс с движущейся обложкой и плавными градиентами.</string>
+    <string name="shortcut_playlists">Плейлисты</string>
+    <string name="backup">Резервная копия</string>
+    <string name="security">Безопасность</string>
+
+    <!-- UI/Player Strings -->
+    <string name="eq_title">Эквалайзер</string>
+    <string name="eq_empty_hint">Воспроизведите песню, чтобы настроить эквалайзер</string>
+    <string name="bass_label">EXTRA BASS</string>
+    <string name="spatial_audio_label">Объёмный звук</string>
+    <string name="loudness_label">Громкость</string>
+    <string name="reverb_label">Reverb</string>
+    <string name="balance_label">Баланс</string>
+    <string name="balance_reset">Сбросить баланс</string>
+    <string name="dynamics_label">Динамика</string>
+    <string name="pitch_label">Высота тона</string>
+    <string name="pitch_reset">Сбросить высоту тона</string>
+    <string name="restore_defaults">Восстановить по умолчанию</string>
+    <string name="disabled">Отключено</string>
+    <string name="open_queue">Открыть очередь</string>
+    
+    <!-- EQ Bands -->
+    <string name="band_sub_bass">Саб-бас</string>
+    <string name="band_bass">Бас</string>
+    <string name="band_mid">Средние</string>
+    <string name="band_presence">Присутствие</string>
+    <string name="band_brilliance">Яркость</string>
+
+    <!-- Metadata Editor -->
+    <string name="edit_title">Название</string>
+    <string name="edit_artist">Исполнитель</string>
+    <string name="edit_album">Альбом</string>
+    <string name="save_changes">Сохранить изменения</string>
+
+    <!-- Library Tabs -->
+    <string name="tab_resume">Продолжить</string>
+    <string name="resume_recommendations">Рекомендации</string>
+    <string name="resume_top_playlists">Лучшие плейлисты</string>
+    <string name="resume_recently_added">Недавно добавленные</string>
+    <string name="tab_all">Все</string>
+    <string name="tab_favorites">Избранное</string>
+    <string name="tab_folders">Папки</string>
+    <string name="tab_songs">Песни</string>
+    <string name="tab_artists">Исполнители</string>
+    <string name="tab_albums_real">Альбомы</string>
+    <string name="tab_albums">Исполнители</string>
+
+    <!-- Player Options -->
+    <string name="option_shuffle">Перемешать</string>
+    <string name="option_crossfade">Кроссфейд</string>
+    <string name="option_automix">Автомикс</string>
+    <string name="option_timer">Таймер</string>
+    <string name="option_lyrics">Текст песни</string>
+    <string name="transition_mixing">Микширование</string>
+    <string name="transition_crossfade">Кроссфейд</string>
+    <string name="crossfade_time">Время кроссфейда</string>
+    <string name="crossfade_time_desc">Установить длительность перехода кроссфейда</string>
+    <string name="unknown_artist">Неизвестный исполнитель</string>
+    <string name="unknown_song">Неизвестная песня</string>
+    
+    <!-- Accessibility / Icons -->
+    <string name="cd_back">Назад</string>
+    <string name="cd_restore">Восстановить</string>
+    
+    <!-- Other UI -->
+    <string name="filter_folders">Фильтр папок</string>
+    <string name="option_favorite">В избранное</string>
+
+    <string name="language">Язык</string>
+    <string name="select_language">Выбрать язык</string>
+    <string name="lang_system">Система</string>
+    <string name="lang_english">English</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_french">French</string>
+    <string name="lang_chinese">Chinese</string>
+    <string name="lang_german">German</string>
+    <string name="lang_russian">Русский</string>
+
+    <string name="ok">ОК</string>
+    <string name="cd_activate_eq">Включить эквалайзер</string>
+    <string name="cd_play_pause">Играть/Пауза</string>
+    <string name="cd_change_cover">Изменить обложку</string>
+    <string name="playlists">Плейлисты</string>
+    <string name="add_to_playlist">В плейлист</string>
+    <string name="create_playlist">Создать плейлист</string>
+    <string name="playlist_name">Название плейлиста</string>
+    <string name="edit_playlist_name">Изменить название плейлиста</string>
+    <string name="cancel">Отмена</string>
+    <string name="create">Создать</string>
+    <string name="save">Сохранить</string>
+    <string name="no_songs_in_playlist">Нет песен в плейлисте</string>
+    <string name="theme_auto">Авто (Система)</string>
+    <string name="theme_light">Светлый режим</string>
+    <string name="theme_dark">Тёмный режим</string>
+    <string name="add_songs">Добавить песни</string>
+    <string name="search_songs">Найти песню…</string>
+    <string name="save_selection">Сохранить</string>
+    <string name="delete_song">Удалить с устройства</string>
+    <string name="delete_song_warning">Вы уверены? Эта песня будет безвозвратна удалена с устройства.</string>
+    <string name="restore_music">Восстановить</string>
+    <string name="song_deleted">Песня удалена</string>
+    <string name="edit_name">Изменить название</string>
+    <string name="search">Поиск</string>
+    <string name="search_filter">Фильтр результатов</string>
+    <string name="search_filter_all">Все</string>
+    <string name="search_filter_playlist">Плейлист</string>
+    <string name="search_filter_album">Альбом</string>
+    <string name="search_filter_artist">Исполнитель</string>
+    <string name="search_filter_folder">Папка</string>
+    <string name="search_filter_cancel">Отмена</string>
+    <string name="search_hint">Искать песню, исполнителя, или альбом...</string>
+    <string name="delete_playlist">Удалить плейлист</string>
+    <string name="delete_playlist_confirm">Вы уверены, что хотите удалить плейлист?</string>
+    <string name="delete">Удалить</string>
+    <string name="custom_title">Собственное название</string>
+    <string name="section_customization">Настроить разделы</string>
+    <string name="section_customization_desc">Выберите какие вкладки разделов показывать</string>
+    <string name="section_customization_albums">Исполнители / Альбомы</string>
+    <string name="customization">Настройка внешнего вида</string>
+    <string name="customization_desc">Настройте стиль приложения, заголовок и цвета</string>
+    <string name="use_custom_colors">Использовать пользовательские цвета</string>
+    <string name="use_custom_colors_desc">Переопределить динамический цвет заранее заданными цветами</string>
+    <string name="amoled_pitch_black">AMOLED Глубокий чёрный</string>
+    <string name="amoled_pitch_black_desc">Использовать полностью чёрный фон в тёмном режиме</string>
+    <string name="media_player">Медиа Плеер</string>
+    <string name="haptic_vibration">Тактильная вибрация</string>
+    <string name="haptic_vibration_desc">Лёгкая вибрация при использовании элементов управления плеера</string>
+    <string name="song_info">Информация о песне</string>
+    <string name="song_info_desc">Показывать формат и битрейт в плеере и списке песен</string>
+    <string name="show_in_song_list">Показывать в списке песен</string>
+    <string name="show_in_full_player">Показывать в полноэкранном плеере</string>
+    <string name="show_options">Показать параметры</string>
+    <string name="hide_options">Скрыть параметры</string>
+    <string name="cover_player">Обложка плеера</string>
+    <string name="cover_player_desc">Настройка формы, размера и наклона обложки</string>
+    <string name="shape_default">По умолчанию</string>
+    <string name="shape_square">Квадратная</string>
+    <string name="shape_circular">Круглая</string>
+    <string name="cover_size">Размер обложки</string>
+    <string name="cover_spin">Вращать во время воспроизведения</string>
+    <string name="cover_vinyl">Эффект виниловой пластинки</string>
+    <string name="cover_preview">Просмотр плеера</string>
+    <string name="cover_shape_title">Форма обложки</string>
+    <string name="size_small">Маленькая (70%)</string>
+    <string name="size_medium">Средняя (85%)</string>
+    <string name="size_large">Большая (100%)</string>
+    <string name="circular_effects">Круговые эффекты</string>
+    <string name="cover_spin_desc">Вращать обложку непрерывно во время воспроизведения</string>
+    <string name="cover_vinyl_desc">Добавить текстуру виниловой пластинки</string>
+    <string name="controls_player">Элементы управления плеером</string>
+    <string name="controls_player_desc">Настройка кнопок "Предыдущая" и "Следующая"</string>
+    <string name="controls_preview">Просмотр элементов управления</string>
+    <string name="controls_style_title">Стиль кнопок</string>
+    <string name="controls_filled">Залитые иконки</string>
+    <string name="controls_filled_desc">Использовать залитые иконки</string>
+    <string name="controls_custom_color">Пользовательский цвет элементов</string>
+    <string name="controls_custom_color_desc">Использовать динамический цвет Material You или пользовательскую палитру</string>
+    <string name="color_palette">Цветовая палитра</string>
+    <string name="restore_default_title">Восстановить по умолчанию</string>
+    <string name="categories">Категории</string>
+    <string name="edit_information">Редактировать информацию</string>
+    <string name="info_updated">Информация обновлена</string>
+    <string name="info_restored">Информация восстановлена</string>
+    <string name="player_queue">Очередь</string>
+    <string name="player_options">Параметры</string>
+    <string name="option_share">Поделиться</string>
+    <string name="option_repeat_one">Повторить одну</string>
+    <string name="option_repeat_all">Повторить все</string>
+    <string name="option_repeat_off">Выключить</string>
+    <string name="output_speaker">Динамик</string>
+    <string name="output_headphones">Наушники</string>
+    <string name="no_song_playing">Нет воспроизведения</string>
+    <string name="output_bluetooth">Bluetooth</string>
+    <string name="queue_now_playing">Играет сейчас</string>
+    <string name="queue_up_next">Далее</string>
+    <string name="option_visualizer">Визуализация</string>
+    <string name="visualizer_full_player">Показывать в полноэкранном плеере</string>
+    <string name="visualizer_mini_player">Показывать в мини-плеере</string>
+    <string name="credits">Благодарности</string>
+    <string name="credits_desc">Тестирование, дизайн и логотип</string>
+    <string name="creator_desc">Создатель и разработчик Lune Music Player</string>
+    <string name="gesture">Жесты</string>
+    <string name="gesture_desc">Настройка жестов приложения</string>
+    <string name="enable_gestures">Включить жесты</string>
+    <string name="enable_gestures_desc">Активировать управление жестами в плеере</string>
+    <string name="change_gesture">Изменить жесты</string>
+    <string name="change_gesture_desc">Изменить жест смахивания вверх</string>
+    <string name="blur">Размытие</string>
+    <string name="blur_desc">Настройка эффекта размытия фона</string>
+    <string name="enable_blur">Включить размытие</string>
+    <string name="enable_blur_desc">Показывать обложку альбома в качестве размытого фона</string>
+    <string name="blur_dark_mode">Тёмный режим</string>
+    <string name="blur_dark_mode_desc">Показывать эффект размытия в тёмном режиме</string>
+    <string name="blur_light_mode">Светлый режим</string>
+    <string name="blur_light_mode_desc">Показывать режим размытия в светлом режиме</string>
+    <string name="blur_cinematic_mode">Кинематографический режим</string>
+    <string name="blur_cinematic_mode_desc">Показывать размытие в кинематографическом режиме</string>
+    <string name="blur_controls">Элементы управления</string>
+    <string name="blur_controls_desc">Адаптировать цвета в соответствии с размытым фоном</string>
+    <string name="other">Прочее</string>
+
+    <!-- Users -->
+    <string name="demon">MrDemonc</string>
+    <string name="desukia">Desukia</string>
+
+    <!-- Open Source Libraries -->
+    <string name="open_source_libraries">Библиотеки с открытым исходным кодом</string>
+    <string name="coil_desc">Загрузка изображений для Android на базе Kotlin Coroutines.\nЛицензия: Apache License 2.0</string>
+
+    <string name="gson_desc">Библиотека Java для сериализации/десериализации объектов Java в JSON и обратно.\nЛицензия: Apache License 2.0</string>
+    <string name="room_desc">Библиотека персистентности Room предоставляет уровень абстракции над SQLite.\nЛицензия: Apache License 2.0</string>
+    <string name="compose_desc">Современный набор инструментов Android для создания нативного интерфейса.\nЛицензия: Apache License 2.0</string>
+    <string name="jaudiotagger_desc">Библиотека аудио-тегов для редактирования и чтения форматов ID3, Vorbis и FLAC.\nЛицензия: LGPL v2.1</string>
+    <string name="quicksand_desc">Quicksand — гротесковый шрифт, разработанный Эндрю Паглинаваном.\nЛицензия: SIL Open Font License, 1.1</string>
+
+    <string name="permissions">Разрешения</string>
+    <string name="permissions_desc">Информация об используемых разрешениях</string>
+    <string name="perm_storage_title">Доступ к хранилищу</string>
+    <string name="perm_storage_desc">Необходимо для сканирования музыкальных файлов и управления папками на устройстве.</string>
+    <string name="perm_notifications_title">Уведомления</string>
+    <string name="perm_notifications_desc">Необходимо для отображения элементов управления воспроизведением в панели уведомления.</string>
+
+    <string name="perm_bluetooth_title">Bluetooth</string>
+    <string name="perm_bluetooth_desc">Необходимо для обнаружения и управления соединениями с Bluetooth-устройствами.</string>
+    <string name="perm_record_audio_title">Запись аудио</string>
+    <string name="perm_record_audio_desc">Необходимо для визуализатора аудио для обработки и отображения данных частот в реальном времени</string>
+
+    <!-- Playlist Export/Import -->
+    <string name="sort_options_title">Сортировка песен</string>
+    <string name="sort_ascending">По возрастанию</string>
+    <string name="sort_descending">По убыванию</string>
+    <string name="sort_alphabetical">По алфавиту</string>
+    <string name="sort_artist">По исполнителю</string>
+    <string name="sort_duration">По продолжительности</string>
+    <string name="sort_date_added">По дате добавления</string>
+    <string name="backup_warning_title">Важное уведомление</string>
+    <string name="backup_warning_desc">Lune импортирует только плейлисты, ранее экспортированные этим приложением. Убедитесь, что соответствующие музыкальные файлы сохранены на устройстве для корректного воспроизведения.</string>
+    <string name="export_playlists">Экспорт плейлистов</string>
+    <string name="export_playlists_desc">Сохранить ваши плейлисты в файл</string>
+    <string name="import_playlists">Импорт плейлистов</string>
+    <string name="import_playlists_desc">Восстановить плейлисты из файла</string>
+    <string name="export_success">Плейлисты успешно экспортированы</string>
+    <string name="export_error">Ошибка экспорта плейлистов</string>
+    <string name="import_success">Плейлисты успешно импортированы</string>
+    <string name="import_error">Ошибка импорта плейлистов</string>
+    <string name="song_singular">песня</string>
+    <string name="song_plural">песни</string>
+    <string name="no_music_available">Нет доступной музыки</string>
+    <string name="permission_required">Требуется разрешение</string>
+
+    <!-- Welcome Card -->
+    <string name="welcome_morning">Доброе утро</string>
+    <string name="welcome_noon">Добрый день</string>
+    <string name="welcome_afternoon">Добрый вечер</string>
+    <string name="welcome_evening">Добрый вечер</string>
+    <string name="welcome_night">Доброй ночи</string>
+    <string name="welcome_early_morning">Доброе раннее утро</string>
+    <string name="stats_hours_unit">%dч</string>
+    <string name="stats_minutes_unit">%dмин</string>
+    <string name="stats_seconds_unit">%dс</string>
+    <string name="stats_music_unit">музыки</string>
+
+    <!-- Info Cards -->
+    <string name="info_card_time">Поздравляю! Сегодня вы прослушали %s музыки</string>
+    <string name="info_card_songs">Мы видим, ты любишь музыку! У вас %d песен, так держать!</string>
+    <string name="info_card_favorites_has">У тебя %d избранных песен, наслаждайся!</string>
+    <string name="info_card_favorites_none">У тебя пока нет избранных, можешь добавлять!</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_description">Самый продвинутый музыкальный плеер твоего устройства.</string>
+    <string name="onboarding_start_button">Начать</string>
+    <string name="onboarding_perm_audio_title">Запись аудио</string>
+    <string name="onboarding_perm_required">Требуется разрешение</string>
+    <string name="onboarding_perm_audio_desc">Необходимо для визуализатора аудио, чтобы обрабатывать и отображать данные частот в реальном времени во время прослушивания музыки.</string>
+    <string name="onboarding_grant_button">Предоставить разрешение</string>
+    <string name="onboarding_next_button">Далее</string>
+    <string name="onboarding_perm_bluetooth_title">Bluetooth</string>
+    <string name="onboarding_perm_bluetooth_desc">Необходимо для обнаружения и управления соединениями с Bluetooth-устройствами для лучшего звучания.</string>
+    <string name="onboarding_perm_notifications_title">Уведомления</string>
+    <string name="onboarding_perm_notifications_desc">Необходимо для отображения элементов управления плеером в строке состояния и на экране блокировки.</string>
+    <string name="onboarding_perm_music_title">Музыка &amp; Аудио</string>
+    <string name="onboarding_perm_music_desc">Необходимо для сканирования, индексации и воспроизведения музыкальной коллекции на устройстве.</string>
+    <string name="onboarding_perm_manage_files_title">Доступ к папке с музыкой</string>
+    <string name="onboarding_perm_manage_files_desc">Выберите папку с музыкой, чтобы Lune безопасно организовал вашу медиатеку</string>
+    <string name="onboarding_welcome_back">Добро пожаловать в Lune</string>
+    <string name="onboarding_listen_style">Слушай со стилем</string>
+    <string name="onboarding_feature_hifi">Поддержка HiFi-аудио</string>
+
+    <string name="onboarding_feature_title">Настраиваемый заголовок</string>
+    <string name="onboarding_feature_lyrics">Динамические тексты песен</string>
+    <string name="onboarding_feature_mix">Crossfade &amp; Automix</string>
+    <string name="onboarding_feature_more">И многое другое…</string>
+    <string name="onboarding_finish_button">Завершить</string>
+    <string name="onboarding_skip_button">Пропустить</string>
+    <string name="onboarding_reminder_title">Ты управляешь</string>
+    <string name="onboarding_reminder_desc">Если вы пропустили какие-либо разрешения, вы можете включить их позже в Настройки > Безопасность > Разрешения.</string>
+    <string name="onboarding_reminder_button">Понятно</string>
+    <string name="onboarding_folder_visibility_title">Видимость папок</string>
+    <string name="onboarding_folder_visibility_desc">По умолчанию Lune показывает только песни из выбранной музыкальной папки. Включите эту опцию, чтобы сразу показывать все папки с музыкой на устройстве.</string>
+    <string name="onboarding_folder_visibility_label">Показывать все папки</string>
+    <string name="onboarding_support_title">Поддержка проекта</string>
+    <string name="onboarding_support_desc">Если вам нравится Lune, поддержите нас в разделе «Пожертвования» в Настройках > О приложении. Каждый вклад помогает развитию!</string>
+    <string name="search_play_all">Играть</string>
+    <string name="search_shuffle">Перемешать</string>
+    <string name="playing_from">Воспроизводится из: %s</string>
+    <string name="playing_from_search">Результаты поиска</string>
+    <string name="option_speed">Скорость</string>
+    <string name="preset_name">Название пресета</string>
+    <string name="cd_save_preset">Сохранить пресет</string>
+    <string name="cd_delete_preset">Удалить пресет</string>
+
+    <!-- Donate -->
+    <string name="donate_title">Поддержать проект</string>
+    <string name="paypal">PayPal</string>
+    <string name="monero">Monero</string>
+    <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
+    <string name="copied">Скопировано в буфер обмена</string>
+    <string name="internal_storage">Внутренняя память</string>
+    <string name="sd_card">SD-карта</string>
+    <string name="folder_browser_title">Обзор папок</string>
+    <string name="no_songs_folder">В этой папке нет песен</string>
+</resources>

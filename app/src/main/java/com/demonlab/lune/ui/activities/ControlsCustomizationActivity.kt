@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -295,7 +296,7 @@ fun ControlsCustomizationScreen(
                     icon = Icons.Default.CheckCircle,
                     position = SectionPosition.FIRST,
                     trailingContent = {
-                        Switch(
+                        BouncySwitch(
                             checked = isControlsFilled,
                             onCheckedChange = {
                                 isControlsFilled = it
@@ -318,7 +319,7 @@ fun ControlsCustomizationScreen(
                     icon = Icons.Default.Palette,
                     position = if (useCustomControlsColor) SectionPosition.MIDDLE else SectionPosition.LAST,
                     trailingContent = {
-                        Switch(
+                        BouncySwitch(
                             checked = useCustomControlsColor,
                             onCheckedChange = {
                                 useCustomControlsColor = it

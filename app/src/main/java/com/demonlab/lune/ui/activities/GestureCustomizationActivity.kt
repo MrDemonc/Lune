@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.SwipeUp
 import androidx.compose.material3.*
+import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -122,7 +123,7 @@ fun GestureCustomizationScreen(
                     icon = Icons.Default.Gesture,
                     position = SectionPosition.FIRST,
                     trailingContent = {
-                        Switch(
+                        BouncySwitch(
                             checked = isGesturesEnabled,
                             onCheckedChange = { 
                                 isGesturesEnabled = it 

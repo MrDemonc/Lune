@@ -23,13 +23,18 @@ class MetadataManager(private val context: Context) {
         coverUri: String?
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val finalCoverUri = if (coverUri != null && !coverUri.startsWith("file://${context.filesDir}")) {
-                saveCustomCover(songId, coverUri.toUri())?.toString() ?: coverUri
+            val existing = database.songOverrideDao().getOverrideForSong(songId)
+
+            val finalCoverUri = if (coverUri != null) {
+                if (!coverUri.startsWith("file://${context.filesDir}")) {
+                    saveCustomCover(songId, coverUri.toUri())?.toString() ?: coverUri
+                } else {
+                    coverUri
+                }
             } else {
-                coverUri
+                existing?.coverUri
             }
 
-            val existing = database.songOverrideDao().getOverrideForSong(songId)
             val override = SongOverride(
                 songId = songId,
                 title = title,

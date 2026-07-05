@@ -62,6 +62,8 @@
     <string name="option_lyrics">歌词</string>
     <string name="transition_mixing">混音</string>
     <string name="transition_crossfade">交叉淡化</string>
+    <string name="crossfade_time">交叉淡化时长</string>
+    <string name="crossfade_time_desc">设置交叉淡化的过渡时长</string>
     <string name="unknown_artist">未知艺术家</string>
     <string name="unknown_song">未知歌曲</string>
     
@@ -82,6 +84,7 @@
     <string name="lang_french">Français</string>
     <string name="lang_chinese">简体中文</string>
     <string name="lang_german">德语</string>
+    <string name="lang_russian">俄语</string>
 
     <string name="ok">确定</string>
     <string name="cd_activate_eq">启用均衡器</string>
@@ -108,11 +111,21 @@
     <string name="song_deleted">歌曲已删除</string>
     <string name="edit_name">编辑名称</string>
     <string name="search">搜索</string>
+    <string name="search_filter">筛选结果</string>
+    <string name="search_filter_all">全部</string>
+    <string name="search_filter_playlist">播放列表</string>
+    <string name="search_filter_album">专辑</string>
+    <string name="search_filter_artist">歌手</string>
+    <string name="search_filter_folder">文件夹</string>
+    <string name="search_filter_cancel">取消</string>
     <string name="search_hint">搜索歌曲、艺术家或专辑...</string>
     <string name="delete_playlist">删除播放列表</string>
     <string name="delete_playlist_confirm">确定要删除此播放列表吗？</string>
     <string name="delete">删除</string>
     <string name="custom_title">自定义标题</string>
+    <string name="section_customization">自定义分区</string>
+    <string name="section_customization_desc">选择要显示的分区标签</string>
+    <string name="section_customization_albums">歌手 / 专辑</string>
     <string name="customization">个性化</string>
     <string name="customization_desc">个性化应用样式、标题和颜色</string>
     <string name="use_custom_colors">使用自定义颜色</string>
@@ -123,7 +136,11 @@
     <string name="haptic_vibration">触感振动</string>
     <string name="haptic_vibration_desc">使用播放器控制时提供轻微振动反馈</string>
     <string name="song_info">歌曲信息</string>
-    <string name="song_info_desc">在播放器中显示音频格式和比特率</string>
+    <string name="song_info_desc">在播放器和列表中显示音频格式和比特率</string>
+    <string name="show_in_song_list">在列表中显示</string>
+    <string name="show_in_full_player">在播放器中显示</string>
+    <string name="show_options">显示选项</string>
+    <string name="hide_options">隐藏选项</string>
     <string name="cover_player">封面播放器</string>
     <string name="cover_player_desc">自定义封面形状、大小和旋转</string>
     <string name="shape_default">默认</string>
@@ -305,4 +322,8 @@
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
     <string name="copied">已复制到剪贴板</string>
+    <string name="internal_storage">内部存储</string>
+    <string name="sd_card">SD卡</string>
+    <string name="folder_browser_title">文件夹浏览器</string>
+    <string name="no_songs_folder">此文件夹中未找到歌曲</string>
 </resources>
