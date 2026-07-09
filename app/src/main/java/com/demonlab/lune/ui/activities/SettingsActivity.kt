@@ -170,7 +170,8 @@ fun SettingsScreen(
                         "fr" to stringResource(R.string.lang_french),
                         "zh" to stringResource(R.string.lang_chinese),
                         "de" to stringResource(R.string.lang_german),
-                        "ru" to stringResource(R.string.lang_russian)
+                        "ru" to stringResource(R.string.lang_russian),
+                        "fa" to stringResource(R.string.lang_persian)
                     )
                     languages.forEach { (code, label) ->
                         Row(

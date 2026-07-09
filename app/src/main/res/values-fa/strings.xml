@@ -1,0 +1,339 @@
+<resources>
+    <string name="app_name">Lune</string>
+    <string name="settings">تنظیمات</string>
+    <string name="about">درباره</string>
+    <string name="version">نسخه</string>
+    <string name="license">پروانه</string>
+    <string name="author">سازنده</string>
+    <string name="hifi_audio">اصالت صوتی</string>
+    <string name="hifi_desc">تشخیص اصالت بالا و نشان‌ها را فعال کنید</string>
+    <string name="keep_screen_on">روشن نگه داشتن صفحه</string>
+    <string name="keep_screen_on_desc">جلوگیری از خاموشی صفحه در زمان استفاده از برنامه</string>
+
+    <string name="general">عمومی</string>
+    <string name="cinematic_player">پخش‌کننده سینمایی</string>
+    <string name="cinematic_player_desc">رابط کاربری فراگیر را با کاور متحرک و گرادیان‌های روان فعال می‌کند</string>
+    <string name="shortcut_playlists">فهرست پخش</string>
+    <string name="backup">پشتیبان</string>
+    <string name="security">امنیت</string>
+
+    <!-- UI/Player Strings -->
+    <string name="eq_title">اکوالایزر</string>
+    <string name="eq_empty_hint">جهت تنظیم اکوالایزر یک اهنگ پخش کنید</string>
+    <string name="bass_label">تقویت بیس</string>
+    <string name="spatial_audio_label">صدای فضایی</string>
+    <string name="loudness_label">بلندی</string>
+    <string name="reverb_label">انعکاس</string>
+    <string name="balance_label">تعادل</string>
+    <string name="balance_reset">بازنشانی تعادل</string>
+    <string name="dynamics_label">پویا</string>
+    <string name="pitch_label">زیر/بم</string>
+    <string name="pitch_reset">بازنشانی زیر/بم</string>
+    <string name="restore_defaults">بازنشانی به پیش‌فرض</string>
+    <string name="disabled">غیرفعال شده</string>
+    <string name="open_queue">صف پخش</string>
+    
+    <!-- EQ Bands -->
+    <string name="band_sub_bass">ساب‌بیس</string>
+    <string name="band_bass">بیس</string>
+    <string name="band_mid">مید</string>
+    <string name="band_presence">پری‌سنس</string>
+    <string name="band_brilliance">بریلینس</string>
+
+    <!-- Metadata Editor -->
+    <string name="edit_title">عنوان</string>
+    <string name="edit_artist">هنرمند</string>
+    <string name="edit_album">آلبوم</string>
+    <string name="save_changes">ذخیره تغییرات</string>
+
+    <!-- Library Tabs -->
+    <string name="tab_resume">ادامه</string>
+    <string name="resume_recommendations">پیشنهادی</string>
+    <string name="resume_top_playlists">فهرست پخش برتر</string>
+    <string name="resume_recently_added">اخیرا اضافه شده</string>
+    <string name="tab_all">همه</string>
+    <string name="tab_favorites">مورد علاقه</string>
+    <string name="tab_folders">پوشه‌ها</string>
+    <string name="tab_songs">آهنگ‌ها</string>
+    <string name="tab_artists">هنرمندها</string>
+    <string name="tab_albums_real">آلبوم‌ها</string>
+    <string name="tab_albums">آلبوم‌ها</string>
+
+    <!-- Player Options -->
+    <string name="option_shuffle">پخش تصادفی</string>
+    <string name="option_crossfade">هکراس‌فید</string>
+    <string name="option_automix">میکس خودکار</string>
+    <string name="option_timer">زمان‌سنج</string>
+    <string name="option_lyrics">متن آهنگ</string>
+    <string name="transition_mixing">میکس کردن</string>
+    <string name="transition_crossfade">کراس‌فید</string>
+    <string name="crossfade_time">زمان کراس‌فید</string>
+    <string name="crossfade_time_desc">مدت‌زمان کراس‌فید را تنظیم کنید</string>
+    <string name="unknown_artist">هنرمند ناشناس</string>
+    <string name="unknown_song">آهنگ ناشناس</string>
+    
+    <!-- Accessibility / Icons -->
+    <string name="cd_back">بازگشت</string>
+    <string name="cd_restore">بازنشانی</string>
+    
+    <!-- Other UI -->
+    <string name="filter_folders">فیلتر پوشه‌ها</string>
+    <string name="option_favorite">موردعلاقه‌ها</string>
+
+    <string name="language">زبان</string>
+    <string name="select_language">انتخاب زبان</string>
+    <string name="lang_system">سیستم پیش‌فرض</string>
+    <string name="lang_english">English</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_french">French</string>
+    <string name="lang_chinese">Chinese</string>
+    <string name="lang_german">German</string>
+    <string name="lang_russian">Russian</string>
+     <string name="lang_persian">Persian</string>
+
+    <string name="ok">باشه</string>
+    <string name="cd_activate_eq">فعال‌سازی اکوالایزر</string>
+    <string name="cd_play_pause">پخش/توقف</string>
+    <string name="cd_change_cover">تغییر کاور</string>
+    <string name="playlists">فهرست پخش</string>
+    <string name="add_to_playlist">فهرست پخش</string>
+    <string name="create_playlist">ساخت فهرست پخش</string>
+    <string name="playlist_name">نام فهرست پخش</string>
+    <string name="edit_playlist_name">ویرایش نام فهرست پخش</string>
+    <string name="cancel">لفو</string>
+    <string name="create">ساخت</string>
+    <string name="save">ذخیره</string>
+    <string name="no_songs_in_playlist">آهنگی در فهرست پخش یافت نشد</string>
+    <string name="theme_auto">پوسته (سیستم)</string>
+    <string name="theme_light">حالت روشن</string>
+    <string name="theme_dark">حالت تیره</string>
+    <string name="add_songs">افزودن آهنگ‌ها</string>
+    <string name="search_songs">...جستجوی آهنگ‌ها</string>
+    <string name="save_selection">ذخیره</string>
+    <string name="delete_song">حذف از دستگاه</string>
+    <string name="delete_song_warning">آیا مطمئن هستید؟ این آهنگ برای همیشه از دستگاه شما حذف خواهد شد</string>
+    <string name="restore_music">بازنشانی</string>
+    <string name="song_deleted">آهنگ حذف شد</string>
+    <string name="edit_name">ویرایش نام</string>
+    <string name="search">جستجو</string>
+    <string name="search_filter">فیلترکردن نتایج</string>
+    <string name="search_filter_all">همه</string>
+    <string name="search_filter_playlist">فهرست پخش</string>
+    <string name="search_filter_album">آلبوم</string>
+    <string name="search_filter_artist">هنرمند</string>
+    <string name="search_filter_folder">پوشه</string>
+    <string name="search_filter_cancel">لغو</string>
+    <string name="search_hint">جستجوی آهنگ‌ها، هنرمندان یا آلبوم‌ها...</string>
+    <string name="delete_playlist">حذف لیست پخش</string>
+    <string name="delete_playlist_confirm">آیا مطمئن هستید میخواهید این فهرست پخش را حذف کنید؟</string>
+    <string name="delete">حذف</string>
+    <string name="custom_title">عنوان دلخواه</string>
+    <string name="section_customization">شخصی‌سازی بخش‌ها</string>
+    <string name="section_customization_desc">انتخاب کنید کدام زبانه‌ها نمایش داده شوند</string>
+    <string name="section_customization_albums">هنرمندها / آلبوم‌ها</string>
+    <string name="customization">شخصی‌سازی کردن</string>
+    <string name="customization_desc">شخصی‌سازی سبک، عنوان و رنگ‌های برنامه</string>
+    <string name="use_custom_colors">استفاده از رنگ های شخصی</string>
+    <string name="use_custom_colors_desc">جایگزینی رنگ پویا با رنگ‌های از پیش تعیین‌شده</string>
+    <string name="amoled_pitch_black">سیاه مطلق AMOLED</string>
+    <string name="amoled_pitch_black_desc">استفاده از پس‌زمینهٔ سیاه مطلق در حالت تیره</string>
+    <string name="media_player">پخش‌کننده</string>
+    <string name="haptic_vibration">لرزش ملایم</string>
+    <string name="haptic_vibration_desc">لرزش ملایم هنگام استفاده از کنترل‌های پخش‌کننده</string>
+    <string name="song_info">اطاعات آهنگ</string>
+    <string name="song_info_desc">نمایش فرمت صوتی و نرخ بیت در پخش‌کننده و فهرست آهنگ‌ها</string>
+    <string name="show_in_song_list">نمایش در فهرست آهنگ‌ها</string>
+    <string name="show_in_full_player">نمایش در تمام پخش‌کننده</string>
+    <string name="show_options">نمایش گزینه‌ها</string>
+    <string name="hide_options">پنهان‌سازی گزینه‌ها</string>
+    <string name="cover_player">کاور پخش‌کننده</string>
+    <string name="cover_player_desc">شکل، اندازه و چرخش تصویر جلد را شخصی‌سازی کنید</string>
+    <string name="shape_default">پیش‌فرض</string>
+    <string name="shape_square">مربعی</string>
+    <string name="shape_circular">دایره‌ای</string>
+    <string name="cover_size">اندازه کاور</string>
+    <string name="cover_spin">چرخش هنگام پخش</string>
+    <string name="cover_vinyl">جلوه صفحهٔ وینیل</string>
+    <string name="cover_preview">پیش‌نمایش پخش‌کننده</string>
+    <string name="cover_shape_title">شکل کاور</string>
+    <string name="size_small">کوچک (۷۰٪)</string>
+    <string name="size_medium">متوسط (۸۵٪)</string>
+    <string name="size_large">بزرگ (۱۰۰٪)</string>
+    <string name="circular_effects">جلوه‌های دایره‌ای</string>
+    <string name="cover_spin_desc">چرخش پیوسته کاور در زمان پخش</string>
+    <string name="cover_vinyl_desc">افزودن حلقه‌ای با بافت صفحهٔ وینیل</string>
+    <string name="controls_player">کنترل‌های پخش‌کننده</string>
+    <string name="controls_player_desc">دکمه‌های قبلی و بعدی را شخصی‌سازی کنید</string>
+    <string name="controls_preview">پیش‌نمایش کنترل‌ها</string>
+    <string name="controls_style_title">سبک دکمه‌ها</string>
+    <string name="controls_filled">آیکون‌های توپر</string>
+    <string name="controls_filled_desc">استفاده از آیکون‌های توپر یک دست</string>
+    <string name="controls_custom_color">رنگ سفارشی کنترل‌ها</string>
+    <string name="controls_custom_color_desc">استفاده از رنگ پویا Material You یا رنگ سفارشی از پالت</string>
+    <string name="color_palette">پالت رنگ</string>
+    <string name="restore_default_title">بازنشانی به پیش‌فرض</string>
+    <string name="categories">دسته‌بندی‌ها</string>
+    <string name="edit_information">ویرایش اطاعات</string>
+    <string name="info_updated">اطلاعات بروزرسانی شد</string>
+    <string name="info_restored">اطلاعات بازنشانی شد</string>
+    <string name="player_queue">صف</string>
+    <string name="player_options">گزینه‌ها</string>
+    <string name="option_share">اشتراک گذاری</string>
+    <string name="option_repeat_one">تکرار تکی</string>
+    <string name="option_repeat_all">تکرار همه</string>
+    <string name="option_repeat_off">غیرفعال</string>
+    <string name="output_speaker">بلندگو</string>
+    <string name="output_headphones">هدفون</string>
+    <string name="no_song_playing">بدون صفحه پخش</string>
+    <string name="output_bluetooth">بلوتوث</string>
+    <string name="queue_now_playing">درحال پخش</string>
+    <string name="queue_up_next">بعدی</string>
+    <string name="option_visualizer">نمایشگر صوتی</string>
+    <string name="visualizer_full_player">نمایش در پخش‌کننده اصلی</string>
+    <string name="visualizer_mini_player">نمایش در پخش‌کننده کوچک</string>
+    <string name="credits">مشارکت‌کنندگان</string>
+    <string name="credits_desc">آزمایش، پیشنهادهای طراحی و طراحی لوگو</string>
+    <string name="creator_desc">سازنده و توسعه‌دهندهٔ اصلی پخش‌کنندهٔ موسیقی Lune</string>
+    <string name="gesture">حرکت</string>
+    <string name="gesture_desc">شخصی‌سازی حرکت‌های برنامه</string>
+    <string name="enable_gestures">فعال کردن حرکت‌های لمسی</string>
+    <string name="enable_gestures_desc">فعال کردن کنترل‌های حرکتی را در پخش‌کننده</string>
+    <string name="change_gesture">تغییر حرکت‌ها</string>
+    <string name="change_gesture_desc">تغییر حرکت کشیدن به بالا</string>
+    <string name="blur">تاری</string>
+    <string name="blur_desc">جلوه تاری پس‌زمینه را تنظیم کنید</string>
+    <string name="enable_blur">فعال کردن </string>
+    <string name="enable_blur_desc">تصویر آلبوم را به صورت پس زمینه تار نمایش دهید</string>
+    <string name="blur_dark_mode">حالت تیره</string>
+    <string name="blur_dark_mode_desc">جلوه تار خود را بصورت تیره نمایش دهید</string>
+    <string name="blur_light_mode">حالت روشن</string>
+    <string name="blur_light_mode_desc">جلوه تار خود را بصوبت تیره نمایش دهید</string>
+    <string name="blur_cinematic_mode">حالت سینمایی</string>
+    <string name="blur_cinematic_mode_desc">نشان دادن جلوه تار با حالت سینمایی</string>
+    <string name="blur_controls">کنترل‌ها</string>
+    <string name="blur_controls_desc">تنظیم رنگ‌ها بصورت هماهنگ با پس‌زمینه تار</string>
+    <string name="other">سایر</string>
+
+    <!-- Users -->
+    <string name="demon">MrDemonc</string>
+    <string name="desukia">Desukia</string>
+
+    <!-- Open Source Libraries -->
+    <string name="open_source_libraries">کتابخانه های متن‌باز</string>
+    <string name="coil_desc">بارگذاری تصویر برای اندروید توسط کاتلین کوروتین مسدود شده.\nLicense: Apache License 2.0</string>
+
+    <string name="gson_desc">کتابخانه سریال‌سازی/غیرسریال‌سازی برای تبدیل اشیاء جیسون و برعکس.\nLicense: Apache License 2.0</string>
+    <string name="room_desc">کتابخانه ماندگاری اتاق یک لایه انتزاعی روی SQLite فراهم می کند.\nLicense: Apache License 2.0</string>
+    <string name="compose_desc">جعبه ابزار مدرن اندروید برای ساخت رابط کاربری بومی.\nLicense: Apache License 2.0</string>
+    <string name="jaudiotagger_desc">کتابخانه برچسب گذاری صوتی برای ویرایش و خواندن فرمت های برچسب گذاری مانند ID3، Vorbis و FLAC.\nLicense: LGPL v2.1</string>
+    <string name="quicksand_desc">شن روان یک فونت بدون سریف است که توسط اندرو پاگلیناوان طراحی شده است.\nLicense: SIL Open Font License, 1.1</string>
+
+    <string name="permissions">دسترسی‌ها</string>
+    <string name="permissions_desc">اطلاعات مربوط به ارسال دسترسی</string>
+    <string name="perm_storage_title">دسترسی حافظه</string>
+    <string name="perm_storage_desc">مورد نیاز برای اسکن فایل های موسیقی و مدیریت پوشه ها در دستگاه شما</string>
+    <string name="perm_notifications_title">اعلان‌ها</string>
+    <string name="perm_notifications_desc">جهت نمایش کنترل‌های پخش و اطلاعات در نوار اعلان ضروری است</string>
+
+    <string name="perm_bluetooth_title">بلوتوث</string>
+    <string name="perm_bluetooth_desc">جهت تشخیص و مدیریت اتصال‌ها با دستگاه‌های صوتی بلوتوث ضروری است</string>
+    <string name="perm_record_audio_title">ظبت صوت</string>
+    <string name="perm_record_audio_desc">برای اینکه نمایشگر صوتی صدا داده‌های فرکانسِ لحظه‌ای را پردازش و نمایش دهد ضروری است</string>
+
+    <!-- Playlist Export/Import -->
+    <string name="sort_options_title">آهنگ‌های کوتاه</string>
+    <string name="sort_ascending">صعودی</string>
+    <string name="sort_descending">نزولی</string>
+    <string name="sort_track_number">شماره‌ترک</string>
+    <string name="sort_alphabetical">حروف‌الفبا</string>
+    <string name="sort_artist">هنرمند</string>
+    <string name="sort_duration">مدت‌زمان</string>
+    <string name="sort_date_added">تاریخ‌افزودن</string>
+    <string name="backup_warning_title">اطلاعیه مهم</string>
+    <string name="backup_warning_desc">Lune فقط پلی‌لیست‌هایی را وارد می‌کند که از قبل توسط همین برنامه پیش‌فرض شده‌اند. برای پخش صحیح، مطمئن شوید فایل‌های موسیقیِ مربوطه روی این دستگاه ذخیره شده‌اند.</string>
+    <string name="export_playlists">انتقال فهرست‌‌پخش</string>
+    <string name="export_playlists_desc">انتقال فهرست‌پخش شما به فایل</string>
+    <string name="import_playlists">وارد کردن پلی لیست</string>
+    <string name="import_playlists_desc">بازنشانی فهرست‌پخش از یک فایل</string>
+    <string name="export_success">فهرست‌پخش با موفقیت انتقال یافت</string>
+    <string name="export_error">خطا در انتقال فهرست‌پخش</string>
+    <string name="import_success">فهرست‌پخش با موفقیت وارد شد</string>
+    <string name="import_error">خطا در واردکردن فهرست‌پخش</string>
+    <string name="song_singular">آهنگ</string>
+    <string name="song_plural">آهنگ‌ها</string>
+    <string name="no_music_available">هیچ موزیکی در دسترس نیست</string>
+    <string name="permission_required">نیازمند دسترسی</string>
+
+    <!-- Welcome Card -->
+    <string name="welcome_morning">صبح بخیر</string>
+    <string name="welcome_noon">روز بخیر</string>
+    <string name="welcome_afternoon">بعدازظهر بخیر</string>
+    <string name="welcome_evening">عصر بخیر</string>
+    <string name="welcome_night">شب بخیر</string>
+    <string name="welcome_early_morning">صبح‌زود بخیر</string>
+    <string name="stats_hours_unit">%dh</string>
+    <string name="stats_minutes_unit">%dm</string>
+    <string name="stats_seconds_unit">%ds</string>
+    <string name="stats_music_unit">از موسیقی</string>
+
+    <!-- Info Cards -->
+    <string name="info_card_time">تبریک! امروز %s از موسیقی را گوش داده‌اید.</string>
+    <string name="info_card_songs">می‌بینیم عاشق موسیقی هستی! در مجموع %d آهنگ داری، ادامه بده!</string>
+    <string name="info_card_favorites_has">تو %d آهنگِ موردعلاقه داری؛ به لذت بردن ادامه بده!</string>
+    <string name="info_card_favorites_none">هنوز آهنگ‌های موردعلاقه‌ای نداری؛ چندتا اضافه کن!</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_description">پیشرفته ترین پخش‌کننده موزیک برای دستگاه شما</string>
+    <string name="onboarding_start_button">شروع</string>
+    <string name="onboarding_perm_audio_title">ظبت صوت</string>
+    <string name="onboarding_perm_required">نیازمند دسترسی</string>
+    <string name="onboarding_perm_audio_desc">برای اینکه نمایشگرصوتی صدا هنگام گوش‌دادن به موسیقی‌ات داده‌های فرکانسِ لحظه‌ای را پردازش و نمایش دهد لازم است.</string>
+    <string name="onboarding_grant_button">دسترسی دادن</string>
+    <string name="onboarding_next_button">بعدی</string>
+    <string name="onboarding_perm_bluetooth_title">بلوتوث</string>
+    <string name="onboarding_perm_bluetooth_desc">برای یک تجربهٔ بهترِ شنیدن لازم است اتصال‌ها با دستگاه‌های صوتی بلوتوث شناسایی و مدیریت شوند</string>
+    <string name="onboarding_perm_notifications_title">اعلان‌ها</string>
+    <string name="onboarding_perm_notifications_desc">لازم است کنترل‌های پخشِ موزیک‌پلیر در نوار وضعیت و صفحهٔ قفل نمایش داده شوند تا بتوانید در هر زمان پخش را کنترل کنید.</string>
+    <string name="onboarding_perm_music_title">موزیک &amp; صوت</string>
+    <string name="onboarding_perm_music_desc">برای اسکن، ایندکس و پخشِ کلکسیون موسیقی‌ای که روی این دستگاه ذخیره کرده‌اید ضروری است.</string>
+    <string name="onboarding_perm_manage_files_title">دسترسی پوشه موزیک</string>
+    <string name="onboarding_perm_manage_files_desc">پوشهٔ موزیک را انتخاب کنید تا Lune بتواند کتابخانه‌تان را به‌صورت ایمن سازماندهی و مدیریت کند.</string>
+    <string name="onboarding_welcome_back">به Lune خوش‌آمدید</string>
+    <string name="onboarding_listen_style">با سبک گوش بده</string>
+    <string name="onboarding_feature_hifi">HiFi پشتیبانی صوت</string>
+
+    <string name="onboarding_feature_title">شخصی‌سازی عنوان</string>
+    <string name="onboarding_feature_lyrics">متن‌آهنگ پویا</string>
+    <string name="onboarding_feature_mix">کراس‌فید &amp; میکس‌خودکار</string>
+    <string name="onboarding_feature_more">و بیشتر...</string>
+    <string name="onboarding_finish_button">پایان</string>
+    <string name="onboarding_skip_button">فعلا رد کن</string>
+    <string name="onboarding_reminder_title">کنترل دست شماست</string>
+    <string name="onboarding_reminder_desc">اگر هر کدام از مجوزها را رد کردید، می‌توانید به‌راحتی بعداً آن را در Settings > Security > Permissions فعال کنید.</string>
+    <string name="onboarding_reminder_button">متوجه شدم</string>
+    <string name="onboarding_folder_visibility_title">نمایش پوشه</string>
+    <string name="onboarding_folder_visibility_desc">به‌صورت پیش‌فرض، Lune فقط آهنگ‌های پوشهٔ موسیقیِ انتخاب‌شده‌ات را نمایش می‌دهد. این گزینه را فعال کن تا از همان ابتدا همهٔ پوشه‌های موسیقیِ دستگاهت نمایش داده شوند.</string>
+    <string name="onboarding_folder_visibility_label">نمایش همه پوشه‌ها</string>
+    <string name="onboarding_support_title">حمایت از پروژه</string>
+    <string name="onboarding_support_desc">اگر از Lune خوشتان آمد، پیشنهاد می‌کنیم از بخش Donate در Settings > About از ما حمایت کنید. هر کمک و مشارکتی به رشدِ بیشترِ اپ کمک می‌کند!</string>
+    <string name="search_play_all">پخش</string>
+    <string name="search_shuffle">مخلوط‌کردن</string>
+    <string name="playing_from">پخش از: %s</string>
+    <string name="playing_from_search">نتیجه جستجو</string>
+    <string name="option_speed">سرعت</string>
+    <string name="preset_name">نام نمایشی</string>
+    <string name="cd_save_preset">ذخیره نمایش</string>
+    <string name="cd_delete_preset">حذف نمایش</string>
+
+    <!-- Donate -->
+    <string name="donate_title">حمایت از پروژه</string>
+    <string name="paypal">پی‌پال</string>
+    <string name="monero">مونرو</string>
+    <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
+    <string name="copied">در کلیپ‌بود ذخیره شد</string>
+    <string name="internal_storage">حافظه داخلی</string>
+    <string name="sd_card">کارت حافظه</string>
+    <string name="folder_browser_title">جستجوگر پوشه</string>
+    <string name="no_songs_folder">آهنگی در این پوشه یافت نشد</string>
+</resources>

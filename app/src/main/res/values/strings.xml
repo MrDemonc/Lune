@@ -90,6 +90,7 @@
     <string name="lang_chinese">Chinese</string>
     <string name="lang_german">German</string>
     <string name="lang_russian">Russian</string>
+    <string name="lang_persian">persian</string>
 
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Activate EQ</string>
