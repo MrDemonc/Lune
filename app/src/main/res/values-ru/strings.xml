@@ -91,6 +91,7 @@
     <string name="lang_chinese">Chinese</string>
     <string name="lang_german">German</string>
     <string name="lang_russian">Русский</string>
+    <string name="lang_persian">Персидский</string>
 
     <string name="ok">ОК</string>
     <string name="cd_activate_eq">Включить эквалайзер</string>

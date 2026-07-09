@@ -88,6 +88,7 @@
     <string name="lang_chinese">简体中文</string>
     <string name="lang_german">德语</string>
     <string name="lang_russian">俄语</string>
+    <string name="lang_persian">波斯语</string>
 
     <string name="ok">确定</string>
     <string name="cd_activate_eq">启用均衡器</string>

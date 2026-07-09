@@ -88,6 +88,7 @@
     <string name="lang_chinese">Chino</string>
     <string name="lang_german">Alemán</string>
     <string name="lang_russian">Ruso</string>
+    <string name="lang_persian">Persa</string>
 
     <string name="ok">Aceptar</string>
     <string name="cd_activate_eq">Activar EQ</string>
