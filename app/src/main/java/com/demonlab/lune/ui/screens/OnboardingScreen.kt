@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -712,6 +713,18 @@ fun ManageFilesPermissionStep(onNext: () -> Unit) {
         mutableStateOf(settingsManager.musicFolderUri != null)
     }
 
+    val initialSafUri = remember {
+        try {
+            val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+            if (musicDir.exists()) {
+                DocumentsContract.buildTreeDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:${musicDir.name}"
+                )
+            } else null
+        } catch (_: Exception) { null }
+    }
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -798,7 +811,7 @@ fun ManageFilesPermissionStep(onNext: () -> Unit) {
                     if (isPermissionGranted) {
                         onNext()
                     } else {
-                        launcher.launch(null)
+                        launcher.launch(initialSafUri)
                     }
                 },
                 modifier = Modifier.height(56.dp),

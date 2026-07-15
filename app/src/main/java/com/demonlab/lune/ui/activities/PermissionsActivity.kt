@@ -193,6 +193,18 @@ fun PermissionsScreen(onBack: () -> Unit) {
             }
         }
 
+        val initialSafUri = remember {
+            try {
+                val musicDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MUSIC)
+                if (musicDir.exists()) {
+                    android.provider.DocumentsContract.buildTreeDocumentUri(
+                        "com.android.externalstorage.documents",
+                        "primary:${musicDir.name}"
+                    )
+                } else null
+            } catch (_: Exception) { null }
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -216,7 +228,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
                     position = position,
                     onClick = {
                         if (permission.isSaf) {
-                            safLauncher.launch(null)
+                            safLauncher.launch(initialSafUri)
                         } else {
                             permission.permission?.let { launcher.launch(it) }
                         }
