@@ -36,6 +36,7 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.FastScrollbar
+import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistOptionsAndRename
@@ -532,13 +533,11 @@ fun AlbumDetailView(
                             }
                         }
                         
-                        AsyncImage(
-                            model = albumCoverBytes ?: R.drawable.ic_launcher_foreground,
+                        SongCoverImage(
+                            coverUrl = albumCoverBytes,
                             contentDescription = null,
-                            modifier = Modifier
-                                .size(180.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                            modifier = Modifier.size(180.dp),
+                            shape = CircleShape
                         )
                         
                         Spacer(modifier = Modifier.height(24.dp))
@@ -864,64 +863,70 @@ fun FolderDetailView(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
-                                if (covers.isEmpty()) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            Icons.Default.Folder,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(64.dp)
-                                        )
-                                    }
-                                } else if (covers.size == 1) {
-                                    AsyncImage(
-                                        model = covers[0],
+                                val validCovers = remember(covers) { covers.filterNotNull() }
+                                var failedIndices by remember(covers) { mutableStateOf(setOf<Int>()) }
+
+                                if (validCovers.isEmpty() || failedIndices.size >= validCovers.take(4).size) {
+                                    SongCoverImage(
+                                        coverUrl = null,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
+                                        shape = CircleShape
+                                    )
+                                } else if (validCovers.size == 1) {
+                                    SongCoverImage(
+                                        coverUrl = validCovers[0],
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        shape = CircleShape,
+                                        onError = { failedIndices = failedIndices + 0 }
                                     )
                                 } else {
                                     Column(modifier = Modifier.fillMaxSize()) {
                                         Row(modifier = Modifier.weight(1f)) {
                                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (covers.size > 0) {
-                                                    AsyncImage(
-                                                        model = covers[0],
+                                                if (validCovers.size > 0) {
+                                                    SongCoverImage(
+                                                        coverUrl = validCovers[0],
                                                         contentDescription = null,
                                                         modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Crop
+                                                        shape = RoundedCornerShape(0.dp),
+                                                        onError = { failedIndices = failedIndices + 0 }
                                                     )
                                                 }
                                             }
                                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (covers.size > 1) {
-                                                    AsyncImage(
-                                                        model = covers[1],
+                                                if (validCovers.size > 1) {
+                                                    SongCoverImage(
+                                                        coverUrl = validCovers[1],
                                                         contentDescription = null,
                                                         modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Crop
+                                                        shape = RoundedCornerShape(0.dp),
+                                                        onError = { failedIndices = failedIndices + 1 }
                                                     )
                                                 }
                                             }
                                         }
                                         Row(modifier = Modifier.weight(1f)) {
                                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (covers.size > 2) {
-                                                    AsyncImage(
-                                                        model = covers[2],
+                                                if (validCovers.size > 2) {
+                                                    SongCoverImage(
+                                                        coverUrl = validCovers[2],
                                                         contentDescription = null,
                                                         modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Crop
+                                                        shape = RoundedCornerShape(0.dp),
+                                                        onError = { failedIndices = failedIndices + 2 }
                                                     )
                                                 }
                                             }
                                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (covers.size > 3) {
-                                                    AsyncImage(
-                                                        model = covers[3],
+                                                if (validCovers.size > 3) {
+                                                    SongCoverImage(
+                                                        coverUrl = validCovers[3],
                                                         contentDescription = null,
                                                         modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Crop
+                                                        shape = RoundedCornerShape(0.dp),
+                                                        onError = { failedIndices = failedIndices + 3 }
                                                     )
                                                 }
                                             }

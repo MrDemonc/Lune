@@ -201,21 +201,12 @@ fun SongItem(
             },
             leadingContent = {
                 Box(contentAlignment = Alignment.Center) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        val model = song.coverUrl ?: song.uri
-                        AsyncImage(
-                            model = model,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            error = ColorPainter(MaterialTheme.colorScheme.secondaryContainer),
-                            placeholder = ColorPainter(MaterialTheme.colorScheme.secondaryContainer)
-                        )
-                    }
+                    SongCoverImage(
+                        coverUrl = song.coverUrl ?: song.uri,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        shape = MaterialTheme.shapes.medium
+                    )
                     if (currentlyPlaying) {
                         Box(
                             modifier = Modifier.size(60.dp),
@@ -774,11 +765,12 @@ fun VinylRecordAsyncCover(
             modifier = Modifier.fillMaxSize(0.55f),
             border = BorderStroke(2.dp, Color(0xFF202020))
         ) {
-            AsyncImage(
-                model = model,
+            SongCoverImage(
+                coverUrl = model,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                shape = CircleShape,
+                iconScale = 0.65f
             )
         }
 
@@ -821,4 +813,56 @@ fun BouncySwitch(
         enabled = enabled,
         thumbContent = thumbContent
     )
+}
+
+@Composable
+fun SongCoverImage(
+    coverUrl: Any?,
+    contentDescription: String? = null,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.medium,
+    contentScale: ContentScale = ContentScale.Crop,
+    backgroundColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    iconColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
+    iconScale: Float = 0.68f,
+    onError: (() -> Unit)? = null
+) {
+    var isError by remember(coverUrl) { mutableStateOf(coverUrl == null) }
+
+    LaunchedEffect(coverUrl) {
+        if (coverUrl == null) {
+            onError?.invoke()
+        }
+    }
+
+    Surface(
+        shape = shape,
+        color = backgroundColor,
+        modifier = modifier
+    ) {
+        if (coverUrl != null && !isError) {
+            AsyncImage(
+                model = coverUrl,
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = contentScale,
+                onError = {
+                    isError = true
+                    onError?.invoke()
+                }
+            )
+        } else {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_launcher_monochrome),
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.fillMaxSize(iconScale)
+                )
+            }
+        }
+    }
 }

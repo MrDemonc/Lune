@@ -35,6 +35,7 @@ import com.demonlab.lune.data.Playlist
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.sheets.CreatePlaylistDialog
+import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
@@ -45,8 +46,9 @@ fun PlaylistPreviewCovers(
     size: Dp = 56.dp
 ) {
     var covers by remember { mutableStateOf<List<String?>>(emptyList()) }
+
     LaunchedEffect(playlistId, viewModel.playlistMappings) {
-        viewModel.getPlaylistPreviewCovers(playlistId) { 
+        viewModel.getPlaylistPreviewCovers(playlistId) {
             covers = it
         }
     }
@@ -54,36 +56,47 @@ fun PlaylistPreviewCovers(
     Surface(
         modifier = Modifier.size(size),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant
+        color = MaterialTheme.colorScheme.secondaryContainer
     ) {
-        if (covers.isEmpty()) {
-            Icon(Icons.AutoMirrored.Filled.PlaylistPlay, null, modifier = Modifier.padding(16.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        val validCovers = remember(covers) { covers.filterNotNull() }
+        var failedIndices by remember(covers) { mutableStateOf(setOf<Int>()) }
+
+        if (validCovers.isEmpty() || failedIndices.size >= validCovers.take(4).size) {
+            SongCoverImage(
+                coverUrl = null,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                shape = CircleShape,
+                iconScale = 0.60f
+            )
         } else {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (covers.size == 1) {
-                    AsyncImage(
-                        model = covers[0],
+                if (validCovers.size == 1) {
+                    SongCoverImage(
+                        coverUrl = validCovers[0],
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        shape = CircleShape,
+                        iconScale = 0.60f,
+                        onError = { failedIndices = failedIndices + 0 }
                     )
                 } else {
-                    val gridCovers = covers.take(4)
+                    val gridCovers = validCovers.take(4)
                     Column(modifier = Modifier.fillMaxSize()) {
                         Row(modifier = Modifier.weight(1f)) {
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                if (gridCovers.size > 0) AsyncImage(gridCovers[0], null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                if (gridCovers.size > 0) SongCoverImage(gridCovers[0], null, Modifier.fillMaxSize(), shape = RoundedCornerShape(0.dp), onError = { failedIndices = failedIndices + 0 })
                             }
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                if (gridCovers.size > 1) AsyncImage(gridCovers[1], null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                if (gridCovers.size > 1) SongCoverImage(gridCovers[1], null, Modifier.fillMaxSize(), shape = RoundedCornerShape(0.dp), onError = { failedIndices = failedIndices + 1 })
                             }
                         }
                         Row(modifier = Modifier.weight(1f)) {
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                if (gridCovers.size > 2) AsyncImage(gridCovers[2], null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                if (gridCovers.size > 2) SongCoverImage(gridCovers[2], null, Modifier.fillMaxSize(), shape = RoundedCornerShape(0.dp), onError = { failedIndices = failedIndices + 2 })
                             }
                             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                if (gridCovers.size > 3) AsyncImage(gridCovers[3], null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                if (gridCovers.size > 3) SongCoverImage(gridCovers[3], null, Modifier.fillMaxSize(), shape = RoundedCornerShape(0.dp), onError = { failedIndices = failedIndices + 3 })
                             }
                         }
                     }

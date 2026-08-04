@@ -11,4 +11,8 @@
     <color name="launcher_background">#FFBEBEBE</color>
     <color name="launcher_soft_tone">#FFFFFFFF</color>
     <color name="launcher_dark_tone">#FF000000</color>
+
+    <color name="placeholder_background">#FFE5E3EC</color>
+    <color name="placeholder_soft_tone">#FF8C76BA</color>
+    <color name="placeholder_dark_tone">#FF3B2B63</color>
 </resources>

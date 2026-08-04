@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.utils.formatDuration
 
 @Composable
@@ -60,13 +61,11 @@ private fun RecentlyAddedRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(8.dp)
         ) {
-            AsyncImage(
-                model = song.coverUrl ?: song.uri,
+            SongCoverImage(
+                coverUrl = song.coverUrl ?: song.albumArtUri,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(10.dp)),
-                contentScale = ContentScale.Crop
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(10.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

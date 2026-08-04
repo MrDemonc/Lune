@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.ui.components.SongCoverImage
 
 data class Album(
     val id: Long,
@@ -87,11 +88,12 @@ fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.secondaryContainer
             ) {
-                AsyncImage(
-                    model = album.coverUrl ?: album.albumArtUri ?: R.drawable.ic_launcher_foreground,
+                SongCoverImage(
+                    coverUrl = album.coverUrl ?: album.albumArtUri,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    shape = RoundedCornerShape(24.dp),
+                    iconScale = 0.68f
                 )
             }
         }

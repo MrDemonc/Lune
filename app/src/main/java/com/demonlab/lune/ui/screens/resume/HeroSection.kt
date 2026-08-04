@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.ui.components.SongCoverImage
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -479,13 +480,11 @@ private fun ContinueListeningCard(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(12.dp)
         ) {
-            AsyncImage(
-                model = song.coverUrl ?: song.uri,
+            SongCoverImage(
+                coverUrl = song.coverUrl ?: song.uri,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(14.dp)),
-                contentScale = ContentScale.Crop
+                modifier = Modifier.size(56.dp),
+                shape = RoundedCornerShape(14.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

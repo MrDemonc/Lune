@@ -3,4 +3,8 @@
     <color name="launcher_background">#FF2B2B2B</color>
     <color name="launcher_soft_tone">#FF000000</color>
     <color name="launcher_dark_tone">#FFFFFFFF</color>
+
+    <color name="placeholder_background">#FF1E1B24</color>
+    <color name="placeholder_soft_tone">#FF524375</color>
+    <color name="placeholder_dark_tone">#FFE8DFFC</color>
 </resources>

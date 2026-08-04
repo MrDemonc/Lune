@@ -1356,7 +1356,7 @@ class MusicService : MediaBrowserServiceCompat() {
                     if (cachedRoundedArt != null) {
                         views.setImageViewBitmap(R.id.widget_cover, cachedRoundedArt)
                     } else {
-                        views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
+                        views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
                     }
                 } else {
                     views.setTextViewText(R.id.widget_title, getString(R.string.no_song_playing))
@@ -1370,7 +1370,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
                     }
 
-                    views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
+                    views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
                 }
 
                 // Button Intents

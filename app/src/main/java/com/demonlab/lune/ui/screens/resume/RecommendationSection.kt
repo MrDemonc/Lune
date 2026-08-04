@@ -14,8 +14,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.ui.components.SongCoverImage
 
 @Composable
 fun RecommendationSection(
@@ -75,13 +75,11 @@ private fun CompactSongTile(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp)
         ) {
-            AsyncImage(
-                model = song.coverUrl ?: song.uri,
+            SongCoverImage(
+                coverUrl = song.coverUrl ?: song.albumArtUri,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp)),
-                contentScale = ContentScale.Crop
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(10.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.widthIn(max = 130.dp)) {

@@ -71,6 +71,7 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.data.Album
+import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.VinylRecordAsyncCover
 import com.demonlab.lune.ui.components.WaveformVisualizer
 import com.demonlab.lune.ui.sheets.AddToPlaylistDialog
@@ -152,7 +153,7 @@ fun AlbumStackedCarousel(
             ) {
                 Box {
                     AsyncImage(
-                        model = album.coverUrl ?: album.albumArtUri ?: R.drawable.ic_launcher_foreground,
+                        model = album.coverUrl ?: album.albumArtUri ?: R.drawable.ic_lune_placeholder,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -606,11 +607,12 @@ fun FullPlayer(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             tonalElevation = 8.dp
                         ) {
-                            AsyncImage(
-                                model = song.coverUrl ?: song.uri,
+                            SongCoverImage(
+                                coverUrl = song.coverUrl ?: song.uri,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                shape = activeShape,
+                                iconScale = 0.68f
                             )
                         }
                     }
@@ -1350,7 +1352,7 @@ fun MiniPlayer(
                 ) {
                     val miniBlurRequest = remember(song.id, song.coverUrl) {
                         ImageRequest.Builder(miniContext)
-                            .data(song.coverUrl ?: song.uri ?: R.drawable.ic_launcher_foreground)
+                            .data(song.coverUrl ?: song.uri ?: R.drawable.ic_lune_placeholder)
                             .crossfade(true)
                             .build()
                     }
@@ -1415,11 +1417,12 @@ fun MiniPlayer(
                                         .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
                                     color = MaterialTheme.colorScheme.secondaryContainer
                                 ) {
-                                    AsyncImage(
-                                        model = song.coverUrl ?: song.uri,
+                                    SongCoverImage(
+                                        coverUrl = song.coverUrl ?: song.uri,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
+                                        shape = activeShape,
+                                        iconScale = 0.68f
                                     )
                                 }
                             }
@@ -1646,7 +1649,7 @@ fun MiniPlayerMinimized(
                     val miniCtx = LocalContext.current
                     val blurRequest = remember(song.id, miniCtx) {
                         ImageRequest.Builder(miniCtx)
-                            .data(song.coverUrl ?: song.uri ?: R.drawable.ic_launcher_foreground)
+                            .data(song.coverUrl ?: song.uri ?: R.drawable.ic_lune_placeholder)
                             .crossfade(true)
                             .build()
                     }
@@ -1684,11 +1687,12 @@ fun MiniPlayerMinimized(
                         .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
                     color = MaterialTheme.colorScheme.secondaryContainer
                 ) {
-                    AsyncImage(
-                        model = song.coverUrl ?: song.uri,
+                    SongCoverImage(
+                        coverUrl = song.coverUrl ?: song.uri,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        shape = activeShape,
+                        iconScale = 0.68f
                     )
                 }
             }
