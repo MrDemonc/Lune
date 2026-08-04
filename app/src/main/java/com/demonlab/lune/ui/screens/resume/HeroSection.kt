@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,8 +25,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +43,14 @@ import com.demonlab.lune.tools.Song
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
+private data class HeroGreetingTheme(
+    val greeting: String,
+    val icon: ImageVector,
+    val brush: Brush,
+    val contentColor: Color,
+    val iconBgColor: Color
+)
+
 @Composable
 fun HeroSection(
     currentSong: Song?,
@@ -53,9 +64,13 @@ fun HeroSection(
     onPlayToggle: () -> Unit,
 ) {
     val context = LocalContext.current
-    val (greeting, timeIcon, solidColor) = remember {
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        val greeting = when (hour) {
+    val colorScheme = MaterialTheme.colorScheme
+    val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
+
+    val heroTheme = remember(hour, colorScheme) {
+        val isDark = colorScheme.surface.luminance() < 0.5f
+
+        val greetingStr = when (hour) {
             in 0..5 -> context.getString(R.string.welcome_early_morning)
             in 6..11 -> context.getString(R.string.welcome_morning)
             in 12..13 -> context.getString(R.string.welcome_noon)
@@ -71,15 +86,129 @@ fun HeroSection(
             in 18..19 -> Icons.Default.WbTwilight
             else -> Icons.Default.NightsStay
         }
-        val color = when (hour) {
-            in 0..5 -> Color(0xFF1A1A2E)
-            in 6..11 -> Color(0xFF29B6F6)
-            in 12..13 -> Color(0xFF4FC3F7)
-            in 14..17 -> Color(0xFFFBC02D)
-            in 18..19 -> Color(0xFF3949AB)
-            else -> Color(0xFF121212)
+        val (brush, textCol, iconBgCol) = when (hour) {
+            // Madrugada (0..5h): Noche profunda mística
+            in 0..5 -> {
+                if (isDark) {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.secondaryContainer,
+                            colorScheme.tertiaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onSecondaryContainer, colorScheme.onSecondaryContainer.copy(alpha = 0.15f))
+                } else {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.tertiaryContainer.copy(alpha = 0.9f),
+                            colorScheme.secondaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.tertiary.copy(alpha = 0.20f))
+                }
+            }
+            // Mañana (6..11h): Amanecer fresco
+            in 6..11 -> {
+                if (isDark) {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.primaryContainer,
+                            colorScheme.secondaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onPrimaryContainer, colorScheme.onPrimaryContainer.copy(alpha = 0.18f))
+                } else {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.primaryContainer,
+                            colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                        )
+                    )
+                    Triple(b, colorScheme.onPrimaryContainer, colorScheme.primary.copy(alpha = 0.15f))
+                }
+            }
+            // Mediodía (12..13h): Sol radiante
+            in 12..13 -> {
+                if (isDark) {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.primary,
+                            colorScheme.primaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onPrimary, colorScheme.onPrimary.copy(alpha = 0.25f))
+                } else {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.primaryContainer,
+                            colorScheme.surfaceTint.copy(alpha = 0.35f)
+                        )
+                    )
+                    Triple(b, colorScheme.onPrimaryContainer, colorScheme.primary.copy(alpha = 0.20f))
+                }
+            }
+            // Tarde (14..17h): Tarde dorada
+            in 14..17 -> {
+                if (isDark) {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.secondaryContainer,
+                            colorScheme.tertiaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onSecondaryContainer, colorScheme.onSecondaryContainer.copy(alpha = 0.18f))
+                } else {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.secondaryContainer,
+                            colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        )
+                    )
+                    Triple(b, colorScheme.onSecondaryContainer, colorScheme.secondary.copy(alpha = 0.18f))
+                }
+            }
+            // Atardecer (18..19h): Crepúsculo
+            in 18..19 -> {
+                if (isDark) {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.tertiaryContainer,
+                            colorScheme.primaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.onTertiaryContainer.copy(alpha = 0.18f))
+                } else {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.tertiaryContainer,
+                            colorScheme.secondaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.tertiary.copy(alpha = 0.20f))
+                }
+            }
+            // Noche (20..23h): Noche serena con alto contraste
+            else -> {
+                if (isDark) {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.tertiaryContainer,
+                            colorScheme.primaryContainer
+                        )
+                    )
+                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.onTertiaryContainer.copy(alpha = 0.18f))
+                } else {
+                    val b = Brush.linearGradient(
+                        colors = listOf(
+                            colorScheme.surfaceVariant,
+                            colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                        )
+                    )
+                    Triple(b, colorScheme.onSurfaceVariant, colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+                }
+            }
         }
-        Triple(greeting, icon, color)
+        HeroGreetingTheme(greetingStr, icon, brush, textCol, iconBgCol)
     }
 
     var infoCardType by remember { mutableStateOf<String?>(null) }
@@ -103,37 +232,37 @@ fun HeroSection(
                 .height(180.dp)
                 .padding(horizontal = 16.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(color = solidColor)
+                .background(brush = heroTheme.brush)
                 .padding(20.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = greeting,
+                            text = heroTheme.greeting,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = heroTheme.contentColor,
                             maxLines = 1
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = stringResource(R.string.stats_music_unit),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = heroTheme.contentColor.copy(alpha = 0.75f)
                         )
                     }
                     Surface(
                         shape = CircleShape,
-                        color = Color.White.copy(alpha = 0.15f),
+                        color = heroTheme.iconBgColor,
                         modifier = Modifier.size(48.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = timeIcon,
+                                imageVector = heroTheme.icon,
                                 contentDescription = null,
                                 modifier = Modifier.size(28.dp),
-                                tint = Color.White
+                                tint = heroTheme.contentColor
                             )
                         }
                     }
@@ -148,18 +277,21 @@ fun HeroSection(
                     StatChip(
                         icon = Icons.Default.History,
                         value = dailyListeningTimeStr,
+                        contentColor = heroTheme.contentColor,
                         modifier = Modifier.weight(1f),
                         onClick = { infoCardType = "time" }
                     )
                     StatChip(
                         icon = Icons.Default.MusicNote,
                         value = totalSongs.toString(),
+                        contentColor = heroTheme.contentColor,
                         modifier = Modifier.weight(1f),
                         onClick = { infoCardType = "songs" }
                     )
                     StatChip(
                         icon = Icons.Default.Favorite,
                         value = favoriteCount.toString(),
+                        contentColor = heroTheme.contentColor,
                         modifier = Modifier.weight(1f),
                         onClick = { infoCardType = "favorites" }
                     )
@@ -289,12 +421,14 @@ private fun InfoCard(
 private fun StatChip(
     icon: ImageVector,
     value: String,
+    contentColor: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White.copy(alpha = 0.15f),
+        color = contentColor.copy(alpha = 0.18f),
+        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.20f)),
         modifier = modifier
             .height(40.dp)
             .clickable(onClick = onClick)
@@ -308,14 +442,14 @@ private fun StatChip(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = Color.White.copy(alpha = 0.8f)
+                tint = contentColor.copy(alpha = 0.85f)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

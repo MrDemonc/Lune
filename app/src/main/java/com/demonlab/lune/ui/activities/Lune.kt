@@ -2275,53 +2275,5 @@ fun MainScreen(
     }   
 }
 
-@Composable
-fun ReusableSkipIcon(
-    isNext: Boolean,
-    controlsIconStyle: Int,
-    isControlsFilled: Boolean,
-    tint: Color,
-    modifier: Modifier = Modifier
-) {
-    val visualOffset = if (controlsIconStyle > 0) {
-        if (isNext) 2.dp else (-2).dp
-    } else 0.dp
-    val flipModifier = if (!isNext && controlsIconStyle > 0) Modifier.scale(scaleX = -1f, scaleY = 1f) else Modifier
-    val combinedModifier = modifier.offset(x = visualOffset).then(flipModifier)
-
-    when (controlsIconStyle) {
-        1 -> {
-            val res = if (isControlsFilled) R.drawable.play_2_filled else R.drawable.play_2
-            Icon(
-                painter = painterResource(res),
-                contentDescription = null,
-                tint = tint,
-                modifier = combinedModifier
-            )
-        }
-        2 -> {
-            val res = if (isControlsFilled) R.drawable.play_3_filled else R.drawable.play_3
-            Icon(
-                painter = painterResource(res),
-                contentDescription = null,
-                tint = tint,
-                modifier = combinedModifier
-            )
-        }
-        else -> {
-            val vector = if (isControlsFilled) {
-                if (isNext) Icons.Default.SkipNext else Icons.Default.SkipPrevious
-            } else {
-                if (isNext) Icons.Outlined.SkipNext else Icons.Outlined.SkipPrevious
-            }
-            Icon(
-                imageVector = vector,
-                contentDescription = null,
-                tint = tint,
-                modifier = modifier
-            )
-        }
-    }
-}
 
 

@@ -71,7 +71,7 @@ com.demonlab.lune.ui/
 | `FullPlayer`           | Full-screen player                                   |
 | `PlayerActionButton`   | Player action button                                 |
 | `MiniPlayer`           | Mini bottom player bar                               |
-| `ReusableSkipIcon`     | Skip next/previous icon ⚠️ **Duplicated in Lune.kt** |
+| `ReusableSkipIcon`     | Skip next/previous icon                              |
 
 ---
 
@@ -150,20 +150,19 @@ com.demonlab.lune.ui/
 
 ## What remains in Lune.kt
 
-**File:** `ui/activities/Lune.kt` (1962 lines)
+**File:** `ui/activities/Lune.kt`
 **Package:** `com.demonlab.lune.ui.activities`
 
 | Name                    | Type                          | Description                                                                                                             |
 | ----------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `Lune`                  | `class` (`AppCompatActivity`) | Main Activity                                                                                                           |
 | `ACTION_VIEW_PLAYLISTS` | `const val`                   | Intent action for shortcut                                                                                              |
-| `MainScreen`            | Composable                    | ~1400 lines. Main orchestrator: tabs, topbar, pager, search overlay, detail overlays, mini/full player, sheets, dialogs |
-| `ReusableSkipIcon`      | Composable                    | ⚠️ **Duplicated** — also in `PlayerComponents.kt`                                                                       |
+| `MainScreen`            | Composable                    | Main orchestrator: tabs, topbar, pager, search overlay, detail overlays, mini/full player, sheets, dialogs              |
 
 ---
 
 ## Notes
 
-- **ReusableSkipIcon duplicated:** Defined in both `PlayerComponents.kt` and `Lune.kt`. Pending consolidation.
+- **ReusableSkipIcon consolidated:** Centralized in `PlayerComponents.kt`.
 - **MusicService.kt:** Has 6 deprecation warnings (Virtualizer) pending resolution.
 - **All extracted functions** retain the same parameters and original behavior. No logic changes were made during refactoring.
