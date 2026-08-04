@@ -490,6 +490,7 @@ class MusicService : MediaBrowserServiceCompat() {
         PlaybackManager.getInstance(applicationContext).isTransitioning = false
         monitorJob?.cancel()
         requestAudioFocus()
+        updateWidget()
 
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
@@ -527,6 +528,7 @@ class MusicService : MediaBrowserServiceCompat() {
                     val art = fetchAlbumArt(song)
                     updateMetadata(song, art)
                     showNotification(song, true, art)
+                    updateWidget()
                     PlaybackManager.getInstance(applicationContext).clearLyrics()
                     extractLyrics(song)
                 }
@@ -832,6 +834,7 @@ class MusicService : MediaBrowserServiceCompat() {
     fun seekTo(pos: Int) {
         mediaPlayer?.seekTo(pos)
         updatePlaybackState()
+        updateWidget()
     }
 
     /** Seeks to position 0 without resuming playback. Called when queue ends naturally. */
@@ -1299,7 +1302,6 @@ class MusicService : MediaBrowserServiceCompat() {
     private fun updateWidget() {
         val song = currentSong()
         val isPlaying = isPlaying()
-        val progress = if (duration() > 0) currentPosition().toFloat() / duration() else 0f
 
         serviceScope.launch {
             val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
@@ -1308,78 +1310,83 @@ class MusicService : MediaBrowserServiceCompat() {
 
             if (appWidgetIds.isEmpty()) return@launch
 
-            val views = RemoteViews(packageName, R.layout.lune_widget_layout)
-
-            if (song != null) {
-                views.setTextViewText(R.id.widget_title, song.title)
-                views.setTextViewText(R.id.widget_artist, song.artist)
-                views.setProgressBar(R.id.widget_progress, 100, (progress * 100).toInt(), false)
-                views.setImageViewResource(R.id.widget_play_pause,
-                    if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play)
-
-                // Audio Output
-                views.setImageViewResource(R.id.widget_output_icon, getOutputIconRes())
-                views.setTextViewText(R.id.widget_output_text, getOutputName())
-
-                // Fetch and process art only if song changed or cache is missing
-                if (lastSongForRounded != song || cachedRoundedArt == null) {
-                    val art = fetchAlbumArt(song)
-                    if (art != null) {
-                        lastSongForRounded = song
-                        
-                        // Performance fix: We process graphics resources outside the Main Thread
-                        withContext(Dispatchers.IO) {
-                            cachedRoundedArt = LuneWidgetProvider.getRoundedCornerBitmap(art, 40)
-
-                            // Also update blur cache if song changed
-                            if (lastSongForBlur != song) {
-                                lastSongForBlur = song
-                                lastBlurredBitmap = LuneWidgetProvider.getBlurredBitmap(this@MusicService, art, 25, 25)
-                            }
-                        }
-                    } else {
-                        lastSongForRounded = null
-                        cachedRoundedArt = null
-                        lastSongForBlur = null
-                        lastBlurredBitmap = null
-                    }
-                }
-
-                if (cachedRoundedArt != null) {
-                    views.setImageViewBitmap(R.id.widget_cover, cachedRoundedArt)
-
-                    lastBlurredBitmap?.let {
-                        views.setImageViewBitmap(R.id.widget_blurred_background, it)
-                        views.setViewVisibility(R.id.widget_blurred_background, android.view.View.VISIBLE)
-                        views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.VISIBLE)
+            // Fetch and process art only if song changed or cache is missing
+            if (song != null && (lastSongForRounded != song || cachedRoundedArt == null)) {
+                val art = fetchAlbumArt(song)
+                if (art != null) {
+                    lastSongForRounded = song
+                    withContext(Dispatchers.IO) {
+                        cachedRoundedArt = LuneWidgetProvider.getRoundedCornerBitmap(art, 54)
                     }
                 } else {
-                    views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
-                    views.setViewVisibility(R.id.widget_blurred_background, android.view.View.GONE)
-                    views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.GONE)
+                    lastSongForRounded = null
+                    cachedRoundedArt = null
                 }
-            } else {
-                views.setTextViewText(R.id.widget_title, getString(R.string.no_song_playing))
-                views.setTextViewText(R.id.widget_artist, "")
-                views.setProgressBar(R.id.widget_progress, 100, 0, false)
-                views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
-                views.setViewVisibility(R.id.widget_blurred_background, android.view.View.GONE)
-                views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.GONE)
+            } else if (song == null) {
+                lastSongForRounded = null
+                cachedRoundedArt = null
             }
 
-            // Button Intents
-            views.setOnClickPendingIntent(R.id.widget_play_pause, getWidgetServicePendingIntent(if (isPlaying) ACTION_PAUSE else ACTION_PLAY))
-            views.setOnClickPendingIntent(R.id.widget_prev, getWidgetServicePendingIntent(ACTION_PREVIOUS))
-            views.setOnClickPendingIntent(R.id.widget_next, getWidgetServicePendingIntent(ACTION_NEXT))
+            for (appWidgetId in appWidgetIds) {
+                val views = RemoteViews(packageName, R.layout.lune_widget_layout)
 
-            // Open App
-            val intent = Intent(applicationContext, Lune::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+                val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+                val isCompact = minHeight in 1..125
+
+                if (song != null) {
+                    views.setTextViewText(R.id.widget_title, song.title)
+                    views.setTextViewText(R.id.widget_artist, song.artist)
+
+                    if (isCompact) {
+                        views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
+                        views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
+                        views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
+                    }
+
+                    views.setImageViewResource(R.id.widget_play_pause,
+                        if (isPlaying) R.drawable.ic_widget_pause else R.drawable.ic_widget_play)
+
+                    // Audio Output
+                    views.setImageViewResource(R.id.widget_output_icon, getOutputIconRes())
+                    views.setTextViewText(R.id.widget_output_text, getOutputName())
+
+                    if (cachedRoundedArt != null) {
+                        views.setImageViewBitmap(R.id.widget_cover, cachedRoundedArt)
+                    } else {
+                        views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
+                    }
+                } else {
+                    views.setTextViewText(R.id.widget_title, getString(R.string.no_song_playing))
+                    views.setTextViewText(R.id.widget_artist, "")
+
+                    if (isCompact) {
+                        views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
+                        views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
+                        views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
+                    }
+
+                    views.setImageViewResource(R.id.widget_cover, R.drawable.ic_launcher_foreground)
+                }
+
+                // Button Intents
+                views.setOnClickPendingIntent(R.id.widget_play_pause, getWidgetServicePendingIntent(if (isPlaying) ACTION_PAUSE else ACTION_PLAY))
+                views.setOnClickPendingIntent(R.id.widget_prev, getWidgetServicePendingIntent(ACTION_PREVIOUS))
+                views.setOnClickPendingIntent(R.id.widget_next, getWidgetServicePendingIntent(ACTION_NEXT))
+
+                // Open App
+                val intent = Intent(applicationContext, Lune::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+
+                appWidgetManager.updateAppWidget(appWidgetId, views)
             }
-            val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-            views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
-
-            appWidgetManager.updateAppWidget(appWidgetIds, views)
         }
     }
 

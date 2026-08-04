@@ -33,6 +33,16 @@ class LuneWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateAppWidget(context, appWidgetManager, appWidgetId)
+    }
+
     companion object {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val playbackManager = PlaybackManager.getInstance(context)
@@ -40,6 +50,10 @@ class LuneWidgetProvider : AppWidgetProvider() {
             val isPlaying = playbackManager.isPlaying
 
             val views = RemoteViews(context.packageName, R.layout.lune_widget_layout)
+
+            val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+            val isCompact = minHeight in 1..125
 
             val openAppIntent = Intent(context, Lune::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
@@ -51,20 +65,30 @@ class LuneWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_title, currentSong.title)
                 views.setTextViewText(R.id.widget_artist, currentSong.artist)
 
-                val progress = (playbackManager.getProgress() * 100).toInt()
-                views.setProgressBar(R.id.widget_progress, 100, progress, false)
+                if (isCompact) {
+                    views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
+                    views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
+                } else {
+                    views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
+                    views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
+                }
 
                 views.setImageViewResource(R.id.widget_play_pause,
-                    if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play)
+                    if (isPlaying) R.drawable.ic_widget_pause else R.drawable.ic_widget_play)
 
                 views.setImageViewResource(R.id.widget_output_icon, getOutputIconRes(context))
                 views.setTextViewText(R.id.widget_output_text, getOutputName(context))
             } else {
                 views.setTextViewText(R.id.widget_title, context.getString(R.string.no_song_playing))
                 views.setTextViewText(R.id.widget_artist, "")
-                views.setProgressBar(R.id.widget_progress, 100, 0, false)
-                views.setViewVisibility(R.id.widget_blurred_background, android.view.View.GONE)
-                views.setViewVisibility(R.id.widget_dark_overlay, android.view.View.GONE)
+
+                if (isCompact) {
+                    views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
+                    views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
+                } else {
+                    views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
+                    views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
+                }
             }
 
             views.setOnClickPendingIntent(R.id.widget_play_pause, getServicePendingIntent(context,
@@ -109,41 +133,50 @@ class LuneWidgetProvider : AppWidgetProvider() {
         }
 
         fun getRoundedCornerBitmap(bitmap: Bitmap, pixels: Int): Bitmap {
-            val output = createBitmap(bitmap.width, bitmap.height)
+            val maxDim = 320
+            val scaledBitmap = if (bitmap.width > maxDim || bitmap.height > maxDim) {
+                val aspect = bitmap.width.toFloat() / bitmap.height.toFloat()
+                val targetW = if (aspect >= 1f) maxDim else (maxDim * aspect).toInt()
+                val targetH = if (aspect <= 1f) maxDim else (maxDim / aspect).toInt()
+                bitmap.scale(targetW.coerceAtLeast(1), targetH.coerceAtLeast(1))
+            } else bitmap
+
+            val output = createBitmap(scaledBitmap.width, scaledBitmap.height)
             val canvas = Canvas(output)
             val paint = Paint().apply { isAntiAlias = true }
-            val rect = Rect(0, 0, bitmap.width, bitmap.height)
+            val rect = Rect(0, 0, scaledBitmap.width, scaledBitmap.height)
             val rectF = RectF(rect)
             val roundPx = pixels.toFloat()
             canvas.drawARGB(0, 0, 0, 0)
             paint.color = -0xbdbdbe
             canvas.drawRoundRect(rectF, roundPx, roundPx, paint)
             paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-            canvas.drawBitmap(bitmap, rect, rect, paint)
+            canvas.drawBitmap(scaledBitmap, rect, rect, paint)
+
+            if (scaledBitmap != bitmap) {
+                scaledBitmap.recycle()
+            }
             return output
         }
 
         @Suppress("UNUSED_PARAMETER")
         fun getBlurredBitmap(context: Context, bitmap: Bitmap, radius: Int, cornerRadius: Int): Bitmap {
             return try {
-                // Use radius to dynamically calculate the scale-down size (higher radius = blurrier)
-                val scaleFactor = radius.coerceIn(4, 50)
-                val tinyWidth = (bitmap.width / scaleFactor).coerceAtLeast(8)
-                val tinyHeight = (bitmap.height / scaleFactor).coerceAtLeast(8)
+                val targetW = 360
+                val targetH = 200
+                val tinyWidth = (targetW / 8).coerceAtLeast(8)
+                val tinyHeight = (targetH / 8).coerceAtLeast(8)
 
-                // Step 1: Scale down with bilinear filtering
                 val tinyBitmap = bitmap.scale(tinyWidth, tinyHeight)
-
-                // Step 2: Draw tiny bitmap back full-size. GPU bilinear scaling triggers smooth blur.
-                val output = createBitmap(bitmap.width, bitmap.height)
+                val output = createBitmap(targetW, targetH)
                 val canvas = Canvas(output)
                 val paint = Paint().apply {
                     isAntiAlias = true
                     isFilterBitmap = true
                 }
 
-                canvas.drawBitmap(tinyBitmap, null, Rect(0, 0, bitmap.width, bitmap.height), paint)
-                tinyBitmap.recycle() // Free memory immediately
+                canvas.drawBitmap(tinyBitmap, null, Rect(0, 0, targetW, targetH), paint)
+                tinyBitmap.recycle()
 
                 getRoundedCornerBitmap(output, cornerRadius)
             } catch (_: Exception) {
