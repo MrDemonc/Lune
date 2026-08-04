@@ -60,6 +60,7 @@ fun HeroSection(
     playlistsCount: Int,
     favoriteCount: Int,
     topArtist: String,
+    showGreetingCard: Boolean = true,
     onContinueListening: () -> Unit,
     onPlayToggle: () -> Unit,
 ) {
@@ -226,92 +227,94 @@ fun HeroSection(
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(brush = heroTheme.brush)
-                .padding(20.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = heroTheme.greeting,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = heroTheme.contentColor,
-                            maxLines = 1
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = stringResource(R.string.stats_music_unit),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = heroTheme.contentColor.copy(alpha = 0.75f)
-                        )
-                    }
-                    Surface(
-                        shape = CircleShape,
-                        color = heroTheme.iconBgColor,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = heroTheme.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(28.dp),
-                                tint = heroTheme.contentColor
+        if (showGreetingCard) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(brush = heroTheme.brush)
+                    .padding(20.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = heroTheme.greeting,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = heroTheme.contentColor,
+                                maxLines = 1
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.stats_music_unit),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = heroTheme.contentColor.copy(alpha = 0.75f)
                             )
                         }
+                        Surface(
+                            shape = CircleShape,
+                            color = heroTheme.iconBgColor,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = heroTheme.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(28.dp),
+                                    tint = heroTheme.contentColor
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatChip(
+                            icon = Icons.Default.History,
+                            value = dailyListeningTimeStr,
+                            contentColor = heroTheme.contentColor,
+                            modifier = Modifier.weight(1f),
+                            onClick = { infoCardType = "time" }
+                        )
+                        StatChip(
+                            icon = Icons.Default.MusicNote,
+                            value = totalSongs.toString(),
+                            contentColor = heroTheme.contentColor,
+                            modifier = Modifier.weight(1f),
+                            onClick = { infoCardType = "songs" }
+                        )
+                        StatChip(
+                            icon = Icons.Default.Favorite,
+                            value = favoriteCount.toString(),
+                            contentColor = heroTheme.contentColor,
+                            modifier = Modifier.weight(1f),
+                            onClick = { infoCardType = "favorites" }
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatChip(
-                        icon = Icons.Default.History,
-                        value = dailyListeningTimeStr,
-                        contentColor = heroTheme.contentColor,
-                        modifier = Modifier.weight(1f),
-                        onClick = { infoCardType = "time" }
-                    )
-                    StatChip(
-                        icon = Icons.Default.MusicNote,
-                        value = totalSongs.toString(),
-                        contentColor = heroTheme.contentColor,
-                        modifier = Modifier.weight(1f),
-                        onClick = { infoCardType = "songs" }
-                    )
-                    StatChip(
-                        icon = Icons.Default.Favorite,
-                        value = favoriteCount.toString(),
-                        contentColor = heroTheme.contentColor,
-                        modifier = Modifier.weight(1f),
-                        onClick = { infoCardType = "favorites" }
-                    )
-                }
             }
-        }
 
-        AnimatedVisibility(
-            visible = infoCardType != null,
-            enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                slideInVertically(animationSpec = tween(400, easing = FastOutSlowInEasing)) { it / 2 },
-            exit = fadeOut(animationSpec = tween(500, easing = FastOutSlowInEasing)) +
-                slideOutVertically(animationSpec = tween(500, easing = FastOutSlowInEasing)) { it / 2 }
-        ) {
-            InfoCard(
-                type = infoCardType ?: "",
-                dailyListeningTimeStr = dailyListeningTimeStr,
-                totalSongs = totalSongs,
-                favoriteCount = favoriteCount
-            )
+            AnimatedVisibility(
+                visible = infoCardType != null,
+                enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
+                    slideInVertically(animationSpec = tween(400, easing = FastOutSlowInEasing)) { it / 2 },
+                exit = fadeOut(animationSpec = tween(500, easing = FastOutSlowInEasing)) +
+                    slideOutVertically(animationSpec = tween(500, easing = FastOutSlowInEasing)) { it / 2 }
+            ) {
+                InfoCard(
+                    type = infoCardType ?: "",
+                    dailyListeningTimeStr = dailyListeningTimeStr,
+                    totalSongs = totalSongs,
+                    favoriteCount = favoriteCount
+                )
+            }
         }
 
         if (currentSong != null) {

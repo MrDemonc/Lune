@@ -1,5 +1,7 @@
 package com.demonlab.lune.ui.screens
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -109,6 +111,22 @@ fun ResumeScreen(
         allSongs.count { it.isFavorite }
     }
 
+    val settingsManager = remember { com.demonlab.lune.tools.SettingsManager.getInstance(context) }
+    val prefs = remember(context) { context.getSharedPreferences("lune_settings", Context.MODE_PRIVATE) }
+    var showHeroSection by remember { mutableStateOf(settingsManager.showHeroSection) }
+
+    DisposableEffect(prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "show_hero_section") {
+                showHeroSection = settingsManager.showHeroSection
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,6 +146,7 @@ fun ResumeScreen(
                 playlistsCount = allPlaylists.size,
                 favoriteCount = favoriteCount,
                 topArtist = realTopArtistName,
+                showGreetingCard = showHeroSection,
                 onContinueListening = onExpandPlayer,
                 onPlayToggle = onPlayToggle
             )

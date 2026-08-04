@@ -331,4 +331,6 @@
     <string name="sd_card">SD卡</string>
     <string name="folder_browser_title">文件夹浏览器</string>
     <string name="no_songs_folder">此文件夹中未找到歌曲</string>
+    <string name="show_hero_section">显示欢迎卡片</string>
+    <string name="show_hero_section_desc">在主页屏幕上显示欢迎和统计卡片</string>
 </resources>

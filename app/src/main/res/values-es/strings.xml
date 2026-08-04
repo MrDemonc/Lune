@@ -334,4 +334,6 @@
     <string name="sd_card">Tarjeta SD</string>
     <string name="folder_browser_title">Explorador de carpetas</string>
     <string name="no_songs_folder">No se encontraron canciones en esta carpeta</string>
+    <string name="show_hero_section">Mostrar tarjeta de saludo</string>
+    <string name="show_hero_section_desc">Muestra la tarjeta de saludo y estadísticas en la pantalla Inicio</string>
 </resources>

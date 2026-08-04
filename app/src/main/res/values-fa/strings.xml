@@ -336,4 +336,6 @@
     <string name="sd_card">کارت حافظه</string>
     <string name="folder_browser_title">جستجوگر پوشه</string>
     <string name="no_songs_folder">آهنگی در این پوشه یافت نشد</string>
+    <string name="show_hero_section">نمایش کارت خوش‌آمدگویی</string>
+    <string name="show_hero_section_desc">نمایش کارت خوش‌آمدگویی و آمار در صفحه اصلی</string>
 </resources>

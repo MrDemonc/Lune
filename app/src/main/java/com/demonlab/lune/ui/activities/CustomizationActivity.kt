@@ -395,7 +395,7 @@ fun CustomizationScreen(
                     headlineText = stringResource(R.string.amoled_pitch_black),
                     supportingText = stringResource(R.string.amoled_pitch_black_desc),
                     icon = Icons.Default.PhoneAndroid,
-                    position = SectionPosition.LAST,
+                    position = SectionPosition.MIDDLE,
                     trailingContent = {
                         BouncySwitch(
                             checked = useAmoledPitchBlack,
@@ -403,6 +403,30 @@ fun CustomizationScreen(
                             thumbContent = {
                                 Icon(
                                     imageVector = if (useAmoledPitchBlack) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+
+                var showHeroSection by remember { mutableStateOf(settingsManager.showHeroSection) }
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.show_hero_section),
+                    supportingText = stringResource(R.string.show_hero_section_desc),
+                    icon = Icons.Default.WbSunny,
+                    position = SectionPosition.LAST,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = showHeroSection,
+                            onCheckedChange = { enabled ->
+                                showHeroSection = enabled
+                                settingsManager.showHeroSection = enabled
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (showHeroSection) Icons.Default.Check else Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )

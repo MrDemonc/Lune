@@ -336,4 +336,6 @@
     <string name="sd_card">SD Card</string>
     <string name="folder_browser_title">Folder Browser</string>
     <string name="no_songs_folder">No songs found in this folder</string>
+    <string name="show_hero_section">Show Greeting Card</string>
+    <string name="show_hero_section_desc">Display the greeting and statistics card in the Resume screen</string>
 </resources>
