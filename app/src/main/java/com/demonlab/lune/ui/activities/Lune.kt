@@ -219,6 +219,7 @@ class Lune : AppCompatActivity() {
             val TAB_ALL = "ALL"
             val TAB_FAVORITES = "FAVORITES"
             val TAB_ALBUMS = "ALBUMS"
+            val TAB_ARTISTS = "ARTISTS"
             val TAB_PLAYLISTS = "PLAYLISTS"
             val TAB_FOLDERS = "FOLDERS"
 
@@ -227,7 +228,8 @@ class Lune : AppCompatActivity() {
             val sTabAll = stringResource(R.string.tab_all)
             val sTabFavorites = stringResource(R.string.tab_favorites)
             val sTabFolders = stringResource(R.string.tab_folders)
-            val sTabAlbums = stringResource(R.string.tab_albums)
+            val sTabAlbums = stringResource(R.string.tab_albums_real)
+            val sTabArtists = stringResource(R.string.tab_artists)
             val sTabPlaylists = stringResource(R.string.playlists)
 
             // LIFTED STATES & LOGIC
@@ -434,6 +436,7 @@ class Lune : AppCompatActivity() {
                 val base = mutableListOf("RESUME", "ALL", "PLAYLISTS")
                 if (hasFavorites) base.add("FAVORITES")
                 base.add("ALBUMS")
+                base.add("ARTISTS")
                 if (visibleFolders.isNotEmpty()) base.add("FOLDERS")
                 if (isSectionCustomizationEnabled) {
                     base.removeAll(hiddenSectionTabs)
@@ -446,7 +449,7 @@ class Lune : AppCompatActivity() {
             }
             val filteredSongs = remember(visibleSongs, selectedFolder) {
                 when (selectedFolder) {
-                    TAB_RESUME, TAB_ALL, TAB_ALBUMS -> visibleSongs
+                    TAB_RESUME, TAB_ALL, TAB_ALBUMS, TAB_ARTISTS -> visibleSongs
                     TAB_FAVORITES -> visibleSongs.filter { it.isFavorite }
                     else -> visibleSongs.filter { it.folderName == selectedFolder }
                 }
@@ -565,8 +568,8 @@ fun MainScreen(
     val sTabAll = stringResource(R.string.tab_all)
     val sTabFavorites = stringResource(R.string.tab_favorites)
     val sTabFolders = stringResource(R.string.tab_folders)
-    val sTabAlbums = stringResource(R.string.tab_albums)
-    val sTabAlbumsReal = stringResource(R.string.tab_albums_real)
+    val sTabAlbums = stringResource(R.string.tab_albums_real)
+    val sTabArtists = stringResource(R.string.tab_artists)
     val sTabPlaylists = stringResource(R.string.playlists)
 
     val visibleFolders = remember(allFolders, hiddenFolders.value) {
@@ -668,7 +671,7 @@ fun MainScreen(
 
     val contextId = remember(selectedFolder) {
         when (selectedFolder) {
-            "RESUME", "ALL", "ALBUMS" -> -100L
+            "RESUME", "ALL", "ALBUMS", "ARTISTS" -> -100L
             "FAVORITES" -> -200L
             else -> selectedFolder.hashCode().toLong()
         }
@@ -701,36 +704,36 @@ fun MainScreen(
     }
 
     
-    val albums = remember(rawAllSongs, hiddenFolders.value, isAlbumView) {
-        if (isAlbumView) {
-            rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
-                .groupBy { it.album }
-                .map { (albumName, songs) ->
-                    Album(
-                        id = albumName.hashCode().toLong(),
-                        name = albumName,
-                        artist = songs.first().artist,
-                        albumArtUri = songs.first().albumArtUri,
-                        coverUrl = songs.first().coverUrl,
-                        songs = songs.sortedBy { it.title }
-                    )
-                }
-                .sortedBy { it.name }
-        } else {
-            rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
-                .groupBy { it.artist }
-                .map { (artistName, songs) -> 
-                    Album(
-                        id = artistName.hashCode().toLong(),
-                        name = artistName, 
-                        artist = "", 
-                        albumArtUri = songs.first().albumArtUri, 
-                        coverUrl = songs.first().coverUrl, 
-                        songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
-                    ) 
-                }
-                .sortedBy { it.name }
-        }
+    val albumsList = remember(rawAllSongs, hiddenFolders.value) {
+        rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+            .groupBy { it.album }
+            .map { (albumName, songs) ->
+                Album(
+                    id = albumName.hashCode().toLong(),
+                    name = albumName,
+                    artist = songs.first().artist,
+                    albumArtUri = songs.first().albumArtUri,
+                    coverUrl = songs.first().coverUrl,
+                    songs = songs.sortedBy { it.title }
+                )
+            }
+            .sortedBy { it.name }
+    }
+
+    val artistsList = remember(rawAllSongs, hiddenFolders.value) {
+        rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+            .groupBy { it.artist }
+            .map { (artistName, songs) -> 
+                Album(
+                    id = artistName.hashCode().toLong(),
+                    name = artistName, 
+                    artist = "", 
+                    albumArtUri = songs.first().albumArtUri, 
+                    coverUrl = songs.first().coverUrl, 
+                    songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
+                ) 
+            }
+            .sortedBy { it.name }
     }
 
     LaunchedEffect(selectedFolder) {
@@ -1039,6 +1042,15 @@ fun MainScreen(
                         val selectedBg = if (isDark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary
                         val onSelected = if (isDark) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary
 
+                        val navListState = rememberLazyListState()
+
+                        LaunchedEffect(selectedFolder, folders) {
+                            val index = folders.indexOf(selectedFolder)
+                            if (index >= 0) {
+                                navListState.animateScrollToItem(index)
+                            }
+                        }
+
                         Surface(
                             shape = RoundedCornerShape(24.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
@@ -1046,18 +1058,22 @@ fun MainScreen(
                                 .height(48.dp)
                                 .fillMaxWidth()
                         ) {
-                            Row(
+                            LazyRow(
+                                state = navListState,
                                 modifier = Modifier.fillMaxSize(),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                folders.forEach { folder ->
+                                itemsIndexed(folders) { index, folder ->
                                     val isCurrentContext = playbackManager.activeCategory == folder && playbackManager.currentSong != null && playbackManager.activePlaylistId != -300L
                                     val isSelected = selectedFolder == folder
                                     val label = when(folder) {
                                         "RESUME" -> sTabResume
                                         "ALL" -> sTabAll
                                         "FAVORITES" -> sTabFavorites
-                                        "ALBUMS" -> if (isAlbumView) sTabAlbumsReal else sTabAlbums
+                                        "ALBUMS" -> sTabAlbums
+                                        "ARTISTS" -> sTabArtists
                                         "PLAYLISTS" -> sTabPlaylists
                                         "FOLDERS" -> sTabFolders
                                         else -> folder
@@ -1065,7 +1081,6 @@ fun MainScreen(
 
                                     Box(
                                         modifier = Modifier
-                                            .weight(1f)
                                             .fillMaxHeight()
                                             .padding(vertical = 2.dp)
                                             .clip(RoundedCornerShape(20.dp))
@@ -1074,7 +1089,8 @@ fun MainScreen(
                                                 else Modifier
                                             )
                                             .bounceClick()
-                                            .clickable { onSelectedFolderChange(folder) },
+                                            .clickable { onSelectedFolderChange(folder) }
+                                            .padding(horizontal = 12.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         val iconTint by animateColorAsState(
@@ -1097,11 +1113,11 @@ fun MainScreen(
 
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                            modifier = Modifier.padding(horizontal = 2.dp)
                                         ) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(36.dp)
+                                                    .size(32.dp)
                                                     .then(
                                                         if (!isSelected) Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
                                                         else Modifier
@@ -1110,52 +1126,25 @@ fun MainScreen(
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 when (folder) {
-                                                    "RESUME" -> Icon(
-                                                        imageVector = Icons.Default.History,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    "ALL" -> Icon(
-                                                        imageVector = Icons.Default.LibraryMusic,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    "ALBUMS" -> Icon(
-                                                        imageVector = if (isAlbumView) Icons.Default.Album else Icons.Default.Person,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    "PLAYLISTS" -> Icon(
-                                                        imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    "FOLDERS" -> Icon(
-                                                        imageVector = Icons.Default.Folder,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    "FAVORITES" -> Icon(
-                                                        imageVector = Icons.Default.FavoriteBorder,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    else -> Icon(
-                                                        imageVector = Icons.Default.Folder,
-                                                        contentDescription = label,
-                                                        tint = iconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
+                                                    "RESUME" -> Icon(Icons.Default.History, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
+                                                    else -> Icon(Icons.Default.Folder, contentDescription = label, tint = iconTint, modifier = Modifier.size(18.dp))
                                                 }
                                             }
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = iconTint
+                                            )
                                             if (isCurrentContext) {
-                                                Spacer(modifier = Modifier.width(2.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
                                                 Box(
                                                     modifier = Modifier
                                                         .size(6.dp)
@@ -1235,6 +1224,7 @@ fun MainScreen(
                         when {
                             folder == "RESUME" -> "RESUME"
                             folder == "ALBUMS" -> "ALBUM_GRID"
+                            folder == "ARTISTS" -> "ARTIST_GRID"
                             folder == "PLAYLISTS" -> "PLAYLIST_GRID"
                             folder == "FOLDERS" -> "FOLDER_GRID"
                             pageFilteredSongs.isEmpty() -> "EMPTY"
@@ -1283,36 +1273,77 @@ fun MainScreen(
                                     shadowElevation = 0.dp
                                 ) {
                                     AlbumsListHeader(
-                                        albumCount = albums.size,
+                                        albumCount = albumsList.size,
                                         viewStyle = viewStyle,
                                         onToggleViewStyle = {
                                             val newStyle = if (viewStyle == 0) 1 else 0
                                             viewStyle = newStyle
                                             settingsManager.albumViewStyle = newStyle
                                         },
-                                        isAlbumView = isAlbumView,
-                                        onToggleAlbumView = {
-                                            val newMode = !isAlbumView
-                                            isAlbumView = newMode
-                                            settingsManager.albumBrowseMode = newMode
-                                        }
+                                        isAlbumView = true,
+                                        onToggleAlbumView = null
                                     )
                                 }
                                 
                                 Box(modifier = Modifier.weight(1f)) {
                                     if (viewStyle == 0) {
                                         AlbumGrid(
-                                            albums = albums,
+                                            albums = albumsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            activePlaylistId = if (isAlbumView) currentSong?.album?.hashCode()?.toLong() else currentSong?.artist?.hashCode()?.toLong()
+                                            activePlaylistId = currentSong?.album?.hashCode()?.toLong()
                                         )
                                     } else {
                                         AlbumStackedCarousel(
-                                            albums = albums,
+                                            albums = albumsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            activePlaylistId = if (isAlbumView) currentSong?.album?.hashCode()?.toLong() else currentSong?.artist?.hashCode()?.toLong()
+                                            activePlaylistId = currentSong?.album?.hashCode()?.toLong()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        "ARTIST_GRID" -> {
+                            var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
+                            
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    tonalElevation = 4.dp,
+                                    shadowElevation = 0.dp
+                                ) {
+                                    AlbumsListHeader(
+                                        albumCount = artistsList.size,
+                                        viewStyle = viewStyle,
+                                        onToggleViewStyle = {
+                                            val newStyle = if (viewStyle == 0) 1 else 0
+                                            viewStyle = newStyle
+                                            settingsManager.albumViewStyle = newStyle
+                                        },
+                                        isAlbumView = false,
+                                        onToggleAlbumView = null
+                                    )
+                                }
+                                
+                                Box(modifier = Modifier.weight(1f)) {
+                                    if (viewStyle == 0) {
+                                        AlbumGrid(
+                                            albums = artistsList,
+                                            onAlbumClick = { selectedAlbum = it },
+                                            bottomPadding = bottomPadding,
+                                            activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
+                                        )
+                                    } else {
+                                        AlbumStackedCarousel(
+                                            albums = artistsList,
+                                            onAlbumClick = { selectedAlbum = it },
+                                            bottomPadding = bottomPadding,
+                                            activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     }
                                 }

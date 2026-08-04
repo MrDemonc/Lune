@@ -271,7 +271,7 @@ fun AlbumsListHeader(
     viewStyle: Int,
     onToggleViewStyle: () -> Unit,
     isAlbumView: Boolean,
-    onToggleAlbumView: () -> Unit,
+    onToggleAlbumView: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -283,7 +283,8 @@ fun AlbumsListHeader(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
-                onClick = onToggleAlbumView,
+                onClick = { onToggleAlbumView?.invoke() },
+                enabled = onToggleAlbumView != null,
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.size(44.dp)
@@ -314,19 +315,21 @@ fun AlbumsListHeader(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                onClick = onToggleAlbumView,
-                shape = CircleShape,
-                color = if (isAlbumView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        if (isAlbumView) Icons.Default.Person else Icons.Default.Album,
-                        contentDescription = null,
-                        tint = if (isAlbumView) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(18.dp)
-                    )
+            if (onToggleAlbumView != null) {
+                Surface(
+                    onClick = onToggleAlbumView,
+                    shape = CircleShape,
+                    color = if (isAlbumView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            if (isAlbumView) Icons.Default.Person else Icons.Default.Album,
+                            contentDescription = null,
+                            tint = if (isAlbumView) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
