@@ -560,6 +560,9 @@ class PlaybackManager private constructor(private val context: Context) {
 
     fun playNextFromService(isNaturalEnd: Boolean = false, startPlayback: Boolean = true) {
         if (activePlaylist.isEmpty()) return
+        if (frontQueueInsertCount > 0) {
+            frontQueueInsertCount--
+        }
         
         if (repeatMode == 1) { // Repeat One
             if (startPlayback) {
@@ -1272,6 +1275,39 @@ class PlaybackManager private constructor(private val context: Context) {
             shuffledIndices.map { activePlaylist[it] }
         } else {
             activePlaylist
+        }
+    }
+
+    fun playNext(song: Song) {
+        val current = currentSong
+        if (current == null || activePlaylist.isEmpty()) {
+            play(song)
+            return
+        }
+        val exists = activePlaylist.any { it.id == song.id }
+        if (exists) {
+            reorderQueueForSong(song, moveToFront = true)
+        } else {
+            val currentIdx = activePlaylist.indexOfFirst { it.id == current.id }
+            val insertAt = if (currentIdx != -1) (currentIdx + 1 + frontQueueInsertCount).coerceAtMost(activePlaylist.size) else activePlaylist.size
+            val mutable = activePlaylist.toMutableList()
+            mutable.add(insertAt, song)
+            activePlaylist = mutable
+            frontQueueInsertCount++
+
+            if (isShuffle && shuffledIndices.isNotEmpty()) {
+                val newIndex = activePlaylist.indexOfFirst { it.id == song.id }
+                val currentPosInShuffle = shuffledIndices.indexOf(currentIdx)
+                val insertPosInShuffle = if (currentPosInShuffle != -1) (currentPosInShuffle + 1).coerceAtMost(shuffledIndices.size) else shuffledIndices.size
+                val mutableShuffle = shuffledIndices.toMutableList()
+                for (i in mutableShuffle.indices) {
+                    if (mutableShuffle[i] >= newIndex) {
+                        mutableShuffle[i] = mutableShuffle[i] + 1
+                    }
+                }
+                mutableShuffle.add(insertPosInShuffle, newIndex)
+                shuffledIndices = mutableShuffle
+            }
         }
     }
 

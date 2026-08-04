@@ -180,6 +180,7 @@
     <string name="output_bluetooth">Bluetooth</string>
     <string name="queue_now_playing">Reproduciendo ahora</string>
     <string name="queue_up_next">Siguientes</string>
+    <string name="play_next">Reproducir a continuación</string>
     <string name="option_visualizer">Visualizador</string>
     <string name="visualizer_full_player">Mostrar en Reproductor Grande</string>
     <string name="visualizer_mini_player">Mostrar en mini reproductor</string>

@@ -50,6 +50,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.OptionButton
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
@@ -74,6 +76,10 @@ fun SongOptionsBottomSheet(
     onEditMetadataClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val isPlayingOrLoaded = playbackManager.currentSong != null
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface
@@ -89,11 +95,11 @@ fun SongOptionsBottomSheet(
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AsyncImage(
-                    model = song.coverUrl ?: song.uri ?: R.drawable.ic_launcher_foreground,
+                SongCoverImage(
+                    coverUrl = song.coverUrl ?: song.albumArtUri,
                     contentDescription = null,
-                    modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
+                    modifier = Modifier.size(56.dp),
+                    shape = RoundedCornerShape(8.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
@@ -103,11 +109,47 @@ fun SongOptionsBottomSheet(
             }
             Spacer(modifier = Modifier.height(8.dp))
             
+            if (isPlayingOrLoaded) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 1.dp),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                ) {
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        headlineContent = { Text(stringResource(R.string.play_next)) },
+                        leadingContent = {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.QueueMusic,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.clickable {
+                            onDismiss()
+                            playbackManager.playNext(song)
+                            Toast.makeText(context, context.getString(R.string.play_next) + ": ${song.title}", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+            }
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 1.dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                shape = if (isPlayingOrLoaded) RoundedCornerShape(4.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
             ) {
                 ListItem(

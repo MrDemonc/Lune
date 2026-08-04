@@ -178,6 +178,7 @@
     <string name="info_updated">Information updated</string>
     <string name="info_restored">Information restored</string>
     <string name="player_queue">Queue</string>
+    <string name="play_next">Play next</string>
     <string name="player_options">Options</string>
     <string name="option_share">Share</string>
     <string name="option_repeat_one">Repeat One</string>
