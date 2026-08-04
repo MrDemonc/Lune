@@ -49,7 +49,15 @@ private data class HeroGreetingTheme(
     val icon: ImageVector,
     val brush: Brush,
     val contentColor: Color,
-    val iconBgColor: Color
+    val iconBgColor: Color,
+    val iconTint: Color
+)
+
+private data class ThemeColors(
+    val brush: Brush,
+    val contentColor: Color,
+    val iconBgColor: Color,
+    val iconTint: Color
 )
 
 @Composable
@@ -88,17 +96,17 @@ fun HeroSection(
             in 18..19 -> Icons.Default.WbTwilight
             else -> Icons.Default.NightsStay
         }
-        val (brush, textCol, iconBgCol) = when (hour) {
-            // Madrugada (0..5h): Noche profunda mística
+        val colors = when (hour) {
+            // Madrugada (0..5h)
             in 0..5 -> {
                 if (isDark) {
                     val b = Brush.linearGradient(
                         colors = listOf(
-                            colorScheme.secondaryContainer,
-                            colorScheme.tertiaryContainer
+                            colorScheme.tertiaryContainer,
+                            colorScheme.surfaceContainerHighest
                         )
                     )
-                    Triple(b, colorScheme.onSecondaryContainer, colorScheme.onSecondaryContainer.copy(alpha = 0.15f))
+                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
                 } else {
                     val b = Brush.linearGradient(
                         colors = listOf(
@@ -106,19 +114,19 @@ fun HeroSection(
                             colorScheme.secondaryContainer
                         )
                     )
-                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.tertiary.copy(alpha = 0.20f))
+                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
                 }
             }
-            // Mañana (6..11h): Amanecer fresco
+            // Mañana (6..11h)
             in 6..11 -> {
                 if (isDark) {
                     val b = Brush.linearGradient(
                         colors = listOf(
                             colorScheme.primaryContainer,
-                            colorScheme.secondaryContainer
+                            colorScheme.surfaceContainerHighest
                         )
                     )
-                    Triple(b, colorScheme.onPrimaryContainer, colorScheme.onPrimaryContainer.copy(alpha = 0.18f))
+                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
                 } else {
                     val b = Brush.linearGradient(
                         colors = listOf(
@@ -126,19 +134,19 @@ fun HeroSection(
                             colorScheme.tertiaryContainer.copy(alpha = 0.6f)
                         )
                     )
-                    Triple(b, colorScheme.onPrimaryContainer, colorScheme.primary.copy(alpha = 0.15f))
+                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
                 }
             }
-            // Mediodía (12..13h): Sol radiante
+            // Mediodía (12..13h)
             in 12..13 -> {
                 if (isDark) {
                     val b = Brush.linearGradient(
                         colors = listOf(
-                            colorScheme.primary,
-                            colorScheme.primaryContainer
+                            colorScheme.primaryContainer,
+                            colorScheme.secondaryContainer
                         )
                     )
-                    Triple(b, colorScheme.onPrimary, colorScheme.onPrimary.copy(alpha = 0.25f))
+                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
                 } else {
                     val b = Brush.linearGradient(
                         colors = listOf(
@@ -146,19 +154,19 @@ fun HeroSection(
                             colorScheme.surfaceTint.copy(alpha = 0.35f)
                         )
                     )
-                    Triple(b, colorScheme.onPrimaryContainer, colorScheme.primary.copy(alpha = 0.20f))
+                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
                 }
             }
-            // Tarde (14..17h): Tarde dorada
+            // Tarde (14..17h)
             in 14..17 -> {
                 if (isDark) {
                     val b = Brush.linearGradient(
                         colors = listOf(
                             colorScheme.secondaryContainer,
-                            colorScheme.tertiaryContainer
+                            colorScheme.surfaceContainerHighest
                         )
                     )
-                    Triple(b, colorScheme.onSecondaryContainer, colorScheme.onSecondaryContainer.copy(alpha = 0.18f))
+                    ThemeColors(b, colorScheme.onSecondaryContainer, colorScheme.secondary, colorScheme.onSecondary)
                 } else {
                     val b = Brush.linearGradient(
                         colors = listOf(
@@ -166,19 +174,19 @@ fun HeroSection(
                             colorScheme.primaryContainer.copy(alpha = 0.5f)
                         )
                     )
-                    Triple(b, colorScheme.onSecondaryContainer, colorScheme.secondary.copy(alpha = 0.18f))
+                    ThemeColors(b, colorScheme.onSecondaryContainer, colorScheme.secondary, colorScheme.onSecondary)
                 }
             }
-            // Atardecer (18..19h): Crepúsculo
+            // Atardecer (18..19h)
             in 18..19 -> {
                 if (isDark) {
                     val b = Brush.linearGradient(
                         colors = listOf(
                             colorScheme.tertiaryContainer,
-                            colorScheme.primaryContainer
+                            colorScheme.secondaryContainer
                         )
                     )
-                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.onTertiaryContainer.copy(alpha = 0.18f))
+                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
                 } else {
                     val b = Brush.linearGradient(
                         colors = listOf(
@@ -186,19 +194,19 @@ fun HeroSection(
                             colorScheme.secondaryContainer
                         )
                     )
-                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.tertiary.copy(alpha = 0.20f))
+                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
                 }
             }
-            // Noche (20..23h): Noche serena con alto contraste
+            // Noche (20..23h)
             else -> {
                 if (isDark) {
                     val b = Brush.linearGradient(
                         colors = listOf(
-                            colorScheme.tertiaryContainer,
-                            colorScheme.primaryContainer
+                            colorScheme.surfaceContainerHighest,
+                            colorScheme.tertiaryContainer.copy(alpha = 0.7f)
                         )
                     )
-                    Triple(b, colorScheme.onTertiaryContainer, colorScheme.onTertiaryContainer.copy(alpha = 0.18f))
+                    ThemeColors(b, colorScheme.onSurface, colorScheme.primary, colorScheme.onPrimary)
                 } else {
                     val b = Brush.linearGradient(
                         colors = listOf(
@@ -206,11 +214,11 @@ fun HeroSection(
                             colorScheme.secondaryContainer.copy(alpha = 0.4f)
                         )
                     )
-                    Triple(b, colorScheme.onSurfaceVariant, colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+                    ThemeColors(b, colorScheme.onSurfaceVariant, colorScheme.primary, colorScheme.onPrimary)
                 }
             }
         }
-        HeroGreetingTheme(greetingStr, icon, brush, textCol, iconBgCol)
+        HeroGreetingTheme(greetingStr, icon, colors.brush, colors.contentColor, colors.iconBgColor, colors.iconTint)
     }
 
     var infoCardType by remember { mutableStateOf<String?>(null) }
@@ -265,7 +273,7 @@ fun HeroSection(
                                     imageVector = heroTheme.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(28.dp),
-                                    tint = heroTheme.contentColor
+                                    tint = heroTheme.iconTint
                                 )
                             }
                         }
@@ -281,6 +289,7 @@ fun HeroSection(
                             icon = Icons.Default.History,
                             value = dailyListeningTimeStr,
                             contentColor = heroTheme.contentColor,
+                            iconBgColor = heroTheme.iconBgColor,
                             modifier = Modifier.weight(1f),
                             onClick = { infoCardType = "time" }
                         )
@@ -288,6 +297,7 @@ fun HeroSection(
                             icon = Icons.Default.MusicNote,
                             value = totalSongs.toString(),
                             contentColor = heroTheme.contentColor,
+                            iconBgColor = heroTheme.iconBgColor,
                             modifier = Modifier.weight(1f),
                             onClick = { infoCardType = "songs" }
                         )
@@ -295,6 +305,7 @@ fun HeroSection(
                             icon = Icons.Default.Favorite,
                             value = favoriteCount.toString(),
                             contentColor = heroTheme.contentColor,
+                            iconBgColor = heroTheme.iconBgColor,
                             modifier = Modifier.weight(1f),
                             onClick = { infoCardType = "favorites" }
                         )
@@ -426,13 +437,14 @@ private fun StatChip(
     icon: ImageVector,
     value: String,
     contentColor: Color,
+    iconBgColor: Color = contentColor.copy(alpha = 0.18f),
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = contentColor.copy(alpha = 0.18f),
-        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.20f)),
+        color = iconBgColor.copy(alpha = 0.28f),
+        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.25f)),
         modifier = modifier
             .height(40.dp)
             .clickable(onClick = onClick)
