@@ -266,12 +266,13 @@ fun CustomizationScreen(
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            val isAlbumView = settingsManager.albumBrowseMode
                             val sectionItems = listOf(
                                 "ALL" to Icons.Default.LibraryMusic,
                                 "FAVORITES" to Icons.Default.Favorite,
                                 "PLAYLISTS" to Icons.AutoMirrored.Filled.QueueMusic,
-                                "ALBUMS" to if (isAlbumView) Icons.Default.Album else Icons.Default.Person,
+                                "ALBUMS" to Icons.Default.Album,
+                                "ARTISTS" to Icons.Default.Person,
+                                "GENRES" to Icons.Default.Category,
                                 "FOLDERS" to Icons.Default.Folder
                             )
 

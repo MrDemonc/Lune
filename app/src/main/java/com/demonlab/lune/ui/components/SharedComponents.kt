@@ -272,8 +272,13 @@ fun AlbumsListHeader(
     onToggleViewStyle: () -> Unit,
     isAlbumView: Boolean,
     onToggleAlbumView: (() -> Unit)? = null,
+    title: String? = null,
+    icon: ImageVector? = null,
     modifier: Modifier = Modifier
 ) {
+    val displayTitle = title ?: if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists)
+    val displayIcon = icon ?: if (isAlbumView) Icons.Default.Album else Icons.Default.Person
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -291,7 +296,7 @@ fun AlbumsListHeader(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        if (isAlbumView) Icons.Default.Album else Icons.Default.Person,
+                        displayIcon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
@@ -301,7 +306,7 @@ fun AlbumsListHeader(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists),
+                    text = displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface

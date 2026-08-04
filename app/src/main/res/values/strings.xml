@@ -44,10 +44,12 @@
     <string name="edit_title">Title</string>
     <string name="edit_artist">Artist</string>
     <string name="edit_album">Album</string>
+    <string name="edit_genre">Genre</string>
     <string name="save_changes">Save Changes</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">Resume</string>
+    <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Recommendations</string>
     <string name="resume_top_playlists">Top Playlists</string>
     <string name="resume_recently_added">Recently Added</string>
@@ -130,6 +132,7 @@
     <string name="delete">Delete</string>
     <string name="custom_title">Custom Title</string>
     <string name="section_customization">Customize sections</string>
+    <string name="sections_title">Sections</string>
     <string name="section_customization_desc">Choose which section tabs to show</string>
     <string name="section_customization_albums">Artists / Albums</string>
     <string name="customization">Customization</string>

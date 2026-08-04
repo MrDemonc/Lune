@@ -665,19 +665,20 @@ fun QueueBottomSheet(
                     }
                 )
             },
-            onSave = { updatedTitle, updatedArtist, updatedAlbum, updatedCoverUri ->
+            onSave = { updatedTitle, updatedArtist, updatedAlbum, updatedGenre, updatedCoverUri ->
                 musicViewModel.updateMetadata(
                     song = optionsSong!!,
                     title = updatedTitle,
                     artist = updatedArtist,
                     album = updatedAlbum,
-                    genre = optionsSong!!.genre,
+                    genre = updatedGenre,
                     coverUri = updatedCoverUri,
                     onSuccess = {
                         val updatedSong = optionsSong!!.copy(
                             title = updatedTitle,
                             artist = updatedArtist,
                             album = updatedAlbum,
+                            genre = updatedGenre,
                             coverUrl = updatedCoverUri?.toString() ?: optionsSong!!.coverUrl
                         )
                         playbackManager.updateSongMetadata(updatedSong)
@@ -1141,11 +1142,12 @@ fun EditSongBottomSheet(
     song: Song,
     onDismiss: () -> Unit,
     onRestore: () -> Unit,
-    onSave: (title: String, artist: String, album: String, coverUri: Uri?) -> Unit
+    onSave: (title: String, artist: String, album: String, genre: String, coverUri: Uri?) -> Unit
 ) {
     var title by remember { mutableStateOf(song.title) }
     var artist by remember { mutableStateOf(song.artist) }
     var album by remember { mutableStateOf(song.album) }
+    var genre by remember { mutableStateOf(song.genre ?: "") }
     var selectedCoverUri by remember { mutableStateOf<Uri?>(null) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -1263,10 +1265,21 @@ fun EditSongBottomSheet(
                 singleLine = true
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = genre,
+                onValueChange = { genre = it },
+                label = { Text(stringResource(R.string.edit_genre)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onSave(title, artist, album, selectedCoverUri) },
+                onClick = { onSave(title, artist, album, genre, selectedCoverUri) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

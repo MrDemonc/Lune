@@ -44,10 +44,12 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Título</string>
     <string name="edit_artist">Artista</string>
+    <string name="edit_genre">Género</string>
     <string name="save_changes">Guardar Cambios</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">Resumen</string>
+    <string name="tab_genres">Géneros</string>
     <string name="resume_recommendations">Recomendaciones</string>
     <string name="resume_top_playlists">Listas más escuchadas</string>
     <string name="resume_recently_added">Agregadas Recientemente</string>
@@ -121,6 +123,7 @@
     <string name="delete">Eliminar</string>
     <string name="custom_title">Título personalizado</string>
     <string name="section_customization">Personalizar secciones</string>
+    <string name="sections_title">Secciones</string>
     <string name="section_customization_desc">Elige qué pestañas de sección mostrar</string>
     <string name="section_customization_albums">Artistas / Álbumes</string>
     <string name="customization">Personalización</string>

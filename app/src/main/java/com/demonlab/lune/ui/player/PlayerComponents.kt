@@ -3,6 +3,9 @@ package com.demonlab.lune.ui.player
 import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
@@ -14,8 +17,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -1488,28 +1494,40 @@ fun MiniPlayer(
                     MaterialTheme.colorScheme.onSecondaryContainer
                 }
 
+                val miniCtx = LocalContext.current
+                val playbackManager = remember { PlaybackManager.getInstance(miniCtx) }
+                val repeatMode = playbackManager.repeatMode
+                val isRepeatActive = repeatMode != 0
+                val repeatIcon = if (repeatMode == 2) Icons.Default.RepeatOne else Icons.Default.Repeat
+                val repeatBg = if (isRepeatActive) {
+                    if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary
+                } else {
+                    pillMiniColor
+                }
+                val repeatTint = if (isRepeatActive) {
+                    if (useCustomControlsColor) Color.White else MaterialTheme.colorScheme.onPrimary
+                } else {
+                    pillMiniIconTint
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (onSearchClick != null) {
-                        Surface(
-                            onClick = onSearchClick,
-                            shape = CircleShape,
-                            color = pillMiniColor,
-                            modifier = Modifier.size(36.dp).bounceClick()
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Search",
-                                    tint = pillMiniIconTint,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                    Surface(
+                        onClick = { playbackManager.toggleRepeatMode() },
+                        shape = CircleShape,
+                        color = repeatBg,
+                        modifier = Modifier.size(36.dp).bounceClick()
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = repeatIcon,
+                                contentDescription = "Repeat",
+                                tint = repeatTint,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
-                    } else {
-                        Spacer(modifier = Modifier.size(36.dp))
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -1615,8 +1633,91 @@ fun MiniPlayerMinimized(
     isDarkTheme: Boolean = false,
     isPlaying: Boolean = false,
     onRestore: () -> Unit,
+    onExpandPlayer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val vibrator = remember(context) { context.getSystemService(Vibrator::class.java) }
+    val coroutineScope = rememberCoroutineScope()
+    val offsetY = remember { Animatable(0f) }
+    var hasVibrated by remember { mutableStateOf(false) }
+
+    // Visual double-bounce hint animation when miniplayer is minimized to indicate swipe up
+    LaunchedEffect(Unit) {
+        offsetY.animateTo(
+            targetValue = -36f,
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        )
+        offsetY.animateTo(
+            targetValue = -8f,
+            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
+        )
+        offsetY.animateTo(
+            targetValue = -36f,
+            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+        )
+        offsetY.animateTo(
+            targetValue = 0f,
+            animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f)
+        )
+    }
+
+    val dragModifier = Modifier.pointerInput(Unit) {
+        detectVerticalDragGestures(
+            onDragStart = {
+                hasVibrated = false
+            },
+            onDragEnd = {
+                coroutineScope.launch {
+                    val reachedLimit = hasVibrated || offsetY.value <= -50f
+                    if (reachedLimit) {
+                        if (onExpandPlayer != null) {
+                            onExpandPlayer()
+                        } else {
+                            onRestore()
+                        }
+                    }
+                    offsetY.animateTo(
+                        targetValue = 0f,
+                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 350f)
+                    )
+                    hasVibrated = false
+                }
+            },
+            onDragCancel = {
+                coroutineScope.launch {
+                    offsetY.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = 350f))
+                    hasVibrated = false
+                }
+            },
+            onVerticalDrag = { change, dragAmount ->
+                change.consume()
+                val rawOffset = offsetY.value + dragAmount
+                val clampedOffset = if (rawOffset < -55f) {
+                    -55f + (rawOffset + 55f) * 0.35f
+                } else {
+                    rawOffset
+                }.coerceIn(-85f, 0f)
+
+                if (clampedOffset <= -50f && !hasVibrated) {
+                    hasVibrated = true
+                    vibrator?.let {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            it.vibrate(VibrationEffect.createOneShot(28, VibrationEffect.DEFAULT_AMPLITUDE))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            it.vibrate(28)
+                        }
+                    }
+                }
+
+                coroutineScope.launch {
+                    offsetY.snapTo(clampedOffset)
+                }
+            }
+        )
+    }
+
     val infiniteSpinTransition = rememberInfiniteTransition(label = "MiniSpin")
     val spinRotation by infiniteSpinTransition.animateFloat(
         initialValue = 0f,
@@ -1634,6 +1735,8 @@ fun MiniPlayerMinimized(
         color = if (hasBlurBackground) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
         tonalElevation = if (hasBlurBackground) 0.dp else 8.dp,
         modifier = modifier
+            .offset { IntOffset(0, offsetY.value.roundToInt()) }
+            .then(dragModifier)
             .size(52.dp)
             .scale(coverScale)
             .shadow(6.dp, CircleShape)

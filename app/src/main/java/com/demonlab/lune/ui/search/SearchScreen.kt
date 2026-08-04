@@ -81,7 +81,8 @@ fun SearchScreen(
         if ("ALL" in hiddenTabs) filterSongs = false
         if ("FAVORITES" in hiddenTabs) filterFavorites = false
         if ("PLAYLISTS" in hiddenTabs) filterPlaylists = false
-        if ("ALBUMS" in hiddenTabs) { filterAlbums = false; filterArtists = false }
+        if ("ALBUMS" in hiddenTabs) filterAlbums = false
+        if ("ARTISTS" in hiddenTabs) filterArtists = false
         if ("FOLDERS" in hiddenTabs) filterFolders = false
     }
 

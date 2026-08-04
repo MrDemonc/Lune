@@ -581,7 +581,7 @@ fun AlbumDetailView(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             val albumId = album.id
-                            val isCurrentAlbumPlaying = playbackManager.activePlaylistId == album.id && playbackManager.activeCategory == "ALBUMS"
+                            val isCurrentAlbumPlaying = playbackManager.activePlaylistId == album.id
                             var localShuffleState by remember(album.id) { mutableStateOf(settingsManager.getPlaylistShuffle(album.id)) }
                             val isShuffleActive = if (isCurrentAlbumPlaying) playbackManager.isShuffle else localShuffleState
 
@@ -635,13 +635,9 @@ fun AlbumDetailView(
                                 ) {
                                     Surface(
                                         onClick = { 
-                                            if (isCurrentAlbumPlaying) {
-                                                playbackManager.toggleShuffle()
-                                                localShuffleState = playbackManager.isShuffle
-                                            } else {
-                                                localShuffleState = !localShuffleState
-                                                settingsManager.setPlaylistShuffle(albumId, localShuffleState)
-                                            }
+                                            playbackManager.toggleShuffle()
+                                            localShuffleState = playbackManager.isShuffle
+                                            settingsManager.setPlaylistShuffle(albumId, playbackManager.isShuffle)
                                         },
                                         shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
                                         color = if (isShuffleActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
