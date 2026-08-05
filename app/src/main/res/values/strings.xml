@@ -52,6 +52,8 @@
     <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Recommendations</string>
     <string name="resume_top_playlists">Top Playlists</string>
+    <string name="resume_top_artists">Top Artists</string>
+    <string name="resume_top_genres">Top Genres</string>
     <string name="resume_recently_added">Recently Added</string>
     <string name="tab_all">All</string>
     <string name="tab_favorites">Favorites</string>

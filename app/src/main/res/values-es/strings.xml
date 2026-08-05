@@ -52,6 +52,8 @@
     <string name="tab_genres">Géneros</string>
     <string name="resume_recommendations">Recomendaciones</string>
     <string name="resume_top_playlists">Listas más escuchadas</string>
+    <string name="resume_top_artists">Artistas más escuchados</string>
+    <string name="resume_top_genres">Géneros más escuchados</string>
     <string name="resume_recently_added">Agregadas Recientemente</string>
     <string name="tab_all">Todo</string>
     <string name="tab_favorites">Favoritos</string>

@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,7 +44,8 @@ import com.demonlab.lune.ui.viewmodels.MusicViewModel
 fun PlaylistPreviewCovers(
     playlistId: Long,
     viewModel: MusicViewModel,
-    size: Dp = 56.dp
+    size: Dp = 56.dp,
+    shape: Shape = CircleShape
 ) {
     var covers by remember { mutableStateOf<List<String?>>(emptyList()) }
 
@@ -55,7 +57,7 @@ fun PlaylistPreviewCovers(
 
     Surface(
         modifier = Modifier.size(size),
-        shape = CircleShape,
+        shape = shape,
         color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         val validCovers = remember(covers) { covers.filterNotNull() }
@@ -66,7 +68,7 @@ fun PlaylistPreviewCovers(
                 coverUrl = null,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                shape = CircleShape,
+                shape = shape,
                 iconScale = 0.60f
             )
         } else {
@@ -76,7 +78,7 @@ fun PlaylistPreviewCovers(
                         coverUrl = validCovers[0],
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
-                        shape = CircleShape,
+                        shape = shape,
                         iconScale = 0.60f,
                         onError = { failedIndices = failedIndices + 0 }
                     )

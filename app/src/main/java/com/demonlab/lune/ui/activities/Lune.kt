@@ -1120,6 +1120,41 @@ fun MainScreen(
                                 onPlaylistClick = { playlist ->
                                     selectedPlaylist = playlist
                                 },
+                                onArtistClick = { artistName ->
+                                    val artistSongs = visibleSongs.filter { it.artist == artistName }
+                                    val artistAlbum = Album(
+                                        id = artistName.hashCode().toLong(),
+                                        name = artistName,
+                                        artist = "",
+                                        albumArtUri = artistSongs.firstOrNull()?.albumArtUri,
+                                        coverUrl = artistSongs.firstOrNull()?.coverUrl,
+                                        songs = artistSongs.sortedBy { it.title }
+                                    )
+                                    selectedAlbum = artistAlbum
+                                    isAlbumView = false
+                                    onSelectedFolderChange("ARTISTS")
+                                },
+                                onGenreClick = { genreName ->
+                                    val genreSongs = if (genreName == "Desconocido") {
+                                        visibleSongs.filter {
+                                            val g = it.genre?.trim()
+                                            g.isNullOrEmpty() || g.equals("<unknown>", ignoreCase = true) || g.equals("unknown", ignoreCase = true)
+                                        }
+                                    } else {
+                                        visibleSongs.filter { it.genre?.trim() == genreName }
+                                    }
+                                    val genreAlbum = Album(
+                                        id = genreName.hashCode().toLong(),
+                                        name = genreName,
+                                        artist = "",
+                                        albumArtUri = genreSongs.firstOrNull()?.albumArtUri,
+                                        coverUrl = genreSongs.firstOrNull()?.coverUrl,
+                                        songs = genreSongs.sortedBy { it.title }
+                                    )
+                                    selectedAlbum = genreAlbum
+                                    isAlbumView = false
+                                    onSelectedFolderChange("GENRES")
+                                },
                                 onExpandPlayer = { onIsPlayerExpandedChange(true) },
                                 onPlayToggle = {
                                     if (isPlaying) playbackManager.pause() else playbackManager.resume()

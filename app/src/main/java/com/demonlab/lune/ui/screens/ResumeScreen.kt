@@ -24,6 +24,10 @@ import com.demonlab.lune.ui.screens.resume.PlaylistGridSection
 import com.demonlab.lune.ui.screens.resume.RecommendationSection
 import com.demonlab.lune.ui.screens.resume.RecentlyAddedSection
 import com.demonlab.lune.ui.screens.resume.SectionHeader
+import com.demonlab.lune.ui.screens.resume.TopArtistsSection
+import com.demonlab.lune.ui.screens.resume.ArtistItem
+import com.demonlab.lune.ui.screens.resume.TopGenresSection
+import com.demonlab.lune.ui.screens.resume.GenreItem
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
 @Composable
@@ -36,6 +40,8 @@ fun ResumeScreen(
     isPlaying: Boolean,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onGenreClick: (String) -> Unit,
     onExpandPlayer: () -> Unit,
     onPlayToggle: () -> Unit,
 ) {
@@ -101,6 +107,48 @@ fun ResumeScreen(
 
     val topPlaylists = remember(allPlaylists) {
         allPlaylists.take(10)
+    }
+
+    val topArtistsList = remember(allSongs, viewModel.topArtistStats) {
+        val statsMap = viewModel.topArtistStats.associate { stat ->
+            val artistName = stat.id.replace("ARTIST_", "")
+            artistName to stat.playCount
+        }
+        allSongs.filter { it.artist.isNotBlank() && !it.artist.equals("<unknown>", ignoreCase = true) }
+            .groupBy { it.artist }
+            .entries
+            .map { (artistName, songs) ->
+                val playCount: Int = (statsMap[artistName] ?: songs.size.toLong()).toInt()
+                val coverSong = songs.firstOrNull { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null } ?: songs.firstOrNull()
+                val coverStr: String? = coverSong?.coverUrl ?: coverSong?.albumArtUri?.toString()
+                ArtistItem(
+                    name = artistName,
+                    playCount = playCount,
+                    coverUrl = coverStr,
+                    songs = songs
+                )
+            }
+            .sortedByDescending { it.playCount }
+    }
+
+    val topGenresList = remember(allSongs) {
+        allSongs.groupBy { song ->
+            val g = song.genre?.trim()
+            if (g.isNullOrEmpty() || g.equals("<unknown>", ignoreCase = true) || g.equals("unknown", ignoreCase = true)) {
+                "Desconocido"
+            } else {
+                g
+            }
+        }.entries.map { (genreName, songs) ->
+            val coverSong = songs.firstOrNull { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null } ?: songs.firstOrNull()
+            val coverStr: String? = coverSong?.coverUrl ?: coverSong?.albumArtUri?.toString()
+            GenreItem(
+                name = genreName,
+                songCount = songs.size,
+                coverUrl = coverStr,
+                songs = songs
+            )
+        }.sortedByDescending { it.songCount }
     }
 
     val recentlyAdded = remember(allSongs) {
@@ -174,6 +222,30 @@ fun ResumeScreen(
                     viewModel = viewModel,
                     playlists = topPlaylists,
                     onPlaylistClick = onPlaylistClick
+                )
+            }
+        }
+
+        if (topArtistsList.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn() + slideInVertically { it / 2 }
+            ) {
+                TopArtistsSection(
+                    artists = topArtistsList,
+                    onArtistClick = onArtistClick
+                )
+            }
+        }
+
+        if (topGenresList.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn() + slideInVertically { it / 2 }
+            ) {
+                TopGenresSection(
+                    genres = topGenresList,
+                    onGenreClick = onGenreClick
                 )
             }
         }

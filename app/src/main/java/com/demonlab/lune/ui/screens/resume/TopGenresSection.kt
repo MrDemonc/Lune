@@ -11,45 +11,41 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.utils.bounceClick
 
+data class GenreItem(
+    val name: String,
+    val songCount: Int,
+    val coverUrl: String?,
+    val songs: List<Song>
+)
+
 @Composable
-fun RecommendationSection(
-    title: String,
-    songs: List<Song>,
-    onSongClick: (Song) -> Unit,
+fun TopGenresSection(
+    genres: List<GenreItem>,
+    onGenreClick: (String) -> Unit,
 ) {
-    if (songs.isEmpty()) return
+    if (genres.isEmpty()) return
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
+        SectionHeader(title = stringResource(R.string.resume_top_genres))
         Spacer(modifier = Modifier.height(6.dp))
-
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(songs, key = { it.id }) { song ->
-                RecommendationCard(
-                    song = song,
-                    onClick = { onSongClick(song) }
+            items(genres, key = { it.name }) { genre ->
+                GenreCard(
+                    genre = genre,
+                    onClick = { onGenreClick(genre.name) }
                 )
             }
         }
@@ -57,8 +53,8 @@ fun RecommendationSection(
 }
 
 @Composable
-private fun RecommendationCard(
-    song: Song,
+private fun GenreCard(
+    genre: GenreItem,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -68,14 +64,14 @@ private fun RecommendationCard(
         tonalElevation = 4.dp,
         shadowElevation = 4.dp,
         modifier = Modifier
-            .width(150.dp)
-            .height(190.dp)
+            .width(160.dp)
+            .height(110.dp)
             .bounceClick()
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             SongCoverImage(
-                coverUrl = song.coverUrl ?: song.albumArtUri,
-                contentDescription = null,
+                coverUrl = genre.coverUrl,
+                contentDescription = genre.name,
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(0.dp)
             )
@@ -86,10 +82,9 @@ private fun RecommendationCard(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.2f),
-                                Color.Black.copy(alpha = 0.75f),
-                                Color.Black.copy(alpha = 0.92f)
+                                Color.Black.copy(alpha = 0.25f),
+                                Color.Black.copy(alpha = 0.65f),
+                                Color.Black.copy(alpha = 0.88f)
                             ),
                             startY = 0f
                         )
@@ -103,8 +98,8 @@ private fun RecommendationCard(
                     .padding(12.dp)
             ) {
                 Text(
-                    text = song.title,
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = genre.name,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -114,24 +109,13 @@ private fun RecommendationCard(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = song.artist,
+                    text = "${genre.songCount} ${stringResource(R.string.tab_songs).lowercase()}",
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = Color.White.copy(alpha = 0.78f)
+                    color = Color.White.copy(alpha = 0.80f)
                 )
             }
         }
     }
-}
-
-@Composable
-fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-        color = MaterialTheme.colorScheme.onSurface
-    )
 }
