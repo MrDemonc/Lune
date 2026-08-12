@@ -1196,6 +1196,16 @@ class PlaybackManager private constructor(private val context: Context) {
         }
     }
 
+    fun seekToTimeMs(timeMs: Long) {
+        musicService?.let {
+            val duration = it.duration()
+            if (duration > 0) {
+                val position = timeMs.coerceIn(0L, duration.toLong()).toInt()
+                it.seekTo(position)
+            }
+        }
+    }
+
     fun updatePlaybackSpeed(speed: Float) {
         playbackSpeed = speed
         settings.playbackSpeed = speed

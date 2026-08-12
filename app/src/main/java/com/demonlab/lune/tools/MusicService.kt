@@ -591,6 +591,9 @@ class MusicService : MediaBrowserServiceCompat() {
         val playbackManager = PlaybackManager.getInstance(applicationContext)
         playbackManager.isTransitioning = true
 
+        // Disable completion listener on current player to prevent EOF race condition during crossfade
+        mediaPlayer?.setOnCompletionListener(null)
+
         secondaryPlayer?.setOnCompletionListener(null)
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
@@ -616,14 +619,12 @@ class MusicService : MediaBrowserServiceCompat() {
                     }
                 }
 
-                if (!prepared) {
+                if (!prepared || !isCrossfading) {
                     isCrossfading = false
                     playbackManager.isTransitioning = false
                     playSong(nextSong)
                     return@launch
                 }
-
-                val sessionId = secondaryPlayer?.audioSessionId ?: 0
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try {
@@ -642,17 +643,18 @@ class MusicService : MediaBrowserServiceCompat() {
                 }
 
                 secondaryPlayer?.start()
-                
-                // We ensure proper behavior in the event of premature termination
-                secondaryPlayer?.setOnCompletionListener {
-                    if (!isCrossfading) {
-                        PlaybackManager.getInstance(applicationContext).playNextFromService(true)
-                    }
+
+                // Recalculate exact remaining time on current player after preparation completed
+                val currentMp = mediaPlayer
+                val actualFadeMs = if (currentMp != null && currentMp.isPlaying) {
+                    (currentMp.duration - currentMp.currentPosition).toLong().coerceIn(1000L, fadeDurationMs)
+                } else {
+                    fadeDurationMs
                 }
 
-                val targetInterval = 50L
-                val steps = (fadeDurationMs / targetInterval).toInt().coerceIn(10, 100)
-                val interval = fadeDurationMs / steps
+                val targetInterval = 30L
+                val steps = (actualFadeMs / targetInterval).toInt().coerceIn(15, 150)
+                val interval = actualFadeMs / steps
 
                 for (i in 1..steps) {
                     if (!isCrossfading) break
@@ -664,12 +666,9 @@ class MusicService : MediaBrowserServiceCompat() {
 
                     val progress = i.toFloat() / steps
 
-                    // Smoother fade-in for the incoming track to compensate for RAW audio loudness
-                    // and apply a headroom factor if EQ is enabled to prevent jarring volume jumps
-                    // when the EQ is finally applied at the end of the transition.
-                    val targetEqFactor = if (settingsManager.isEqEnabled || settingsManager.isBassBoostEnabled) 0.6f else 1.0f
-                    val volCurrent = (1 - progress) * (1 - progress)
-                    val volNext = (progress * progress) * targetEqFactor
+                    // Smooth equal-power volume curves: fading out (1 - progress)^2, fading in progress^2
+                    val volCurrent = ((1f - progress) * (1f - progress)).coerceIn(0f, 1f)
+                    val volNext = (progress * progress).coerceIn(0f, 1f)
 
                     mediaPlayer?.setVolume(volCurrent, volCurrent)
                     secondaryPlayer?.setVolume(volNext, volNext)

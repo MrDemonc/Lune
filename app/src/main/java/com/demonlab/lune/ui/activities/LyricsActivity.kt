@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -56,7 +57,9 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import coil.request.ImageRequest
+import android.os.Vibrator
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.triggerLightVibration
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import java.util.regex.Pattern
 
@@ -117,6 +120,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     }
     val lyricsSettings = remember { SettingsManager.getInstance(context) }
     val listState = rememberLazyListState()
+    val vibrator = remember(context) { context.getSystemService(Vibrator::class.java) }
     var textAlignIndex by remember { mutableIntStateOf(lyricsSettings.lyricsTextAlignment) }
     var speedIndex by remember { mutableIntStateOf(lyricsSettings.lyricsSpeedIndex) }
     val alignments = listOf(TextAlign.Start, TextAlign.Center)
@@ -372,9 +376,24 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                             label = "LyricScale"
                         )
 
+                        val onLineSeek = {
+                            playbackManager.seekToTimeMs(line.timeMs)
+                            if (song.duration > 0) {
+                                currentProgress = (line.timeMs.toFloat() / song.duration.toFloat()).coerceIn(0f, 1f)
+                            }
+                            vibrator?.triggerLightVibration()
+                        }
+
                         if (line.text.isBlank()) {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp)
+                                    .bounceClick(0.95f)
+                                    .clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null
+                                    ) { onLineSeek() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -402,6 +421,11 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                                         scaleX = scale
                                         scaleY = scale
                                     }
+                                    .bounceClick(0.95f)
+                                    .clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null
+                                    ) { onLineSeek() }
                             )
                         }
                     }
