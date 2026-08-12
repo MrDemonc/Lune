@@ -1,8 +1,8 @@
-- New secction bar
+- New section bar
 - Fixed song with not cover in metadata
-- Individual astist secction
-- New Genres secction and metadata edit
-- New design for welcome card and new option for hidde
+- Individual artist section
+- New Genres section and metadata edit
+- New design for welcome card and new option for hidden
 - Update widget
 - Added option for play to next
 - 32/64-bit float exclusive mode
