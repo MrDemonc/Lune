@@ -44,12 +44,27 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Título</string>
     <string name="edit_artist">Artista</string>
+    <string name="edit_genre">Gênero</string>
     <string name="save_changes">Salvar Alterações</string>
  
     <!-- Library Tabs -->
     <string name="tab_resume">Início</string>
+    <string name="tab_genres">Gêneros</string>
     <string name="resume_recommendations">Recomendações</string>
     <string name="resume_top_playlists">Principais Playlists</string>
+    <string name="resume_top_artists">Artistas mais ouvidos</string>
+    <string name="resume_top_genres">Gêneros mais ouvidos</string>
+    <string name="rescan_library">Reescanear biblioteca</string>
+    <string name="rescan_library_desc">Forçar busca de novos arquivos de áudio no sistema</string>
+    <string name="rescan_library_success">Biblioteca atualizada: %1$d músicas encontradas</string>
+    <string name="audio_settings">Áudio</string>
+    <string name="audio_settings_desc">Selo Hi-Fi, processamento 32-bit float e saída AAudio</string>
+    <string name="hifi_badge">Selo Hi-Fi</string>
+    <string name="hifi_badge_desc">Exibir o selo Hi-Fi em faixas de alta resolução sem perda (lossless)</string>
+    <string name="audio_32bit_float">Processamento 32-bit Float</string>
+    <string name="audio_32bit_float_desc">Processa áudio em ponto flutuante de 32 bits evitando distorção e perda de resolução</string>
+    <string name="audio_exclusive_mode">Modo de Saída Exclusivo</string>
+    <string name="audio_exclusive_mode_desc">Ignorar o mixer do sistema Android enviando áudio direto ao hardware via AAudio</string>
     <string name="resume_recently_added">Adicionados Recentemente</string>
     <string name="tab_all">Tudo</string>
     <string name="tab_favorites">Favoritos</string>

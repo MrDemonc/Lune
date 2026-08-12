@@ -44,12 +44,27 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Titel</string>
     <string name="edit_artist">Künstler</string>
+    <string name="edit_genre">Genre</string>
     <string name="save_changes">Änderungen speichern</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">Übersicht</string>
+    <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Empfehlungen</string>
     <string name="resume_top_playlists">Beliebte Playlists</string>
+    <string name="resume_top_artists">Beliebte Künstler</string>
+    <string name="resume_top_genres">Beliebte Genres</string>
+    <string name="rescan_library">Bibliothek erneut scannen</string>
+    <string name="rescan_library_desc">Systemmedien manuell nach neuen Audiodateien durchsuchen</string>
+    <string name="rescan_library_success">Bibliothek aktualisiert: %1$d Songs gefunden</string>
+    <string name="audio_settings">Audio</string>
+    <string name="audio_settings_desc">Hi-Fi-Badge, 32-Bit-Float-Verarbeitung &amp; AAudio-Ausgabe</string>
+    <string name="hifi_badge">Hi-Fi-Badge</string>
+    <string name="hifi_badge_desc">Hi-Fi-Badge für hochauflösende verlustfreie Audiodateien anzeigen</string>
+    <string name="audio_32bit_float">32-Bit-Float-Verarbeitung</string>
+    <string name="audio_32bit_float_desc">Audio mit 32-Bit-Gleitkomma-Präzision verarbeiten für maximale Dynamik ohne Verzerrung</string>
+    <string name="audio_exclusive_mode">Exklusiver Ausgabemodus</string>
+    <string name="audio_exclusive_mode_desc">Android-System-Mixer über direkte AAudio-Hardware-Ausgabe umgehen</string>
     <string name="resume_recently_added">Kürzlich hinzugefügt</string>
     <string name="tab_all">Alle</string>
     <string name="tab_favorites">Favoriten</string>

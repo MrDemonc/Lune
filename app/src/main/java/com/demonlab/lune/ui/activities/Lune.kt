@@ -2534,6 +2534,7 @@ fun UnifiedHeaderPill(
             val isCurrentContext = playbackManager.activeCategory == selectedFolder && playbackManager.currentSong != null && playbackManager.activePlaylistId != -300L
 
             Surface(
+                onClick = { showSectionMenuSheet() },
                 shape = RoundedCornerShape(24.dp),
                 color = selectedBg,
                 modifier = Modifier
@@ -2543,7 +2544,6 @@ fun UnifiedHeaderPill(
                         scaleY = sectionPillScale.value
                     }
                     .bounceClick()
-                    .clickable { showSectionMenuSheet() }
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),

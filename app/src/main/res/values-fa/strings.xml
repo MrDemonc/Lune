@@ -44,12 +44,27 @@
     <string name="edit_title">عنوان</string>
     <string name="edit_artist">هنرمند</string>
     <string name="edit_album">آلبوم</string>
+    <string name="edit_genre">ژانر</string>
     <string name="save_changes">ذخیره تغییرات</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">ادامه</string>
+    <string name="tab_genres">ژانرها</string>
     <string name="resume_recommendations">پیشنهادی</string>
     <string name="resume_top_playlists">فهرست پخش برتر</string>
+    <string name="resume_top_artists">برترین هنرمندان</string>
+    <string name="resume_top_genres">برترین ژانرها</string>
+    <string name="rescan_library">اسکن مجدد کتابخانه</string>
+    <string name="rescan_library_desc">اسکن اجباری سیستم برای یافتن فایل‌های صوتی جدید</string>
+    <string name="rescan_library_success">کتابخانه به روز شد: %1$d آهنگ یافت شد</string>
+    <string name="audio_settings">صدا</string>
+    <string name="audio_settings_desc">نشان Hi-Fi، پردازش 32 بیتی اعشاری و خروجی AAudio</string>
+    <string name="hifi_badge">نشان Hi-Fi</string>
+    <string name="hifi_badge_desc">نمایش نشان Hi-Fi برای فایل‌های صوتی با کیفیت بالا و بدون افت کیفیت</string>
+    <string name="audio_32bit_float">پردازش 32 بیتی اعشاری (Float)</string>
+    <string name="audio_32bit_float_desc">پردازش صدا با دقت 32 بیتی اعشاری برای حداکثر کیفیت و بدون دیستورشن</string>
+    <string name="audio_exclusive_mode">حالت خروجی اختصاصی</string>
+    <string name="audio_exclusive_mode_desc">دور زدن میکسر سیستم اندروید از طریق مسیریابی سخت‌افزاری مستقیم AAudio</string>
     <string name="resume_recently_added">اخیرا اضافه شده</string>
     <string name="tab_all">همه</string>
     <string name="tab_favorites">مورد علاقه</string>

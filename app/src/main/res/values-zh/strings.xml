@@ -44,12 +44,27 @@
     <!-- Metadata Editor -->
     <string name="edit_title">标题</string>
     <string name="edit_artist">艺术家</string>
+    <string name="edit_genre">流派</string>
     <string name="save_changes">保存更改</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">概览</string>
+    <string name="tab_genres">流派</string>
     <string name="resume_recommendations">推荐</string>
     <string name="resume_top_playlists">热门播放列表</string>
+    <string name="resume_top_artists">热门歌手</string>
+    <string name="resume_top_genres">热门流派</string>
+    <string name="rescan_library">重新扫描音乐库</string>
+    <string name="rescan_library_desc">强制扫描系统媒体以查找新音频文件</string>
+    <string name="rescan_library_success">音乐库已刷新：找到 %1$d 首歌曲</string>
+    <string name="audio_settings">音频</string>
+    <string name="audio_settings_desc">Hi-Fi 标志、32 位浮点处理和 AAudio 输出</string>
+    <string name="hifi_badge">Hi-Fi 标志</string>
+    <string name="hifi_badge_desc">为高解析度无损音频显示 Hi-Fi 标志</string>
+    <string name="audio_32bit_float">32 位浮点处理</string>
+    <string name="audio_32bit_float_desc">使用 32 位浮点精度处理音频，提供最大动态范围且无失真</string>
+    <string name="audio_exclusive_mode">独占输出模式</string>
+    <string name="audio_exclusive_mode_desc">通过 AAudio 硬件直通绕过 Android 系统混音器</string>
     <string name="resume_recently_added">最近添加</string>
     <string name="tab_all">全部</string>
     <string name="tab_favorites">收藏</string>

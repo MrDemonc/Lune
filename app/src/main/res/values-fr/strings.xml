@@ -44,12 +44,27 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Titre</string>
     <string name="edit_artist">Artiste</string>
+    <string name="edit_genre">Genre</string>
     <string name="save_changes">Enregistrer les modifications</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">Résumé</string>
+    <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Recommandations</string>
     <string name="resume_top_playlists">Playlists les plus écoutées</string>
+    <string name="resume_top_artists">Artistes les plus écoutés</string>
+    <string name="resume_top_genres">Genres les plus écoutés</string>
+    <string name="rescan_library">Analyser à nouveau la bibliothèque</string>
+    <string name="rescan_library_desc">Forcer l\'analyse des fichiers audio du système</string>
+    <string name="rescan_library_success">Bibliothèque actualisée : %1$d chansons trouvées</string>
+    <string name="audio_settings">Audio</string>
+    <string name="audio_settings_desc">Badge Hi-Fi, traitement Float 32 bits &amp; sortie AAudio</string>
+    <string name="hifi_badge">Badge Hi-Fi</string>
+    <string name="hifi_badge_desc">Afficher le badge Hi-Fi pour les fichiers audio haute résolution sans perte</string>
+    <string name="audio_32bit_float">Traitement Float 32 bits</string>
+    <string name="audio_32bit_float_desc">Traiter l\'audio en virgule flottante 32 bits pour une dynamique maximale sans saturation</string>
+    <string name="audio_exclusive_mode">Mode de sortie exclusif</string>
+    <string name="audio_exclusive_mode_desc">Contourner le mélangeur Android via le routage matériel direct AAudio</string>
     <string name="resume_recently_added">Ajoutées récemment</string>
     <string name="tab_all">Tout</string>
     <string name="tab_favorites">Favoris</string>

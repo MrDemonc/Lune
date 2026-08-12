@@ -45,12 +45,27 @@
     <string name="edit_title">Название</string>
     <string name="edit_artist">Исполнитель</string>
     <string name="edit_album">Альбом</string>
+    <string name="edit_genre">Жанр</string>
     <string name="save_changes">Сохранить изменения</string>
 
     <!-- Library Tabs -->
     <string name="tab_resume">Продолжить</string>
+    <string name="tab_genres">Жанры</string>
     <string name="resume_recommendations">Рекомендации</string>
     <string name="resume_top_playlists">Лучшие плейлисты</string>
+    <string name="resume_top_artists">Популярные исполнители</string>
+    <string name="resume_top_genres">Популярные жанры</string>
+    <string name="rescan_library">Пересканировать медиатеку</string>
+    <string name="rescan_library_desc">Принудительно искать новые аудиофайлы в системе</string>
+    <string name="rescan_library_success">Медиатека обновлена: найдено %1$d треков</string>
+    <string name="audio_settings">Аудио</string>
+    <string name="audio_settings_desc">Значок Hi-Fi, обработка 32-bit float и прямой вывод AAudio</string>
+    <string name="hifi_badge">Значок Hi-Fi</string>
+    <string name="hifi_badge_desc">Показывать значок Hi-Fi для аудиофайлов высокого разрешения без потерь</string>
+    <string name="audio_32bit_float">Обработка 32-bit Float</string>
+    <string name="audio_32bit_float_desc">Обработка звука с точностью 32-битной плавающей запятой для максимального запаса громкости без искажений</string>
+    <string name="audio_exclusive_mode">Эксклюзивный режим вывода</string>
+    <string name="audio_exclusive_mode_desc">Обход системного микшера Android через прямое аппаратное подключение AAudio</string>
     <string name="resume_recently_added">Недавно добавленные</string>
     <string name="tab_all">Все</string>
     <string name="tab_favorites">Избранное</string>
