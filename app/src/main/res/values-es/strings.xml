@@ -57,6 +57,14 @@
     <string name="rescan_library">Reescanear biblioteca</string>
     <string name="rescan_library_desc">Forzar búsqueda de nuevos archivos de audio en el sistema</string>
     <string name="rescan_library_success">Biblioteca actualizada: %1$d canciones encontradas</string>
+    <string name="audio_settings">Audio</string>
+    <string name="audio_settings_desc">Insignia Hi-Fi, procesamiento 32-bit float y modo exclusivo</string>
+    <string name="hifi_badge">Insignia Hi-Fi</string>
+    <string name="hifi_badge_desc">Mostrar distintivo Hi-Fi en canciones de alta resolución (lossless)</string>
+    <string name="audio_32bit_float">Procesamiento 32-bit Float</string>
+    <string name="audio_32bit_float_desc">Procesa el audio en punto flotante de 32 bits previniendo distorsión y pérdida de resolución</string>
+    <string name="audio_exclusive_mode">Modo Exclusivo (AAudio Direct Output)</string>
+    <string name="audio_exclusive_mode_desc">Pasa por alto el mezclador de Android enviando sonido directo al hardware/DAC</string>
     <string name="resume_recently_added">Agregadas Recientemente</string>
     <string name="tab_all">Todo</string>
     <string name="tab_favorites">Favoritos</string>

@@ -111,7 +111,6 @@ fun SettingsScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
     var showWhatsapp by remember { mutableStateOf(settingsManager.showWhatsappAudio) }
-    var showHiFi by remember { mutableStateOf(settingsManager.enableHiFi) }
     var keepScreenOn by remember { mutableStateOf(settingsManager.keepScreenOn) }
 
     var isCinematicEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
@@ -260,26 +259,11 @@ fun SettingsScreen(
             // General Section
             SettingsSection(title = stringResource(R.string.general)) {
                 SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.hifi_audio),
-                    supportingText = stringResource(R.string.hifi_desc),
+                    headlineText = stringResource(R.string.audio_settings),
+                    supportingText = stringResource(R.string.audio_settings_desc),
                     icon = Icons.Default.MusicNote,
                     position = SectionPosition.FIRST,
-                    trailingContent = {
-                        BouncySwitch(
-                            checked = showHiFi,
-                            onCheckedChange = {
-                                showHiFi = it
-                                settingsManager.enableHiFi = it
-                            },
-                            thumbContent = {
-                                Icon(
-                                    imageVector = if (showHiFi) Icons.Default.Check else Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    }
+                    onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
                 )
 
                 SettingsPreferenceItem(

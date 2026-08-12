@@ -57,6 +57,14 @@
     <string name="rescan_library">Rescan Library</string>
     <string name="rescan_library_desc">Force scan system media for new audio files</string>
     <string name="rescan_library_success">Library refreshed: %1$d songs found</string>
+    <string name="audio_settings">Audio</string>
+    <string name="audio_settings_desc">Hi-Fi badge, 32-bit float processing &amp; AAudio output</string>
+    <string name="hifi_badge">Hi-Fi Badge</string>
+    <string name="hifi_badge_desc">Show Hi-Fi badge for high resolution lossless audio files</string>
+    <string name="audio_32bit_float">32-bit Float Processing</string>
+    <string name="audio_32bit_float_desc">Process audio using 32-bit floating point precision for maximum headroom and zero clipping</string>
+    <string name="audio_exclusive_mode">Exclusive Output Mode</string>
+    <string name="audio_exclusive_mode_desc">Bypass Android system mixer via AAudio direct hardware routing</string>
     <string name="resume_recently_added">Recently Added</string>
     <string name="tab_all">All</string>
     <string name="tab_favorites">Favorites</string>

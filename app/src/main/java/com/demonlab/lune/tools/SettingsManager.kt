@@ -39,6 +39,14 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("enable_hifi", true)
         set(value) = prefs.edit().putBoolean("enable_hifi", value).apply()
 
+    var is32BitFloatEnabled: Boolean
+        get() = prefs.getBoolean("is_32bit_float_enabled", true)
+        set(value) = prefs.edit().putBoolean("is_32bit_float_enabled", value).apply()
+
+    var isExclusiveModeEnabled: Boolean
+        get() = prefs.getBoolean("is_exclusive_mode_enabled", false)
+        set(value) = prefs.edit().putBoolean("is_exclusive_mode_enabled", value).apply()
+
     var keepScreenOn: Boolean
         get() = prefs.getBoolean("keep_screen_on", false)
         set(value) = prefs.edit().putBoolean("keep_screen_on", value).apply()
