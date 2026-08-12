@@ -41,6 +41,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import kotlinx.coroutines.launch
 import com.demonlab.lune.tools.PlaylistBackupManager
+import com.demonlab.lune.tools.MusicProvider
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -115,9 +117,11 @@ fun SettingsScreen(
     var isCinematicEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showBackupWarning by remember { mutableStateOf(settingsManager.showBackupWarning) }
+    var isScanningLibrary by remember { mutableStateOf(false) }
     val currentLanguage = settingsManager.language
     val scope = rememberCoroutineScope()
     val backupManager = remember { PlaylistBackupManager(context) }
+    val musicProvider = remember { MusicProvider(context) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -298,6 +302,36 @@ fun SettingsScreen(
                                 )
                             }
                         )
+                    }
+                )
+
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.rescan_library),
+                    supportingText = stringResource(R.string.rescan_library_desc),
+                    icon = Icons.Default.Sync,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = if (isScanningLibrary) {
+                        {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    } else null,
+                    onClick = {
+                        if (!isScanningLibrary) {
+                            scope.launch {
+                                isScanningLibrary = true
+                                val songs = musicProvider.refreshLibrary()
+                                isScanningLibrary = false
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.rescan_library_success, songs.size),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                     }
                 )
 

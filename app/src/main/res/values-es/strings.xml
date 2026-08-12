@@ -54,6 +54,9 @@
     <string name="resume_top_playlists">Listas más escuchadas</string>
     <string name="resume_top_artists">Artistas más escuchados</string>
     <string name="resume_top_genres">Géneros más escuchados</string>
+    <string name="rescan_library">Reescanear biblioteca</string>
+    <string name="rescan_library_desc">Forzar búsqueda de nuevos archivos de audio en el sistema</string>
+    <string name="rescan_library_success">Biblioteca actualizada: %1$d canciones encontradas</string>
     <string name="resume_recently_added">Agregadas Recientemente</string>
     <string name="tab_all">Todo</string>
     <string name="tab_favorites">Favoritos</string>

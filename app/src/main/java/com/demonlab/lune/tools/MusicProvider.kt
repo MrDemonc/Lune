@@ -244,6 +244,23 @@ class MusicProvider(private val context: Context) {
         val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         if (downloadsDir.exists()) pathsToScan.add(downloadsDir.absolutePath)
 
+        val documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        if (documentsDir.exists()) pathsToScan.add(documentsDir.absolutePath)
+
+        val audioFolderUriStr = settingsManager.musicFolderUri
+        if (!audioFolderUriStr.isNullOrBlank()) {
+            try {
+                val uri = Uri.parse(audioFolderUriStr)
+                val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
+                if (!pathSegment.isNullOrBlank()) {
+                    val customFolder = File(Environment.getExternalStorageDirectory(), pathSegment)
+                    if (customFolder.exists()) pathsToScan.add(customFolder.absolutePath)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         if (pathsToScan.isNotEmpty()) {
             val latch = CountDownLatch(1)
             MediaScannerConnection.scanFile(
