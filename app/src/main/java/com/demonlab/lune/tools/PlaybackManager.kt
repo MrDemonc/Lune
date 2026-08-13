@@ -1177,8 +1177,15 @@ class PlaybackManager private constructor(private val context: Context) {
         startSleepTimer()
     }
 
+    fun setCustomSleepTimer(minutes: Int) {
+        sleepTimerMinutes = minutes.coerceAtLeast(0)
+        startSleepTimer()
+    }
+
     private fun startSleepTimer() {
-        sleepTimerHandler?.removeCallbacks(sleepTimerRunnable ?: return)
+        sleepTimerRunnable?.let { runnable ->
+            sleepTimerHandler?.removeCallbacks(runnable)
+        }
         if (sleepTimerMinutes > 0) {
             if (sleepTimerHandler == null) sleepTimerHandler = android.os.Handler(android.os.Looper.getMainLooper())
             sleepTimerRunnable = Runnable {
