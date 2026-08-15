@@ -77,6 +77,11 @@
     <string name="option_crossfade">Fondu enchaîné</string>
     <string name="option_automix">Automix</string>
     <string name="option_timer">Minuteur</string>
+    <string name="timer_set">Régler</string>
+    <string name="timer_turn_off">Désactiver</string>
+    <string name="timer_minutes_unit">min</string>
+    <string name="cd_timer_decrease">Diminuer de 5 minutes</string>
+    <string name="cd_timer_increase">Augmenter de 5 minutes</string>
     <string name="option_lyrics">Paroles</string>
     <string name="transition_mixing">Mixage</string>
     <string name="transition_crossfade">Fondu enchaîné</string>

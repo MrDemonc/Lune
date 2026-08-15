@@ -1352,6 +1352,8 @@ fun CustomSleepTimerDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Expressive duration badge
+                val offLabel = stringResource(R.string.option_repeat_off)
+                val minUnit = stringResource(R.string.timer_minutes_unit)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = if (selectedMinutes > 0) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
@@ -1360,13 +1362,13 @@ fun CustomSleepTimerDialog(
                 ) {
                     Text(
                         text = when {
-                            selectedMinutes == 0 -> "Off"
+                            selectedMinutes == 0 -> offLabel
                             selectedMinutes >= 60 -> {
                                 val h = selectedMinutes / 60
                                 val m = selectedMinutes % 60
-                                if (m == 0) "${h}h" else "${h}h ${m}m"
+                                if (m == 0) "${h}h" else "${h}h ${m}${minUnit}"
                             }
-                            else -> "$selectedMinutes min"
+                            else -> "$selectedMinutes $minUnit"
                         },
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
@@ -1390,7 +1392,7 @@ fun CustomSleepTimerDialog(
                             onClick = { selectedMinutes = preset },
                             label = {
                                 Text(
-                                    text = if (preset == 0) "Off" else "${preset}m",
+                                    text = if (preset == 0) offLabel else "${preset}m",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -1419,7 +1421,7 @@ fun CustomSleepTimerDialog(
                         modifier = Modifier.size(44.dp),
                         shape = CircleShape
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Decrease 5 min")
+                        Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_timer_decrease))
                     }
 
                     Slider(
@@ -1443,7 +1445,7 @@ fun CustomSleepTimerDialog(
                         modifier = Modifier.size(44.dp),
                         shape = CircleShape
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Increase 5 min")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_timer_increase))
                     }
                 }
             }
@@ -1461,7 +1463,7 @@ fun CustomSleepTimerDialog(
                 )
             ) {
                 Text(
-                    text = if (selectedMinutes == 0) "Turn Off" else "Set Timer",
+                    text = if (selectedMinutes == 0) stringResource(R.string.timer_turn_off) else stringResource(R.string.timer_set),
                     fontWeight = FontWeight.SemiBold
                 )
             }
