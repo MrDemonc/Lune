@@ -77,6 +77,11 @@
     <string name="option_crossfade">Crossfade</string>
     <string name="option_automix">Automix</string>
     <string name="option_timer">Temporizador</string>
+    <string name="timer_set">Definir</string>
+    <string name="timer_turn_off">Desativar</string>
+    <string name="timer_minutes_unit">min</string>
+    <string name="cd_timer_decrease">Diminuir 5 minutos</string>
+    <string name="cd_timer_increase">Aumentar 5 minutos</string>
     <string name="option_lyrics">Letras</string>
     <string name="transition_mixing">Misturando</string>
     <string name="transition_crossfade">Crossfade</string>

@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -928,6 +929,17 @@ fun PlayerOptionsBottomSheet(
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         val isFavorite = playbackManager.currentSong?.isFavorite == true
+        var showCustomTimerDialog by remember { mutableStateOf(false) }
+
+        if (showCustomTimerDialog) {
+            CustomSleepTimerDialog(
+                currentMinutes = playbackManager.sleepTimerMinutes,
+                onDismiss = { showCustomTimerDialog = false },
+                onSetTimer = { minutes ->
+                    playbackManager.setCustomSleepTimer(minutes)
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -1017,7 +1029,8 @@ fun PlayerOptionsBottomSheet(
                         icon = Icons.Default.Timer,
                         label = if (playbackManager.sleepTimerMinutes > 0) "${playbackManager.sleepTimerMinutes}m" else stringResource(R.string.option_timer),
                         active = playbackManager.sleepTimerMinutes > 0,
-                        onClick = { playbackManager.toggleSleepTimer() }
+                        onClick = { playbackManager.toggleSleepTimer() },
+                        onLongClick = { showCustomTimerDialog = true }
                     )
                 }
 
@@ -1292,3 +1305,177 @@ fun EditSongBottomSheet(
         }
     }
 }
+
+@Composable
+fun CustomSleepTimerDialog(
+    currentMinutes: Int,
+    onDismiss: () -> Unit,
+    onSetTimer: (Int) -> Unit
+) {
+    var selectedMinutes by remember {
+        mutableStateOf(if (currentMinutes > 0) currentMinutes else 30)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        icon = {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(52.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Bedtime,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+        },
+        title = {
+            Text(
+                text = stringResource(R.string.option_timer),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Expressive duration badge
+                val offLabel = stringResource(R.string.option_repeat_off)
+                val minUnit = stringResource(R.string.timer_minutes_unit)
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (selectedMinutes > 0) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = when {
+                            selectedMinutes == 0 -> offLabel
+                            selectedMinutes >= 60 -> {
+                                val h = selectedMinutes / 60
+                                val m = selectedMinutes % 60
+                                if (m == 0) "${h}h" else "${h}h ${m}${minUnit}"
+                            }
+                            else -> "$selectedMinutes $minUnit"
+                        },
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (selectedMinutes > 0) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                    )
+                }
+
+                // Quick preset chips row
+                val presets = listOf(0, 15, 30, 45, 60, 90, 120)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 2.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(presets) { preset ->
+                        val isSelected = selectedMinutes == preset
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedMinutes = preset },
+                            label = {
+                                Text(
+                                    text = if (preset == 0) offLabel else "${preset}m",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Stepper + Slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    FilledTonalIconButton(
+                        onClick = { selectedMinutes = (selectedMinutes - 5).coerceAtLeast(0) },
+                        enabled = selectedMinutes > 0,
+                        modifier = Modifier.size(44.dp),
+                        shape = CircleShape
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_timer_decrease))
+                    }
+
+                    Slider(
+                        value = selectedMinutes.toFloat(),
+                        onValueChange = { selectedMinutes = ((it / 5).roundToInt() * 5) },
+                        valueRange = 0f..180f,
+                        steps = 35,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        )
+                    )
+
+                    FilledTonalIconButton(
+                        onClick = { selectedMinutes = (selectedMinutes + 5).coerceAtMost(180) },
+                        enabled = selectedMinutes < 180,
+                        modifier = Modifier.size(44.dp),
+                        shape = CircleShape
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_timer_increase))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSetTimer(selectedMinutes)
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = if (selectedMinutes == 0) stringResource(R.string.timer_turn_off) else stringResource(R.string.timer_set),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+

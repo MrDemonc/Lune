@@ -80,6 +80,11 @@
     <string name="option_crossfade">Кроссфейд</string>
     <string name="option_automix">Автомикс</string>
     <string name="option_timer">Таймер</string>
+    <string name="timer_set">Установить</string>
+    <string name="timer_turn_off">Выключить</string>
+    <string name="timer_minutes_unit">мин</string>
+    <string name="cd_timer_decrease">Уменьшить на 5 минут</string>
+    <string name="cd_timer_increase">Увеличить на 5 минут</string>
     <string name="option_lyrics">Текст песни</string>
     <string name="transition_mixing">Микширование</string>
     <string name="transition_crossfade">Кроссфейд</string>

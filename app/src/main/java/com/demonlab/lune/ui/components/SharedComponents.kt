@@ -21,6 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -45,8 +46,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -625,6 +628,7 @@ fun WaveformVisualizer(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OptionButton(
     icon: ImageVector,
@@ -632,15 +636,32 @@ fun OptionButton(
     active: Boolean,
     onClick: () -> Unit,
     sublabel: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null
 ) {
+    val haptic = LocalHapticFeedback.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
-            onClick = onClick,
-            enabled = enabled,
             shape = CircleShape,
             color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-            modifier = Modifier.size(56.dp).alpha(if (enabled) 1f else 0.5f)
+            modifier = Modifier
+                .size(56.dp)
+                .alpha(if (enabled) 1f else 0.5f)
+                .clip(CircleShape)
+                .then(
+                    if (onLongClick != null) {
+                        Modifier.combinedClickable(
+                            enabled = enabled,
+                            onClick = onClick,
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onLongClick()
+                            }
+                        )
+                    } else {
+                        Modifier.clickable(enabled = enabled, onClick = onClick)
+                    }
+                )
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
