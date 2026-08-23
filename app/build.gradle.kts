@@ -116,7 +116,6 @@ dependencies {
     // Room
     implementation(libs.androidx.room3.runtime)
     implementation(libs.androidx.room3.ktx)
-    ksp(libs.androidx.room3.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
