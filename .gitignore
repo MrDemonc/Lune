@@ -1,0 +1,64 @@
+# ==============================================================================
+# Gradle & Build Outputs
+# ==============================================================================
+.gradle/
+build/
+out/
+
+# Output distribution binaries & archives
+dist/
+
+# ==============================================================================
+# IDEs & Code Editors
+# ==============================================================================
+# IntelliJ IDEA / Android Studio / Fleet
+.idea/
+*.iml
+*.iws
+*.ipr
+.fleet/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ==============================================================================
+# Operating System & Cache Files
+# ==============================================================================
+# Linux / Unix
+*~
+*.swp
+*.swo
+.directory
+.Trash-*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ==============================================================================
+# Logs & Diagnostics
+# ==============================================================================
+*.log
+hs_err_pid*.log
+replay_pid*.log

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Lune
+Comment=Minimalist and elegant local music player for Linux
+Exec=bash -c "cd $(dirname %k) && ./run.sh"
+Icon=icons/icon.png
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;Music;
+Keywords=Music;Player;Audio;Lune;HiFi;Equalizer;
