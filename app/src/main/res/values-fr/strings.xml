@@ -128,6 +128,9 @@
     <string name="theme_dark">Mode Sombre</string>
     <string name="add_songs">Ajouter des chansons</string>
     <string name="search_songs">Rechercher des chansons…</string>
+    <string name="select_all">Tout sélectionner</string>
+    <string name="deselect_all">Tout désélectionner</string>
+    <string name="filter_all_songs">Toutes les chansons</string>
     <string name="save_selection">Enregistrer</string>
     <string name="delete_song">Supprimer de l’appareil</string>
     <string name="delete_song_warning">Êtes-vous sûr ? Cette chanson sera supprimée définitivement de votre appareil.</string>

@@ -128,6 +128,9 @@
     <string name="theme_dark">深色模式</string>
     <string name="add_songs">添加歌曲</string>
     <string name="search_songs">搜索歌曲…</string>
+    <string name="select_all">全选</string>
+    <string name="deselect_all">取消全选</string>
+    <string name="filter_all_songs">所有歌曲</string>
     <string name="save_selection">保存</string>
     <string name="delete_song">从设备删除</string>
     <string name="delete_song_warning">确定吗？这首歌曲将从您的设备中永久删除。</string>

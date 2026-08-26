@@ -128,6 +128,9 @@
     <string name="theme_dark">Modo Oscuro</string>
     <string name="add_songs">Añadir Canciones</string>
     <string name="search_songs">Buscar canciones…</string>
+    <string name="select_all">Seleccionar todo</string>
+    <string name="deselect_all">Deseleccionar todo</string>
+    <string name="filter_all_songs">Todas las canciones</string>
     <string name="save_selection">Guardar</string>
     <string name="delete_song">Eliminar del dispositivo</string>
     <string name="delete_song_warning">¿Estás seguro? Esta canción se eliminará permanentemente de tu dispositivo.</string>

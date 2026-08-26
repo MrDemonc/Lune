@@ -128,6 +128,9 @@
     <string name="theme_dark">Dunkelmodus</string>
     <string name="add_songs">Songs hinzufügen</string>
     <string name="search_songs">Songs suchen…</string>
+    <string name="select_all">Alle auswählen</string>
+    <string name="deselect_all">Alle abwählen</string>
+    <string name="filter_all_songs">Alle Lieder</string>
     <string name="save_selection">Auswahl speichern</string>
     <string name="delete_song">Vom Gerät löschen</string>
     <string name="delete_song_warning">Bist du sicher? Dieser Song wird dauerhaft von deinem Gerät gelöscht.</string>

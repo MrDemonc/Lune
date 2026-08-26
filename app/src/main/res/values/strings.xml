@@ -130,6 +130,9 @@
     <string name="theme_dark">Dark Mode</string>
     <string name="add_songs">Add Songs</string>
     <string name="search_songs">Search songs…</string>
+    <string name="select_all">Select all</string>
+    <string name="deselect_all">Deselect all</string>
+    <string name="filter_all_songs">All songs</string>
     <string name="save_selection">Save</string>
     <string name="delete_song">Delete from device</string>
     <string name="delete_song_warning">Are you sure? This song will be permanently deleted from your device.</string>

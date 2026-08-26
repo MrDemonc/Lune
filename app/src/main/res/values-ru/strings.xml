@@ -131,6 +131,9 @@
     <string name="theme_dark">Тёмный режим</string>
     <string name="add_songs">Добавить песни</string>
     <string name="search_songs">Найти песню…</string>
+    <string name="select_all">Выбрать все</string>
+    <string name="deselect_all">Снять выбор</string>
+    <string name="filter_all_songs">Все песни</string>
     <string name="save_selection">Сохранить</string>
     <string name="delete_song">Удалить с устройства</string>
     <string name="delete_song_warning">Вы уверены? Эта песня будет безвозвратна удалена с устройства.</string>

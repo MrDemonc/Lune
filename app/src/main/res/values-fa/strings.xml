@@ -130,6 +130,9 @@
     <string name="theme_dark">تم تاریک</string>
     <string name="add_songs">اضافه کردن آهنگ‌ها</string>
     <string name="search_songs">بگرد دنبال آهنگ...</string>
+    <string name="select_all">انتخاب همه</string>
+    <string name="deselect_all">لغو انتخاب همه</string>
+    <string name="filter_all_songs">همه آهنگ‌ها</string>
     <string name="save_selection">سیو کن</string>
     <string name="delete_song">پاک کردن از گوشی</string>
     <string name="delete_song_warning">مطمئنی؟ این آهنگ کلاً از رو گوشیت پاک می‌شه‌ها!</string>
