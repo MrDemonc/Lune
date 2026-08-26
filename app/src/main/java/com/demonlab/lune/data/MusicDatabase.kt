@@ -1,6 +1,6 @@
 package com.demonlab.lune.data
 
-import androidx.room.*
+import androidx.room3.*
 
 @Entity(tableName = "song_overrides")
 data class SongOverride(

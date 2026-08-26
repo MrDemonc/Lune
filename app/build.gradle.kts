@@ -20,16 +20,12 @@ ksp {
 
 android {
     namespace = "com.demonlab.lune"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.demonlab.lune"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 10
         versionName = "1.5.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -112,11 +108,8 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.jaudiotagger)
-
-    // Room
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room3.runtime)
+    ksp(libs.androidx.room3.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
