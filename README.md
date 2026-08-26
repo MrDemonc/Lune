@@ -51,7 +51,7 @@ To build and run Lune on Linux distributions, ensure the following packages are 
 
 ---
 
-### 2. Dependency Installation by Distribution
+### 2. Dependency Installation by Distribution:
 
 #### 📦 Arch Linux / Manjaro / EndeavourOS / Omarchy
 
