@@ -75,7 +75,7 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 - **Language**: Available in Spanish and English.
 - **Custom tittle**: Customize the application title from the settings.
 
-## 📱 ScreenShot
+## 📱 ScreenShots
 
 <p align="center">
   <img src="readme-res/1.png" width="140">
