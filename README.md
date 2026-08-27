@@ -48,7 +48,7 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 ## ✨ Features
 
 - **Modern UI**: Built with Jetpack Compose for a fluid, responsive interface.
-- **Premium Widget**: Home screen widget featuring a professional "dark defocus" effect powered by RenderScript.
+- **Premium Widget**: Home screen widget featuring a professional "dark defocus" effect powered by RenderEffect (Android 12+) and high-quality software blur fallback.
 - **Live Lyrics**: Integrated lyrics viewer with synchronized scrolling and smooth animations.
 - **Dynamic Themes**: Responsive to system color schemes and dark mode.
 - **Queue Control**: Robust playback management with shuffle, repeat, and queue persistence.
