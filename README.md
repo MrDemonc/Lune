@@ -48,7 +48,7 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 ## ✨ Features
 
 - **Modern UI**: Built with Jetpack Compose for a fluid, responsive interface.
-- **Premium Widget**: Home screen widget featuring a professional "dark defocus" effect powered by RenderScript.
+- **Premium Widget**: Home screen widget featuring a professional "dark defocus" effect powered by RenderEffect (Android 12+) and high-quality software blur fallback.
 - **Live Lyrics**: Integrated lyrics viewer with synchronized scrolling and smooth animations.
 - **Dynamic Themes**: Responsive to system color schemes and dark mode.
 - **Queue Control**: Robust playback management with shuffle, repeat, and queue persistence.
@@ -75,7 +75,7 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 - **Language**: Available in Spanish and English.
 - **Custom tittle**: Customize the application title from the settings.
 
-## 📱 ScreenShot
+## 📱 ScreenShots
 
 <p align="center">
   <img src="readme-res/1.png" width="140">
@@ -114,7 +114,7 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 To build Lune from source, ensure your environment meets the following requirements:
 
 - **JDK 17+**: Required for the current Gradle build version.
-- **Android SDK 36**: The project targets and compiles with the latest Android 15 APIs (SDK 36).
+- **Android SDK 37**: The project targets and compiles with the latest Android 17 APIs (SDK 37).
 - **Gradle**: Uses the provided Gradle wrapper (8.x+).
 
 Create this file for signing release

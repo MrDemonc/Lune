@@ -45,6 +45,7 @@ import android.content.ComponentName
 import android.graphics.Bitmap
 import android.widget.RemoteViews
 import android.media.AudioDeviceInfo
+import android.view.View
 
 class MusicService : MediaBrowserServiceCompat() {
     private var mediaPlayer: MediaPlayer? = null
@@ -1314,16 +1315,22 @@ class MusicService : MediaBrowserServiceCompat() {
                 val art = fetchAlbumArt(song)
                 if (art != null) {
                     lastSongForRounded = song
+                    lastSongForBlur = song
                     withContext(Dispatchers.IO) {
                         cachedRoundedArt = LuneWidgetProvider.getRoundedCornerBitmap(art, 54)
+                        lastBlurredBitmap = LuneWidgetProvider.getBlurredBitmap(applicationContext, art, 25, 28)
                     }
                 } else {
                     lastSongForRounded = null
+                    lastSongForBlur = null
                     cachedRoundedArt = null
+                    lastBlurredBitmap = null
                 }
             } else if (song == null) {
                 lastSongForRounded = null
+                lastSongForBlur = null
                 cachedRoundedArt = null
+                lastBlurredBitmap = null
             }
 
             for (appWidgetId in appWidgetIds) {
@@ -1357,6 +1364,13 @@ class MusicService : MediaBrowserServiceCompat() {
                     } else {
                         views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
                     }
+
+                    if (lastBlurredBitmap != null) {
+                        views.setImageViewBitmap(R.id.widget_blur_bg, lastBlurredBitmap)
+                        views.setViewVisibility(R.id.widget_blur_bg, View.VISIBLE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_blur_bg, View.GONE)
+                    }
                 } else {
                     views.setTextViewText(R.id.widget_title, getString(R.string.no_song_playing))
                     views.setTextViewText(R.id.widget_artist, "")
@@ -1370,6 +1384,7 @@ class MusicService : MediaBrowserServiceCompat() {
                     }
 
                     views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
+                    views.setViewVisibility(R.id.widget_blur_bg, View.GONE)
                 }
 
                 // Button Intents

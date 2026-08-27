@@ -7,9 +7,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.*
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.widget.RemoteViews
 import android.media.AudioManager
 import android.media.AudioDeviceInfo
+import android.os.Build
 import com.demonlab.lune.R
 import com.demonlab.lune.ui.activities.Lune
 import androidx.core.graphics.createBitmap
@@ -159,8 +162,32 @@ class LuneWidgetProvider : AppWidgetProvider() {
             return output
         }
 
-        @Suppress("UNUSED_PARAMETER")
         fun getBlurredBitmap(context: Context, bitmap: Bitmap, radius: Int, cornerRadius: Int): Bitmap {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                try {
+                    val targetW = 360
+                    val targetH = 200
+                    val scaled = bitmap.scale(targetW, targetH)
+                    val output = createBitmap(targetW, targetH)
+                    val canvas = Canvas(output)
+                    val paint = Paint()
+                    paint.isAntiAlias = true
+                    try {
+                        val setRenderEffectMethod = Paint::class.java.getMethod("setRenderEffect", RenderEffect::class.java)
+                        setRenderEffectMethod.invoke(paint, RenderEffect.createBlurEffect(
+                            radius.toFloat(),
+                            radius.toFloat(),
+                            Shader.TileMode.CLAMP
+                        ))
+                    } catch (_: Exception) {
+                        // Fallback to software blur logic if RenderEffect fails or is not found
+                    }
+                    canvas.drawBitmap(scaled, 0f, 0f, paint)
+                    scaled.recycle()
+                    return getRoundedCornerBitmap(output, cornerRadius)
+                } catch (_: Exception) { }
+            }
+
             return try {
                 val targetW = 360
                 val targetH = 200

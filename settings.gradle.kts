@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "iMusic"
+rootProject.name = "Lune"
 include(":app")
