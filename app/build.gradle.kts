@@ -1,7 +1,8 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
-val keystorePropertiesFile = rootProject.file("keystore.properties")
+
+val keystorePropertiesFile = layout.projectDirectory.file("../keystore.properties").asFile
 val keystoreProperties = Properties()
 
 if (keystorePropertiesFile.exists()) {
@@ -31,15 +32,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // =============================================
-    //      Only define the signing config if the
-    //      keystore.properties file actually exists.
-    //      This prevents a crash for contributors
-    //      who have not set up a release keystore.
-    // =============================================
-    if (keystorePropertiesFile.exists()) {
-        signingConfigs {
-            create("release") {
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
                 storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String
@@ -56,16 +51,17 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // The signing config is also only applied when the file exists
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
