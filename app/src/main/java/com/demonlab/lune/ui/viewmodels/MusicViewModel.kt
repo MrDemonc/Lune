@@ -72,13 +72,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             if (settingsManager.isInitialFolderScanPending) {
                 if (!settingsManager.showAllFoldersOnStart) {
                     val uriStr = settingsManager.musicFolderUri
-                    if (uriStr != null) {
-                        val uri = android.net.Uri.parse(uriStr)
-                        val targetFolder = uri.lastPathSegment?.substringAfterLast("/")?.substringAfterLast(":")
-                        if (targetFolder != null) {
-                            val allFolderNames = synced.map { it.folderName }.toSet()
-                            val foldersToHide = allFolderNames.filter { it != targetFolder }.toSet()
-                            settingsManager.hiddenFolders = foldersToHide
+                    if (!uriStr.isNullOrBlank()) {
+                        try {
+                            val uri = android.net.Uri.parse(uriStr)
+                            val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
+                            if (!pathSegment.isNullOrBlank()) {
+                                val targetFolder = pathSegment.substringAfterLast("/")
+                                val allowedFolderNames = synced.filter { song ->
+                                    song.path.contains("/$pathSegment/", ignoreCase = true) ||
+                                    song.path.contains("/$targetFolder/", ignoreCase = true)
+                                }.map { it.folderName }.toSet()
+
+                                val allFolderNames = synced.map { it.folderName }.toSet()
+                                val foldersToHide = allFolderNames - allowedFolderNames
+                                settingsManager.hiddenFolders = foldersToHide
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     }
                 }
