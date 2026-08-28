@@ -43,6 +43,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,7 +66,12 @@ import com.demonlab.lune.ui.utils.triggerLightVibration
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import java.util.regex.Pattern
 
-data class LyricsLine(val timeMs: Long, val text: String)
+data class LyricWord(val timeMs: Long, val text: String)
+data class LyricsLine(
+    val timeMs: Long,
+    val text: String,
+    val words: List<LyricWord> = emptyList()
+)
 
 class LyricsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,7 +151,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     LaunchedEffect(Unit) {
         while (true) {
             currentProgress = playbackManager.getProgress()
-            delay(250)
+            delay(50)
         }
     }
     
@@ -321,6 +329,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
             if (lyricsLines.size < 2 && !rawLyrics.isNullOrBlank()) {
                 // If we found 0 or only 1 synced line, but we have a raw string, show it.
                 val displayLines = rawLyrics.lines()
+                    .map { TIME_TAG_PATTERN.matcher(it).replaceAll("").trim() }
                     .filter { it.isNotBlank() }
                 
                 Box(
@@ -406,6 +415,38 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                                     }
                                 )
                             }
+                        } else if (isActive && line.words.isNotEmpty()) {
+                            val annotatedText = buildAnnotatedString {
+                                for (word in line.words) {
+                                    val isPassed = word.timeMs <= adjustedPositionMs
+                                    withStyle(
+                                        SpanStyle(
+                                            color = if (isPassed) lyricsTextColor else lyricsMuted2Color,
+                                            fontWeight = if (isPassed) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    ) {
+                                        append(word.text)
+                                    }
+                                }
+                            }
+                            Text(
+                                text = annotatedText,
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontSize = 24.sp,
+                                    textAlign = alignments[textAlignIndex]
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                    }
+                                    .bounceClick(0.95f)
+                                    .clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null
+                                    ) { onLineSeek() }
+                            )
                         } else {
                             Text(
                                 text = line.text,
@@ -738,71 +779,112 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
         }
     }
 }
-private fun parseLyrics(raw: String?): List<LyricsLine> {
-    if (raw == null) return emptyList()
-    
-    val wordLevelPattern = Pattern.compile("<(\\d{2}):(\\d{2})\\.(\\d{2,3})>")
-    val labelPattern = Regex("^[A-Za-z0-9]+:\\s*")
-    
-    val normalizedLines = raw.lines().mapNotNull { line ->
-        val wMatcher = wordLevelPattern.matcher(line)
-        if (!wMatcher.find()) return@mapNotNull line
+private val TIME_TAG_PATTERN = Pattern.compile("[\\[<](\\d{1,2}):(\\d{2})[.:](\\d{1,3})[\\]>]")
+private val METADATA_TAG_PATTERN = Pattern.compile("^\\[[a-zA-Z]+:.*?\\]$")
 
-        val min = wMatcher.group(1)?.toLong() ?: return@mapNotNull null
-        val sec = wMatcher.group(2)?.toLong() ?: return@mapNotNull null
-        val msPart = wMatcher.group(3) ?: return@mapNotNull null
-        val ms = when (msPart.length) {
-            1 -> msPart.toLong() * 100
-            2 -> msPart.toLong() * 10
-            else -> msPart.toLong()
-        }
-        val totalMs = (min * 60 * 1000) + (sec * 1000) + ms
-
-        val textOnly = wMatcher.reset(line).replaceAll("").trim()
-        val cleanText = textOnly.replaceFirst(labelPattern, "").trim()
-        if (cleanText.isEmpty()) return@mapNotNull null
-
-        "[%02d:%02d.%02d]%s".format(
-            totalMs / 60000, (totalMs % 60000) / 1000, (totalMs % 1000) / 10,
-            cleanText
-        )
-    }.joinToString("\n")
-    
-    val lines = mutableListOf<LyricsLine>()
-    val pattern = Pattern.compile("\\[(\\d{2}):(\\d{2})[.:](\\d{2,3})?\\](.*)")
-    var lastTimeMs = 0L
-    
-    normalizedLines.lines().forEach { line ->
-        val matcher = pattern.matcher(line)
-        if (matcher.find()) {
-            val min = matcher.group(1)?.toLong() ?: 0L
-            val sec = matcher.group(2)?.toLong() ?: 0L
-            val msPart = matcher.group(3) ?: "00"
-            val text = matcher.group(4)?.trim() ?: ""
-            
-            val ms = when (msPart.length) {
-                1 -> msPart.toLong() * 100
-                2 -> msPart.toLong() * 10
-                else -> msPart.toLong()
-            }
-            val totalMs = (min * 60 * 1000) + (sec * 1000) + ms
-            lastTimeMs = totalMs
-            
-            if (!text.startsWith("[ti:") && !text.startsWith("[ar:") && !text.startsWith("[al:") && !text.startsWith("[by:")) {
-                lines.add(LyricsLine(totalMs, text))
-            }
-        } else {
-            val trimmed = line.trim()
-            if (trimmed.isNotEmpty() && !trimmed.startsWith("[")) {
-                lines.add(LyricsLine(lastTimeMs, trimmed))
-            }
-        }
+private fun parseTime(minStr: String, secStr: String, msStr: String): Long {
+    val m = minStr.toLongOrNull() ?: 0L
+    val s = secStr.toLongOrNull() ?: 0L
+    val ms = when (msStr.length) {
+        1 -> (msStr.toLongOrNull() ?: 0L) * 100
+        2 -> (msStr.toLongOrNull() ?: 0L) * 10
+        else -> msStr.take(3).toLongOrNull() ?: 0L
     }
-    
+    return (m * 60 * 1000) + (s * 1000) + ms
+}
+
+private fun parseLyrics(raw: String?): List<LyricsLine> {
+    if (raw.isNullOrBlank()) return emptyList()
+
+    val lines = mutableListOf<LyricsLine>()
+    var lastTimeMs = 0L
+
+    raw.lines().forEach { rawLine ->
+        val line = rawLine.trim()
+        if (line.isEmpty() || METADATA_TAG_PATTERN.matcher(line).matches()) {
+            return@forEach
+        }
+
+        val matcher = TIME_TAG_PATTERN.matcher(line)
+        val matches = mutableListOf<Triple<Int, Int, Long>>() // startIdx, endIdx, timeMs
+        while (matcher.find()) {
+            val t = parseTime(matcher.group(1) ?: "0", matcher.group(2) ?: "0", matcher.group(3) ?: "0")
+            matches.add(Triple(matcher.start(), matcher.end(), t))
+        }
+
+        if (matches.isEmpty()) {
+            if (!line.startsWith("[")) {
+                lines.add(LyricsLine(lastTimeMs, line))
+            }
+            return@forEach
+        }
+
+        val cleanText = TIME_TAG_PATTERN.matcher(line).replaceAll("").trim()
+
+        // Check if all tags are at the very beginning (e.g. [01:00.00][02:00.00]Chorus)
+        var allTagsAtStart = true
+        var curPos = 0
+        val startTimes = mutableListOf<Long>()
+        for (m in matches) {
+            val prefix = line.substring(curPos, m.first).trim()
+            if (prefix.isEmpty()) {
+                startTimes.add(m.third)
+                curPos = m.second
+            } else {
+                allTagsAtStart = false
+                break
+            }
+        }
+
+        val rest = line.substring(curPos).trim()
+        val hasTagsInRest = TIME_TAG_PATTERN.matcher(rest).find()
+
+        if (allTagsAtStart && !hasTagsInRest && cleanText.isNotEmpty()) {
+            for (st in startTimes) {
+                lines.add(LyricsLine(st, cleanText))
+                lastTimeMs = st
+            }
+            return@forEach
+        }
+
+        // Instrumental / pause line without text (e.g. [01:00.00])
+        if (cleanText.isEmpty()) {
+            val t = matches.first().third
+            lines.add(LyricsLine(t, ""))
+            lastTimeMs = t
+            return@forEach
+        }
+
+        // Inline word-by-word timestamps (Enhanced LRC)
+        val words = mutableListOf<LyricWord>()
+        var lastEnd = 0
+        var currentTime: Long? = null
+
+        for (m in matches) {
+            val textBefore = line.substring(lastEnd, m.first)
+            val matchTime = m.third
+            if (textBefore.isNotEmpty()) {
+                val assignedTime = currentTime ?: matchTime
+                words.add(LyricWord(assignedTime, textBefore))
+            }
+            currentTime = matchTime
+            lastEnd = m.second
+        }
+
+        val textAfter = line.substring(lastEnd)
+        if (textAfter.isNotEmpty() && currentTime != null) {
+            words.add(LyricWord(currentTime, textAfter))
+        }
+
+        val lineStart = words.firstOrNull()?.timeMs ?: matches.first().third
+        lines.add(LyricsLine(lineStart, cleanText, words))
+        lastTimeMs = lineStart
+    }
+
     val sorted = lines.sortedBy { it.timeMs }.toMutableList()
     if (sorted.isNotEmpty() && sorted[0].timeMs > 2000) {
         sorted.add(0, LyricsLine(0, ""))
     }
-    
+
     return sorted
 }
