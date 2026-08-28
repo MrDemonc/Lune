@@ -450,7 +450,6 @@ fun SettingsPreferenceItem(
         tonalElevation = 1.dp
     ) {
         ListItem(
-            headlineContent = { Text(headlineText, fontWeight = FontWeight.Bold) },
             supportingContent = supportingText?.let { { Text(it) } },
             leadingContent = {
                 Surface(
@@ -472,7 +471,9 @@ fun SettingsPreferenceItem(
             colors = ListItemDefaults.colors(
                 containerColor = androidx.compose.ui.graphics.Color.Transparent
             )
-        )
+        ) {
+            Text(headlineText, fontWeight = FontWeight.Bold)
+        }
     }
 }
 

@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -1470,7 +1471,6 @@ fun MainScreen(
                                             val isPlaying = isFolderCategory && playbackManager.activePlaylistId == entry.name.hashCode().toLong()
                                             val isAncestor = entry.name in ancestorNames
                                             ListItem(
-                                                headlineContent = { Text(entry.name, fontWeight = FontWeight.SemiBold) },
                                                 supportingContent = {
                                                     if (!entry.isVirtual) {
                                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1526,7 +1526,7 @@ fun MainScreen(
                                                                 }
                                                             }) {
                                                                 Icon(
-                                                                    if (entry.name in expandedFolders) Icons.Default.ArrowDropDown else Icons.Default.ArrowRight,
+                                                                    if (entry.name in expandedFolders) Icons.Default.ArrowDropDown else Icons.AutoMirrored.Filled.ArrowRight,
                                                                     contentDescription = null,
                                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                                 )
@@ -1539,14 +1539,15 @@ fun MainScreen(
                                                     .then(
                                                         if (entry.isVirtual) Modifier else Modifier.clickable { selectedFolderItem = entry.name }
                                                     )
-                                            )
+                                            ) {
+                                                Text(entry.name, fontWeight = FontWeight.SemiBold)
+                                            }
                                         }
                                     } else {
                                         itemsIndexed(hierarchyEntries) { index, entry ->
                                             val songCount = visibleSongs.count { it.folderName == entry.name }
                                             val isPlaying = isFolderCategory && playbackManager.activePlaylistId == entry.name.hashCode().toLong()
                                             ListItem(
-                                                headlineContent = { Text(entry.name, fontWeight = FontWeight.SemiBold) },
                                                 supportingContent = {
                                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                                         Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1575,7 +1576,9 @@ fun MainScreen(
                                                 modifier = Modifier
                                                     .padding(start = (entry.depth * 24).dp)
                                                     .clickable { selectedFolderItem = entry.name }
-                                            )
+                                            ) {
+                                                Text(entry.name, fontWeight = FontWeight.SemiBold)
+                                            }
                                         }
                                     }
                                 }
@@ -1720,7 +1723,7 @@ fun MainScreen(
         }
 
         if (showFolderSheet) {
-            val sheetState = rememberModalBottomSheetState()
+            val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
             ModalBottomSheet(
                 onDismissRequest = { onShowFolderSheetChange(false) },
                 sheetState = sheetState,
@@ -1921,7 +1924,7 @@ fun MainScreen(
                 (if (isDarkThemeMini) blurDarkMode else blurLightMode)
 
             if (currentSong != null) {
-                val song = currentSong!!
+                val song = currentSong
                 AnimatedContent(
                     targetState = settingsManager.isMiniPlayerMinimized,
                     transitionSpec = {

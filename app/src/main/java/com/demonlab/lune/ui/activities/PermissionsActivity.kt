@@ -268,13 +268,6 @@ fun PermissionsPreferenceItem(
         tonalElevation = 1.dp
     ) {
         ListItem(
-            headlineContent = { 
-                Text(
-                    headlineText, 
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                ) 
-            },
             supportingContent = { 
                 Text(
                     supportingText,
@@ -301,7 +294,13 @@ fun PermissionsPreferenceItem(
             colors = ListItemDefaults.colors(
                 containerColor = androidx.compose.ui.graphics.Color.Transparent
             )
-        )
+        ) {
+            Text(
+                headlineText, 
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            ) 
+        }
     }
 }
 

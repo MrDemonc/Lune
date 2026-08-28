@@ -1358,7 +1358,7 @@ fun MiniPlayer(
                 ) {
                     val miniBlurRequest = remember(song.id, song.coverUrl) {
                         ImageRequest.Builder(miniContext)
-                            .data(song.coverUrl ?: song.uri ?: R.drawable.ic_lune_placeholder)
+                            .data(song.coverUrl ?: song.uri)
                             .crossfade(true)
                             .build()
                     }
@@ -1752,7 +1752,7 @@ fun MiniPlayerMinimized(
                     val miniCtx = LocalContext.current
                     val blurRequest = remember(song.id, miniCtx) {
                         ImageRequest.Builder(miniCtx)
-                            .data(song.coverUrl ?: song.uri ?: R.drawable.ic_lune_placeholder)
+                            .data(song.coverUrl ?: song.uri)
                             .crossfade(true)
                             .build()
                     }

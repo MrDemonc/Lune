@@ -231,7 +231,6 @@ fun PlaylistListScreen(
             }
 
             ListItem(
-                headlineContent = { Text(playlist.name, fontWeight = FontWeight.SemiBold) },
                 supportingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -267,7 +266,9 @@ fun PlaylistListScreen(
                     onClick = { onPlaylistClick(playlist) },
                     onLongClick = { selectedOptionsPlaylist = playlist }
                 )
-            )
+            ) {
+                Text(playlist.name, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
@@ -375,7 +376,7 @@ fun PlaylistOptionsSheet(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -418,7 +419,6 @@ fun PlaylistOptionsSheet(
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
             ) {
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.edit_name)) },
                     leadingContent = {
                         Surface(
                             shape = CircleShape,
@@ -437,7 +437,9 @@ fun PlaylistOptionsSheet(
                     },
                     modifier = Modifier.clickable { onRenameClick() },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
+                ) {
+                    Text(stringResource(R.string.edit_name))
+                }
             }
             
             Surface(
@@ -448,7 +450,6 @@ fun PlaylistOptionsSheet(
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
             ) {
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.delete_playlist), color = MaterialTheme.colorScheme.error) },
                     leadingContent = {
                         Surface(
                             shape = CircleShape,
@@ -467,7 +468,9 @@ fun PlaylistOptionsSheet(
                     },
                     modifier = Modifier.clickable { onDeleteClick() },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
+                ) {
+                    Text(stringResource(R.string.delete_playlist), color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

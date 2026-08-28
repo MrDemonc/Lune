@@ -246,7 +246,6 @@ fun FolderBrowserScreen(
                 subdirs.forEach { (name, fullPath) ->
                     item {
                         ListItem(
-                            headlineContent = { Text(name, fontWeight = FontWeight.SemiBold) },
                             leadingContent = {
                                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(48.dp)) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -255,14 +254,15 @@ fun FolderBrowserScreen(
                                 }
                             },
                             modifier = Modifier.clickable { currentDir = fullPath }
-                        )
+                        ) {
+                            Text(name, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
 
                 songs.forEach { (name, fullPath) ->
                     item {
                         ListItem(
-                            headlineContent = { Text(name, fontWeight = FontWeight.Normal) },
                             leadingContent = {
                                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(48.dp)) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -271,12 +271,14 @@ fun FolderBrowserScreen(
                                 }
                             },
                             modifier = Modifier.clickable {
-                                                            val song = allSongs.find { it.path == fullPath }
-                                                            if (song != null) {
-                                                                playbackManager.play(song, listOf(song), fullPath.hashCode().toLong(), category = "FOLDERS")
-                                                            }
+                                val song = allSongs.find { it.path == fullPath }
+                                if (song != null) {
+                                    playbackManager.play(song, listOf(song), fullPath.hashCode().toLong(), category = "FOLDERS")
+                                }
                             }
-                        )
+                        ) {
+                            Text(name, fontWeight = FontWeight.Normal)
+                        }
                     }
                 }
             }

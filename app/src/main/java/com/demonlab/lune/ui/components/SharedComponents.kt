@@ -148,32 +148,6 @@ fun SongItem(
     ) {
         ListItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            headlineContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (song.isHiFi) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                "HI-FI",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(
-                        song.title,
-                        maxLines = 1,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f, fill = false).basicMarquee(),
-                        color = if (currentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            },
             supportingContent = {
                 if (settingsManager.isBitrateOnList && (song.bitrate != null || song.format.isNotEmpty())) {
                     Column {
@@ -264,7 +238,32 @@ fun SongItem(
                     }
                 }
             }
-        )
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (song.isHiFi) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            "HI-FI",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    song.title,
+                    maxLines = 1,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f, fill = false).basicMarquee(),
+                    color = if (currentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     }
 }
 
@@ -575,7 +574,6 @@ fun FolderFilterContent(
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
             ) {
                 ListItem(
-                    headlineContent = { Text(folder) },
                     trailingContent = {
                         BouncySwitch(
                             checked = !isHidden,
@@ -600,7 +598,9 @@ fun FolderFilterContent(
                         )
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                )
+                ) {
+                    Text(folder)
+                }
             }
         }
     }
