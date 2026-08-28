@@ -374,7 +374,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     var success = false
 
                     // 1. Try to delete via SAF if we have a folder URI
-                    val folderUriString = settingsManager.musicFolderUri as String?
+                    val folderUriString = settingsManager.musicFolderUri
                     if (folderUriString != null) {
                         val folderUri = android.net.Uri.parse(folderUriString)
                         val tree = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, folderUri)

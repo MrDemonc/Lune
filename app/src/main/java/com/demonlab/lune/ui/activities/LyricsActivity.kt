@@ -474,7 +474,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                                         val miniCtx = LocalContext.current
                                         val blurRequest = remember(song.id, miniCtx) {
                                             ImageRequest.Builder(miniCtx)
-                                                .data(song.coverUrl ?: song.uri ?: com.demonlab.lune.R.drawable.ic_launcher_foreground)
+                                                .data(song.coverUrl ?: song.uri)
                                                 .crossfade(true)
                                                 .build()
                                         }
@@ -526,7 +526,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                                     ) {
                                         val blurReq = remember(song.id, song.coverUrl) {
                                             ImageRequest.Builder(context)
-                                                .data(song.coverUrl ?: song.uri ?: com.demonlab.lune.R.drawable.ic_launcher_foreground)
+                                                .data(song.coverUrl ?: song.uri)
                                                 .crossfade(true)
                                                 .build()
                                         }

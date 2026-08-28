@@ -121,7 +121,6 @@ fun SongOptionsBottomSheet(
                 ) {
                     ListItem(
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        headlineContent = { Text(stringResource(R.string.play_next)) },
                         leadingContent = {
                             Surface(
                                 shape = CircleShape,
@@ -143,7 +142,9 @@ fun SongOptionsBottomSheet(
                             playbackManager.playNext(song)
                             Toast.makeText(context, context.getString(R.string.play_next) + ": ${song.title}", Toast.LENGTH_SHORT).show()
                         }
-                    )
+                    ) {
+                        Text(stringResource(R.string.play_next))
+                    }
                 }
             }
 
@@ -156,7 +157,6 @@ fun SongOptionsBottomSheet(
             ) {
                 ListItem(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    headlineContent = { Text(stringResource(R.string.add_to_playlist)) },
                     leadingContent = {
                         Surface(
                             shape = CircleShape,
@@ -177,7 +177,9 @@ fun SongOptionsBottomSheet(
                         onDismiss()
                         onAddToPlaylistClick()
                     }
-                )
+                ) {
+                    Text(stringResource(R.string.add_to_playlist))
+                }
             }
             Surface(
                 modifier = Modifier
@@ -188,7 +190,6 @@ fun SongOptionsBottomSheet(
             ) {
                 ListItem(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    headlineContent = { Text(stringResource(R.string.edit_information)) },
                     leadingContent = {
                         Surface(
                             shape = CircleShape,
@@ -209,7 +210,9 @@ fun SongOptionsBottomSheet(
                         onDismiss()
                         onEditMetadataClick()
                     }
-                )
+                ) {
+                    Text(stringResource(R.string.edit_information))
+                }
             }
             Surface(
                 modifier = Modifier
@@ -220,7 +223,6 @@ fun SongOptionsBottomSheet(
             ) {
                 ListItem(
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    headlineContent = { Text(stringResource(R.string.delete_song), color = MaterialTheme.colorScheme.error) },
                     leadingContent = {
                         Surface(
                             shape = CircleShape,
@@ -241,7 +243,9 @@ fun SongOptionsBottomSheet(
                         onDismiss()
                         onDeleteClick()
                     }
-                )
+                ) {
+                    Text(stringResource(R.string.delete_song), color = MaterialTheme.colorScheme.error)
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -257,7 +261,7 @@ fun SortBottomSheet(
     onSortSettingsChange: (String, Boolean, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -402,14 +406,6 @@ fun SortBottomSheet(
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
                 ) {
                     ListItem(
-                        headlineContent = { 
-                            Text(
-                                text = stringResource(stringResId),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            ) 
-                        },
                         trailingContent = {
                             Surface(
                                 shape = CircleShape,
@@ -428,7 +424,14 @@ fun SortBottomSheet(
                             }
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
+                    ) {
+                        Text(
+                            text = stringResource(stringResId),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
@@ -1112,7 +1115,6 @@ fun VisualizerSettingsBottomSheet(
             )
 
             ListItem(
-                headlineContent = { Text(stringResource(R.string.visualizer_full_player)) },
                 trailingContent = {
                     BouncySwitch(
                         checked = playbackManager.isFullPlayerVisualizerEnabled,
@@ -1127,10 +1129,11 @@ fun VisualizerSettingsBottomSheet(
                     )
                 },
                 modifier = Modifier.clickable { toggleVisualizer(true) }
-            )
+            ) {
+                Text(stringResource(R.string.visualizer_full_player))
+            }
 
             ListItem(
-                headlineContent = { Text(stringResource(R.string.visualizer_mini_player)) },
                 trailingContent = {
                     BouncySwitch(
                         checked = playbackManager.isMiniPlayerVisualizerEnabled,
@@ -1145,7 +1148,9 @@ fun VisualizerSettingsBottomSheet(
                     )
                 },
                 modifier = Modifier.clickable { toggleVisualizer(false) }
-            )
+            ) {
+                Text(stringResource(R.string.visualizer_mini_player))
+            }
         }
     }
 }
@@ -1170,7 +1175,7 @@ fun EditSongBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() },
         modifier = Modifier.imePadding() // Fix keyboard compression

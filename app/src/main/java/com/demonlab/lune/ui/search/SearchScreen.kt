@@ -102,7 +102,7 @@ fun SearchScreen(
         }
     }
     val allAlbums = remember(allSongs) {
-        allSongs.groupBy { it.artist ?: "Desconocido" }
+        allSongs.groupBy { it.artist }
             .map { (artistName, songs) -> 
                 Album(
                     id = artistName.hashCode().toLong(), 
@@ -214,7 +214,7 @@ fun SearchScreen(
         }
 
         matchedSongs.forEach { song ->
-            val folder = song.folderName ?: "Desconocido"
+            val folder = song.folderName
             if (allFolders.contains(folder) && !tagResults.containsKey(folder)) {
                 val folderSongs = allSongs.filter { it.folderName == folder && matchedSongs.contains(it) }
                 tagResults[folder] = folderSongs
@@ -435,12 +435,13 @@ fun SearchScreen(
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         ListItem(
-                            headlineContent = { Text(sTabFavorites) },
                             leadingContent = { 
                                 Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary) 
                             },
                             modifier = Modifier.clickable { onNavigateToFolder("FAVORITES") }
-                        )
+                        ) {
+                            Text(sTabFavorites)
+                        }
                     }
                 }
             }
@@ -461,12 +462,13 @@ fun SearchScreen(
                         item {
                             val context = LocalContext.current
                             ListItem(
-                                headlineContent = { Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 leadingContent = {
                                     PlaylistPreviewCovers(playlistId = playlist.id, viewModel = viewModel, size = 50.dp)
                                 },
                                 modifier = Modifier.clickable { onNavigateToPlaylist(playlist) }
-                            )
+                            ) {
+                                Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                         itemsIndexed(matchingSongs) { index, song ->
                             val isFirst = index == 0
@@ -509,7 +511,6 @@ fun SearchScreen(
                         item {
                             val context = LocalContext.current
                             ListItem(
-                                headlineContent = { Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 supportingContent = { Text(album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 leadingContent = {
                                     AsyncImage(
@@ -522,7 +523,9 @@ fun SearchScreen(
                                     )
                                 },
                                 modifier = Modifier.clickable { onNavigateToAlbum(album) }
-                            )
+                            ) {
+                                Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                         itemsIndexed(matchingSongs) { index, song ->
                             val isFirst = index == 0
@@ -563,7 +566,6 @@ fun SearchScreen(
                         item {
                             val context = LocalContext.current
                             ListItem(
-                                headlineContent = { Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 supportingContent = { Text("${album.songs.size} canciones") },
                                 leadingContent = {
                                     AsyncImage(
@@ -576,7 +578,9 @@ fun SearchScreen(
                                     )
                                 },
                                 modifier = Modifier.clickable { onNavigateToAlbum(album) }
-                            )
+                            ) {
+                                Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                         itemsIndexed(matchingSongs) { index, song ->
                             val isFirst = index == 0
@@ -638,12 +642,13 @@ fun SearchScreen(
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         ListItem(
-                            headlineContent = { Text(tagName) },
                             leadingContent = { 
                                 Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) 
                             },
                             modifier = Modifier.clickable { onNavigateToFolder(tagName) }
-                        )
+                        ) {
+                            Text(tagName)
+                        }
                     }
                 }
             }
