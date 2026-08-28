@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="readme-res/logo.png" width="20%" />
+  <img src="readme-res/logo.svg" width="20%" />
   <br><br>
     <p align="center">
       <img src="https://img.shields.io/github/v/release/MrDemonc/Lune?style=for-the-badge&logo=android&label=Lune&color=blue" />
