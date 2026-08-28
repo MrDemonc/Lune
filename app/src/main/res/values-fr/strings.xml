@@ -359,4 +359,6 @@
     <string name="no_songs_folder">Aucune chanson trouvée dans ce dossier</string>
     <string name="show_hero_section">Afficher la carte de bienvenue</string>
     <string name="show_hero_section_desc">Afficher la carte de bienvenue et de statistiques sur l\'écran d\'accueil</string>
+    <string name="seamless_looping">Boucle continue</string>
+    <string name="seamless_looping_desc">Rejouer les pistes en boucle instantanément sans blanc ni pause</string>
 </resources>

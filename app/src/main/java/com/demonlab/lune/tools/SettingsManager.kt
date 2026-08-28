@@ -135,6 +135,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getInt("repeat_mode", 0) // 0: Off, 1: One, 2: All
         set(value) = prefs.edit().putInt("repeat_mode", value).apply()
 
+    var seamlessLooping: Boolean
+        get() = prefs.getBoolean("seamless_looping", true)
+        set(value) = prefs.edit().putBoolean("seamless_looping", value).apply()
+
     var isEqEnabled: Boolean
         get() = prefs.getBoolean("is_eq_enabled", false)
         set(value) = prefs.edit().putBoolean("is_eq_enabled", value).apply()

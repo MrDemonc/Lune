@@ -129,6 +129,7 @@ fun CustomizationScreen(
     var hiddenSectionTabs by remember { mutableStateOf(settingsManager.hiddenSectionTabs) }
     var isCrossfadeCustomDuration by remember { mutableStateOf(settingsManager.isCrossfadeCustomDuration) }
     var crossfadeDurationSeconds by remember { mutableStateOf(settingsManager.crossfadeDurationSeconds) }
+    var seamlessLooping by remember { mutableStateOf(settingsManager.seamlessLooping) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -566,12 +567,11 @@ fun CustomizationScreen(
                         context.startActivity(Intent(context, BlurCustomizationActivity::class.java))
                     }
                 )
-                val crossfadeSwitchPosition = if (isCrossfadeCustomDuration) SectionPosition.MIDDLE else SectionPosition.LAST
                 SettingsPreferenceItem(
                     headlineText = stringResource(R.string.crossfade_time),
                     supportingText = stringResource(R.string.crossfade_time_desc),
                     icon = Icons.Default.Tune,
-                    position = crossfadeSwitchPosition,
+                    position = SectionPosition.MIDDLE,
                     trailingContent = {
                         BouncySwitch(
                             checked = isCrossfadeCustomDuration,
@@ -598,7 +598,7 @@ fun CustomizationScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 1.dp),
-                        shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
+                        shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         tonalElevation = 1.dp
                     ) {
@@ -633,6 +633,29 @@ fun CustomizationScreen(
                         }
                     }
                 }
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.seamless_looping),
+                    supportingText = stringResource(R.string.seamless_looping_desc),
+                    icon = Icons.Default.AllInclusive,
+                    position = SectionPosition.LAST,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = seamlessLooping,
+                            onCheckedChange = {
+                                seamlessLooping = it
+                                settingsManager.seamlessLooping = it
+                                com.demonlab.lune.tools.PlaybackManager.getInstance(context).updateLoopingState()
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (seamlessLooping) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
             }
         }
     }

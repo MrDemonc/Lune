@@ -564,7 +564,7 @@ class PlaybackManager private constructor(private val context: Context) {
             frontQueueInsertCount--
         }
         
-        if (repeatMode == 1) { // Repeat One
+        if (repeatMode == 1 && isNaturalEnd) { // Repeat One (fallback if looping not active)
             if (startPlayback) {
                 currentSong?.let { play(it) }
             }
@@ -892,9 +892,23 @@ class PlaybackManager private constructor(private val context: Context) {
         settings.isAutomix = isAutomix
     }
 
+    fun shouldLoopCurrentSong(): Boolean {
+        val isLoopMode = repeatMode == 1 || (repeatMode == 2 && activePlaylist.size == 1)
+        return isLoopMode && settings.seamlessLooping
+    }
+
+    fun updateLoopingState() {
+        musicService?.setLooping(shouldLoopCurrentSong())
+    }
+
+    fun onSongLooped(song: Song) {
+        updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+    }
+
     fun toggleRepeatMode() {
         repeatMode = (repeatMode + 1) % 3
         settings.repeatMode = repeatMode
+        updateLoopingState()
     }
 
     fun getEqNumberOfBands(): Short = musicService?.equalizer?.numberOfBands ?: 0

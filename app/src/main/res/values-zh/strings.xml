@@ -356,4 +356,6 @@
     <string name="no_songs_folder">此文件夹中未找到歌曲</string>
     <string name="show_hero_section">显示欢迎卡片</string>
     <string name="show_hero_section_desc">在主页屏幕上显示欢迎和统计卡片</string>
+    <string name="seamless_looping">无缝循环</string>
+    <string name="seamless_looping_desc">即时循环播放曲目，无缝隙和静音</string>
 </resources>

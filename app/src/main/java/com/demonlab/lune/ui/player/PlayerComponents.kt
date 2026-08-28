@@ -1498,7 +1498,7 @@ fun MiniPlayer(
                 val playbackManager = remember { PlaybackManager.getInstance(miniCtx) }
                 val repeatMode = playbackManager.repeatMode
                 val isRepeatActive = repeatMode != 0
-                val repeatIcon = if (repeatMode == 2) Icons.Default.RepeatOne else Icons.Default.Repeat
+                val repeatIcon = if (repeatMode == 1) Icons.Default.RepeatOne else Icons.Default.Repeat
                 val repeatBg = if (isRepeatActive) {
                     if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary
                 } else {

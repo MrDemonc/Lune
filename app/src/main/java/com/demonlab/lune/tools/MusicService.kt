@@ -515,6 +515,8 @@ class MusicService : MediaLibraryService() {
 
         mediaPlayer = MediaPlayer().apply {
             setDataSource(applicationContext, song.uri)
+            val pm = PlaybackManager.getInstance(applicationContext)
+            isLooping = pm.shouldLoopCurrentSong()
             setOnPreparedListener {
                 start()
                 val sessionId = audioSessionId
@@ -575,24 +577,47 @@ class MusicService : MediaLibraryService() {
     private fun startCrossfadeMonitor() {
         monitorJob?.cancel()
         monitorJob = serviceScope.launch {
+            var lastPos = 0
             while (isActive) {
                 val playbackManager = PlaybackManager.getInstance(applicationContext)
                 val mp = mediaPlayer
-                if (mp != null && mp.isPlaying && (playbackManager.isCrossfade || playbackManager.isAutomix) && !isCrossfading) {
-                    val remaining = mp.duration - mp.currentPosition
+                if (mp != null && mp.isPlaying) {
+                    val currentPos = mp.currentPosition
                     val duration = mp.duration
-                    val maxTriggerMs = if (settingsManager.isCrossfadeCustomDuration)
-                        settingsManager.crossfadeDurationSeconds * 1000L else 12000L
 
-                    // Only fire if we have enough time left and are nearing the end
-                    if (duration > maxTriggerMs && remaining in 1..maxTriggerMs && mp.currentPosition > (duration / 2)) {
-                        val nextSong = playbackManager.getNextSong()
-                        if (nextSong != null) {
-                            Log.d("MusicService", "Crossfade triggered with duration: $remaining ms")
-                            // We pass the remaining real time as the transition duration
-                            performCrossfade(nextSong, remaining.toLong())
+                    // Detect seamless loop wrap-around (position resetting from end to start)
+                    if (mp.isLooping && duration > 1000 && lastPos > (duration * 0.8f) && currentPos < (duration * 0.2f)) {
+                        Log.d("MusicService", "Seamless loop wrap-around detected: $lastPos -> $currentPos ms")
+                        updatePlaybackState()
+                        playbackManager.currentSong?.let { song ->
+                            playbackManager.onSongLooped(song)
                         }
                     }
+                    lastPos = currentPos
+
+                    // If track is looping, skip crossfade so seamless loop is not interrupted
+                    if (mp.isLooping || playbackManager.shouldLoopCurrentSong()) {
+                        delay(200)
+                        continue
+                    }
+
+                    if ((playbackManager.isCrossfade || playbackManager.isAutomix) && !isCrossfading) {
+                        val remaining = duration - currentPos
+                        val maxTriggerMs = if (settingsManager.isCrossfadeCustomDuration)
+                            settingsManager.crossfadeDurationSeconds * 1000L else 12000L
+
+                        // Only fire if we have enough time left and are nearing the end
+                        if (duration > maxTriggerMs && remaining in 1..maxTriggerMs && currentPos > (duration / 2)) {
+                            val nextSong = playbackManager.getNextSong()
+                            if (nextSong != null) {
+                                Log.d("MusicService", "Crossfade triggered with duration: $remaining ms")
+                                // We pass the remaining real time as the transition duration
+                                performCrossfade(nextSong, remaining.toLong())
+                            }
+                        }
+                    }
+                } else {
+                    lastPos = 0
                 }
                 delay(200)
             }
@@ -714,6 +739,7 @@ class MusicService : MediaLibraryService() {
                 applyBalance(PlaybackManager.getInstance(applicationContext).balance)
                 
                 // Reconfigure the listener for the promoted player
+                mediaPlayer?.isLooping = PlaybackManager.getInstance(applicationContext).shouldLoopCurrentSong()
                 mediaPlayer?.setOnCompletionListener {
                     if (!isCrossfading) {
                         PlaybackManager.getInstance(applicationContext).playNextFromService(true)
@@ -819,6 +845,14 @@ class MusicService : MediaLibraryService() {
     fun duration(): Int = mediaPlayer?.duration ?: 0
     fun getAudioSessionId(): Int = mediaPlayer?.audioSessionId ?: 0
 
+    fun setLooping(looping: Boolean) {
+        try {
+            mediaPlayer?.isLooping = looping
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun setPlaybackParams(speed: Float, pitch: Float) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
@@ -879,6 +913,8 @@ class MusicService : MediaLibraryService() {
 
         mediaPlayer = MediaPlayer().apply {
             setDataSource(applicationContext, song.uri)
+            val pm = PlaybackManager.getInstance(applicationContext)
+            isLooping = pm.shouldLoopCurrentSong()
             setOnPreparedListener {
                 seekTo(positionMs.toInt())
                 start()

@@ -359,4 +359,6 @@
     <string name="no_songs_folder">Nenhuma música encontrada nesta pasta</string>
     <string name="show_hero_section">Mostrar cartão de boas-vindas</string>
     <string name="show_hero_section_desc">Exibir o cartão de boas-vindas e estatísticas na tela inicial</string>
+    <string name="seamless_looping">Repetição contínua</string>
+    <string name="seamless_looping_desc">Repete faixas em loop instantaneamente sem pausas ou silêncio</string>
 </resources>
