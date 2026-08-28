@@ -446,6 +446,11 @@ class Lune : AppCompatActivity() {
                 }
                 base
             }
+            LaunchedEffect(folders) {
+                if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
+                    selectedFolder = TAB_RESUME
+                }
+            }
             val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
                 rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
             }
@@ -774,7 +779,7 @@ fun MainScreen(
     }
 
     LaunchedEffect(folders) {
-        if (isSectionCustomizationEnabled && selectedFolder !in folders && selectedFolder.isNotEmpty()) {
+        if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
             onSelectedFolderChange("RESUME")
         }
         if (isSectionCustomizationEnabled && playbackManager.activeCategory != null && playbackManager.activeCategory !in folders) {
