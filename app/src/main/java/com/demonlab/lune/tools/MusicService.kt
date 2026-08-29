@@ -10,6 +10,7 @@ import android.os.IBinder
 import android.net.Uri
 import android.content.ContentUris
 import android.os.Bundle
+import android.os.Environment
 import com.demonlab.lune.data.MusicDatabase
 import androidx.core.app.NotificationCompat
 import coil.ImageLoader
@@ -1100,35 +1101,72 @@ class MusicService : MediaLibraryService() {
                 playbackManager.updateLyrics(null)
             }
 
-            // 1. Try to find a .lrc file in the same directory
+            // 1. Try to find a .lrc file in the same directory, subdirectories or Music/Lyrics
             val songFile = File(song.path)
-            val lrcFile = File(songFile.parent, songFile.nameWithoutExtension + ".lrc")
+            val parentDir = songFile.parentFile
+            val baseName = songFile.nameWithoutExtension
+            val possibleLrcFiles = mutableListOf<File>()
 
-            if (lrcFile.exists()) {
+            if (parentDir != null && parentDir.exists()) {
+                possibleLrcFiles.add(File(parentDir, "$baseName.lrc"))
+                possibleLrcFiles.add(File(parentDir, "$baseName.LRC"))
+                val subLyrics1 = File(parentDir, "Lyrics")
+                val subLyrics2 = File(parentDir, "lyrics")
+                if (subLyrics1.isDirectory) {
+                    possibleLrcFiles.add(File(subLyrics1, "$baseName.lrc"))
+                    possibleLrcFiles.add(File(subLyrics1, "$baseName.LRC"))
+                }
+                if (subLyrics2.isDirectory) {
+                    possibleLrcFiles.add(File(subLyrics2, "$baseName.lrc"))
+                    possibleLrcFiles.add(File(subLyrics2, "$baseName.LRC"))
+                }
+            }
+
+            try {
+                val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+                val globalLyrics = File(musicDir, "Lyrics")
+                if (globalLyrics.isDirectory) {
+                    possibleLrcFiles.add(File(globalLyrics, "$baseName.lrc"))
+                    possibleLrcFiles.add(File(globalLyrics, "$baseName.LRC"))
+                }
+            } catch (_: Exception) {}
+
+            val lrcFile = possibleLrcFiles.firstOrNull { it.exists() && it.isFile }
+
+            if (lrcFile != null) {
                 try {
                     Log.d("MusicService", "Found .lrc file: ${lrcFile.absolutePath}")
-                    val lrcContent = lrcFile.readText()
-                    withContext(Dispatchers.Main) {
-                        playbackManager.updateLyrics(lrcContent)
+                    val lrcContent = CharsetUtils.readText(lrcFile)
+                    if (lrcContent.isNotBlank()) {
+                        withContext(Dispatchers.Main) {
+                            playbackManager.updateLyrics(lrcContent)
+                        }
+                        return@launch
                     }
-                    return@launch
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
 
-            // 2. Try to extract embedded lyrics via Jaudiotagger (Best for FLAC/Vorbis)
+            // 2. Try to extract embedded lyrics via Jaudiotagger (Best for FLAC/Vorbis/ID3)
             try {
                 val f = File(song.path)
                 val audioFile = org.jaudiotagger.audio.AudioFileIO.read(f)
                 val tag = audioFile.tag
                 if (tag != null) {
-                    val embedded = tag.getFirst(org.jaudiotagger.tag.FieldKey.LYRICS)
+                    var embedded = tag.getFirst(org.jaudiotagger.tag.FieldKey.LYRICS)
+                    if (embedded.isNullOrBlank()) {
+                        embedded = tag.getFirst("USLT")
+                    }
+                    if (embedded.isNullOrBlank()) {
+                        embedded = tag.getFirst("SYLT")
+                    }
 
                     if (!embedded.isNullOrBlank()) {
                         Log.i("MusicService", "Jaudiotagger extraction success. Length: ${embedded.length}")
+                        val sanitized = CharsetUtils.sanitizeText(embedded)
                         withContext(Dispatchers.Main) {
-                            playbackManager.updateLyrics(embedded)
+                            playbackManager.updateLyrics(sanitized)
                         }
                         return@launch
                     }
@@ -1197,7 +1235,8 @@ class MusicService : MediaLibraryService() {
                         if (len in tagBytes.size..131072) {
                             val totalLength = len - tagBytes.size
                             if (index + tagBytes.size + totalLength <= buffer.size) {
-                                val result = String(buffer, index + tagBytes.size, totalLength, Charsets.UTF_8).trim()
+                                val rawBytes = buffer.copyOfRange(index + tagBytes.size, index + tagBytes.size + totalLength)
+                                val result = CharsetUtils.decodeBytes(rawBytes).trim()
                                 Log.i("MusicService", "SUCCESS: Extracted via Vorbis length: ${result.length} chars")
                                 return result
                             }
@@ -1207,7 +1246,8 @@ class MusicService : MediaLibraryService() {
                     // Fallback to previous regex if Vorbis check fails
                     val start = index + tagBytes.size
                     val length = (65536).coerceAtMost(buffer.size - start)
-                    val raw = String(buffer, start, length, Charsets.UTF_8)
+                    val rawBytes = buffer.copyOfRange(start, start + length)
+                    val raw = CharsetUtils.decodeBytes(rawBytes)
                     val nextTagPattern = Pattern.compile("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\r?\\n[A-Z0-9_]{3,}=")
                     val matcher = nextTagPattern.matcher(raw)
                     val end = if (matcher.find()) matcher.start() else raw.length

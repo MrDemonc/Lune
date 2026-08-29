@@ -179,9 +179,13 @@ class MusicProvider(private val context: Context) {
                     isFavorite = override.isFavorite
                 }
 
+                title = CharsetUtils.sanitizeText(title)
+                artist = CharsetUtils.sanitizeText(artist)
+                album = CharsetUtils.sanitizeText(album)
+
                 val folderName = data.substringBeforeLast("/").substringAfterLast("/")
                 val extension = data.substringAfterLast(".").lowercase()
-                val isHiFiFile = extension == "flac" || extension == "wav" || extension == "alac"
+                val isHiFiFile = extension == "flac" || extension == "wav" || extension == "alac" || extension == "dsf" || extension == "dff"
                 val isHiFi = settingsManager.enableHiFi && isHiFiFile
                 val format = when (extension) {
                     "mp3" -> "MP3"
@@ -192,6 +196,7 @@ class MusicProvider(private val context: Context) {
                     "opus" -> "OPUS"
                     "wma" -> "WMA"
                     "alac" -> "ALAC"
+                    "dsf", "dff" -> "DSD"
                     else -> extension.uppercase()
                 }
                 val file = File(data)
@@ -207,6 +212,25 @@ class MusicProvider(private val context: Context) {
 
                 val bitrate = mediaStoreBitrate ?: calculatedBitrate
 
+                var sampleRate: Int? = null
+                var bitDepth: Int? = null
+                var isHiRes = false
+                if (isHiFiFile && file.exists()) {
+                    try {
+                        val audioFile = org.jaudiotagger.audio.AudioFileIO.read(file)
+                        val header = audioFile.audioHeader
+                        sampleRate = header.sampleRateAsNumber
+                        bitDepth = header.bitsPerSample
+                        if ((sampleRate >= 48000 && bitDepth >= 24) || sampleRate >= 88200 || extension == "dsf" || extension == "dff") {
+                            isHiRes = true
+                        }
+                    } catch (_: Exception) {
+                        if (bitrate != null && bitrate >= 2304000) {
+                            isHiRes = true
+                        }
+                    }
+                }
+
                 val contentUri: Uri = ContentUris.withAppendedId(collection, id)
 
                 val albumArtUri = try {
@@ -220,7 +244,7 @@ class MusicProvider(private val context: Context) {
                     Song(
                         id, albumId, title, artist, album, duration, contentUri, data,
                         dateAdded, albumArtUri, genre, folderName, isHiFi, coverUrl, isFavorite, null,
-                        format, bitrate, trackNumber
+                        format, bitrate, trackNumber, isHiRes, sampleRate, bitDepth
                     )
                 )
             }

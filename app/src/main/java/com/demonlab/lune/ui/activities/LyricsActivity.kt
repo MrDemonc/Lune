@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.FormatAlignCenter
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Lyrics
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Pause
@@ -70,6 +71,7 @@ data class LyricWord(val timeMs: Long, val text: String)
 data class LyricsLine(
     val timeMs: Long,
     val text: String,
+    val translation: String? = null,
     val words: List<LyricWord> = emptyList()
 )
 
@@ -121,8 +123,11 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     var currentProgress by remember { mutableStateOf(playbackManager.getProgress()) }
     val currentPositionMs = (song.duration * currentProgress).toLong()
     
-    val lyricsLines = remember(rawLyrics) { 
-        val lines = parseLyrics(rawLyrics)
+    var userOffsetMs by remember(song.id) { mutableLongStateOf(0L) }
+    var showOffsetControl by remember { mutableStateOf(false) }
+
+    val lyricsLines = remember(rawLyrics, userOffsetMs) { 
+        val lines = parseLyrics(rawLyrics, userOffsetMs)
         Log.i("LyricsActivity", "Parsed ${lines.size} synced lines")
         lines
     }
@@ -235,7 +240,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         song.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -248,6 +253,100 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                         color = lyricsMuted2Color,
                         maxLines = 1
                     )
+                }
+                IconButton(onClick = { showOffsetControl = !showOffsetControl }) {
+                    Surface(
+                        shape = CircleShape,
+                        color = if (showOffsetControl || userOffsetMs != 0L) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else if (isBlurActive) {
+                            Color.White.copy(alpha = 0.15f)
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Tune,
+                                contentDescription = "Ajustar sincronización",
+                                tint = if (showOffsetControl || userOffsetMs != 0L) MaterialTheme.colorScheme.onPrimaryContainer else if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = showOffsetControl,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isBlurActive) Color.Black.copy(alpha = 0.7f) else MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 4.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Offset: ${if (userOffsetMs > 0) "+$userOffsetMs" else "$userOffsetMs"} ms",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (userOffsetMs != 0L) {
+                                TextButton(onClick = { userOffsetMs = 0L }) {
+                                    Text("Reset", color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = { userOffsetMs -= 500L },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("-0.5s", fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { userOffsetMs -= 100L },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("-0.1s", fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { userOffsetMs += 100L },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("+0.1s", fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { userOffsetMs += 500L },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("+0.5s", fontSize = 12.sp)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -448,14 +547,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                                     ) { onLineSeek() }
                             )
                         } else {
-                            Text(
-                                text = line.text,
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontSize = 24.sp,
-                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                                    textAlign = alignments[textAlignIndex]
-                                ),
-                                color = color,
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .graphicsLayer {
@@ -466,8 +558,33 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                                     .clickable(
                                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                         indication = null
-                                    ) { onLineSeek() }
-                            )
+                                    ) { onLineSeek() },
+                                horizontalAlignment = if (alignments[textAlignIndex] == TextAlign.Center) Alignment.CenterHorizontally else Alignment.Start
+                            ) {
+                                Text(
+                                    text = line.text,
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        fontSize = 24.sp,
+                                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                                        textAlign = alignments[textAlignIndex]
+                                    ),
+                                    color = color,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                if (!line.translation.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = line.translation,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Normal,
+                                            textAlign = alignments[textAlignIndex]
+                                        ),
+                                        color = color.copy(alpha = if (isActive) 0.85f else 0.5f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -793,8 +910,12 @@ private fun parseTime(minStr: String, secStr: String, msStr: String): Long {
     return (m * 60 * 1000) + (s * 1000) + ms
 }
 
-private fun parseLyrics(raw: String?): List<LyricsLine> {
+private fun parseLyrics(raw: String?, offsetAdjustmentMs: Long = 0L): List<LyricsLine> {
     if (raw.isNullOrBlank()) return emptyList()
+
+    val offsetMatcher = Pattern.compile("\\[offset:\\s*([+-]?\\d+)\\]", Pattern.CASE_INSENSITIVE).matcher(raw)
+    val fileOffset = if (offsetMatcher.find()) offsetMatcher.group(1)?.toLongOrNull() ?: 0L else 0L
+    val totalOffset = fileOffset + offsetAdjustmentMs
 
     val lines = mutableListOf<LyricsLine>()
     var lastTimeMs = 0L
@@ -809,7 +930,8 @@ private fun parseLyrics(raw: String?): List<LyricsLine> {
         val matches = mutableListOf<Triple<Int, Int, Long>>() // startIdx, endIdx, timeMs
         while (matcher.find()) {
             val t = parseTime(matcher.group(1) ?: "0", matcher.group(2) ?: "0", matcher.group(3) ?: "0")
-            matches.add(Triple(matcher.start(), matcher.end(), t))
+            val adjusted = (t + totalOffset).coerceAtLeast(0L)
+            matches.add(Triple(matcher.start(), matcher.end(), adjusted))
         }
 
         if (matches.isEmpty()) {
@@ -877,14 +999,30 @@ private fun parseLyrics(raw: String?): List<LyricsLine> {
         }
 
         val lineStart = words.firstOrNull()?.timeMs ?: matches.first().third
-        lines.add(LyricsLine(lineStart, cleanText, words))
+        lines.add(LyricsLine(lineStart, cleanText, words = words))
         lastTimeMs = lineStart
     }
 
     val sorted = lines.sortedBy { it.timeMs }.toMutableList()
-    if (sorted.isNotEmpty() && sorted[0].timeMs > 2000) {
-        sorted.add(0, LyricsLine(0, ""))
+
+    // Grouping for multi-track lyrics (original + translation / romaji)
+    val merged = mutableListOf<LyricsLine>()
+    for (line in sorted) {
+        val last = merged.lastOrNull()
+        if (last != null && Math.abs(last.timeMs - line.timeMs) <= 300 && line.text.isNotBlank() && last.text.isNotBlank()) {
+            if (last.translation == null) {
+                merged[merged.size - 1] = last.copy(translation = line.text)
+            } else {
+                merged[merged.size - 1] = last.copy(translation = "${last.translation}\n${line.text}")
+            }
+        } else {
+            merged.add(line)
+        }
     }
 
-    return sorted
+    if (merged.isNotEmpty() && merged[0].timeMs > 2000) {
+        merged.add(0, LyricsLine(0, ""))
+    }
+
+    return merged
 }

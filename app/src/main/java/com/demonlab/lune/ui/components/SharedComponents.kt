@@ -240,7 +240,25 @@ fun SongItem(
             }
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (song.isHiFi) {
+                if (song.isHiRes) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFF2E2400),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500)))
+                        )
+                    ) {
+                        Text(
+                            "Hi-Res",
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                } else if (song.isHiFi) {
                     Surface(
                         color = MaterialTheme.colorScheme.tertiaryContainer,
                         shape = RoundedCornerShape(4.dp)

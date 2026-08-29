@@ -21,5 +21,8 @@ data class Song(
     val lyrics: String? = null,
     val format: String = "",
     val bitrate: Int? = null,
-    val trackNumber: Int = 0
+    val trackNumber: Int = 0,
+    val isHiRes: Boolean = false,
+    val sampleRate: Int? = null,
+    val bitDepth: Int? = null
 )
