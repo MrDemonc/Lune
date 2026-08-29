@@ -1,25 +1,17 @@
-@file:Suppress("DEPRECATION")
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
 package com.demonlab.lune.tools
 
 import android.app.*
-import android.content.Context
-import android.content.Intent
-import android.content.BroadcastReceiver
-import android.content.IntentFilter
+import android.content.*
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.media.session.MediaSessionCompat
 import android.net.Uri
 import android.content.ContentUris
 import android.os.Bundle
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaDescriptionCompat
-import androidx.media.MediaBrowserServiceCompat
 import com.demonlab.lune.data.MusicDatabase
 import androidx.core.app.NotificationCompat
-import androidx.media.app.NotificationCompat.MediaStyle
 import coil.ImageLoader
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -43,17 +35,35 @@ import java.util.regex.Pattern
 import android.util.Log
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.widget.RemoteViews
 import android.media.AudioDeviceInfo
 import android.view.View
+import androidx.annotation.OptIn
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.*
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
+import androidx.media3.session.MediaLibraryService.LibraryParams
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 
+@OptIn(UnstableApi::class, ExperimentalCoroutinesApi::class)
 @Suppress("DEPRECATION")
-class MusicService : MediaBrowserServiceCompat() {
+class MusicService : MediaLibraryService() {
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        return mediaSession
+    }
+
+    private var lunePlayerAdapter: LuneAudioPlayerAdapter? = null
     private var mediaPlayer: MediaPlayer? = null
     private var secondaryPlayer: MediaPlayer? = null
     private var isCrossfading = false
-    private var mediaSession: MediaSessionCompat? = null
+    private var mediaSession: MediaLibrarySession? = null
     private val binder = MusicBinder()
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -118,6 +128,7 @@ class MusicService : MediaBrowserServiceCompat() {
         const val ACTION_NEXT = "com.demonlab.lune.ACTION_NEXT"
         const val ACTION_SHUFFLE = "com.demonlab.lune.ACTION_SHUFFLE"
         const val ACTION_FAVORITE = "com.demonlab.lune.ACTION_FAVORITE"
+        const val ACTION_DISMISS = "com.demonlab.lune.ACTION_DISMISS"
         const val PAUSE_TIMEOUT_MS = 5 * 60 * 1000L
     }
 
@@ -126,6 +137,7 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private var pauseTimeoutJob: Job? = null
+    private var isNotificationDismissed = false
 
     override fun onCreate() {
         super.onCreate()
@@ -140,76 +152,28 @@ class MusicService : MediaBrowserServiceCompat() {
         }
         registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
 
-        mediaSession = MediaSessionCompat(this, "MusicService").apply {
-            setCallback(object : MediaSessionCompat.Callback() {
-                override fun onPlay() { resume() }
-                override fun onPause() { pause() }
-                override fun onSkipToNext() {
-                    PlaybackManager.getInstance(applicationContext).playNextFromService()
-                }
-                override fun onSkipToPrevious() {
-                    PlaybackManager.getInstance(applicationContext).playPreviousFromService()
-                }
-                override fun onSeekTo(pos: Long) { seekTo(pos.toInt()) }
-                override fun onCustomAction(action: String?, extras: Bundle?) {
-                    val pm = PlaybackManager.getInstance(applicationContext)
-                    when (action) {
-                        "shuffle" -> {
-                            pm.toggleShuffle()
-                            pm.currentSong?.let { showNotification(it, isPlaying()) }
-                            updatePlaybackState()
-                        }
-                        "favorite" -> {
-                            pm.toggleFavorite(onFavoriteToggled = { updatedSong ->
-                                val provider = MusicProvider(applicationContext)
-                                provider.updateSongInCache(updatedSong)
-                                showNotification(updatedSong, isPlaying())
-                                updatePlaybackState()
-                            })
-                        }
-                    }
-                }
-
-                override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
-                    if (mediaId == null) return
-                    serviceScope.launch {
-                        val playbackManager = PlaybackManager.getInstance(applicationContext)
-                        val provider = MusicProvider(applicationContext)
-                        val db = MusicDatabase.getDatabase(applicationContext)
-
-                        val hiddenFolders = settingsManager.hiddenFolders
-                        when {
-                            mediaId.startsWith("song_allsongs_") -> {
-                                val songId = mediaId.substringAfter("song_allsongs_").toLongOrNull() ?: return@launch
-                                val songs = provider.getCachedSongs().filter { !hiddenFolders.contains(it.folderName) }
-                                val targetSong = songs.find { it.id == songId } ?: return@launch
-                                playbackManager.play(targetSong, songs, -100L, category = "ALL", shuffleMode = playbackManager.isShuffle)
-                            }
-                            mediaId.startsWith("song_favs_") -> {
-                                val songId = mediaId.substringAfter("song_favs_").toLongOrNull() ?: return@launch
-                                val songs = provider.getCachedSongs().filter { it.isFavorite && !hiddenFolders.contains(it.folderName) }
-                                val targetSong = songs.find { it.id == songId } ?: return@launch
-                                playbackManager.play(targetSong, songs, -200L, category = "FAVORITES")
-                            }
-                            mediaId.startsWith("song_playlist_") -> {
-                                val parts = mediaId.removePrefix("song_playlist_").split("_")
-                                if (parts.size < 2) return@launch
-                                val playlistId = parts[0].toLongOrNull() ?: return@launch
-                                val songId = parts[1].toLongOrNull() ?: return@launch
-
-                                val songIds = db.playlistDao().getSongIdsForPlaylist(playlistId)
-                                val allCached = provider.getCachedSongs()
-                                val playlistSongs = songIds.mapNotNull { id -> allCached.find { it.id == id } }
-                                val targetSong = playlistSongs.find { it.id == songId } ?: return@launch
-                                playbackManager.play(targetSong, playlistSongs, playlistId, category = "PLAYLISTS")
-                            }
-                        }
-                    }
-                }
-            })
-            isActive = true
+        setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
+        lunePlayerAdapter = LuneAudioPlayerAdapter(this)
+        val sessionIntent = Intent(this, Lune::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         }
-        sessionToken = mediaSession?.sessionToken
+        val sessionPendingIntent = PendingIntent.getActivity(
+            this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE
+        )
+        val initialLayout = buildCustomLayout()
+        mediaSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
+            .setSessionActivity(sessionPendingIntent)
+            .setCustomLayout(initialLayout)
+            .setMediaButtonPreferences(initialLayout)
+            .build()
+
+        val notificationHints = Bundle().apply {
+            putBoolean("androidx.media3.session.MediaNotificationManager", true)
+        }
+        MediaController.Builder(this, mediaSession!!.token)
+            .setConnectionHints(notificationHints)
+            .buildAsync()
+
         settingsManager = SettingsManager.getInstance(this)
 
         serviceScope.launch {
@@ -350,6 +314,17 @@ class MusicService : MediaBrowserServiceCompat() {
                     showNotification(updatedSong, isPlaying())
                 })
             }
+            ACTION_DISMISS -> {
+                isNotificationDismissed = true
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    stopForeground(true)
+                }
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager.cancel(1)
+            }
         }
         return START_STICKY
     }
@@ -368,127 +343,291 @@ class MusicService : MediaBrowserServiceCompat() {
 
 
     override fun onBind(intent: Intent?): IBinder? {
-        return if (intent?.action == "android.media.browse.MediaBrowserService") {
+        val action = intent?.action
+        return if (action == "androidx.media3.session.MediaSessionService" ||
+            action == "androidx.media3.session.MediaLibraryService" ||
+            action == "android.media.browse.MediaBrowserService") {
             super.onBind(intent)
         } else {
             binder
         }
     }
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
-        return BrowserRoot("root", null)
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        if (!isPlaying() && isNotificationDismissed) {
+            return
+        }
+        val pm = PlaybackManager.getInstance(this)
+        val song = pm.currentSong
+        if (song != null) {
+            showNotification(song, isPlaying())
+        }
     }
 
-    override fun onLoadChildren(parentId: String, result: androidx.media.MediaBrowserServiceCompat.Result<MutableList<MediaBrowserCompat.MediaItem>>) {
-        result.detach()
+    private fun <T> Deferred<T>.asListenableFuture(): ListenableFuture<T> {
+        val settable = SettableFuture.create<T>()
         serviceScope.launch {
-            val mediaItems = mutableListOf<MediaBrowserCompat.MediaItem>()
+            try {
+                settable.set(await())
+            } catch (e: Throwable) {
+                settable.setException(e)
+            }
+        }
+        return settable
+    }
+
+    private fun createBrowsableItem(mediaId: String, title: String): MediaItem {
+        return MediaItem.Builder()
+            .setMediaId(mediaId)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .build()
+            )
+            .build()
+    }
+
+    private fun createPlayableItem(song: Song, mediaId: String = "song_${song.id}"): MediaItem {
+        val artworkUri = if (song.coverUrl != null) {
+            Uri.parse(song.coverUrl)
+        } else {
+            ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+        }
+        return MediaItem.Builder()
+            .setMediaId(mediaId)
+            .setUri(song.uri)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(song.title)
+                    .setArtist(song.artist)
+                    .setAlbumTitle(song.album)
+                    .setArtworkUri(artworkUri)
+                    .setIsBrowsable(false)
+                    .setIsPlayable(true)
+                    .build()
+            )
+            .build()
+    }
+
+    private fun handlePlayMediaId(mediaId: String) {
+        serviceScope.launch {
+            val playbackManager = PlaybackManager.getInstance(applicationContext)
             val provider = MusicProvider(applicationContext)
             val db = MusicDatabase.getDatabase(applicationContext)
 
-            try {
-                when (parentId) {
-                    "root" -> {
-                        val songsItem = MediaDescriptionCompat.Builder()
-                            .setMediaId("all_songs")
-                            .setTitle(getString(R.string.tab_songs))
-                            .build()
-                        mediaItems.add(MediaBrowserCompat.MediaItem(songsItem, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE))
+            val hiddenFolders = settingsManager.hiddenFolders
+            when {
+                mediaId.startsWith("song_allsongs_") -> {
+                    val songId = mediaId.substringAfter("song_allsongs_").toLongOrNull() ?: return@launch
+                    val songs = provider.getCachedSongs().filter { !hiddenFolders.contains(it.folderName) }
+                    val targetSong = songs.find { it.id == songId } ?: return@launch
+                    playbackManager.play(targetSong, songs, -100L, category = "ALL", shuffleMode = playbackManager.isShuffle)
+                }
+                mediaId.startsWith("song_favs_") -> {
+                    val songId = mediaId.substringAfter("song_favs_").toLongOrNull() ?: return@launch
+                    val songs = provider.getCachedSongs().filter { it.isFavorite && !hiddenFolders.contains(it.folderName) }
+                    val targetSong = songs.find { it.id == songId } ?: return@launch
+                    playbackManager.play(targetSong, songs, -200L, category = "FAVORITES")
+                }
+                mediaId.startsWith("song_playlist_") -> {
+                    val parts = mediaId.removePrefix("song_playlist_").split("_")
+                    if (parts.size < 2) return@launch
+                    val playlistId = parts[0].toLongOrNull() ?: return@launch
+                    val songId = parts[1].toLongOrNull() ?: return@launch
 
-                        val favoritesItem = MediaDescriptionCompat.Builder()
-                            .setMediaId("favorites")
-                            .setTitle(getString(R.string.tab_favorites))
-                            .build()
-                        mediaItems.add(MediaBrowserCompat.MediaItem(favoritesItem, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE))
+                    val songIds = db.playlistDao().getSongIdsForPlaylist(playlistId)
+                    val allCached = provider.getCachedSongs()
+                    val playlistSongs = songIds.mapNotNull { id -> allCached.find { it.id == id } }
+                    val targetSong = playlistSongs.find { it.id == songId } ?: return@launch
+                    playbackManager.play(targetSong, playlistSongs, playlistId, category = "PLAYLISTS")
+                }
+            }
+        }
+    }
 
-                        val playlistsItem = MediaDescriptionCompat.Builder()
-                            .setMediaId("playlists")
-                            .setTitle(getString(R.string.playlists))
-                            .build()
-                        mediaItems.add(MediaBrowserCompat.MediaItem(playlistsItem, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE))
-                    }
-                    "all_songs" -> {
-                        val hidden = settingsManager.hiddenFolders
-                        val songs = provider.getCachedSongs().filter { !hidden.contains(it.folderName) }
-                        for (song in songs) {
-                            val desc = MediaDescriptionCompat.Builder()
-                                .setMediaId("song_allsongs_${song.id}")
-                                .setTitle(song.title)
-                                .setSubtitle(song.artist)
-                                .setIconUri(
-                                    if (song.coverUrl != null) {
-                                        Uri.parse(song.coverUrl)
-                                    } else {
-                                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+    private val librarySessionCallback = object : MediaLibrarySession.Callback {
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            val rootItem = MediaItem.Builder()
+                .setMediaId("root")
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .build()
+                )
+                .build()
+            return Futures.immediateFuture(LibraryResult.ofItem(rootItem, params))
+        }
+
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            return serviceScope.async {
+                val mediaItems = mutableListOf<MediaItem>()
+                val provider = MusicProvider(applicationContext)
+                val db = MusicDatabase.getDatabase(applicationContext)
+
+                try {
+                    when (parentId) {
+                        "root" -> {
+                            mediaItems.add(createBrowsableItem("all_songs", getString(R.string.tab_songs)))
+                            mediaItems.add(createBrowsableItem("favorites", getString(R.string.tab_favorites)))
+                            mediaItems.add(createBrowsableItem("playlists", getString(R.string.playlists)))
+                        }
+                        "all_songs" -> {
+                            val hidden = settingsManager.hiddenFolders
+                            val songs = provider.getCachedSongs().filter { !hidden.contains(it.folderName) }
+                            for (song in songs) {
+                                mediaItems.add(createPlayableItem(song, "song_allsongs_${song.id}"))
+                            }
+                        }
+                        "favorites" -> {
+                            val hidden = settingsManager.hiddenFolders
+                            val songs = provider.getCachedSongs().filter { it.isFavorite && !hidden.contains(it.folderName) }
+                            for (song in songs) {
+                                mediaItems.add(createPlayableItem(song, "song_favs_${song.id}"))
+                            }
+                        }
+                        "playlists" -> {
+                            val playlists = db.playlistDao().getAllPlaylists()
+                            for (playlist in playlists) {
+                                mediaItems.add(createBrowsableItem("playlist_${playlist.id}", playlist.name))
+                            }
+                        }
+                        else -> {
+                            if (parentId.startsWith("playlist_")) {
+                                val playlistId = parentId.removePrefix("playlist_").toLongOrNull()
+                                if (playlistId != null) {
+                                    val songIds = db.playlistDao().getSongIdsForPlaylist(playlistId)
+                                    val allCached = provider.getCachedSongs()
+                                    val playlistSongs = songIds.mapNotNull { id -> allCached.find { it.id == id } }
+                                    for (song in playlistSongs) {
+                                        mediaItems.add(createPlayableItem(song, "song_playlist_${playlistId}_${song.id}"))
                                     }
-                                )
-                                .build()
-                            mediaItems.add(MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE))
-                        }
-                    }
-                    "favorites" -> {
-                        val hidden = settingsManager.hiddenFolders
-                        val songs = provider.getCachedSongs().filter { it.isFavorite && !hidden.contains(it.folderName) }
-                        for (song in songs) {
-                            val desc = MediaDescriptionCompat.Builder()
-                                .setMediaId("song_favs_${song.id}")
-                                .setTitle(song.title)
-                                .setSubtitle(song.artist)
-                                .setIconUri(
-                                    if (song.coverUrl != null) {
-                                        Uri.parse(song.coverUrl)
-                                    } else {
-                                        ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
-                                    }
-                                )
-                                .build()
-                            mediaItems.add(MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE))
-                        }
-                    }
-                    "playlists" -> {
-                        val playlists = db.playlistDao().getAllPlaylists()
-                        for (playlist in playlists) {
-                            val desc = MediaDescriptionCompat.Builder()
-                                .setMediaId("playlist_${playlist.id}")
-                                .setTitle(playlist.name)
-                                .build()
-                            mediaItems.add(MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE))
-                        }
-                    }
-                    else -> {
-                        if (parentId.startsWith("playlist_")) {
-                            val playlistId = parentId.removePrefix("playlist_").toLongOrNull()
-                            if (playlistId != null) {
-                                val songIds = db.playlistDao().getSongIdsForPlaylist(playlistId)
-                                val allCached = provider.getCachedSongs()
-                                val playlistSongs = songIds.mapNotNull { id -> allCached.find { it.id == id } }
-                                for (song in playlistSongs) {
-                                    val desc = MediaDescriptionCompat.Builder()
-                                        .setMediaId("song_playlist_${playlistId}_${song.id}")
-                                        .setTitle(song.title)
-                                        .setSubtitle(song.artist)
-                                        .setIconUri(
-                                            if (song.coverUrl != null) {
-                                                Uri.parse(song.coverUrl)
-                                            } else {
-                                                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
-                                            }
-                                        )
-                                        .build()
-                                    mediaItems.add(MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE))
                                 }
                             }
                         }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                LibraryResult.ofItemList(ImmutableList.copyOf(mediaItems), params)
+            }.asListenableFuture()
+        }
+
+        override fun onSetMediaItems(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val targetItem = mediaItems.getOrNull(startIndex) ?: mediaItems.firstOrNull()
+            if (targetItem != null) {
+                handlePlayMediaId(targetItem.mediaId)
             }
-            result.sendResult(mediaItems)
+            return Futures.immediateFuture(
+                MediaSession.MediaItemsWithStartPosition(mediaItems, startIndex, startPositionMs)
+            )
+        }
+
+        override fun onAddMediaItems(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>
+        ): ListenableFuture<MutableList<MediaItem>> {
+            val targetItem = mediaItems.firstOrNull()
+            if (targetItem != null) {
+                handlePlayMediaId(targetItem.mediaId)
+            }
+            return Futures.immediateFuture(mediaItems)
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            val pm = PlaybackManager.getInstance(applicationContext)
+            when (customCommand.customAction) {
+                ACTION_SHUFFLE -> {
+                    pm.toggleShuffle()
+                    currentSong()?.let { showNotification(it, isPlaying()) }
+                    updatePlaybackState()
+                }
+                ACTION_FAVORITE -> {
+                    pm.toggleFavorite(onFavoriteToggled = { updatedSong ->
+                        val provider = MusicProvider(applicationContext)
+                        provider.updateSongInCache(updatedSong)
+                        showNotification(updatedSong, isPlaying())
+                        updatePlaybackState()
+                    })
+                }
+            }
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
+
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                .add(SessionCommand(ACTION_SHUFFLE, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_FAVORITE, Bundle.EMPTY))
+                .build()
+            val customLayout = buildCustomLayout()
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
+                .setAvailableSessionCommands(sessionCommands)
+                .setCustomLayout(customLayout)
+                .setMediaButtonPreferences(customLayout)
+                .build()
         }
     }
 
+    private fun buildCustomLayout(): ImmutableList<CommandButton> {
+        val pm = PlaybackManager.getInstance(this)
+        val isShuffle = pm.isShuffle
+        val shuffleIcon = if (isShuffle) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
+        val shuffleRes = if (isShuffle) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle
+
+        val isFav = pm.currentSong?.isFavorite == true
+        val favIcon = if (isFav) CommandButton.ICON_HEART_FILLED else CommandButton.ICON_HEART_UNFILLED
+        val favRes = if (isFav) R.drawable.ic_favorite else R.drawable.ic_favorite_border
+
+        return ImmutableList.of(
+            CommandButton.Builder(shuffleIcon)
+                .setSessionCommand(SessionCommand(ACTION_SHUFFLE, Bundle.EMPTY))
+                .setDisplayName("Shuffle")
+                .setIconResId(shuffleRes)
+                .setCustomIconResId(shuffleRes)
+                .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
+                .setEnabled(true)
+                .build(),
+            CommandButton.Builder(favIcon)
+                .setSessionCommand(SessionCommand(ACTION_FAVORITE, Bundle.EMPTY))
+                .setDisplayName("Favorite")
+                .setIconResId(favRes)
+                .setCustomIconResId(favRes)
+                .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
+                .setEnabled(true)
+                .build()
+        )
+    }
+
     fun playSong(song: Song) {
+        isNotificationDismissed = false
         isCrossfading = false
         PlaybackManager.getInstance(applicationContext).isTransitioning = false
         monitorJob?.cancel()
@@ -767,8 +906,14 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private suspend fun fetchAlbumArt(song: Song): android.graphics.Bitmap? {
         val loader = this.imageLoader
+        val artUri = if (song.coverUrl != null) {
+            Uri.parse(song.coverUrl)
+        } else {
+            ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+        }
         val request = ImageRequest.Builder(this)
-            .data(song.coverUrl ?: song.uri)
+            .data(artUri)
+            .size(1024, 1024)
             .allowHardware(false)
             .build()
 
@@ -815,6 +960,7 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     fun resume() {
+        isNotificationDismissed = false
         pauseTimeoutJob?.cancel()
         requestAudioFocus()
         mediaPlayer?.start()
@@ -1092,55 +1238,22 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private fun updateMetadata(song: Song, art: android.graphics.Bitmap? = null) {
-        val metadataBuilder = android.support.v4.media.MediaMetadataCompat.Builder()
-            .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_TITLE, song.title)
-            .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ARTIST, song.artist)
-            .putLong(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_DURATION, song.duration)
-            .putLong("is_favorite", if (song.isFavorite) 1L else 0L)
-
         art?.let {
-            metadataBuilder.putBitmap(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ALBUM_ART, it)
+            val stream = java.io.ByteArrayOutputStream()
+            it.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+            lunePlayerAdapter?.currentArtworkData = stream.toByteArray()
         }
-
-        mediaSession?.setMetadata(metadataBuilder.build())
+        lunePlayerAdapter?.notifyStateChanged()
+        val customLayout = buildCustomLayout()
+        mediaSession?.setCustomLayout(customLayout)
+        mediaSession?.setMediaButtonPreferences(customLayout)
     }
 
     private fun updatePlaybackState() {
-        val state = if (isPlaying()) android.support.v4.media.session.PlaybackStateCompat.STATE_PLAYING
-                    else android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED
-
-        val pm = PlaybackManager.getInstance(this)
-        val currentSong = pm.currentSong
-        val extras = Bundle().apply {
-            putBoolean("shuffle_mode", pm.isShuffle)
-            putInt("repeat_mode", pm.repeatMode)
-        }
-
-        val stateBuilder = android.support.v4.media.session.PlaybackStateCompat.Builder()
-            .setActions(
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY or
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE or
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_SEEK_TO or
-                android.support.v4.media.session.PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE
-            )
-            .setState(state, currentPosition().toLong(), 1.0f)
-            .setExtras(extras)
-
-        val shuffleAction = android.support.v4.media.session.PlaybackStateCompat.CustomAction.Builder(
-            "shuffle", "Shuffle",
-            if (pm.isShuffle) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle
-        ).build()
-        stateBuilder.addCustomAction(shuffleAction)
-
-        val favIcon = if (currentSong?.isFavorite == true) R.drawable.ic_favorite else R.drawable.ic_favorite_border
-        val favoriteAction = android.support.v4.media.session.PlaybackStateCompat.CustomAction.Builder(
-            "favorite", "Favorite", favIcon
-        ).build()
-        stateBuilder.addCustomAction(favoriteAction)
-
-        mediaSession?.setPlaybackState(stateBuilder.build())
+        lunePlayerAdapter?.notifyStateChanged()
+        val customLayout = buildCustomLayout()
+        mediaSession?.setCustomLayout(customLayout)
+        mediaSession?.setMediaButtonPreferences(customLayout)
     }
 
     private fun currentSong(): Song? {
@@ -1148,6 +1261,17 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private fun showNotification(song: Song, isPlaying: Boolean, art: android.graphics.Bitmap? = null) {
+        if (!isPlaying && isNotificationDismissed) {
+            return
+        }
+
+        if (art != null && lunePlayerAdapter?.currentArtworkData == null) {
+            val stream = java.io.ByteArrayOutputStream()
+            art.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+            lunePlayerAdapter?.currentArtworkData = stream.toByteArray()
+            lunePlayerAdapter?.notifyStateChanged()
+        }
+
         val channelId = "music_playback_channel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -1191,25 +1315,46 @@ class MusicService : MediaBrowserServiceCompat() {
             getServicePendingIntent(ACTION_FAVORITE)
         )
 
-        val notification = NotificationCompat.Builder(this, channelId)
+        val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setLargeIcon(art)
             .setContentTitle(song.title)
             .setContentText(song.artist)
             .setOngoing(isPlaying)
             .setContentIntent(pendingIntent)
+            .setDeleteIntent(getServicePendingIntent(ACTION_DISMISS))
             .setSilent(true)
             .addAction(android.R.drawable.ic_media_previous, "Previous", getServicePendingIntent(ACTION_PREVIOUS))
             .addAction(playPauseAction)
             .addAction(android.R.drawable.ic_media_next, "Next", getServicePendingIntent(ACTION_NEXT))
             .addAction(shuffleAction)
             .addAction(favoriteAction)
-            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
-                .setShowActionsInCompactView(0, 1, 2, 3, 4)
-                .setMediaSession(mediaSession?.sessionToken))
-            .build()
 
-        startForeground(1, notification)
+        mediaSession?.let { session ->
+            builder.setStyle(
+                MediaStyleNotificationHelper.MediaStyle(session)
+                    .setShowActionsInCompactView(0, 1, 2, 3, 4)
+            )
+        }
+
+        val notification = builder.build()
+
+        if (isPlaying) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(1, notification)
+            }
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(false)
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.notify(1, notification)
+        }
     }
 
     private fun getServicePendingIntent(action: String): PendingIntent {
@@ -1233,6 +1378,7 @@ class MusicService : MediaBrowserServiceCompat() {
         mediaPlayer?.release()
         secondaryPlayer?.release()
         mediaSession?.release()
+        lunePlayerAdapter?.release()
         spatialRampJob?.cancel()
         pauseTimeoutJob?.cancel()
         serviceScope.cancel()
