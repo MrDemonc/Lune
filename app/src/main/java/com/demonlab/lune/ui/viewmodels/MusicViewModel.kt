@@ -11,6 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.demonlab.lune.data.MusicDatabase
+import com.demonlab.lune.data.PlaylistSong
 import com.demonlab.lune.tools.MusicProvider
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.tools.SettingsManager
@@ -216,8 +218,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun addSongToPlaylist(playlistId: Long, songId: Long, onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().addSongToPlaylist(
-                    com.demonlab.lune.data.PlaylistSong(playlistId, songId)
+                val db = MusicDatabase.getDatabase(getApplication())
+                val maxPos = db.playlistDao().getMaxPosition(playlistId) ?: 0
+                db.playlistDao().addSongToPlaylist(
+                    PlaylistSong(playlistId, songId, position = maxPos + 1)
                 )
             }
             awaitLoadPlaylists()
@@ -228,12 +232,35 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>, onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
-                val playlistSongs = songIds.map { com.demonlab.lune.data.PlaylistSong(playlistId, it) }
+                val db = MusicDatabase.getDatabase(getApplication())
+                val maxPos = db.playlistDao().getMaxPosition(playlistId) ?: 0
+                val playlistSongs = songIds.mapIndexed { index, id ->
+                    PlaylistSong(playlistId, id, position = maxPos + 1 + index)
+                }
                 db.playlistDao().addSongsToPlaylist(playlistSongs)
             }
             awaitLoadPlaylists()
             onComplete?.invoke()
+        }
+    }
+
+    fun reorderPlaylist(playlistId: Long, fromIndex: Int, toIndex: Int) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val db = MusicDatabase.getDatabase(getApplication())
+                val dao = db.playlistDao()
+                val mappings = dao.getPlaylistSongs(playlistId).toMutableList()
+                if (fromIndex in mappings.indices && toIndex in mappings.indices) {
+                    val moved = mappings.removeAt(fromIndex)
+                    mappings.add(toIndex, moved)
+                    
+                    val updatedMappings = mappings.mapIndexed { index, mapping ->
+                        mapping.copy(position = index)
+                    }
+                    dao.updatePlaylistSongs(updatedMappings)
+                }
+            }
+            awaitLoadPlaylists()
         }
     }
     fun removeSongsFromPlaylist(playlistId: Long, songIds: List<Long>, onComplete: (() -> Unit)? = null) {
@@ -287,7 +314,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun getSongsForPlaylistSync(playlistId: Long): List<Song> {
-        val songIds = playlistMappings.filter { it.playlistId == playlistId }.sortedBy { it.addedAt }.map { it.songId }
+        val songIds = playlistMappings.filter { it.playlistId == playlistId }
+            .sortedWith(compareBy({ it.position }, { it.addedAt }))
+            .map { it.songId }
         val songMap = allSongs.associateBy { it.id }
         return songIds.mapNotNull { songMap[it] }
     }

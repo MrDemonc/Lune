@@ -270,6 +270,8 @@
     <string name="sort_alphabetical">حروف الفبا</string>
     <string name="sort_artist">خواننده</string>
     <string name="sort_duration">تایم آهنگ</string>
+    <string name="sort_custom">ترتیب دستی</string>
+    <string name="recently_played">اخیراً پخش شده</string>
     <string name="sort_date_added">تازه اضافه‌شده‌ها</string>
     <string name="backup_warning_title">یه نکته مهم!</string>
     <string name="backup_warning_desc">این اپ فقط پلی‌لیست‌هایی رو میاره که قبلاً بکاپ گرفتی. حواست باشه خود آهنگا باید رو گوشی باشن تا پخش بشن.</string>

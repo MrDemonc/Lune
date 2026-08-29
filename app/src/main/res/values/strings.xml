@@ -274,6 +274,8 @@
     <string name="sort_alphabetical">Alphabetical</string>
     <string name="sort_artist">Artist</string>
     <string name="sort_duration">Duration</string>
+    <string name="sort_custom">Custom Order</string>
+    <string name="recently_played">Recently Played</string>
     <string name="sort_date_added">Date Added</string>
     <string name="backup_warning_title">Important Notice</string>
     <string name="backup_warning_desc">Lune only imports playlists pre-exported by this application. Ensure you have the corresponding music files stored on this device for proper playback.</string>

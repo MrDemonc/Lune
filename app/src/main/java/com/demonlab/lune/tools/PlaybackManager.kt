@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.ui.graphics.vector.ImageVector
 import android.media.audiofx.Visualizer
+import androidx.compose.runtime.mutableStateListOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -66,6 +67,8 @@ class PlaybackManager private constructor(private val context: Context) {
     var isQueueFinished by mutableStateOf(false) // true when last song ended naturally
     var isTransitioning by mutableStateOf(false) 
     
+    val recentlyPlayed = mutableStateListOf<Song>()
+
     var isEqEnabled by mutableStateOf(settings.isEqEnabled)
         private set
     var eqBandsCount: Short by mutableStateOf(0)
@@ -357,6 +360,15 @@ class PlaybackManager private constructor(private val context: Context) {
 
     fun play(song: Song, playlist: List<Song> = emptyList(), playlistId: Long? = null, playlistName: String? = null, category: String? = null, fromQueue: Boolean = false, shuffleMode: Boolean? = null, sections: List<QueuedSection> = emptyList()) {
         flushPendingStats()
+        currentSong?.let { old ->
+            if (old.id != song.id) {
+                if (recentlyPlayed.any { it.id == old.id }) {
+                    recentlyPlayed.removeAll { it.id == old.id }
+                }
+                recentlyPlayed.add(0, old)
+                if (recentlyPlayed.size > 50) recentlyPlayed.removeAt(recentlyPlayed.size - 1)
+            }
+        }
         currentSong = song
         isPlaying = true
         if (playlist.isNotEmpty() && (playlist != activePlaylist || activePlaylist.isEmpty() || playlistId != activePlaylistId)) {
@@ -700,6 +712,15 @@ class PlaybackManager private constructor(private val context: Context) {
 
     /** Called by MusicService after a crossfade completes — updates state without re-triggering playSong */
     fun updateCurrentSongState(song: Song) {
+        currentSong?.let { old ->
+            if (old.id != song.id) {
+                if (recentlyPlayed.any { it.id == old.id }) {
+                    recentlyPlayed.removeAll { it.id == old.id }
+                }
+                recentlyPlayed.add(0, old)
+                if (recentlyPlayed.size > 50) recentlyPlayed.removeAt(recentlyPlayed.size - 1)
+            }
+        }
         currentSong = song
         isPlaying = true
         startVisualizer()
@@ -851,6 +872,8 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun getSortedList(list: List<Song>, option: String = sortOption, ascending: Boolean = isSortAscending, caseSensitive: Boolean = false): List<Song> {
+        if (option == "CUSTOM") return list
+
         val comparator = when (option) {
             "ALPHABETICAL" -> if (caseSensitive) compareBy<Song> { it.title } else compareBy<Song> { it.title.lowercase(java.util.Locale.getDefault()) }
             "ARTIST" -> if (caseSensitive) compareBy<Song> { it.artist } else compareBy<Song> { it.artist.lowercase(java.util.Locale.getDefault()) }
@@ -1503,6 +1526,30 @@ class PlaybackManager private constructor(private val context: Context) {
             shufMutable.add(insertPosShuffle, newIdx)
             shuffledIndices = shufMutable
         }
+    }
+
+    fun reorderQueue(fromIndex: Int, toIndex: Int) {
+        if (isShuffle) {
+            val mutable = shuffledIndices.toMutableList()
+            if (fromIndex in mutable.indices && toIndex in mutable.indices) {
+                val moved = mutable.removeAt(fromIndex)
+                mutable.add(toIndex, moved)
+                shuffledIndices = mutable
+                
+                val currentIdx = activePlaylist.indexOfFirst { it.id == currentSong?.id }
+                if (currentIdx != -1) {
+                    currentShufflePosition = shuffledIndices.indexOf(currentIdx)
+                }
+            }
+        } else {
+            val mutable = activePlaylist.toMutableList()
+            if (fromIndex in mutable.indices && toIndex in mutable.indices) {
+                val moved = mutable.removeAt(fromIndex)
+                mutable.add(toIndex, moved)
+                activePlaylist = mutable
+            }
+        }
+        savePlaybackState()
     }
 }
 

@@ -38,6 +38,9 @@ import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.FastScrollbar
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.SongItem
+import com.demonlab.lune.ui.utils.rememberReorderableState
+import com.demonlab.lune.ui.utils.reorderable
+import com.demonlab.lune.ui.utils.reorderableItem
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistOptionsAndRename
 import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
@@ -73,6 +76,17 @@ fun PlaylistDetailView(
     val sortedSongs = remember(songs, sortOption, isSortAscending) {
         playbackManager.getSortedList(songs, sortOption, isSortAscending)
     }
+
+    val isCustomOrder = sortOption == "CUSTOM"
+    val reorderState = rememberReorderableState(listState) { from, to ->
+        if (isCustomOrder) {
+            val fromIdx = from - 1
+            val toIdx = to - 1
+            if (fromIdx in sortedSongs.indices && toIdx in sortedSongs.indices) {
+                viewModel.reorderPlaylist(playlist.id, fromIdx, toIdx)
+            }
+        }
+    }
     
     val headerAlpha by remember {
         derivedStateOf {
@@ -101,7 +115,7 @@ fun PlaylistDetailView(
 
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().then(if (isCustomOrder) Modifier.reorderable(reorderState) else Modifier),
                 contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
             ) {
                 item {
@@ -344,7 +358,8 @@ fun PlaylistDetailView(
                             isPlaying = isPlaying,
                             onClick = { onSongClick(song, sortedSongs) },
                             onOptionsClick = { onOptionsClick(song) },
-                            onFavoriteClick = onFavoriteClick
+                            onFavoriteClick = onFavoriteClick,
+                            modifier = Modifier.reorderableItem(reorderState, index + 1)
                         )
                     }
                 }
