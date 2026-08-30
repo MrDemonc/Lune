@@ -671,26 +671,6 @@ fun FullPlayer(
                             )
                         }
 
-                        if (song.isHiRes) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                color = Color(0xFF2E2400),
-                                shape = RoundedCornerShape(percent = 50),
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500)))
-                                )
-                            ) {
-                                Text(
-                                    text = "Hi-Res",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = Color(0xFFFFD700),
-                                    fontWeight = FontWeight.Black,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
                         if (settingsManager.isBitrateOnPlayer && song.format.isNotEmpty()) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
