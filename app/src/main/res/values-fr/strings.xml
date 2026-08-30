@@ -369,4 +369,6 @@
     <string name="seamless_looping_desc">Rejouer les pistes en boucle instantanément sans blanc ni pause</string>
     <string name="sort_custom">Ordre personnalisé</string>
     <string name="recently_played">Récemment écoutés</string>
+    <string name="header_wave_effect">Effet de vague dans les en-têtes</string>
+    <string name="header_wave_effect_desc">Afficher des vagues animées en arrière-plan des en-têtes</string>
 </resources>

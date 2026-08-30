@@ -40,7 +40,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
@@ -448,6 +459,190 @@ fun SongGridItem(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
+    }
+}
+
+@Composable
+fun Modifier.headerWaveBackground(
+    strokeWidth: androidx.compose.ui.unit.Dp = 1.2.dp,
+    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp
+): Modifier {
+    val infiniteTransition = rememberInfiniteTransition(label = "HeaderWaveTransition")
+
+    val phase1 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 7000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "WavePhase1"
+    )
+
+    val phase2 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 5200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "WavePhase2"
+    )
+
+    val primary = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    val secondary = MaterialTheme.colorScheme.secondary
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+
+    return this.drawWithCache {
+        val strokePx = strokeWidth.toPx()
+        val radiusPx = cornerRadius.toPx()
+
+        val clipPath = Path().apply {
+            addRoundRect(
+                RoundRect(
+                    rect = Rect(0f, 0f, size.width, size.height),
+                    cornerRadius = CornerRadius(radiusPx, radiusPx)
+                )
+            )
+        }
+
+        val wavePath1 = Path()
+        val wavePath2 = Path()
+
+        val baseH = 22.dp.toPx()
+        val amp1 = 7.dp.toPx()
+        val amp2 = 9.dp.toPx()
+
+        onDrawWithContent {
+            val w = size.width
+            val h = size.height
+
+            // Wave 1: Back wave layer with gentle undulating slopes
+            wavePath1.reset()
+            wavePath1.moveTo(0f, h)
+            val wl1 = w * 1.15f
+            var x = 0f
+            val step = 8f
+            while (x <= w) {
+                val y = h - (baseH + amp1 * kotlin.math.sin(2 * Math.PI * (x / wl1) + phase1).toFloat())
+                wavePath1.lineTo(x, y)
+                x += step
+            }
+            val endY1 = h - (baseH + amp1 * kotlin.math.sin(2 * Math.PI * (w / wl1) + phase1).toFloat())
+            wavePath1.lineTo(w, endY1)
+            wavePath1.lineTo(w, h)
+            wavePath1.close()
+
+            // Wave 2: Front wave layer overlapping Wave 1
+            wavePath2.reset()
+            wavePath2.moveTo(0f, h)
+            val wl2 = w * 0.88f
+            x = 0f
+            while (x <= w) {
+                val y = h - ((baseH * 0.88f) + amp2 * kotlin.math.sin(2 * Math.PI * (x / wl2) + phase2).toFloat())
+                wavePath2.lineTo(x, y)
+                x += step
+            }
+            val endY2 = h - ((baseH * 0.88f) + amp2 * kotlin.math.sin(2 * Math.PI * (w / wl2) + phase2).toFloat())
+            wavePath2.lineTo(w, endY2)
+            wavePath2.lineTo(w, h)
+            wavePath2.close()
+
+            val waveBrush1 = Brush.horizontalGradient(
+                colors = listOf(
+                    primary.copy(alpha = 0.30f),
+                    tertiary.copy(alpha = 0.40f),
+                    secondary.copy(alpha = 0.35f),
+                    primary.copy(alpha = 0.30f)
+                )
+            )
+
+            val waveBrush2 = Brush.horizontalGradient(
+                colors = listOf(
+                    primaryContainer.copy(alpha = 0.40f),
+                    primary.copy(alpha = 0.55f),
+                    tertiary.copy(alpha = 0.45f),
+                    primaryContainer.copy(alpha = 0.38f)
+                )
+            )
+
+            val borderBrush = Brush.horizontalGradient(
+                colors = listOf(
+                    primary.copy(alpha = 0.35f),
+                    tertiary.copy(alpha = 0.50f),
+                    primaryContainer.copy(alpha = 0.45f),
+                    primary.copy(alpha = 0.35f)
+                )
+            )
+
+            // 1. Draw waves in the BACKGROUND (behind the content, clipped to rounded corners)
+            clipPath(clipPath) {
+                drawPath(path = wavePath1, brush = waveBrush1)
+                drawPath(path = wavePath2, brush = waveBrush2)
+            }
+
+            // 2. Draw content ON TOP of the waves!
+            // Icons, text, options and buttons are drawn pristine, 100% uncovered
+            drawContent()
+
+            // 3. Sleek subtle border stroke framing the header
+            drawRoundRect(
+                brush = borderBrush,
+                topLeft = Offset(strokePx / 2f, strokePx / 2f),
+                size = Size(w - strokePx, h - strokePx),
+                cornerRadius = CornerRadius((radiusPx - strokePx / 2f).coerceAtLeast(0f)),
+                style = Stroke(width = strokePx)
+            )
+        }
+    }
+}
+
+@Composable
+fun Modifier.headerWaveBorder(
+    strokeWidth: androidx.compose.ui.unit.Dp = 1.2.dp,
+    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp
+): Modifier = headerWaveBackground(strokeWidth, cornerRadius)
+
+@Composable
+fun HeaderSurface(
+    modifier: Modifier = Modifier,
+    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp,
+    content: @Composable () -> Unit
+) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    var isWaveEnabled by remember { mutableStateOf(settingsManager.isHeaderWaveEffectEnabled) }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                isWaveEnabled = settingsManager.isHeaderWaveEffectEnabled
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(cornerRadius),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 4.dp,
+        shadowElevation = 0.dp
+    ) {
+        if (isWaveEnabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .headerWaveBackground(cornerRadius = cornerRadius)
+            ) {
+                content()
+            }
+        } else {
+            content()
+        }
     }
 }
 

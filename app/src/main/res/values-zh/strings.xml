@@ -366,4 +366,6 @@
     <string name="seamless_looping_desc">即时循环播放曲目，无缝隙和静音</string>
     <string name="sort_custom">自定义顺序</string>
     <string name="recently_played">最近播放</string>
+    <string name="header_wave_effect">标头波浪效果</string>
+    <string name="header_wave_effect_desc">在各分区标头背景中显示动态流体波浪</string>
 </resources>

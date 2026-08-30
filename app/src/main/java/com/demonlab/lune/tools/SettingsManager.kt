@@ -87,6 +87,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("section_customization_enabled", false)
         set(value) = prefs.edit().putBoolean("section_customization_enabled", value).apply()
 
+    var isHeaderWaveEffectEnabled: Boolean
+        get() = prefs.getBoolean("header_wave_effect_enabled", true)
+        set(value) = prefs.edit().putBoolean("header_wave_effect_enabled", value).apply()
+
     var hiddenSectionTabs: Set<String>
         get() = prefs.getStringSet("hidden_section_tabs", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("hidden_section_tabs", value).apply()

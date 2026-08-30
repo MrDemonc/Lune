@@ -367,4 +367,6 @@
     <string name="seamless_looping_desc">إعادة تشغيل المقاطع المكررة فوراً بدون فجوات أو صمت</string>
     <string name="sort_custom">ترتيب مخصص</string>
     <string name="recently_played">المشغلة مؤخراً</string>
+    <string name="header_wave_effect">تأثير الموجة في العناوين</string>
+    <string name="header_wave_effect_desc">عرض أمواج متحركة في خلفية عناوين الأقسام</string>
 </resources>

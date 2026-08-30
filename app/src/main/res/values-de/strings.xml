@@ -366,4 +366,6 @@
     <string name="seamless_looping_desc">Wiederhole Titel sofort ohne Pausen oder Stille</string>
     <string name="sort_custom">Benutzerdefinierte Reihenfolge</string>
     <string name="recently_played">Zuletzt gespielt</string>
+    <string name="header_wave_effect">Wellen-Effekt in Kopfzeilen</string>
+    <string name="header_wave_effect_desc">Animierten Welleneffekt im Hintergrund der Kopfzeilen anzeigen</string>
 </resources>

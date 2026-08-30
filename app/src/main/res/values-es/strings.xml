@@ -369,4 +369,6 @@
     <string name="seamless_looping_desc">Reproduce canciones en bucle al instante sin pausas ni silencio</string>
     <string name="sort_custom">Orden manual</string>
     <string name="recently_played">Reproducido recientemente</string>
+    <string name="header_wave_effect">Efecto ola en encabezados</string>
+    <string name="header_wave_effect_desc">Muestra un efecto de olas animadas en el fondo de los encabezados</string>
 </resources>

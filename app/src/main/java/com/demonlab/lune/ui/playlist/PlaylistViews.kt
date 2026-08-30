@@ -37,6 +37,8 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.sheets.CreatePlaylistDialog
 import com.demonlab.lune.ui.components.SongCoverImage
+import com.demonlab.lune.ui.components.HeaderSurface
+import com.demonlab.lune.ui.components.headerWaveBorder
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
@@ -152,14 +154,10 @@ fun PlaylistListScreen(
         contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
     ) {
         item {
-            Surface(
+            HeaderSurface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 4.dp,
-                shadowElevation = 0.dp
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Row(
                     modifier = Modifier

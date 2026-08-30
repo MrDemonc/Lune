@@ -369,4 +369,6 @@
     <string name="seamless_looping_desc">Мгновенный повтор трека без пауз и тишины</string>
     <string name="sort_custom">Свой порядок</string>
     <string name="recently_played">Недавно воспроизведенные</string>
+    <string name="header_wave_effect">Волновой эффект в заголовках</string>
+    <string name="header_wave_effect_desc">Отображать анимированные волны на фоне заголовков</string>
 </resources>

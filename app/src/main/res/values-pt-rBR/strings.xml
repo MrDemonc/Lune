@@ -369,4 +369,6 @@
     <string name="seamless_looping_desc">Repete faixas em loop instantaneamente sem pausas ou silêncio</string>
     <string name="sort_custom">Ordem personalizada</string>
     <string name="recently_played">Reproduzido recentemente</string>
+    <string name="header_wave_effect">Efeito de ondas nos cabeçalhos</string>
+    <string name="header_wave_effect_desc">Exibir ondas animadas no fundo dos cabeçalhos das seções</string>
 </resources>

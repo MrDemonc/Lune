@@ -71,6 +71,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import com.demonlab.lune.ui.components.SongGridItem
+import com.demonlab.lune.ui.components.HeaderSurface
+import com.demonlab.lune.ui.components.headerWaveBorder
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.text.style.TextAlign
@@ -1176,14 +1178,10 @@ fun MainScreen(
                             var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
                             
                             Column(modifier = Modifier.fillMaxSize()) {
-                                Surface(
+                                HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    tonalElevation = 4.dp,
-                                    shadowElevation = 0.dp
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = albumsList.size,
@@ -1221,14 +1219,10 @@ fun MainScreen(
                             var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
                             
                             Column(modifier = Modifier.fillMaxSize()) {
-                                Surface(
+                                HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    tonalElevation = 4.dp,
-                                    shadowElevation = 0.dp
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = artistsList.size,
@@ -1266,14 +1260,10 @@ fun MainScreen(
                             var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
                             
                             Column(modifier = Modifier.fillMaxSize()) {
-                                Surface(
+                                HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    tonalElevation = 4.dp,
-                                    shadowElevation = 0.dp
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = genresList.size,
@@ -1338,14 +1328,10 @@ fun MainScreen(
                         }
                         "FOLDER_GRID" -> {
                             Column(modifier = Modifier.fillMaxSize()) {
-                                Surface(
+                                HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    tonalElevation = 4.dp,
-                                    shadowElevation = 0.dp
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -1633,14 +1619,10 @@ fun MainScreen(
                                     ) {
                                         if (showSimplifiedHeader) {
                                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                                Surface(
+                                                HeaderSurface(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(vertical = 8.dp),
-                                                    shape = RoundedCornerShape(20.dp),
-                                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                    tonalElevation = 4.dp,
-                                                    shadowElevation = 0.dp
+                                                        .padding(vertical = 8.dp)
                                                 ) {
                                                     SongsListHeader(
                                                         songs = pageSortedSongs,
@@ -1708,14 +1690,10 @@ fun MainScreen(
                                     ) {
                                         if (showSimplifiedHeader) {
                                             item {
-                                                Surface(
+                                                HeaderSurface(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                                    shape = RoundedCornerShape(20.dp),
-                                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                    tonalElevation = 4.dp,
-                                                    shadowElevation = 0.dp
+                                                        .padding(horizontal = 16.dp, vertical = 8.dp)
                                                 ) {
                                                     SongsListHeader(
                                                         songs = pageSortedSongs,
