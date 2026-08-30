@@ -62,7 +62,7 @@ private fun RecentlyAddedRow(
             modifier = Modifier.padding(8.dp)
         ) {
             SongCoverImage(
-                coverUrl = song.coverUrl ?: song.albumArtUri,
+                coverUrl = song.coverUrl ?: song.uri,
                 contentDescription = null,
                 modifier = Modifier.size(44.dp),
                 shape = RoundedCornerShape(10.dp)

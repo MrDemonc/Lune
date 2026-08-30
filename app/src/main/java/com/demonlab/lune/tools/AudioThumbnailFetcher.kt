@@ -60,41 +60,7 @@ class AudioThumbnailFetcher(
             retriever.release()
         }
 
-        // 3. Final fallback to MediaStore album art
-        val mediaId = try {
-            ContentUris.parseId(uri)
-        } catch (_: Exception) { null } ?: return null
-
-        val projection = arrayOf(MediaStore.Audio.Media.ALBUM_ID)
-        val albumId = context.contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            MediaStore.Audio.Media._ID + " = ?",
-            arrayOf(mediaId.toString()),
-            null
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID))
-            } else null
-        } ?: return null
-
-        val albumArtUri = ContentUris.withAppendedId(
-            Uri.parse("content://media/external/audio/albumart"),
-            albumId
-        )
-
-        return runCatching {
-            context.contentResolver.openInputStream(albumArtUri)?.use { stream ->
-                val bitmap = BitmapFactory.decodeStream(stream)
-                if (bitmap != null) {
-                    DrawableResult(
-                        drawable = bitmap.toDrawable(context.resources),
-                        isSampled = true,
-                        dataSource = DataSource.DISK
-                    )
-                } else null
-            }
-        }.getOrNull()
+        return null
     }
 
     class Factory(private val context: Context) : Fetcher.Factory<Uri> {

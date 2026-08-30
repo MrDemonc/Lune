@@ -74,7 +74,7 @@ private fun RecommendationCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             SongCoverImage(
-                coverUrl = song.coverUrl ?: song.albumArtUri,
+                coverUrl = song.coverUrl ?: song.uri,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(0.dp)

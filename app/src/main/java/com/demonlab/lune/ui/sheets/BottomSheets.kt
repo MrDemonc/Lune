@@ -102,7 +102,7 @@ fun SongOptionsBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SongCoverImage(
-                    coverUrl = song.coverUrl ?: song.albumArtUri,
+                    coverUrl = song.coverUrl ?: song.uri,
                     contentDescription = null,
                     modifier = Modifier.size(56.dp),
                     shape = RoundedCornerShape(8.dp)
@@ -1251,7 +1251,7 @@ fun EditSongBottomSheet(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = selectedCoverUri ?: song.coverUrl ?: song.albumArtUri,
+                    model = selectedCoverUri ?: song.coverUrl ?: song.uri,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

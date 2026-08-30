@@ -108,7 +108,7 @@ fun SearchScreen(
                     id = artistName.hashCode().toLong(), 
                     name = artistName, 
                     artist = "", 
-                    albumArtUri = songs.first().albumArtUri, 
+                    albumArtUri = songs.first().uri, 
                     coverUrl = songs.first().coverUrl, 
                     songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
                 )
@@ -121,7 +121,7 @@ fun SearchScreen(
                     id = albumName.hashCode().toLong(),
                     name = albumName,
                     artist = songs.first().artist,
-                    albumArtUri = songs.first().albumArtUri,
+                    albumArtUri = songs.first().uri,
                     coverUrl = songs.first().coverUrl,
                     songs = songs.sortedBy { it.title }
                 )

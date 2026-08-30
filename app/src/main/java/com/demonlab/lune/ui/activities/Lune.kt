@@ -725,7 +725,7 @@ fun MainScreen(
                     id = albumName.hashCode().toLong(),
                     name = albumName,
                     artist = songs.first().artist,
-                    albumArtUri = songs.first().albumArtUri,
+                    albumArtUri = songs.first().uri,
                     coverUrl = songs.first().coverUrl,
                     songs = songs.sortedBy { it.title }
                 )
@@ -764,7 +764,7 @@ fun MainScreen(
                     id = genreName.hashCode().toLong(),
                     name = genreName,
                     artist = "",
-                    albumArtUri = songs.firstOrNull { it.albumArtUri != null }?.albumArtUri,
+                    albumArtUri = songs.firstOrNull { it.coverUrl != null }?.uri ?: songs.firstOrNull()?.uri,
                     coverUrl = songs.firstOrNull { it.coverUrl != null }?.coverUrl,
                     songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
                 )
@@ -1132,7 +1132,7 @@ fun MainScreen(
                                         id = artistName.hashCode().toLong(),
                                         name = artistName,
                                         artist = "",
-                                        albumArtUri = artistSongs.firstOrNull()?.albumArtUri,
+                                        albumArtUri = artistSongs.firstOrNull()?.uri,
                                         coverUrl = artistSongs.firstOrNull()?.coverUrl,
                                         songs = artistSongs.sortedBy { it.title }
                                     )
@@ -1153,7 +1153,7 @@ fun MainScreen(
                                         id = genreName.hashCode().toLong(),
                                         name = genreName,
                                         artist = "",
-                                        albumArtUri = genreSongs.firstOrNull()?.albumArtUri,
+                                        albumArtUri = genreSongs.firstOrNull()?.uri,
                                         coverUrl = genreSongs.firstOrNull()?.coverUrl,
                                         songs = genreSongs.sortedBy { it.title }
                                     )
@@ -2129,7 +2129,7 @@ fun MainScreen(
                             id = artistName.hashCode().toLong(),
                             name = artistName,
                             artist = "",
-                            albumArtUri = visibleSongs.firstOrNull { it.artist == artistName }?.albumArtUri,
+                            albumArtUri = visibleSongs.firstOrNull { it.artist == artistName }?.uri,
                             coverUrl = visibleSongs.firstOrNull { it.artist == artistName }?.coverUrl,
                             songs = visibleSongs.filter { it.artist == artistName }.sortedBy { it.title }
                         )

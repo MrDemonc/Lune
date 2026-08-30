@@ -350,7 +350,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val ids = withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getSongIdsForPlaylist(playlistId)
             }
-            val covers = allSongs.filter { it.id in ids.take(4) }.map { it.coverUrl ?: it.albumArtUri?.toString() }
+            val covers = allSongs.filter { it.id in ids.take(4) }.map { it.coverUrl ?: it.uri.toString() }
             callback(covers)
         }
     }
