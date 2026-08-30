@@ -44,6 +44,7 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Titre</string>
     <string name="edit_artist">Artiste</string>
+    <string name="edit_album">Album</string>
     <string name="edit_genre">Genre</string>
     <string name="save_changes">Enregistrer les modifications</string>
 
@@ -69,6 +70,8 @@
     <string name="tab_all">Tout</string>
     <string name="tab_favorites">Favoris</string>
     <string name="tab_songs">Chansons</string>
+    <string name="tab_artists">Artistes</string>
+    <string name="tab_albums_real">Albums</string>
     <string name="tab_albums">Artistes</string>
     <string name="tab_folders">Dossiers</string>
 
@@ -109,6 +112,7 @@
     <string name="lang_german">Allemand</string>
     <string name="lang_russian">Russe</string>
     <string name="lang_persian">Persan</string>
+    <string name="lang_arabic">Arabe</string>
 
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Activer l’EQ</string>
@@ -153,6 +157,7 @@
     <string name="section_customization">Personnaliser les sections</string>
     <string name="section_customization_desc">Choisissez les onglets de section à afficher</string>
     <string name="section_customization_albums">Artistes / Albums</string>
+    <string name="sections_title">Sections</string>
     <string name="customization">Personnalisation</string>
     <string name="customization_desc">Personnaliser le style, le titre et les couleurs de l’application</string>
     <string name="use_custom_colors">Utiliser des couleurs personnalisées</string>
@@ -204,6 +209,7 @@
     <string name="option_repeat_one">Répéter une fois</string>
     <string name="option_repeat_all">Tout répéter</string>
     <string name="option_repeat_off">Pas de répétition</string>
+    <string name="play_next">Lire ensuite</string>
     <string name="output_speaker">Téléphone</string>
     <string name="output_headphones">Écouteurs</string>
     <string name="no_song_playing">Aucune lecture</string>

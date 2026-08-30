@@ -44,6 +44,7 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Título</string>
     <string name="edit_artist">Artista</string>
+    <string name="edit_album">Álbum</string>
     <string name="edit_genre">Gênero</string>
     <string name="save_changes">Salvar Alterações</string>
  
@@ -69,6 +70,8 @@
     <string name="tab_all">Tudo</string>
     <string name="tab_favorites">Favoritos</string>
     <string name="tab_songs">Músicas</string>
+    <string name="tab_artists">Artistas</string>
+    <string name="tab_albums_real">Álbuns</string>
     <string name="tab_albums">Artistas</string>
     <string name="tab_folders">Pastas</string>
 
@@ -109,6 +112,7 @@
     <string name="lang_german">Alemão</string>
     <string name="lang_russian">Russo</string>
     <string name="lang_persian">Persa</string>
+    <string name="lang_arabic">Árabe</string>
 
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Ativar EQ</string>
@@ -153,6 +157,7 @@
     <string name="section_customization">Personalizar seções</string>
     <string name="section_customization_desc">Escolha quais abas de seção exibir</string>
     <string name="section_customization_albums">Artistas / Álbuns</string>
+    <string name="sections_title">Seções</string>
     <string name="customization">Personalização</string>
     <string name="customization_desc">Personalize o estilo do app, título e cores</string>
     <string name="use_custom_colors">Usar cores personalizadas</string>
@@ -203,6 +208,7 @@
     <string name="option_repeat_one">Repetir Uma</string> 
     <string name="option_repeat_all">Repetir Todas</string> 
     <string name="option_repeat_off">Desativado</string> 
+    <string name="play_next">Tocar a seguir</string>
     <string name="output_speaker">Alto-falante</string> 
     <string name="output_headphones">Fones de ouvido</string> 
     <string name="no_song_playing">Sem reprodução</string> 

@@ -111,6 +111,7 @@
     <string name="lang_german">German</string>
     <string name="lang_russian">Russian</string>
     <string name="lang_persian">فارسی</string>
+    <string name="lang_arabic">عربی</string>
 
     <string name="ok">حله</string>
     <string name="cd_activate_eq">روشن کردن اکولایزر</string>
@@ -155,6 +156,7 @@
     <string name="section_customization">شخصی‌سازی تب‌ها</string>
     <string name="section_customization_desc">انتخاب کن کدوم تب‌ها رو بهت نشون بده</string>
     <string name="section_customization_albums">خواننده‌ها / آلبوم‌ها</string>
+    <string name="sections_title">بخش‌ها</string>
     <string name="customization">کاستومایز و شخصی‌سازی</string>
     <string name="customization_desc">رنگ و استایل اپ رو به سلیقه خودت دربیار</string>
     <string name="use_custom_colors">استفاده از رنگ‌های دلخواه</string>
@@ -206,6 +208,7 @@
     <string name="option_repeat_one">تکرار همین آهنگ</string>
     <string name="option_repeat_all">تکرار همه</string>
     <string name="option_repeat_off">خاموش</string>
+    <string name="play_next">پخش بعدی</string>
     <string name="output_speaker">اسپیکر گوشی</string>
     <string name="output_headphones">هدفون</string>
     <string name="no_song_playing">هیچی پخش نمی‌شه</string>

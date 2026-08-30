@@ -44,6 +44,7 @@
     <!-- Metadata Editor -->
     <string name="edit_title">Título</string>
     <string name="edit_artist">Artista</string>
+    <string name="edit_album">Álbum</string>
     <string name="edit_genre">Género</string>
     <string name="save_changes">Guardar Cambios</string>
 
@@ -69,6 +70,8 @@
     <string name="tab_all">Todo</string>
     <string name="tab_favorites">Favoritos</string>
     <string name="tab_songs">Canciones</string>
+    <string name="tab_artists">Artistas</string>
+    <string name="tab_albums_real">Álbumes</string>
     <string name="tab_albums">Artistas</string>
     <string name="tab_folders">Carpetas</string>
 
@@ -109,6 +112,7 @@
     <string name="lang_german">Alemán</string>
     <string name="lang_russian">Ruso</string>
     <string name="lang_persian">Persa</string>
+    <string name="lang_arabic">Árabe</string>
 
     <string name="ok">Aceptar</string>
     <string name="cd_activate_eq">Activar EQ</string>

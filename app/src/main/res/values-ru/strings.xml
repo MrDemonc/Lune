@@ -112,6 +112,7 @@
     <string name="lang_german">German</string>
     <string name="lang_russian">Русский</string>
     <string name="lang_persian">Персидский</string>
+    <string name="lang_arabic">Арабский</string>
 
     <string name="ok">ОК</string>
     <string name="cd_activate_eq">Включить эквалайзер</string>
@@ -156,6 +157,7 @@
     <string name="section_customization">Настроить разделы</string>
     <string name="section_customization_desc">Выберите какие вкладки разделов показывать</string>
     <string name="section_customization_albums">Исполнители / Альбомы</string>
+    <string name="sections_title">Разделы</string>
     <string name="customization">Настройка внешнего вида</string>
     <string name="customization_desc">Настройте стиль приложения, заголовок и цвета</string>
     <string name="use_custom_colors">Использовать пользовательские цвета</string>
@@ -207,6 +209,7 @@
     <string name="option_repeat_one">Повторить одну</string>
     <string name="option_repeat_all">Повторить все</string>
     <string name="option_repeat_off">Выключить</string>
+    <string name="play_next">Играть следующим</string>
     <string name="output_speaker">Динамик</string>
     <string name="output_headphones">Наушники</string>
     <string name="no_song_playing">Нет воспроизведения</string>

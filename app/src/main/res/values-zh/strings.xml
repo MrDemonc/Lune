@@ -44,6 +44,7 @@
     <!-- Metadata Editor -->
     <string name="edit_title">标题</string>
     <string name="edit_artist">艺术家</string>
+    <string name="edit_album">专辑</string>
     <string name="edit_genre">流派</string>
     <string name="save_changes">保存更改</string>
 
@@ -70,6 +71,8 @@
     <string name="tab_favorites">收藏</string>
     <string name="tab_folders">文件夹</string>
     <string name="tab_songs">歌曲</string>
+    <string name="tab_artists">艺术家</string>
+    <string name="tab_albums_real">专辑</string>
     <string name="tab_albums">艺术家</string>
 
     <!-- Player Options -->
@@ -109,6 +112,7 @@
     <string name="lang_german">德语</string>
     <string name="lang_russian">俄语</string>
     <string name="lang_persian">波斯语</string>
+    <string name="lang_arabic">阿拉伯语</string>
 
     <string name="ok">确定</string>
     <string name="cd_activate_eq">启用均衡器</string>
@@ -153,6 +157,7 @@
     <string name="section_customization">自定义分区</string>
     <string name="section_customization_desc">选择要显示的分区标签</string>
     <string name="section_customization_albums">歌手 / 专辑</string>
+    <string name="sections_title">分区</string>
     <string name="customization">个性化</string>
     <string name="customization_desc">个性化应用样式、标题和颜色</string>
     <string name="use_custom_colors">使用自定义颜色</string>
@@ -204,6 +209,7 @@
     <string name="option_repeat_one">单曲循环</string>
     <string name="option_repeat_all">全部循环</string>
     <string name="option_repeat_off">关闭</string>
+    <string name="play_next">下一首播放</string>
     <string name="output_speaker">扬声器</string>
     <string name="output_headphones">耳机</string>
     <string name="no_song_playing">无播放</string>
