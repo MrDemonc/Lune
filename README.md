@@ -144,6 +144,12 @@ keyPassword=password
    ```
    The output APK will be available at: `app/build/outputs/apk/release/Lune-release.apk`
 
+Read: [Technical Reference](TECHNICAL_REFERENCE.md)
+
+### 👤 CODE OF CONDUCT
+
+Read: [CODE OF CONDUCT](CODE_OF_CONDUCT.md)
+
 ## Other donation option
 
 ### ☕ Monero (XMR)
