@@ -71,6 +71,10 @@ class SettingsManager(context: Context) {
         prefs.edit().putString("sort_option_$key", option).apply()
     }
 
+    var tracksViewStyle: Int
+        get() = prefs.getInt("tracks_view_style", 0) // 0 = List, 1 = Grid
+        set(value) = prefs.edit().putInt("tracks_view_style", value).apply()
+
     var albumViewStyle: Int
         get() = prefs.getInt("album_view_style", 0) // 0 = Grid, 1 = Carousel
         set(value) = prefs.edit().putInt("album_view_style", value).apply()

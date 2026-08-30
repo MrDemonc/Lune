@@ -65,9 +65,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import com.demonlab.lune.ui.components.SongGridItem
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.text.style.TextAlign
@@ -614,6 +617,7 @@ fun MainScreen(
     var selectedFolderItem by remember { mutableStateOf<String?>(null) }
     var isAlbumView by remember { mutableStateOf(settingsManager.albumBrowseMode) }
     var folderHierarchyMode by remember { mutableStateOf(settingsManager.folderHierarchyMode) }
+    var tracksViewStyle by remember { mutableIntStateOf(settingsManager.tracksViewStyle) }
 
     val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
         rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
@@ -1615,84 +1619,172 @@ fun MainScreen(
                                 var localShuffleState by remember(pageContextId) { mutableStateOf(settingsManager.getPlaylistShuffle(pageContextId)) }
                                 val isShuffleActive = if (folder == "ALL" || isCurrentListPlaying) playbackManager.isShuffle else localShuffleState
                                 val showSimplifiedHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
+                                val isGridMode = folder == "ALL" && tracksViewStyle == 1
+                                val pageMainGridState = remember(folder) { LazyGridState() }
 
-                                LazyColumn(
-                                    state = pageMainListState,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(bottom = bottomPadding)
-                                ) {
-                                    if (showSimplifiedHeader) {
-                                        item {
-                                            Surface(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                                shape = RoundedCornerShape(20.dp),
-                                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                tonalElevation = 4.dp,
-                                                shadowElevation = 0.dp
-                                            ) {
-                                                SongsListHeader(
-                                                    songs = pageSortedSongs,
-                                                    folderName = folder,
-                                                    isShuffleActive = isShuffleActive,
-                                                    isCurrentListPlaying = isCurrentListPlaying,
-                                                    isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
-                                                    onSortClick = { showSortSheet = true },
-                                                    onPlayClick = {
-                                                        if (settingsManager.isHapticVibrationEnabled) {
-                                                            vibrator.triggerLightVibration()
-                                                        }
-                                                        if (isCurrentListPlaying) {
-                                                            if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                                            onIsPlayingChange(!isPlaying)
-                                                        } else if (pageSortedSongs.isNotEmpty()) {
-                                                            val songToPlay = if (isShuffleActive) pageSortedSongs.random() else pageSortedSongs[0]
-                                                            onCurrentSongChange(songToPlay)
-                                                            playbackManager.play(songToPlay, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
-                                                            onIsPlayingChange(true)
-                                                        }
-                                                    },
-                                                    onShuffleClick = {
-                                                        if (isCurrentListPlaying || folder == "ALL") {
+                                if (isGridMode) {
+                                    LazyVerticalGrid(
+                                        state = pageMainGridState,
+                                        columns = GridCells.Fixed(2),
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomPadding + 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        if (showSimplifiedHeader) {
+                                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 8.dp),
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                    tonalElevation = 4.dp,
+                                                    shadowElevation = 0.dp
+                                                ) {
+                                                    SongsListHeader(
+                                                        songs = pageSortedSongs,
+                                                        folderName = folder,
+                                                        isShuffleActive = isShuffleActive,
+                                                        isCurrentListPlaying = isCurrentListPlaying,
+                                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                                        onSortClick = { showSortSheet = true },
+                                                        onPlayClick = {
+                                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                                vibrator.triggerLightVibration()
+                                                            }
+                                                            if (isCurrentListPlaying) {
+                                                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                                                                onIsPlayingChange(!isPlaying)
+                                                            } else if (pageSortedSongs.isNotEmpty()) {
+                                                                val songToPlay = if (isShuffleActive) pageSortedSongs.random() else pageSortedSongs[0]
+                                                                onCurrentSongChange(songToPlay)
+                                                                playbackManager.play(songToPlay, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                                onIsPlayingChange(true)
+                                                            }
+                                                        },
+                                                        onShuffleClick = {
                                                             playbackManager.toggleShuffle()
                                                             localShuffleState = playbackManager.isShuffle
-                                                        } else {
-                                                            localShuffleState = !localShuffleState
-                                                            settingsManager.setPlaylistShuffle(pageContextId, localShuffleState)
+                                                        },
+                                                        isGridLayout = true,
+                                                        onToggleLayout = {
+                                                            tracksViewStyle = 0
+                                                            settingsManager.tracksViewStyle = 0
                                                         }
-                                                    }
-                                                )
+                                                    )
+                                                }
                                             }
                                         }
+                                        itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
+                                            SongGridItem(
+                                                song = song,
+                                                currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
+                                                isPlaying = isPlaying,
+                                                onClick = {
+                                                    if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
+                                                        onCurrentSongChange(song)
+                                                        playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                        onIsPlayingChange(true)
+                                                    }
+                                                },
+                                                onOptionsClick = {
+                                                    optionsSong = song
+                                                    showOptionsSheet = true
+                                                },
+                                                onFavoriteClick = { s ->
+                                                    playbackManager.toggleFavorite(s)?.let { updated ->
+                                                        musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
-                                    itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
-                                        val isFirst = index == 0
-                                        val isLast = index == pageSortedSongs.lastIndex
+                                } else {
+                                    LazyColumn(
+                                        state = pageMainListState,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(bottom = bottomPadding)
+                                    ) {
+                                        if (showSimplifiedHeader) {
+                                            item {
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                    tonalElevation = 4.dp,
+                                                    shadowElevation = 0.dp
+                                                ) {
+                                                    SongsListHeader(
+                                                        songs = pageSortedSongs,
+                                                        folderName = folder,
+                                                        isShuffleActive = isShuffleActive,
+                                                        isCurrentListPlaying = isCurrentListPlaying,
+                                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                                        onSortClick = { showSortSheet = true },
+                                                        onPlayClick = {
+                                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                                vibrator.triggerLightVibration()
+                                                            }
+                                                            if (isCurrentListPlaying) {
+                                                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                                                                onIsPlayingChange(!isPlaying)
+                                                            } else if (pageSortedSongs.isNotEmpty()) {
+                                                                val songToPlay = if (isShuffleActive) pageSortedSongs.random() else pageSortedSongs[0]
+                                                                onCurrentSongChange(songToPlay)
+                                                                playbackManager.play(songToPlay, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                                onIsPlayingChange(true)
+                                                            }
+                                                        },
+                                                        onShuffleClick = {
+                                                            if (isCurrentListPlaying || folder == "ALL") {
+                                                                playbackManager.toggleShuffle()
+                                                                localShuffleState = playbackManager.isShuffle
+                                                            } else {
+                                                                localShuffleState = !localShuffleState
+                                                                settingsManager.setPlaylistShuffle(pageContextId, localShuffleState)
+                                                            }
+                                                        },
+                                                        isGridLayout = false,
+                                                        onToggleLayout = if (folder == "ALL") {
+                                                            {
+                                                                tracksViewStyle = 1
+                                                                settingsManager.tracksViewStyle = 1
+                                                            }
+                                                        } else null
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
+                                            val isFirst = index == 0
+                                            val isLast = index == pageSortedSongs.lastIndex
                                             SongItem(
                                                 isFirst = isFirst,
                                                 isLast = isLast,
                                                 song = song,
                                                 currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
                                                 isPlaying = isPlaying,
-                                            onClick = {
-                                                if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
-                                                    onCurrentSongChange(song)
-                                                    playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
-                                                    onIsPlayingChange(true)
+                                                onClick = {
+                                                    if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
+                                                        onCurrentSongChange(song)
+                                                        playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                        onIsPlayingChange(true)
+                                                    }
+                                                },
+                                                onOptionsClick = {
+                                                    optionsSong = song
+                                                    showOptionsSheet = true
+                                                },
+                                                onFavoriteClick = { s ->
+                                                    playbackManager.toggleFavorite(s)?.let { updated ->
+                                                        musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
+                                                    }
                                                 }
-                                            },
-                                            onOptionsClick = {
-                                                optionsSong = song
-                                                showOptionsSheet = true
-                                            },
-                                            onFavoriteClick = { s ->
-                                                playbackManager.toggleFavorite(s)?.let { updated ->
-                                                    musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
-                                                }
-                                            }
-                                        )
-                                        
+                                            )
+                                        }
                                     }
                                 }
 
@@ -1706,20 +1798,26 @@ fun MainScreen(
 
                                 LaunchedEffect(scrollToCurrentTrigger.value) {
                                     if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                                        pageMainListState.animateScrollToItem(targetIndex)
+                                        if (isGridMode) {
+                                            pageMainGridState.animateScrollToItem(targetIndex)
+                                        } else {
+                                            pageMainListState.animateScrollToItem(targetIndex)
+                                        }
                                         scrollToCurrentTrigger.value = 0
                                     }
                                 }
 
-                                FastScrollbar(
-                                    listState = pageMainListState,
-                                    items = pageSortedSongs,
-                                    headerItemCount = if (showSimplifiedHeader) 1 else 0,
-                                    itemKeyOrLetter = { if (activeSortOption == "ALPHABETICAL") it.title else "" },
-                                    modifier = Modifier
-                                        .align(Alignment.CenterEnd)
-                                        .padding(bottom = bottomPadding)
-                                )
+                                if (!isGridMode) {
+                                    FastScrollbar(
+                                        listState = pageMainListState,
+                                        items = pageSortedSongs,
+                                        headerItemCount = if (showSimplifiedHeader) 1 else 0,
+                                        itemKeyOrLetter = { if (activeSortOption == "ALPHABETICAL") it.title else "" },
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .padding(bottom = bottomPadding)
+                                    )
+                                }
                             }
                         }
                     }
