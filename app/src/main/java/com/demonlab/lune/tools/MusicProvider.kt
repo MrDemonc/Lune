@@ -233,12 +233,9 @@ class MusicProvider(private val context: Context) {
 
                 val contentUri: Uri = ContentUris.withAppendedId(collection, id)
 
-                val albumArtUri = try {
-                    ContentUris.withAppendedId(
-                        "content://media/external/audio/albumart".toUri(),
-                        albumId
-                    )
-                } catch (_: Exception) { null }
+                // Use the song's specific contentUri as albumArtUri so AudioThumbnailFetcher extracts
+                // the per-song embedded picture rather than leaking shared MediaStore albumart (Fixes Issue #106)
+                val albumArtUri = contentUri
 
                 songList.add(
                     Song(

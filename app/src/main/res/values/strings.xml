@@ -365,4 +365,6 @@
     <string name="show_hero_section_desc">Display the greeting and statistics card in the Resume screen</string>
     <string name="seamless_looping">Seamless Looping</string>
     <string name="seamless_looping_desc">Replay looped tracks instantly without gaps or silence</string>
+    <string name="sort_custom">Custom Order</string>
+    <string name="recently_played">Recently Played</string>
 </resources>

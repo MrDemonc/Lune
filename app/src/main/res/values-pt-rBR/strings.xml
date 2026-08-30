@@ -361,4 +361,6 @@
     <string name="show_hero_section_desc">Exibir o cartão de boas-vindas e estatísticas na tela inicial</string>
     <string name="seamless_looping">Repetição contínua</string>
     <string name="seamless_looping_desc">Repete faixas em loop instantaneamente sem pausas ou silêncio</string>
+    <string name="sort_custom">Ordem personalizada</string>
+    <string name="recently_played">Reproduzido recentemente</string>
 </resources>

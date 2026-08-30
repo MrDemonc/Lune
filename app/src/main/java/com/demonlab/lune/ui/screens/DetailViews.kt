@@ -44,6 +44,9 @@ import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
 import com.demonlab.lune.ui.sheets.AddSongsToPlaylistDialog
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.utils.triggerLightVibration
+import com.demonlab.lune.ui.utils.rememberReorderableState
+import com.demonlab.lune.ui.utils.reorderable
+import com.demonlab.lune.ui.utils.reorderableItem
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
 @Composable
@@ -73,6 +76,33 @@ fun PlaylistDetailView(
     val sortedSongs = remember(songs, sortOption, isSortAscending) {
         playbackManager.getSortedList(songs, sortOption, isSortAscending)
     }
+
+    val isCustomOrder = sortOption == "CUSTOM"
+    var currentPlaylistSongs by remember(sortedSongs) { mutableStateOf(sortedSongs) }
+    LaunchedEffect(sortedSongs) {
+        currentPlaylistSongs = sortedSongs
+    }
+
+    val reorderState = rememberReorderableState(
+        listState = listState,
+        canDragOver = { it >= 1 },
+        onDragEnd = {
+            if (isCustomOrder) {
+                viewModel.savePlaylistOrder(playlist.id, currentPlaylistSongs.map { it.id })
+            }
+        }
+    ) { from, to ->
+        if (isCustomOrder) {
+            val fromIdx = from - 1
+            val toIdx = to - 1
+            if (fromIdx in currentPlaylistSongs.indices && toIdx in currentPlaylistSongs.indices) {
+                val mutable = currentPlaylistSongs.toMutableList()
+                val moved = mutable.removeAt(fromIdx)
+                mutable.add(toIdx, moved)
+                currentPlaylistSongs = mutable
+            }
+        }
+    }
     
     val headerAlpha by remember {
         derivedStateOf {
@@ -101,7 +131,9 @@ fun PlaylistDetailView(
 
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (isCustomOrder) Modifier.reorderable(reorderState) else Modifier),
                 contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
             ) {
                 item {
@@ -333,18 +365,19 @@ fun PlaylistDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(sortedSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(currentPlaylistSongs, key = { _, it -> it.id }) { index, song ->
                         val isFirst = index == 0
-                        val isLast = index == sortedSongs.lastIndex
+                        val isLast = index == currentPlaylistSongs.lastIndex
                         SongItem(
                             isFirst = isFirst,
                             isLast = isLast,
                             song = song, 
                             currentlyPlaying = song.id == currentlyPlayingId, 
                             isPlaying = isPlaying,
-                            onClick = { onSongClick(song, sortedSongs) },
+                            onClick = { onSongClick(song, currentPlaylistSongs) },
                             onOptionsClick = { onOptionsClick(song) },
-                            onFavoriteClick = onFavoriteClick
+                            onFavoriteClick = onFavoriteClick,
+                            modifier = if (isCustomOrder) Modifier.reorderableItem(reorderState, index + 1) else Modifier
                         )
                     }
                 }

@@ -361,4 +361,6 @@
     <string name="show_hero_section_desc">Afficher la carte de bienvenue et de statistiques sur l\'écran d\'accueil</string>
     <string name="seamless_looping">Boucle continue</string>
     <string name="seamless_looping_desc">Rejouer les pistes en boucle instantanément sans blanc ni pause</string>
+    <string name="sort_custom">Ordre personnalisé</string>
+    <string name="recently_played">Récemment écoutés</string>
 </resources>

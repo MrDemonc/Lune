@@ -364,4 +364,6 @@
     <string name="show_hero_section_desc">Отображать карточку приветствия и статистики на главном экране</string>
     <string name="seamless_looping">Бесшовный повтор</string>
     <string name="seamless_looping_desc">Мгновенный повтор трека без пауз и тишины</string>
+    <string name="sort_custom">Свой порядок</string>
+    <string name="recently_played">Недавно воспроизведенные</string>
 </resources>

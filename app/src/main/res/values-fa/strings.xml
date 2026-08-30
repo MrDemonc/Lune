@@ -360,4 +360,6 @@
     <string name="show_hero_section_desc">وقتی وارد اپ میشی آمار گوش دادنات رو بهت نشون بده</string>
     <string name="seamless_looping">تکرار بدون وقفه</string>
     <string name="seamless_looping_desc">پخش مجدد آهنگ‌های تکرار شونده بدون مکث یا سکوت</string>
+    <string name="sort_custom">ترتیب دستی</string>
+    <string name="recently_played">اخیراً پخش شده</string>
 </resources>

@@ -2268,6 +2268,7 @@ fun MainScreen(
             sortOption = activeSortOption,
             isSortAscending = activeIsSortAscending,
             isCaseSensitive = activeIsCaseSensitive,
+            allowCustomOrder = selectedPlaylist != null,
             onSortSettingsChange = { option, ascending, caseSensitive ->
                 activeSortOption = option
                 activeIsSortAscending = ascending

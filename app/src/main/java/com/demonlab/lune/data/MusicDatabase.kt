@@ -35,7 +35,8 @@ data class Playlist(
 data class PlaylistSong(
     val playlistId: Long,
     val songId: Long,
-    val addedAt: Long = System.currentTimeMillis()
+    val addedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "0") val position: Int = 0
 )
 
 @Dao
@@ -90,8 +91,17 @@ interface PlaylistDao {
     @Query("DELETE FROM playlist_songs WHERE playlistId = :playlistId AND songId IN (:songIds)")
     suspend fun removeSongsFromPlaylist(playlistId: Long, songIds: List<Long>)
 
-    @Query("SELECT songId FROM playlist_songs WHERE playlistId = :playlistId ORDER BY addedAt ASC")
+    @Query("SELECT songId FROM playlist_songs WHERE playlistId = :playlistId ORDER BY position ASC, addedAt ASC")
     suspend fun getSongIdsForPlaylist(playlistId: Long): List<Long>
+
+    @Query("SELECT * FROM playlist_songs WHERE playlistId = :playlistId ORDER BY position ASC, addedAt ASC")
+    suspend fun getPlaylistSongs(playlistId: Long): List<PlaylistSong>
+
+    @Update
+    suspend fun updatePlaylistSongs(playlistSongs: List<PlaylistSong>)
+
+    @Query("SELECT MAX(position) FROM playlist_songs WHERE playlistId = :playlistId")
+    suspend fun getMaxPosition(playlistId: Long): Int?
 
     @Query("SELECT COUNT(*) FROM playlist_songs WHERE songId = :songId")
     suspend fun getPlaylistCountForSong(songId: Long): Int
@@ -123,9 +133,10 @@ interface PlaybackStatsDao {
 
 @Database(
     entities = [SongOverride::class, Playlist::class, PlaylistSong::class, PlaybackStats::class],
-    version = 6,
+    version = 7,
     autoMigrations = [
-        AutoMigration(from = 5, to = 6)
+        AutoMigration(from = 5, to = 6),
+        AutoMigration(from = 6, to = 7)
     ],
     exportSchema = true
 )

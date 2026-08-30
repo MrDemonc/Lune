@@ -363,4 +363,6 @@
     <string name="show_hero_section_desc">Muestra la tarjeta de saludo y estadísticas en la pantalla Inicio</string>
     <string name="seamless_looping">Bucle continuo</string>
     <string name="seamless_looping_desc">Reproduce canciones en bucle al instante sin pausas ni silencio</string>
+    <string name="sort_custom">Orden manual</string>
+    <string name="recently_played">Reproducido recientemente</string>
 </resources>

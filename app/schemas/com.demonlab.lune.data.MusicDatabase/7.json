@@ -1,0 +1,185 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "06a2f574e1fd3b013cb602f1c43e28c9",
+    "entities": [
+      {
+        "tableName": "song_overrides",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`songId` INTEGER NOT NULL, `title` TEXT, `artist` TEXT, `album` TEXT, `genre` TEXT, `coverUri` TEXT, `isFavorite` INTEGER NOT NULL, PRIMARY KEY(`songId`))",
+        "fields": [
+          {
+            "fieldPath": "songId",
+            "columnName": "songId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "artist",
+            "columnName": "artist",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "genre",
+            "columnName": "genre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coverUri",
+            "columnName": "coverUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "isFavorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "songId"
+          ]
+        }
+      },
+      {
+        "tableName": "playlists",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "playlist_songs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`playlistId` INTEGER NOT NULL, `songId` INTEGER NOT NULL, `addedAt` INTEGER NOT NULL, `position` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`playlistId`, `songId`), FOREIGN KEY(`playlistId`) REFERENCES `playlists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "playlistId",
+            "columnName": "playlistId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "songId",
+            "columnName": "songId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "playlistId",
+            "songId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "playlists",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "playlistId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "playback_stats",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `type` TEXT NOT NULL, `playCount` INTEGER NOT NULL, `totalTimeMs` INTEGER NOT NULL, `lastPlayed` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playCount",
+            "columnName": "playCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalTimeMs",
+            "columnName": "totalTimeMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPlayed",
+            "columnName": "lastPlayed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '06a2f574e1fd3b013cb602f1c43e28c9')"
+    ]
+  }
+}

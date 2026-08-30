@@ -61,6 +61,10 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.activities.EqualizerActivity
+import com.demonlab.lune.ui.utils.rememberReorderableState
+import com.demonlab.lune.ui.utils.reorderable
+import com.demonlab.lune.ui.utils.reorderableItem
+import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -258,6 +262,7 @@ fun SortBottomSheet(
     sortOption: String,
     isSortAscending: Boolean,
     isCaseSensitive: Boolean,
+    allowCustomOrder: Boolean = false,
     onSortSettingsChange: (String, Boolean, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -379,13 +384,16 @@ fun SortBottomSheet(
             }
 
             // Options cards
-            val options = listOf(
-                "TRACK_NUMBER" to R.string.sort_track_number,
-                "ALPHABETICAL" to R.string.sort_alphabetical,
-                "ARTIST" to R.string.sort_artist,
-                "DURATION" to R.string.sort_duration,
-                "DATE_ADDED" to R.string.sort_date_added
-            )
+            val options = buildList {
+                if (allowCustomOrder) {
+                    add("CUSTOM" to R.string.sort_custom)
+                }
+                add("TRACK_NUMBER" to R.string.sort_track_number)
+                add("ALPHABETICAL" to R.string.sort_alphabetical)
+                add("ARTIST" to R.string.sort_artist)
+                add("DURATION" to R.string.sort_duration)
+                add("DATE_ADDED" to R.string.sort_date_added)
+            }
             
             options.forEachIndexed { index, (option, stringResId) ->
                 val isSelected = sortOption == option
@@ -625,6 +633,42 @@ fun QueueBottomSheet(
     var showAddToPlaylist by remember { mutableStateOf(false) }
     var showEditSheet by remember { mutableStateOf(false) }
 
+    val fullQueue = playbackManager.getCurrentQueue()
+    val currentSong = playbackManager.currentSong
+    val currentIdxInFull = fullQueue.indexOfFirst { it.id == currentSong?.id }
+    
+    // Up Next is the part of the queue after the current song
+    val upNextSongs = remember(fullQueue, currentIdxInFull) {
+        if (currentIdxInFull != -1 && currentIdxInFull < fullQueue.size - 1) {
+            fullQueue.subList(currentIdxInFull + 1, fullQueue.size)
+        } else {
+            emptyList()
+        }
+    }
+
+    var isRecentlyPlayedExpanded by remember { mutableStateOf(false) }
+
+    val historyHeaderCount = if (playbackManager.recentlyPlayed.isNotEmpty()) 1 else 0
+    val historyItemsCount = if (isRecentlyPlayedExpanded && playbackManager.recentlyPlayed.isNotEmpty()) playbackManager.recentlyPlayed.size else 0
+    val historySpacerCount = if (isRecentlyPlayedExpanded && playbackManager.recentlyPlayed.isNotEmpty()) 1 else 0
+    val nowPlayingItemCount = if (currentSong != null) 1 else 0
+    val upNextHeaderCount = 1
+
+    val upNextOffset = historyHeaderCount + historyItemsCount + historySpacerCount + nowPlayingItemCount + upNextHeaderCount
+
+    val listState = rememberLazyListState()
+    val reorderState = rememberReorderableState(
+        listState = listState,
+        canDragOver = { it >= upNextOffset && it < upNextOffset + upNextSongs.size },
+        onMove = { from, to ->
+            val fromIdx = from - upNextOffset
+            val toIdx = to - upNextOffset
+            if (fromIdx in upNextSongs.indices && toIdx in upNextSongs.indices) {
+                playbackManager.reorderQueue(fromIdx + currentIdxInFull + 1, toIdx + currentIdxInFull + 1)
+            }
+        }
+    )
+
     if (showOptionsSheet && optionsSong != null) {
         SongOptionsBottomSheet(
             song = optionsSong!!,
@@ -700,52 +744,105 @@ fun QueueBottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        val currentSong = playbackManager.currentSong
         val activePlaylist = playbackManager.activePlaylist
         
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f)
+                .fillMaxHeight(0.8f)
         ) {
             Text(
                 stringResource(R.string.player_queue),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)
             )
-            
-            val fullQueue = playbackManager.getCurrentQueue()
-            val currentIdx = fullQueue.indexOfFirst { it.id == currentSong?.id }
-            val queueSections = playbackManager.queueSections
-            val displayItems = remember(queueSections, fullQueue, currentIdx) {
-                if (queueSections.isNotEmpty() && currentIdx != -1) {
-                    buildList<QueueItem> {
-                        for (section in queueSections) {
-                            val sectionStart = maxOf(section.startIndex, currentIdx + 1).coerceAtMost(fullQueue.size)
-                            val sectionEnd = minOf(section.startIndex + section.count, fullQueue.size)
-                            if (sectionStart >= sectionEnd) continue
-                            val songsInSection = fullQueue.subList(sectionStart, sectionEnd)
-                            add(QueueItem.Header(section.title))
-                            songsInSection.forEachIndexed { idx, song ->
-                                add(QueueItem.Song(song, idx, idx == 0, idx == songsInSection.lastIndex))
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .reorderable(reorderState)
+            ) {
+                // 1. Recently Played Section
+                if (playbackManager.recentlyPlayed.isNotEmpty()) {
+                    item {
+                        val arrowRotation by animateFloatAsState(
+                            targetValue = if (isRecentlyPlayedExpanded) 180f else 0f,
+                            animationSpec = tween(durationMillis = 250),
+                            label = "recently_played_arrow"
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isRecentlyPlayedExpanded = !isRecentlyPlayedExpanded }
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.recently_played),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                ) {
+                                    Text(
+                                        text = "${playbackManager.recentlyPlayed.size}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = { isRecentlyPlayedExpanded = !isRecentlyPlayedExpanded },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .rotate(arrowRotation)
+                                )
                             }
                         }
                     }
-                } else {
-                    val nextSongs = if (currentIdx != -1 && currentIdx < fullQueue.size - 1) {
-                        fullQueue.subList(currentIdx + 1, fullQueue.size)
-                    } else {
-                        emptyList()
-                    }
-                    nextSongs.mapIndexed { idx, song ->
-                        QueueItem.Song(song, idx, idx == 0, idx == nextSongs.lastIndex)
+                    if (isRecentlyPlayedExpanded) {
+                        itemsIndexed(playbackManager.recentlyPlayed, key = { _, s -> "history_${s.id}" }) { index, song ->
+                            SongItem(
+                                isFirst = index == 0,
+                                isLast = index == playbackManager.recentlyPlayed.lastIndex,
+                                song = song,
+                                currentlyPlaying = false,
+                                isPlaying = false,
+                                modifier = Modifier.graphicsLayer { alpha = 0.6f },
+                                onClick = {
+                                    playbackManager.play(song)
+                                },
+                                onOptionsClick = {
+                                    optionsSong = song
+                                    showOptionsSheet = true
+                                },
+                                onFavoriteClick = { s ->
+                                    playbackManager.toggleFavorite(s)?.let { updated ->
+                                        musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
+                                    }
+                                }
+                            )
+                        }
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
                     }
                 }
-            }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+                // 2. Now Playing Section
                 if (currentSong != null) {
                     item {
                         Text(
@@ -775,6 +872,7 @@ fun QueueBottomSheet(
                     }
                 }
                 
+                // 3. Up Next Section
                 item {
                     Text(
                         stringResource(R.string.queue_up_next),
@@ -783,129 +881,112 @@ fun QueueBottomSheet(
                     )
                 }
 
+                itemsIndexed(upNextSongs, key = { _, s -> "song_${s.id}" }) { index, song ->
+                    val isFirst = index == 0
+                    val isLast = index == upNextSongs.lastIndex
+                    
+                    var rawOffset by remember { mutableFloatStateOf(0f) }
+                    var isSwiping by remember { mutableStateOf(false) }
+                    val displayOffset by animateFloatAsState(
+                        targetValue = if (isSwiping) rawOffset else 0f,
+                        animationSpec = if (isSwiping) snap() else tween(durationMillis = 250),
+                        label = "swipe"
+                    )
+                    val threshold = with(LocalDensity.current) { 80.dp.toPx() }
+                    val maxOffset = with(LocalDensity.current) { 150.dp.toPx() }
 
-                items(displayItems, key = { item ->
-                    when (item) {
-                        is QueueItem.Header -> "header_${item.title}"
-                        is QueueItem.Song -> "song_${item.song.id}"
-                    }
-                }) { item ->
-                    when (item) {
-                        is QueueItem.Header -> {
-                            Text(
-                                text = item.title,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp)
-                            )
+                    Box(modifier = Modifier.reorderableItem(reorderState, index + upNextOffset)) {
+                        val swipeProgress = (abs(displayOffset) / threshold).coerceAtMost(1f)
+                        if (displayOffset > 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.CenterStart)
+                                    .padding(start = 24.dp)
+                                    .size(40.dp)
+                                    .graphicsLayer {
+                                        alpha = swipeProgress
+                                        scaleX = swipeProgress
+                                        scaleY = swipeProgress
+                                    }
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.errorContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
-                        is QueueItem.Song -> {
-                            val song = item.song
-                            val isFirst = item.isFirstInSection
-                            val isLast = item.isLastInSection
-                            var rawOffset by remember { mutableFloatStateOf(0f) }
-                            var isDragging by remember { mutableStateOf(false) }
-                            val displayOffset by animateFloatAsState(
-                                targetValue = if (isDragging) rawOffset else 0f,
-                                animationSpec = if (isDragging) snap() else tween(durationMillis = 250),
-                                label = "swipe"
-                            )
-                            val threshold = with(LocalDensity.current) { 80.dp.toPx() }
-                            val maxOffset = with(LocalDensity.current) { 150.dp.toPx() }
-                            Box {
-                                val swipeProgress = (abs(displayOffset) / threshold).coerceAtMost(1f)
-                                if (displayOffset > 0f) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.CenterStart)
-                                            .padding(start = 24.dp)
-                                            .size(40.dp)
-                                            .graphicsLayer {
-                                                alpha = swipeProgress
-                                                scaleX = swipeProgress
-                                                scaleY = swipeProgress
-                                            }
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.errorContainer),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                        if (displayOffset < 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(end = 24.dp)
+                                    .size(40.dp)
+                                    .graphicsLayer {
+                                        alpha = swipeProgress
+                                        scaleX = swipeProgress
+                                        scaleY = swipeProgress
                                     }
-                                }
-                                if (displayOffset < 0f) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.CenterEnd)
-                                            .padding(end = 24.dp)
-                                            .size(40.dp)
-                                            .graphicsLayer {
-                                                alpha = swipeProgress
-                                                scaleX = swipeProgress
-                                                scaleY = swipeProgress
-                                            }
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.SkipNext,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.SkipNext,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Box(modifier = Modifier.offset { IntOffset(displayOffset.roundToInt(), 0) }) {
+                            SongItem(
+                                isFirst = isFirst,
+                                isLast = isLast,
+                                song = song,
+                                currentlyPlaying = false,
+                                isPlaying = false,
+                                onClick = {
+                                    playbackManager.play(song, activePlaylist, playbackManager.activePlaylistId, playbackManager.activeCategory, fromQueue = true)
+                                },
+                                onOptionsClick = {
+                                    optionsSong = song
+                                    showOptionsSheet = true
+                                },
+                                onFavoriteClick = { s ->
+                                    playbackManager.toggleFavorite(s)?.let { updated ->
+                                        musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                                     }
-                                }
-                                Box(modifier = Modifier.offset { IntOffset(displayOffset.roundToInt(), 0) }) {
-                                    SongItem(
-                                        isFirst = isFirst,
-                                        isLast = isLast,
-                                        song = song,
-                                        currentlyPlaying = false,
-                                        isPlaying = false,
-                                        onClick = {
-                                            playbackManager.play(song, activePlaylist, playbackManager.activePlaylistId, playbackManager.activeCategory, fromQueue = true)
+                                },
+                                modifier = Modifier.pointerInput(song.id) {
+                                    detectHorizontalDragGestures(
+                                        onDragStart = {
+                                            rawOffset = 0f
+                                            isSwiping = true
                                         },
-                                        onOptionsClick = {
-                                            optionsSong = song
-                                            showOptionsSheet = true
-                                        },
-                                        onFavoriteClick = { s ->
-                                            playbackManager.toggleFavorite(s)?.let { updated ->
-                                                musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
+                                        onDragEnd = {
+                                            isSwiping = false
+                                            if (rawOffset < -threshold) {
+                                                playbackManager.moveToNextInQueue(song.id)
+                                            } else if (rawOffset > threshold) {
+                                                playbackManager.removeFromQueue(song.id)
                                             }
+                                            rawOffset = 0f
                                         },
-                                        modifier = Modifier.pointerInput(song.id) {
-                                            detectHorizontalDragGestures(
-                                                onDragStart = {
-                                                    rawOffset = 0f
-                                                    isDragging = true
-                                                },
-                                                onDragEnd = {
-                                                    isDragging = false
-                                                    if (rawOffset < -threshold) {
-                                                        playbackManager.moveToNextInQueue(song.id)
-                                                    } else if (rawOffset > threshold) {
-                                                        playbackManager.removeFromQueue(song.id)
-                                                    }
-                                                    rawOffset = 0f
-                                                },
-                                                onDragCancel = {
-                                                    isDragging = false
-                                                    rawOffset = 0f
-                                                },
-                                                onHorizontalDrag = { _, dragAmount ->
-                                                    rawOffset = (rawOffset + dragAmount).coerceIn(-maxOffset, maxOffset)
-                                                }
-                                            )
+                                        onDragCancel = {
+                                            isSwiping = false
+                                            rawOffset = 0f
+                                        },
+                                        onHorizontalDrag = { _, dragAmount ->
+                                            rawOffset = (rawOffset + dragAmount).coerceIn(-maxOffset, maxOffset)
                                         }
                                     )
                                 }
-                            }
+                            )
                         }
                     }
                 }
