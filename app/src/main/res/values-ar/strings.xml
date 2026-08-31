@@ -369,4 +369,20 @@
     <string name="recently_played">المشغلة مؤخراً</string>
     <string name="header_wave_effect">تأثير الموجة في العناوين</string>
     <string name="header_wave_effect_desc">عرض أمواج متحركة في خلفية عناوين الأقسام</string>
+    <string name="widget_customization">عنصر واجهة المستخدم (ودجت)</string>
+    <string name="widget_customization_desc">تخصيص مظهر عنصر واجهة المستخدم على الشاشة الرئيسية</string>
+    <string name="widget_background_section">خلفية الودجت</string>
+    <string name="widget_solid_bg">لون خلفية ثابت</string>
+    <string name="widget_solid_bg_desc">استبدال غلاف الخلفية بلون خالص</string>
+    <string name="widget_dark_bg_color">لون الوضع الداكن</string>
+    <string name="widget_light_bg_color">لون الوضع الفاتح</string>
+    <string name="widget_darkness">عتامة الغلاف</string>
+    <string name="widget_darkness_desc">زيادة عتامة غلاف الخلفية</string>
+    <string name="widget_blur">تمويه الغلاف</string>
+    <string name="widget_blur_desc">ضبط شدة تمويه غلاف الخلفية</string>
+    <string name="widget_cover_section">غلاف الودجت</string>
+    <string name="widget_circular_cover">غلاف دائري</string>
+    <string name="widget_circular_cover_desc">استخدام تصميم دائري للغلاف الرئيسي</string>
+    <string name="widget_vinyl_cover">تأثير الفينيل</string>
+    <string name="widget_vinyl_cover_desc">عرض الغلاف كأسطوانة فينيل كلاسيكية</string>
 </resources>

@@ -368,4 +368,20 @@
     <string name="recently_played">最近播放</string>
     <string name="header_wave_effect">标头波浪效果</string>
     <string name="header_wave_effect_desc">在各分区标头背景中显示动态流体波浪</string>
+    <string name="widget_customization">桌面微件 (Widget)</string>
+    <string name="widget_customization_desc">自定义主屏幕微件的外观</string>
+    <string name="widget_background_section">微件背景</string>
+    <string name="widget_solid_bg">纯色背景</string>
+    <string name="widget_solid_bg_desc">将背景封面替换为纯色</string>
+    <string name="widget_dark_bg_color">深色模式颜色</string>
+    <string name="widget_light_bg_color">浅色模式颜色</string>
+    <string name="widget_darkness">封面暗度</string>
+    <string name="widget_darkness_desc">增加背景封面的暗度</string>
+    <string name="widget_blur">封面模糊度</string>
+    <string name="widget_blur_desc">调整背景封面的模糊强度</string>
+    <string name="widget_cover_section">微件封面</string>
+    <string name="widget_circular_cover">圆形封面</string>
+    <string name="widget_circular_cover_desc">为主封面使用圆形设计</string>
+    <string name="widget_vinyl_cover">黑胶唱片效果</string>
+    <string name="widget_vinyl_cover_desc">将封面显示为经典黑胶唱片</string>
 </resources>

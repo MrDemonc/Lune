@@ -367,4 +367,20 @@
     <string name="recently_played">اخیراً پخش شده</string>
     <string name="header_wave_effect">افکت موج در سربرگ‌ها</string>
     <string name="header_wave_effect_desc">نمایش موج‌های متحرک در پس‌زمینه سربرگ بخش‌ها</string>
+    <string name="widget_customization">ویجت</string>
+    <string name="widget_customization_desc">شخصی‌سازی ظاهر ویجت در صفحه اصلی</string>
+    <string name="widget_background_section">پس‌زمینه ویجت</string>
+    <string name="widget_solid_bg">رنگ یکدست پس‌زمینه</string>
+    <string name="widget_solid_bg_desc">جایگزینی کاور پس‌زمینه با یک رنگ یکدست</string>
+    <string name="widget_dark_bg_color">رنگ در حالت تاریک</string>
+    <string name="widget_light_bg_color">رنگ در حالت روشن</string>
+    <string name="widget_darkness">تیرگی کاور</string>
+    <string name="widget_darkness_desc">افزایش تیرگی کاور پس‌زمینه</string>
+    <string name="widget_blur">تاری کاور (Blur)</string>
+    <string name="widget_blur_desc">تنظیم میزان تاری کاور پس‌زمینه</string>
+    <string name="widget_cover_section">کاور ویجت</string>
+    <string name="widget_circular_cover">کاور دایره‌ای</string>
+    <string name="widget_circular_cover_desc">استفاده از طرح دایره‌ای برای کاور اصلی</string>
+    <string name="widget_vinyl_cover">افکت صفحه گرامافون (Vinyl)</string>
+    <string name="widget_vinyl_cover_desc">نمایش کاور به صورت صفحه گرامافون کلاسیک</string>
 </resources>

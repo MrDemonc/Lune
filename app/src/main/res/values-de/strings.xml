@@ -368,4 +368,20 @@
     <string name="recently_played">Zuletzt gespielt</string>
     <string name="header_wave_effect">Wellen-Effekt in Kopfzeilen</string>
     <string name="header_wave_effect_desc">Animierten Welleneffekt im Hintergrund der Kopfzeilen anzeigen</string>
+    <string name="widget_customization">Widget</string>
+    <string name="widget_customization_desc">Erscheinungsbild des Startbildschirm-Widgets anpassen</string>
+    <string name="widget_background_section">Widget-Hintergrund</string>
+    <string name="widget_solid_bg">Einfarbiger Hintergrund</string>
+    <string name="widget_solid_bg_desc">Hintergrund-Cover durch eine Volltonfarbe ersetzen</string>
+    <string name="widget_dark_bg_color">Farbe im Dunkelmodus</string>
+    <string name="widget_light_bg_color">Farbe im Hellmodus</string>
+    <string name="widget_darkness">Cover-Abdunklung</string>
+    <string name="widget_darkness_desc">Hintergrund-Cover stärker abdunkeln</string>
+    <string name="widget_blur">Cover-Weichzeichnung</string>
+    <string name="widget_blur_desc">Intensität der Weichzeichnung des Hintergrunds anpassen</string>
+    <string name="widget_cover_section">Widget-Cover</string>
+    <string name="widget_circular_cover">Kreisförmiges Cover</string>
+    <string name="widget_circular_cover_desc">Kreisförmiges Design für das Haupt-Cover verwenden</string>
+    <string name="widget_vinyl_cover">Vinyl-Effekt</string>
+    <string name="widget_vinyl_cover_desc">Cover als klassische Schallplatte anzeigen</string>
 </resources>

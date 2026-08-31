@@ -371,4 +371,20 @@
     <string name="recently_played">Récemment écoutés</string>
     <string name="header_wave_effect">Effet de vague dans les en-têtes</string>
     <string name="header_wave_effect_desc">Afficher des vagues animées en arrière-plan des en-têtes</string>
+    <string name="widget_customization">Widget</string>
+    <string name="widget_customization_desc">Personnaliser l\'apparence du widget sur l\'écran d\'accueil</string>
+    <string name="widget_background_section">Arrière-plan du widget</string>
+    <string name="widget_solid_bg">Couleur d\'arrière-plan unie</string>
+    <string name="widget_solid_bg_desc">Remplacer la pochette d\'arrière-plan par une couleur unie</string>
+    <string name="widget_dark_bg_color">Couleur en mode sombre</string>
+    <string name="widget_light_bg_color">Couleur en mode clair</string>
+    <string name="widget_darkness">Obscurité de la pochette</string>
+    <string name="widget_darkness_desc">Augmenter l\'obscurité de la pochette d\'arrière-plan</string>
+    <string name="widget_blur">Flou de la pochette</string>
+    <string name="widget_blur_desc">Ajuster l\'intensité du flou de la pochette d\'arrière-plan</string>
+    <string name="widget_cover_section">Pochette du widget</string>
+    <string name="widget_circular_cover">Pochette circulaire</string>
+    <string name="widget_circular_cover_desc">Utiliser un design circulaire pour la pochette principale</string>
+    <string name="widget_vinyl_cover">Effet vinyle</string>
+    <string name="widget_vinyl_cover_desc">Afficher la pochette sous forme de disque vinyle classique</string>
 </resources>

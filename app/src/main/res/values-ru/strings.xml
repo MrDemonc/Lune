@@ -371,4 +371,20 @@
     <string name="recently_played">Недавно воспроизведенные</string>
     <string name="header_wave_effect">Волновой эффект в заголовках</string>
     <string name="header_wave_effect_desc">Отображать анимированные волны на фоне заголовков</string>
+    <string name="widget_customization">Виджет</string>
+    <string name="widget_customization_desc">Настройка внешнего вида виджета на главном экране</string>
+    <string name="widget_background_section">Фон виджета</string>
+    <string name="widget_solid_bg">Сплошной цвет фона</string>
+    <string name="widget_solid_bg_desc">Заменить фоновую обложку сплошным цветом</string>
+    <string name="widget_dark_bg_color">Цвет для темной темы</string>
+    <string name="widget_light_bg_color">Цвет для светлой темы</string>
+    <string name="widget_darkness">Затемнение обложки</string>
+    <string name="widget_darkness_desc">Увеличить затемнение фоновой обложки</string>
+    <string name="widget_blur">Размытие обложки</string>
+    <string name="widget_blur_desc">Настроить интенсивность размытия фоновой обложки</string>
+    <string name="widget_cover_section">Обложка виджета</string>
+    <string name="widget_circular_cover">Круглая обложка</string>
+    <string name="widget_circular_cover_desc">Использовать круглую форму для главной обложки</string>
+    <string name="widget_vinyl_cover">Эффект винила</string>
+    <string name="widget_vinyl_cover_desc">Отображать обложку в виде виниловой пластинки</string>
 </resources>
