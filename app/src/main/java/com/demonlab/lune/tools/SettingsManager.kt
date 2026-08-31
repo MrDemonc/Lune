@@ -91,6 +91,34 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("header_wave_effect_enabled", true)
         set(value) = prefs.edit().putBoolean("header_wave_effect_enabled", value).apply()
 
+    var widgetUseSolidBackground: Boolean
+        get() = prefs.getBoolean("widget_use_solid_background", false)
+        set(value) = prefs.edit().putBoolean("widget_use_solid_background", value).apply()
+
+    var widgetLightBackgroundColor: Int
+        get() = prefs.getInt("widget_light_background_color", 0xFFFFFFFF.toInt())
+        set(value) = prefs.edit().putInt("widget_light_background_color", value).apply()
+
+    var widgetDarkBackgroundColor: Int
+        get() = prefs.getInt("widget_dark_background_color", 0xFF1E1E24.toInt())
+        set(value) = prefs.edit().putInt("widget_dark_background_color", value).apply()
+
+    var widgetBackgroundDarkness: Float
+        get() = prefs.getFloat("widget_background_darkness", 0.50f)
+        set(value) = prefs.edit().putFloat("widget_background_darkness", value).apply()
+
+    var widgetBackgroundBlur: Int
+        get() = prefs.getInt("widget_background_blur", 50)
+        set(value) = prefs.edit().putInt("widget_background_blur", value).apply()
+
+    var widgetCircularCover: Boolean
+        get() = prefs.getBoolean("widget_circular_cover", false)
+        set(value) = prefs.edit().putBoolean("widget_circular_cover", value).apply()
+
+    var widgetVinylCover: Boolean
+        get() = prefs.getBoolean("widget_vinyl_cover", false)
+        set(value) = prefs.edit().putBoolean("widget_vinyl_cover", value).apply()
+
     var hiddenSectionTabs: Set<String>
         get() = prefs.getStringSet("hidden_section_tabs", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("hidden_section_tabs", value).apply()

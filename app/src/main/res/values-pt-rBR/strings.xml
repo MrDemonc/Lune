@@ -371,4 +371,20 @@
     <string name="recently_played">Reproduzido recentemente</string>
     <string name="header_wave_effect">Efeito de ondas nos cabeçalhos</string>
     <string name="header_wave_effect_desc">Exibir ondas animadas no fundo dos cabeçalhos das seções</string>
+    <string name="widget_customization">Widget</string>
+    <string name="widget_customization_desc">Personalize a aparência do widget na tela inicial</string>
+    <string name="widget_background_section">Fundo do widget</string>
+    <string name="widget_solid_bg">Cor sólida de fundo</string>
+    <string name="widget_solid_bg_desc">Substituir a capa de fundo por uma cor sólida</string>
+    <string name="widget_dark_bg_color">Cor no modo escuro</string>
+    <string name="widget_light_bg_color">Cor no modo claro</string>
+    <string name="widget_darkness">Escuridão da capa</string>
+    <string name="widget_darkness_desc">Aumentar a escuridão da capa de fundo</string>
+    <string name="widget_blur">Desfoque da capa</string>
+    <string name="widget_blur_desc">Ajustar a intensidade do desfoque de fundo</string>
+    <string name="widget_cover_section">Capa do widget</string>
+    <string name="widget_circular_cover">Capa circular</string>
+    <string name="widget_circular_cover_desc">Usar design circular para a capa principal</string>
+    <string name="widget_vinyl_cover">Efeito vinil</string>
+    <string name="widget_vinyl_cover_desc">Exibir a capa como um disco de vinil clássico</string>
 </resources>

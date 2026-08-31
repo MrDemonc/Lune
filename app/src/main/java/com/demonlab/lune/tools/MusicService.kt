@@ -130,6 +130,7 @@ class MusicService : MediaLibraryService() {
         const val ACTION_SHUFFLE = "com.demonlab.lune.ACTION_SHUFFLE"
         const val ACTION_FAVORITE = "com.demonlab.lune.ACTION_FAVORITE"
         const val ACTION_DISMISS = "com.demonlab.lune.ACTION_DISMISS"
+        const val ACTION_UPDATE_WIDGET = "com.demonlab.lune.ACTION_UPDATE_WIDGET"
         const val PAUSE_TIMEOUT_MS = 5 * 60 * 1000L
     }
 
@@ -323,6 +324,16 @@ class MusicService : MediaLibraryService() {
                     @Suppress("DEPRECATION")
                     stopForeground(true)
                 }
+                updatePlaybackState()
+            }
+            ACTION_UPDATE_WIDGET -> {
+                lastSongForRounded = null
+                lastSongForBlur = null
+                cachedRoundedArt = null
+                lastBlurredBitmap = null
+                updateWidget()
+            }
+            else -> {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager.cancel(1)
             }
@@ -1541,8 +1552,22 @@ class MusicService : MediaLibraryService() {
                     lastSongForRounded = song
                     lastSongForBlur = song
                     withContext(Dispatchers.IO) {
-                        cachedRoundedArt = LuneWidgetProvider.getRoundedCornerBitmap(art, 54)
-                        lastBlurredBitmap = LuneWidgetProvider.getBlurredBitmap(applicationContext, art, 25, 28)
+                        cachedRoundedArt = when {
+                            settingsManager.widgetCircularCover && settingsManager.widgetVinylCover ->
+                                LuneWidgetProvider.getVinylRecordBitmap(art)
+                            settingsManager.widgetCircularCover ->
+                                LuneWidgetProvider.getCircularBitmap(art)
+                            else ->
+                                LuneWidgetProvider.getSquareScaledBitmap(art)
+                        }
+                        val blurRadius = (settingsManager.widgetBackgroundBlur * 0.5f).toInt().coerceIn(3, 50)
+                        lastBlurredBitmap = LuneWidgetProvider.getBlurredBitmap(
+                            applicationContext,
+                            art,
+                            blurRadius,
+                            28,
+                            settingsManager.widgetBackgroundDarkness
+                        )
                     }
                 } else {
                     lastSongForRounded = null
@@ -1559,6 +1584,7 @@ class MusicService : MediaLibraryService() {
 
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(packageName, R.layout.lune_widget_layout)
+                LuneWidgetProvider.applyWidgetStyling(applicationContext, views, settingsManager)
 
                 val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
                 val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
@@ -1589,7 +1615,12 @@ class MusicService : MediaLibraryService() {
                         views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
                     }
 
-                    if (lastBlurredBitmap != null) {
+                    if (settingsManager.widgetUseSolidBackground) {
+                        val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                        val solidColor = if (isNight) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+                        views.setImageViewBitmap(R.id.widget_blur_bg, LuneWidgetProvider.getSolidColorBitmap(solidColor))
+                        views.setViewVisibility(R.id.widget_blur_bg, View.VISIBLE)
+                    } else if (lastBlurredBitmap != null) {
                         views.setImageViewBitmap(R.id.widget_blur_bg, lastBlurredBitmap)
                         views.setViewVisibility(R.id.widget_blur_bg, View.VISIBLE)
                     } else {
@@ -1608,7 +1639,14 @@ class MusicService : MediaLibraryService() {
                     }
 
                     views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
-                    views.setViewVisibility(R.id.widget_blur_bg, View.GONE)
+                    if (settingsManager.widgetUseSolidBackground) {
+                        val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                        val solidColor = if (isNight) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+                        views.setImageViewBitmap(R.id.widget_blur_bg, LuneWidgetProvider.getSolidColorBitmap(solidColor))
+                        views.setViewVisibility(R.id.widget_blur_bg, View.VISIBLE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_blur_bg, View.GONE)
+                    }
                 }
 
                 // Button Intents

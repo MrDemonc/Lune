@@ -39,6 +39,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.Waves
+import androidx.compose.material.icons.filled.Widgets
 
 class CustomizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -552,10 +553,19 @@ fun CustomizationScreen(
             Spacer(modifier = Modifier.height(16.dp))
             SettingsSection(title = stringResource(R.string.other)) {
                 SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.widget_customization),
+                    supportingText = stringResource(R.string.widget_customization_desc),
+                    icon = Icons.Default.Widgets,
+                    position = SectionPosition.FIRST,
+                    onClick = {
+                        context.startActivity(Intent(context, WidgetCustomizationActivity::class.java))
+                    }
+                )
+                SettingsPreferenceItem(
                     headlineText = stringResource(R.string.gesture),
                     supportingText = stringResource(R.string.gesture_desc),
                     icon = Icons.Default.Gesture,
-                    position = SectionPosition.FIRST,
+                    position = SectionPosition.MIDDLE,
                     onClick = {
                         context.startActivity(Intent(context, GestureCustomizationActivity::class.java))
                     }

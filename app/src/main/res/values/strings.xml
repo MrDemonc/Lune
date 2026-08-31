@@ -370,4 +370,20 @@
     <string name="recently_played">Recently Played</string>
     <string name="header_wave_effect">Header Wave Effect</string>
     <string name="header_wave_effect_desc">Display animated liquid waves in section headers</string>
+    <string name="widget_customization">Widget</string>
+    <string name="widget_customization_desc">Customize the home screen widget appearance</string>
+    <string name="widget_background_section">Widget Background</string>
+    <string name="widget_solid_bg">Solid Background Color</string>
+    <string name="widget_solid_bg_desc">Replace background cover with a solid color</string>
+    <string name="widget_dark_bg_color">Dark Mode Color</string>
+    <string name="widget_light_bg_color">Light Mode Color</string>
+    <string name="widget_darkness">Cover Darkness</string>
+    <string name="widget_darkness_desc">Increase background cover darkness</string>
+    <string name="widget_blur">Cover Blur</string>
+    <string name="widget_blur_desc">Adjust background cover blur intensity</string>
+    <string name="widget_cover_section">Widget Cover Art</string>
+    <string name="widget_circular_cover">Circular Cover</string>
+    <string name="widget_circular_cover_desc">Use a circular design for the main cover</string>
+    <string name="widget_vinyl_cover">Vinyl Effect</string>
+    <string name="widget_vinyl_cover_desc">Display cover as a classic vinyl record</string>
 </resources>

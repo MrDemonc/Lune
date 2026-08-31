@@ -94,6 +94,11 @@
             android:exported="false"
             android:label="@string/audio_settings"
             android:theme="@style/Theme.Lune" />
+        <activity
+            android:name=".ui.activities.WidgetCustomizationActivity"
+            android:exported="false"
+            android:label="@string/widget_customization"
+            android:theme="@style/Theme.Lune" />
 
         <service
             android:name=".tools.MusicService"
