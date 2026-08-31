@@ -153,10 +153,10 @@ The output APK will be available at: `app/build/outputs/apk/release/Lune-release
 
 ## 👥 The Community
 
-* [Code of Conduct](https://www.google.com/search?q=CODE_OF_CONDUCT.md)
-* [License](https://www.google.com/search?q=LICENSE)
+* [Code of Conduct](CODE_OF_CONDUCT.md)
+* [License](LICENSE)
 * [Security Policy](SECURITY.md)
-* [Technical Reference](https://www.google.com/search?q=TECHNICAL_REFERENCE.md)
+* [Technical Reference](TECHNICAL_REFERENCE.md)
 
 ## Other Donation Options
 
