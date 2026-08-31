@@ -14,6 +14,9 @@
     <a href="https://github.com/MrDemonc/Lune#-monero-xmr">
       <img src="https://img.shields.io/badge/Monero-Donate-FF6600?style=for-the-badge&logo=monero&logoColor=white"/>
     </a>
+    <a href="https://mrdemonc.github.io/Lune">
+      <img src="https://img.shields.io/badge/Website-Visit-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white"/>
+    </a>
   </p>
   <p align="center">
     Lune is a minimalist and elegant music player for Android, designed with a focus on aesthetics and a premium user experience. 
@@ -132,31 +135,31 @@ keyPassword=password
 ## 🚀 How to Build
 
 1. **Clone the repository**:
+
 ```bash
 git clone [https://github.com/MrDemonc/Lune.git](https://github.com/MrDemonc/Lune.git)
 cd Lune
 
 ```
 
-
 2. **Setup Environment**:
-Ensure `ANDROID_HOME` is set to your local Android SDK location.
+   Ensure `ANDROID_HOME` is set to your local Android SDK location.
 3. **Build via Command Line**:
-Run the following command to generate the release APK:
+   Run the following command to generate the release APK:
+
 ```bash
 ./gradlew assembleRelease
 
 ```
 
-
 The output APK will be available at: `app/build/outputs/apk/release/Lune-release.apk`
 
 ## 👥 The Community
 
-* [Code of Conduct](CODE_OF_CONDUCT.md)
-* [License](LICENSE)
-* [Security Policy](SECURITY.md)
-* [Technical Reference](TECHNICAL_REFERENCE.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [License](LICENSE)
+- [Security Policy](SECURITY.md)
+- [Technical Reference](TECHNICAL_REFERENCE.md)
 
 ## Other Donation Options
 
@@ -169,7 +172,7 @@ monero:88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtA
 
 ## 🤝 Credits
 
-* **MrDemonc**: Project Creator & Lead Developer.
-* **Desukia**: Design testing and UX feedback.
+- **MrDemonc**: Project Creator & Lead Developer.
+- **Desukia**: Design testing and UX feedback.
 
 ---
