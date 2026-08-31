@@ -1,0 +1,1036 @@
+/* ==========================================================================
+   LUNE WEB - STYLESHEET
+   Warm Light Coffee & Espresso Palette, Dark & Light Mode, Responsive
+   ========================================================================== */
+
+:root {
+  /* Dark Theme Palette (Espresso & Roasted Coffee Tones) */
+  --bg-gradient-start: #120f0d;
+  --bg-gradient-end: #1c1713;
+  --text-primary: #f8f4ef;
+  --text-secondary: #beb4a8;
+  --text-muted: #857b70;
+
+  /* Warm Coffee Accent */
+  --accent-primary: #d99962;
+  --accent-primary-hover: #c6854d;
+  --accent-gradient: linear-gradient(135deg, #e2a672 0%, #b8753a 100%);
+  --accent-glow: rgba(226, 166, 114, 0.28);
+
+  --fdroid-color: #3b82f6;
+  --fdroid-hover: #2563eb;
+  --fdroid-gradient: linear-gradient(135deg, #3870a3 0%, #25527d 100%);
+
+  --card-bg: rgba(28, 23, 19, 0.74);
+  --card-border: rgba(255, 235, 215, 0.08);
+  --card-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 235, 215, 0.04);
+
+  --nav-bg: rgba(22, 18, 14, 0.8);
+  --nav-border: rgba(255, 235, 215, 0.1);
+  --nav-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  --badge-bg: rgba(226, 166, 114, 0.15);
+  --badge-text: #eab689;
+  --badge-border: rgba(226, 166, 114, 0.3);
+
+  --bullet-color: #d99962;
+  --bullet-bg: rgba(217, 153, 98, 0.15);
+
+  --divider-color: rgba(255, 235, 215, 0.08);
+  --tag-bg: rgba(255, 235, 215, 0.05);
+  --tag-border: rgba(255, 235, 215, 0.08);
+  --tag-text: #e0d7cd;
+
+  /* Wave colors for Canvas */
+  --wave-color-1: rgba(217, 153, 98, 0.14);
+  --wave-color-2: rgba(184, 117, 58, 0.10);
+  --wave-color-3: rgba(142, 87, 39, 0.08);
+}
+
+[data-theme="light"] {
+  /* Light Theme Palette (Warm Latte / Light Coffee Cream) */
+  --bg-gradient-start: #fbf8f3;
+  --bg-gradient-end: #ede5d8;
+  --text-primary: #2a221b;
+  --text-secondary: #6e6153;
+  --text-muted: #9c8e7e;
+
+  /* Warm Caramel / Roasted Coffee Accent */
+  --accent-primary: #b36e34;
+  --accent-primary-hover: #9c5c27;
+  --accent-gradient: linear-gradient(135deg, #be783d 0%, #945623 100%);
+  --accent-glow: rgba(190, 120, 61, 0.22);
+
+  --fdroid-color: #2b6cb0;
+  --fdroid-hover: #23568d;
+  --fdroid-gradient: linear-gradient(135deg, #427ea8 0%, #295c82 100%);
+
+  --card-bg: rgba(255, 252, 247, 0.84);
+  --card-border: rgba(150, 110, 75, 0.14);
+  --card-shadow: 0 20px 45px -10px rgba(115, 75, 40, 0.1), 0 0 0 1px rgba(150, 110, 75, 0.05);
+
+  --nav-bg: rgba(255, 252, 247, 0.84);
+  --nav-border: rgba(150, 110, 75, 0.14);
+  --nav-shadow: 0 10px 25px rgba(115, 75, 40, 0.06);
+
+  --badge-bg: rgba(190, 120, 61, 0.12);
+  --badge-text: #965623;
+  --badge-border: rgba(190, 120, 61, 0.25);
+
+  --bullet-color: #b36e34;
+  --bullet-bg: rgba(179, 110, 52, 0.12);
+
+  --divider-color: rgba(150, 110, 75, 0.1);
+  --tag-bg: rgba(150, 110, 75, 0.06);
+  --tag-border: rgba(150, 110, 75, 0.12);
+  --tag-text: #4e3f32;
+
+  /* Wave colors for Canvas in Light Mode */
+  --wave-color-1: rgba(190, 120, 61, 0.15);
+  --wave-color-2: rgba(214, 153, 100, 0.12);
+  --wave-color-3: rgba(160, 95, 40, 0.08);
+}
+
+/* Base Resets */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark light;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  position: relative;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* ==========================================================================
+   FLOATING TOP BAR (Glassmorphism & Centered Navigation)
+   ========================================================================== */
+.floating-header {
+  position: fixed;
+  top: 1.25rem;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: 0 1.25rem;
+  pointer-events: none;
+}
+
+.nav-bar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 740px;
+  height: 54px;
+  padding: 0 1.25rem;
+  background: var(--nav-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--nav-border);
+  border-radius: 9999px;
+  box-shadow: var(--nav-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.nav-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.nav-brand:hover .nav-logo {
+  transform: rotate(8deg) scale(1.08);
+}
+
+.nav-links-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--tag-bg);
+}
+
+.nav-link-donate {
+  color: var(--accent-primary);
+}
+
+.nav-link-donate:hover {
+  color: var(--accent-primary-hover);
+  background: var(--badge-bg);
+}
+
+.nav-link .icon {
+  flex-shrink: 0;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  color: var(--text-primary);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  position: relative;
+  outline: none;
+  margin-left: 0.25rem;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--badge-bg);
+  border-color: var(--badge-border);
+  transform: rotate(15deg);
+}
+
+.theme-icon-wrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sun-icon, .moon-icon {
+  position: absolute;
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-theme="dark"] .sun-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+[data-theme="dark"] .moon-icon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+  pointer-events: none;
+}
+
+[data-theme="light"] .sun-icon {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+  pointer-events: none;
+}
+
+[data-theme="light"] .moon-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* ==========================================================================
+   ANIMATED WAVE CANVAS BACKGROUND
+   ========================================================================== */
+.wave-background {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+#wave-canvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   VERTICALLY CENTERED CONTENT CONTAINER
+   ========================================================================== */
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+  padding: 6.5rem 1.25rem 3.5rem 1.25rem;
+}
+
+.content-wrapper {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* a. Logo first */
+.logo-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.logo-ambient-glow {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  background: var(--accent-gradient);
+  filter: blur(45px);
+  opacity: 0.38;
+  border-radius: 50%;
+  z-index: 0;
+  animation: pulseGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.85); opacity: 0.28; }
+  100% { transform: scale(1.18); opacity: 0.48; }
+}
+
+.app-logo {
+  position: relative;
+  z-index: 1;
+  width: 100px;
+  height: 100px;
+  border-radius: 26px;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+}
+
+.app-logo:hover {
+  transform: translateY(-4px) scale(1.05);
+}
+
+/* Intro Title & Subtitle */
+.app-intro {
+  margin-bottom: 1.75rem;
+}
+
+.app-name {
+  font-size: 2.85rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  margin-bottom: 0.4rem;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.app-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   RELEASE CARD
+   ========================================================================== */
+.release-card {
+  width: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  border-radius: 28px;
+  padding: 1.75rem;
+  box-shadow: var(--card-shadow);
+  text-align: left;
+  margin-bottom: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.release-card:hover {
+  border-color: rgba(217, 153, 98, 0.3);
+}
+
+/* c. Version and date of latest release */
+.release-meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.release-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--badge-bg);
+  border: 1px solid var(--badge-border);
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+}
+
+.pulse-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.version-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--badge-text);
+  letter-spacing: -0.01em;
+}
+
+.version-type-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.release-date-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.release-date-box svg {
+  color: var(--text-muted);
+}
+
+.card-divider {
+  height: 1px;
+  background: var(--divider-color);
+  margin: 1.25rem 0;
+}
+
+/* b. Notes of the latest release in order with bullets */
+.release-notes-box {
+  margin-bottom: 1.5rem;
+}
+
+.release-notes-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.release-notes-bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--badge-border) transparent;
+}
+
+.release-notes-bullets::-webkit-scrollbar {
+  width: 5px;
+}
+
+.release-notes-bullets::-webkit-scrollbar-thumb {
+  background: var(--badge-border);
+  border-radius: 4px;
+}
+
+.release-notes-bullets li {
+  position: relative;
+  padding-left: 1.45rem;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.release-notes-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  top: 0.45rem;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bullet-color);
+  box-shadow: 0 0 8px var(--bullet-color);
+}
+
+/* d. Download and F-Droid action buttons */
+.release-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  padding: 0.85rem 1.25rem;
+  border-radius: 16px;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn .btn-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.action-btn:hover .btn-icon {
+  transform: translateY(-2px);
+}
+
+.btn-text-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.btn-main-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.btn-subtitle {
+  font-size: 0.74rem;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+/* Download APK Button (Primary Coffee/Caramel) */
+.btn-primary {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  box-shadow: 0 10px 24px -4px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -2px var(--accent-glow);
+  filter: brightness(1.08);
+}
+
+/* F-Droid Button */
+.btn-fdroid {
+  background: var(--fdroid-gradient);
+  color: #ffffff;
+  box-shadow: 0 10px 24px -4px rgba(41, 92, 130, 0.25);
+}
+
+.btn-fdroid:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -2px rgba(41, 92, 130, 0.35);
+  filter: brightness(1.08);
+}
+
+/* Features Tag Pills */
+.features-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-bottom: 1.5rem;
+}
+
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  color: var(--tag-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+}
+
+.tag-icon {
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   DONATIONS & SUPPORT SECTION
+   ========================================================================== */
+.donate-section {
+  width: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.donate-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.donate-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--badge-bg);
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.donate-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.donate-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.donation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.donate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+}
+
+.donate-btn:hover {
+  transform: translateY(-2px);
+}
+
+.donate-btn-icon {
+  flex-shrink: 0;
+}
+
+/* PayPal Button */
+.donate-paypal {
+  background: rgba(0, 121, 193, 0.12);
+  color: #0079c1;
+  border-color: rgba(0, 121, 193, 0.25);
+}
+
+[data-theme="dark"] .donate-paypal {
+  background: rgba(0, 121, 193, 0.18);
+  color: #38bdf8;
+  border-color: rgba(0, 121, 193, 0.35);
+}
+
+.donate-paypal:hover {
+  background: #0079c1;
+  color: #ffffff;
+  box-shadow: 0 8px 20px -3px rgba(0, 121, 193, 0.35);
+}
+
+/* Ko-fi Button */
+.donate-kofi {
+  background: rgba(255, 94, 91, 0.12);
+  color: #e04441;
+  border-color: rgba(255, 94, 91, 0.25);
+}
+
+[data-theme="dark"] .donate-kofi {
+  background: rgba(255, 94, 91, 0.18);
+  color: #ff7b78;
+  border-color: rgba(255, 94, 91, 0.35);
+}
+
+.donate-kofi:hover {
+  background: #ff5e5b;
+  color: #ffffff;
+  box-shadow: 0 8px 20px -3px rgba(255, 94, 91, 0.35);
+}
+
+/* Monero Button */
+.donate-monero {
+  background: rgba(255, 102, 0, 0.12);
+  color: #d95700;
+  border-color: rgba(255, 102, 0, 0.25);
+}
+
+[data-theme="dark"] .donate-monero {
+  background: rgba(255, 102, 0, 0.18);
+  color: #ff8533;
+  border-color: rgba(255, 102, 0, 0.35);
+}
+
+.donate-monero:hover {
+  background: #ff6600;
+  color: #ffffff;
+  box-shadow: 0 8px 20px -3px rgba(255, 102, 0, 0.35);
+}
+
+/* ==========================================================================
+   CONTRIBUTORS & CREDITS SECTION
+   ========================================================================== */
+.contributors-section {
+  width: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.contributors-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.contributors-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--badge-bg);
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.contributors-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.contributors-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.contributors-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.contributor-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.contributor-card:hover {
+  background: var(--badge-bg);
+  border-color: var(--badge-border);
+  transform: translateY(-2px);
+}
+
+.contributor-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--badge-border);
+}
+
+.avatar-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--badge-bg);
+  color: var(--accent-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.contributor-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.contributor-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contributor-role-badge {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge-creator {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.badge-design {
+  color: var(--badge-text);
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION (Monero Copy)
+   ========================================================================== */
+.toast-popup {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--nav-bg);
+  border: 1px solid var(--badge-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-primary);
+  padding: 0.75rem 1.35rem;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+
+.toast-popup.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.toast-popup svg {
+  color: #22c55e;
+}
+
+/* Footer */
+.app-footer {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.app-footer a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   RESPONSIVE ADAPTATIONS (PC & Mobile)
+   ========================================================================== */
+@media (max-width: 600px) {
+  .page-container {
+    padding-top: 5.5rem;
+    padding-bottom: 2.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .nav-bar {
+    height: 48px;
+    padding: 0 0.85rem;
+  }
+
+  .nav-brand {
+    font-size: 1.05rem;
+  }
+
+  .nav-link span {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .app-logo {
+    width: 86px;
+    height: 86px;
+    border-radius: 22px;
+  }
+
+  .app-name {
+    font-size: 2.3rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .release-card {
+    padding: 1.25rem;
+    border-radius: 22px;
+  }
+
+  .release-actions {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .donation-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .donate-section {
+    padding: 1.25rem;
+    border-radius: 22px;
+  }
+
+  .contributors-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+  }
+
+  .contributors-section {
+    padding: 1.25rem;
+    border-radius: 22px;
+  }
+
+  .action-btn {
+    padding: 0.8rem 1rem;
+  }
+
+  .release-notes-bullets {
+    max-height: 180px;
+  }
+
+  .features-tags {
+    gap: 0.4rem;
+  }
+
+  .tag-item {
+    font-size: 0.76rem;
+    padding: 0.3rem 0.65rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .contributors-grid {
+    grid-template-columns: 1fr;
+  }
+}

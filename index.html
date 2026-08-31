@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lune — Minimalist & Elegant Music Player</title>
+  <meta name="description" content="Lune is a minimalist, private, and elegant music player for Android featuring dynamic theming, defocus blur widget, 10-band equalizer, synchronized lyrics, and zero tracking.">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  
+  <!-- Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Floating Top Bar -->
+  <header class="floating-header">
+    <nav class="nav-bar">
+      <a href="#" class="nav-brand">
+        <img src="assets/logo.svg" alt="Lune Logo" class="nav-logo">
+        <span class="nav-title">Lune</span>
+      </a>
+      
+      <div class="nav-links-container">
+        <a href="https://github.com/MrDemonc/Lune" target="_blank" rel="noopener noreferrer" class="nav-link" title="GitHub Repository">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+
+        <a href="https://f-droid.org/es/packages/com.demonlab.lune/" target="_blank" rel="noopener noreferrer" class="nav-link" title="F-Droid Package">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9997.4482.9997.9993 0 .5511-.4486.9997-.9997.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9997.4482.9997.9993 0 .5511-.4486.9997-.9997.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1523-.5676.416.416 0 00-.5676.1523l-2.0223 3.503C15.5836 8.3585 13.8566 8 12 8s-3.5836.3585-5.1366.95l-2.0223-3.503a.416.416 0 00-.5676-.1523.416.416 0 00-.1523.5676l1.9973 3.4592C2.688 11.0544.3333 14.7397.3333 19h23.3334c0-4.2603-2.3547-7.9456-5.7867-9.6786"/>
+          </svg>
+          <span>F-Droid</span>
+        </a>
+
+        <a href="#donate-section" class="nav-link nav-link-donate" title="Support Project">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span>Donate</span>
+        </a>
+
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle Light and Dark mode" title="Toggle theme">
+          <div class="theme-icon-wrapper">
+            <!-- Sun Icon (Light mode) -->
+            <svg class="sun-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon Icon (Dark mode) -->
+            <svg class="moon-icon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </div>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Animated Wave Canvas Background -->
+  <div class="wave-background" aria-hidden="true">
+    <canvas id="wave-canvas"></canvas>
+  </div>
+
+  <!-- Main Centered Content Wrapper -->
+  <main class="page-container">
+    <div class="content-wrapper">
+      
+      <!-- a. Logo first -->
+      <div class="logo-wrapper">
+        <div class="logo-ambient-glow"></div>
+        <img src="assets/logo.svg" alt="Lune App Logo" class="app-logo">
+      </div>
+
+      <!-- App Header Info -->
+      <div class="app-intro">
+        <h1 class="app-name">Lune</h1>
+        <p class="app-subtitle">A minimalist and elegant music player for Android, built with focus on aesthetics and privacy</p>
+      </div>
+
+      <!-- Main Release Card -->
+      <section class="release-card" id="release-card">
+        
+        <!-- c. Version and date of latest release -->
+        <div class="release-meta-header">
+          <div class="release-badge-pill">
+            <span class="pulse-indicator"></span>
+            <span class="version-label" id="release-version">v1.5.2</span>
+            <span class="version-type-tag">Latest</span>
+          </div>
+          <div class="release-date-box">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <time id="release-date" datetime="2026-08-13">August 13, 2026</time>
+          </div>
+        </div>
+
+        <div class="card-divider"></div>
+
+        <!-- b. Notes of the latest release in order with bullets -->
+        <div class="release-notes-box">
+          <h2 class="release-notes-heading">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Release Notes
+          </h2>
+          <ul class="release-notes-bullets" id="release-notes-list">
+            <li>New section bar</li>
+            <li>Fixed song with not cover in metadata</li>
+            <li>Individual artist section</li>
+            <li>New Genres section and metadata edit</li>
+            <li>New design for welcome card and new option for hidden</li>
+            <li>Update widget</li>
+            <li>Added option for play to next</li>
+            <li>32/64-bit float exclusive mode</li>
+            <li>Click-to-Seek in Lyrics</li>
+            <li>Refresh search song in option settings</li>
+            <li>and more optimization</li>
+          </ul>
+        </div>
+
+        <!-- d. Direct APK download link & F-Droid link -->
+        <div class="release-actions">
+          <a href="https://github.com/MrDemonc/Lune/releases/download/1.5.2/Lune-release.apk" id="download-apk-btn" class="action-btn btn-primary" download>
+            <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span class="btn-text-group">
+              <span class="btn-main-title">Download APK</span>
+              <span class="btn-subtitle" id="apk-size-label">Direct download (3.4 MB)</span>
+            </span>
+          </a>
+
+          <a href="https://f-droid.org/es/packages/com.demonlab.lune/" target="_blank" rel="noopener noreferrer" class="action-btn btn-fdroid">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9997.4482.9997.9993 0 .5511-.4486.9997-.9997.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9997.4482.9997.9993 0 .5511-.4486.9997-.9997.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1523-.5676.416.416 0 00-.5676.1523l-2.0223 3.503C15.5836 8.3585 13.8566 8 12 8s-3.5836.3585-5.1366.95l-2.0223-3.503a.416.416 0 00-.5676-.1523.416.416 0 00-.1523.5676l1.9973 3.4592C2.688 11.0544.3333 14.7397.3333 19h23.3334c0-4.2603-2.3547-7.9456-5.7867-9.6786"/>
+            </svg>
+            <span class="btn-text-group">
+              <span class="btn-main-title">Get on F-Droid</span>
+              <span class="btn-subtitle">Official repository</span>
+            </span>
+          </a>
+        </div>
+
+      </section>
+
+      <!-- Highlights tags (with 2 additional features) -->
+      <div class="features-tags">
+        <span class="tag-item"><span class="tag-icon">🔒</span> 100% Offline & Private</span>
+        <span class="tag-item"><span class="tag-icon">🎨</span> Dynamic Theming</span>
+        <span class="tag-item"><span class="tag-icon">✨</span> Defocus Blur Widget</span>
+        <span class="tag-item"><span class="tag-icon">🎛️</span> 10-Band Equalizer</span>
+        <span class="tag-item"><span class="tag-icon">🎵</span> Synchronized Lyrics</span>
+        <span class="tag-item"><span class="tag-icon">⚡</span> Automix & Crossfade</span>
+      </div>
+
+      <!-- Support & Donations Section -->
+      <section class="donate-section" id="donate-section">
+        <div class="donate-header">
+          <div class="donate-icon-badge">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          </div>
+          <div class="donate-text-wrap">
+            <h3 class="donate-title">Support Development</h3>
+            <p class="donate-subtitle">Lune is free and open source. Your support helps keep the project active!</p>
+          </div>
+        </div>
+
+        <div class="donation-grid">
+          <!-- PayPal -->
+          <a href="https://www.paypal.com/paypalme/TommyZambrano" target="_blank" rel="noopener noreferrer" class="donate-btn donate-paypal" title="Donate with PayPal">
+            <svg class="donate-btn-icon" viewBox="0 0 24 24" width="19" height="19" fill="currentColor">
+              <path d="M15.607 4.653H8.941L6.645 19.251H1.82L4.862 0h7.995c3.754 0 6.375 2.294 6.473 5.513-.648-.478-2.105-.86-3.722-.86m6.57 5.546c0 3.41-3.01 6.853-6.958 6.853h-2.493L11.595 24H6.74l1.845-11.538h3.592c4.208 0 7.346-3.634 7.153-6.949a5.24 5.24 0 0 1 2.848 4.686M9.653 5.546h6.408c.907 0 1.942.222 2.363.541-.195 2.741-2.655 5.483-6.441 5.483H8.714Z"/>
+            </svg>
+            <span>PayPal</span>
+          </a>
+
+          <!-- Ko-fi -->
+          <a href="https://ko-fi.com/mrdemonc" target="_blank" rel="noopener noreferrer" class="donate-btn donate-kofi" title="Buy me a coffee on Ko-fi">
+            <svg class="donate-btn-icon" viewBox="0 0 24 24" width="19" height="19" fill="currentColor">
+              <path d="M11.351 2.715c-2.7 0-4.986.025-6.83.26C2.078 3.285 0 5.154 0 8.61c0 3.506.182 6.13 1.585 8.493 1.584 2.701 4.233 4.182 7.662 4.182h.83c4.209 0 6.494-2.234 7.637-4a9.5 9.5 0 0 0 1.091-2.338C21.792 14.688 24 12.22 24 9.208v-.415c0-3.247-2.13-5.507-5.792-5.87-1.558-.156-2.65-.208-6.857-.208m0 1.947c4.208 0 5.09.052 6.571.182 2.624.311 4.13 1.584 4.13 4v.39c0 2.156-1.792 3.844-3.87 3.844h-.935l-.156.649c-.208 1.013-.597 1.818-1.039 2.546-.909 1.428-2.545 3.064-5.922 3.064h-.805c-2.571 0-4.831-.883-6.078-3.195-1.09-2-1.298-4.155-1.298-7.506 0-2.181.857-3.402 3.012-3.714 1.533-.233 3.559-.26 6.39-.26m6.547 2.287c-.416 0-.65.234-.65.546v2.935c0 .311.234.545.65.545 1.324 0 2.051-.754 2.051-2s-.727-2.026-2.052-2.026m-10.39.182c-1.818 0-3.013 1.48-3.013 3.142 0 1.533.858 2.857 1.949 3.897.727.701 1.87 1.429 2.649 1.896a1.47 1.47 0 0 0 1.507 0c.78-.467 1.922-1.195 2.623-1.896 1.117-1.039 1.974-2.364 1.974-3.897 0-1.662-1.247-3.142-3.039-3.142-1.065 0-1.792.545-2.338 1.298-.493-.753-1.246-1.298-2.312-1.298"/>
+            </svg>
+            <span>Ko-fi</span>
+          </a>
+
+          <!-- Monero (XMR) -->
+          <button type="button" class="donate-btn donate-monero" id="copy-monero-btn" title="Click to copy Monero address">
+            <svg class="donate-btn-icon" viewBox="0 0 24 24" width="19" height="19" fill="currentColor">
+              <path d="M12 0C5.365 0 0 5.373 0 12.015c0 1.335.228 2.607.618 3.81h3.577V5.729L12 13.545l7.805-7.815v10.095h3.577c.389-1.203.618-2.475.618-3.81C24 5.375 18.635 0 12 0zm-1.788 15.307l-3.417-3.421v6.351H1.758C3.87 21.689 7.678 24 12 24s8.162-2.311 10.245-5.764h-5.04v-6.351l-3.386 3.421-1.788 1.79-1.814-1.79h-.005z"/>
+            </svg>
+            <span id="monero-btn-text">Monero (XMR)</span>
+          </button>
+        </div>
+
+        <!-- Hidden Monero Address Input for Instant Copy -->
+        <input type="hidden" id="monero-address" value="88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9">
+      </section>
+
+      <!-- Contributors & Credits Section -->
+      <section class="contributors-section" id="contributors-section">
+        <div class="contributors-header">
+          <div class="contributors-icon-badge">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div class="contributors-text-wrap">
+            <h3 class="contributors-title">Contributors & Credits</h3>
+            <p class="contributors-subtitle">Special thanks to everyone contributing to the Lune project</p>
+          </div>
+        </div>
+
+        <div class="contributors-grid" id="contributors-list">
+          <!-- Main Creator & Dev -->
+          <a href="https://github.com/MrDemonc" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/182368138?v=4" alt="MrDemonc" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">MrDemonc</span>
+              <span class="contributor-role-badge badge-creator">Creator & Lead Dev</span>
+            </div>
+          </a>
+
+          <!-- UX/Design Credits -->
+          <div class="contributor-card">
+            <div class="contributor-avatar avatar-text">D</div>
+            <div class="contributor-details">
+              <span class="contributor-name">Desukia</span>
+              <span class="contributor-role-badge badge-design">Design & UX Testing</span>
+            </div>
+          </div>
+
+          <!-- Code Contributors -->
+          <a href="https://github.com/mmdparsa-dev" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/224661016?v=4" alt="mmdparsa-dev" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">mmdparsa-dev</span>
+              <span class="contributor-role-badge">Contributor</span>
+            </div>
+          </a>
+
+          <a href="https://github.com/sam-a1a" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/261951562?v=4" alt="sam-a1a" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">sam-a1a</span>
+              <span class="contributor-role-badge">Contributor</span>
+            </div>
+          </a>
+
+          <a href="https://github.com/YisusPineapple" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/210195951?v=4" alt="YisusPineapple" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">YisusPineapple</span>
+              <span class="contributor-role-badge">Contributor</span>
+            </div>
+          </a>
+
+          <a href="https://github.com/naturanaturans" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/301324115?v=4" alt="naturanaturans" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">naturanaturans</span>
+              <span class="contributor-role-badge">Contributor</span>
+            </div>
+          </a>
+
+          <a href="https://github.com/teunissenstefan" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/182849?v=4" alt="teunissenstefan" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">teunissenstefan</span>
+              <span class="contributor-role-badge">Contributor</span>
+            </div>
+          </a>
+
+          <a href="https://github.com/Shalunizm" target="_blank" rel="noopener noreferrer" class="contributor-card">
+            <img src="https://avatars.githubusercontent.com/u/100294282?v=4" alt="Shalunizm" class="contributor-avatar" loading="lazy">
+            <div class="contributor-details">
+              <span class="contributor-name">Shalunizm</span>
+              <span class="contributor-role-badge">Contributor</span>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- Toast Notification for Monero Copy -->
+      <div id="toast" class="toast-popup" role="alert" aria-live="polite">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>Monero address copied to clipboard!</span>
+      </div>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <p>Lune by <a href="https://github.com/MrDemonc" target="_blank" rel="noopener noreferrer">MrDemonc</a> · Free & Open Source under GPL-3.0 License</p>
+      </footer>
+
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
