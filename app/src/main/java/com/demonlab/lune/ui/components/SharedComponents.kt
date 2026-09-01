@@ -115,6 +115,41 @@ fun ResponsiveText(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+private fun PlayingSongDiamondsIndicator(isPlaying: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "PlayingIndicatorRotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "LogoRotation"
+    )
+
+    Box(
+        modifier = Modifier.size(60.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_logo_diamonds),
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier
+                .size(60.dp)
+                .then(if (isPlaying) Modifier.rotate(rotation) else Modifier)
+        )
+        Icon(
+            imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 fun SongItem(
     song: Song,
     currentlyPlaying: Boolean,
@@ -128,17 +163,6 @@ fun SongItem(
 ) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
-
-    val infiniteTransition = rememberInfiniteTransition(label = "PlayingIndicatorRotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "LogoRotation"
-    )
 
     val shape = if (isFirst && isLast) {
         RoundedCornerShape(28.dp)
@@ -154,9 +178,8 @@ fun SongItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 1.dp)
-            .clip(shape)
-            .bounceClick()
-            .clickable(onClick = onClick ?: {}),
+            .bounceClick(scaleDown = 0.96f),
+        onClick = onClick ?: {},
         shape = shape,
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
     ) {
@@ -199,25 +222,7 @@ fun SongItem(
                         shape = MaterialTheme.shapes.medium
                     )
                     if (currentlyPlaying) {
-                        Box(
-                            modifier = Modifier.size(60.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_logo_diamonds),
-                                contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .then(if (isPlaying) Modifier.rotate(rotation) else Modifier)
-                            )
-                            Icon(
-                                imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                        PlayingSongDiamondsIndicator(isPlaying = isPlaying)
                     }
                 }
             },
@@ -309,10 +314,13 @@ fun SongGridItem(
     onFavoriteClick: ((Song) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val cardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
+    val coverShape = RoundedCornerShape(24.dp)
     Column(
         modifier = modifier
             .fillMaxWidth()
             .bounceClick()
+            .clip(cardShape)
             .clickable(onClick = onClick)
     ) {
         Box {
@@ -320,14 +328,14 @@ fun SongGridItem(
                 modifier = Modifier
                     .aspectRatio(1f)
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = coverShape,
                 color = MaterialTheme.colorScheme.secondaryContainer
             ) {
                 SongCoverImage(
                     coverUrl = song.coverUrl ?: song.albumArtUri ?: song.uri,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = coverShape,
                     iconScale = 0.68f
                 )
             }
@@ -336,7 +344,7 @@ fun SongGridItem(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(24.dp)),
+                        .background(Color.Black.copy(alpha = 0.35f), coverShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
@@ -420,7 +428,7 @@ fun SongGridItem(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 4.dp)
+            modifier = Modifier.padding(horizontal = 6.dp)
         ) {
             if (currentlyPlaying) {
                 Box(
@@ -460,8 +468,9 @@ fun SongGridItem(
             maxLines = 1,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 

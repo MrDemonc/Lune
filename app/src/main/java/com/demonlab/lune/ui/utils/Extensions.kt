@@ -3,6 +3,7 @@ package com.demonlab.lune.ui.utils
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -13,11 +14,13 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 fun Vibrator.triggerLightVibration() {
@@ -58,28 +61,36 @@ fun formatLongDuration(durationInMillis: Long): String {
     }
 }
 
-fun Modifier.bounceClick(scaleDown: Float = 0.85f): Modifier = composed {
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) scaleDown else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "bounce"
-    )
+fun Modifier.bounceClick(
+    scaleDown: Float = 0.94f,
+    dampingRatio: Float = Spring.DampingRatioMediumBouncy,
+    stiffness: Float = Spring.StiffnessMedium
+): Modifier = composed {
+    val scale = remember { Animatable(1f) }
+    val coroutineScope = rememberCoroutineScope()
 
     this
         .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
+            scaleX = scale.value
+            scaleY = scale.value
         }
-        .pointerInput(Unit) {
+        .pointerInput(scaleDown, dampingRatio, stiffness) {
             awaitEachGesture {
                 awaitFirstDown(requireUnconsumed = false)
-                isPressed = true
+                val animJob = coroutineScope.launch {
+                    scale.animateTo(
+                        targetValue = scaleDown,
+                        animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+                    )
+                }
                 waitForUpOrCancellation()
-                isPressed = false
+                animJob.cancel()
+                coroutineScope.launch {
+                    scale.animateTo(
+                        targetValue = 1f,
+                        animationSpec = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+                    )
+                }
             }
         }
 }

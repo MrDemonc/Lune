@@ -103,21 +103,33 @@ class PlaybackManager private constructor(private val context: Context) {
 
     fun savePlaybackState(wasPlaying: Boolean = isPlaying) {
         val pos = musicService?.currentPosition()?.toLong() ?: 0L
-        playbackStateSaver.save(
-            SavedPlaybackState(
-                currentSongId = currentSong?.id ?: -1L,
-                playbackPositionMs = pos,
-                queueIds = activePlaylist.map { it.id },
-                playlistId = activePlaylistId,
-                playlistName = activePlaylistName,
-                playlistCategory = activeCategory,
-                shuffledIndices = if (isShuffle) shuffledIndices else emptyList(),
-                shufflePosition = if (isShuffle) currentShufflePosition else -1,
-                frontQueueInsertCount = frontQueueInsertCount,
-                wasPlaying = wasPlaying,
-                queueSections = queueSections
+        val currentId = currentSong?.id ?: -1L
+        val qIds = activePlaylist.map { it.id }
+        val pId = activePlaylistId
+        val pName = activePlaylistName
+        val pCat = activeCategory
+        val sIndices = if (isShuffle) shuffledIndices else emptyList()
+        val sPos = if (isShuffle) currentShufflePosition else -1
+        val fCount = frontQueueInsertCount
+        val qSec = queueSections
+
+        managerScope.launch(Dispatchers.IO) {
+            playbackStateSaver.save(
+                SavedPlaybackState(
+                    currentSongId = currentId,
+                    playbackPositionMs = pos,
+                    queueIds = qIds,
+                    playlistId = pId,
+                    playlistName = pName,
+                    playlistCategory = pCat,
+                    shuffledIndices = sIndices,
+                    shufflePosition = sPos,
+                    frontQueueInsertCount = fCount,
+                    wasPlaying = wasPlaying,
+                    queueSections = qSec
+                )
             )
-        )
+        }
     }
 
     fun restorePlaybackState(songs: List<Song>) {

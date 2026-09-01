@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.ui.draw.clip
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
@@ -76,10 +77,13 @@ fun AlbumGrid(
 
 @Composable
 fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
+    val cardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
+    val coverShape = RoundedCornerShape(24.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .bounceClick()
+            .clip(cardShape)
             .clickable(onClick = onClick)
     ) {
         Box {
@@ -87,14 +91,14 @@ fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
                 modifier = Modifier
                     .aspectRatio(1f)
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = coverShape,
                 color = MaterialTheme.colorScheme.secondaryContainer
             ) {
                 SongCoverImage(
                     coverUrl = album.coverUrl ?: album.albumArtUri,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = coverShape,
                     iconScale = 0.68f
                 )
             }
@@ -102,7 +106,7 @@ fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 4.dp)
+            modifier = Modifier.padding(horizontal = 6.dp)
         ) {
             if (isPlaying) {
                 Box(
@@ -126,7 +130,8 @@ fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
             maxLines = 1,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 4.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
