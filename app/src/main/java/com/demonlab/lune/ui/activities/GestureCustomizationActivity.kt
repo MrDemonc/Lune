@@ -27,6 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
 
 class GestureCustomizationActivity : ComponentActivity() {
@@ -64,130 +68,160 @@ fun GestureCustomizationScreen(
     onBack: () -> Unit,
     settingsManager: SettingsManager
 ) {
+    val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     var isGesturesEnabled by remember { mutableStateOf(settingsManager.isGesturesEnabled) }
     var swipeUpAction by remember { mutableIntStateOf(settingsManager.swipeUpAction) }
     var showSwipeUpOptions by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.gesture),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.cd_back),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
+    AppBlurBackdrop(
+        hasBlurBackground = hasBlurBackground,
+        isDarkTheme = isDarkTheme,
+        currentSong = currentSong
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(R.string.gesture),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            SettingsSection(title = stringResource(R.string.general)) {
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.enable_gestures),
-                    supportingText = stringResource(R.string.enable_gestures_desc),
-                    icon = Icons.Default.Gesture,
-                    position = SectionPosition.FIRST,
-                    trailingContent = {
-                        BouncySwitch(
-                            checked = isGesturesEnabled,
-                            onCheckedChange = { 
-                                isGesturesEnabled = it 
-                                settingsManager.isGesturesEnabled = it
-                            },
-                            thumbContent = {
-                                Icon(
-                                    imageVector = if (isGesturesEnabled) Icons.Default.Check else Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    }
-                )
-
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.change_gesture),
-                    supportingText = stringResource(R.string.change_gesture_desc),
-                    icon = Icons.Default.SwipeUp,
-                    position = SectionPosition.LAST,
-                    onClick = { showSwipeUpOptions = true }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
                 )
             }
-        }
-        
-        if (showSwipeUpOptions) {
-            val swipeUpOptions = listOf(
-                stringResource(R.string.disabled),
-                stringResource(R.string.open_queue),
-                stringResource(R.string.eq_title),
-                stringResource(R.string.add_to_playlist),
-                stringResource(R.string.option_share)
-            )
-            ModalBottomSheet(
-                onDismissRequest = { showSwipeUpOptions = false },
-                containerColor = MaterialTheme.colorScheme.surface,
-                dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Column(modifier = Modifier.padding(bottom = 32.dp)) {
-                    Text(
-                        text = stringResource(R.string.change_gesture),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                    swipeUpOptions.forEachIndexed { index, title ->
-                        val isSelected = swipeUpAction == index
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    swipeUpAction = index
-                                    settingsManager.swipeUpAction = index
-                                    showSwipeUpOptions = false
+                SettingsSection(title = stringResource(R.string.general)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.enable_gestures),
+                        supportingText = stringResource(R.string.enable_gestures_desc),
+                        icon = Icons.Default.Gesture,
+                        position = SectionPosition.FIRST,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = isGesturesEnabled,
+                                onCheckedChange = { 
+                                    isGesturesEnabled = it 
+                                    settingsManager.isGesturesEnabled = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isGesturesEnabled) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
                                 }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = isSelected,
-                                onClick = null
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(text = title)
+                        }
+                    )
+
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.change_gesture),
+                        supportingText = stringResource(R.string.change_gesture_desc),
+                        icon = Icons.Default.SwipeUp,
+                        position = SectionPosition.LAST,
+                        onClick = { showSwipeUpOptions = true }
+                    )
+                }
+            }
+            
+            if (showSwipeUpOptions) {
+                val swipeUpOptions = listOf(
+                    stringResource(R.string.disabled),
+                    stringResource(R.string.open_queue),
+                    stringResource(R.string.eq_title),
+                    stringResource(R.string.add_to_playlist),
+                    stringResource(R.string.option_share)
+                )
+                ModalBottomSheet(
+                    onDismissRequest = { showSwipeUpOptions = false },
+                    containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surface,
+                    dragHandle = {
+                        BottomSheetDefaults.DragHandle(
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(bottom = 32.dp)) {
+                        Text(
+                            text = stringResource(R.string.change_gesture),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                        swipeUpOptions.forEachIndexed { index, title ->
+                            val isSelected = swipeUpAction == index
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        swipeUpAction = index
+                                        settingsManager.swipeUpAction = index
+                                        showSwipeUpOptions = false
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                        unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = title,
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }

@@ -46,6 +46,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
+import androidx.compose.ui.graphics.Color
+import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
 
 class PermissionsActivity : ComponentActivity() {
@@ -95,47 +98,62 @@ class PermissionsActivity : ComponentActivity() {
 fun PermissionsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val settingsManager = com.demonlab.lune.tools.SettingsManager.getInstance(context)
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.permissions),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.cd_back),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
+    AppBlurBackdrop(
+        hasBlurBackground = hasBlurBackground,
+        isDarkTheme = isDarkTheme,
+        currentSong = currentSong
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(R.string.permissions),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
-        }
-    ) { innerPadding ->
+            }
+        ) { innerPadding ->
         val permissions = listOf(
             PermissionItem(
                 title = stringResource(R.string.perm_record_audio_title),
@@ -238,6 +256,7 @@ fun PermissionsScreen(onBack: () -> Unit) {
         }
     }
 }
+}
 
 enum class PermissionSectionPosition {
     FIRST, MIDDLE, LAST, SINGLE
@@ -251,6 +270,16 @@ fun PermissionsPreferenceItem(
     position: PermissionSectionPosition,
     onClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val settingsManager = com.demonlab.lune.tools.SettingsManager.getInstance(context)
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     val shape = when (position) {
         PermissionSectionPosition.FIRST -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
         PermissionSectionPosition.MIDDLE -> RoundedCornerShape(4.dp)
@@ -258,47 +287,58 @@ fun PermissionsPreferenceItem(
         PermissionSectionPosition.SINGLE -> RoundedCornerShape(28.dp)
     }
 
+    val cardBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
+
+    val iconBg = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+    val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+    val headlineColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val supportingColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 1.dp)
             .clickable(onClick = onClick),
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        tonalElevation = 1.dp
+        color = cardBg,
+        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
     ) {
         ListItem(
             supportingContent = { 
                 Text(
                     supportingText,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = supportingColor
                 ) 
             },
             leadingContent = {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    color = iconBg,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             icon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = iconTint,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             },
             colors = ListItemDefaults.colors(
-                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                containerColor = Color.Transparent
             )
         ) {
             Text(
                 headlineText, 
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = headlineColor
             ) 
         }
     }

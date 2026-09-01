@@ -54,9 +54,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
-import com.demonlab.lune.ui.theme.LuneTheme
-import androidx.compose.ui.graphics.vector.ImageVector
 import com.demonlab.lune.BuildConfig
+import com.demonlab.lune.tools.PlaybackManager
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.demonlab.lune.ui.theme.LuneTheme
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -156,13 +157,31 @@ fun SettingsScreen(
         }
     }
 
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val themeMode = settingsManager.themeMode
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             confirmButton = {},
-            title = { Text(stringResource(R.string.select_language)) },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.select_language),
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
                 Column {
                     val languages = listOf(
@@ -196,10 +215,17 @@ fun SettingsScreen(
                         ) {
                             RadioButton(
                                 selected = currentLanguage == code,
-                                onClick = null 
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(label)
+                            Text(
+                                label,
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }
@@ -208,200 +234,204 @@ fun SettingsScreen(
         )
     }
 
-
-
-
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = { 
-                    Text(
-                        stringResource(R.string.settings),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack, 
-                                    contentDescription = stringResource(R.string.cd_back),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
+    com.demonlab.lune.ui.components.AppBlurBackdrop(
+        hasBlurBackground = hasBlurBackground,
+        isDarkTheme = isDarkTheme,
+        currentSong = currentSong
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    title = { 
+                        Text(
+                            stringResource(R.string.settings),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                        ) 
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack, 
+                                        contentDescription = stringResource(R.string.cd_back),
+                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            // General Section
-            SettingsSection(title = stringResource(R.string.general)) {
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.audio_settings),
-                    supportingText = stringResource(R.string.audio_settings_desc),
-                    icon = Icons.Default.MusicNote,
-                    position = SectionPosition.FIRST,
-                    onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
-                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                // General Section
+                SettingsSection(title = stringResource(R.string.general)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.audio_settings),
+                        supportingText = stringResource(R.string.audio_settings_desc),
+                        icon = Icons.Default.MusicNote,
+                        position = SectionPosition.FIRST,
+                        onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
+                    )
 
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.keep_screen_on),
-                    supportingText = stringResource(R.string.keep_screen_on_desc),
-                    icon = Icons.Default.LightMode,
-                    position = SectionPosition.MIDDLE,
-                    trailingContent = {
-                        BouncySwitch(
-                            checked = keepScreenOn,
-                            onCheckedChange = {
-                                keepScreenOn = it
-                                settingsManager.keepScreenOn = it
-                            },
-                            thumbContent = {
-                                Icon(
-                                    imageVector = if (keepScreenOn) Icons.Default.Check else Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    }
-                )
-
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.rescan_library),
-                    supportingText = stringResource(R.string.rescan_library_desc),
-                    icon = Icons.Default.Sync,
-                    position = SectionPosition.MIDDLE,
-                    trailingContent = if (isScanningLibrary) {
-                        {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.keep_screen_on),
+                        supportingText = stringResource(R.string.keep_screen_on_desc),
+                        icon = Icons.Default.LightMode,
+                        position = SectionPosition.MIDDLE,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = keepScreenOn,
+                                onCheckedChange = {
+                                    keepScreenOn = it
+                                    settingsManager.keepScreenOn = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (keepScreenOn) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
                             )
                         }
-                    } else null,
-                    onClick = {
-                        if (!isScanningLibrary) {
-                            scope.launch {
-                                isScanningLibrary = true
-                                val songs = musicProvider.refreshLibrary()
-                                isScanningLibrary = false
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.rescan_library_success, songs.size),
-                                    Toast.LENGTH_LONG
-                                ).show()
+                    )
+
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.rescan_library),
+                        supportingText = stringResource(R.string.rescan_library_desc),
+                        icon = Icons.Default.Sync,
+                        position = SectionPosition.MIDDLE,
+                        trailingContent = if (isScanningLibrary) {
+                            {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else null,
+                        onClick = {
+                            if (!isScanningLibrary) {
+                                scope.launch {
+                                    isScanningLibrary = true
+                                    val songs = musicProvider.refreshLibrary()
+                                    isScanningLibrary = false
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.rescan_library_success, songs.size),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         }
-                    }
-                )
-
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.customization),
-                    supportingText = stringResource(R.string.customization_desc),
-                    icon = Icons.Default.Palette,
-                    position = SectionPosition.MIDDLE,
-                    onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-                )
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.language),
-                    supportingText = when(currentLanguage) {
-                        "en" -> stringResource(R.string.lang_english)
-                        "es" -> stringResource(R.string.lang_spanish)
-                        "pt-BR" -> stringResource(R.string.lang_portuguese)
-                        "fr" -> stringResource(R.string.lang_french)
-                        "zh" -> stringResource(R.string.lang_chinese)
-                        "de" -> stringResource(R.string.lang_german)
-                        "ru" -> stringResource(R.string.lang_russian)
-                        "fa" -> stringResource(R.string.lang_persian)
-                        "ar" -> stringResource(R.string.lang_arabic)
-                        else -> stringResource(R.string.lang_system)
-                    },
-                    icon = Icons.Default.Language,
-                    position = SectionPosition.LAST,
-                    onClick = { showLanguageDialog = true }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Backup Section
-            SettingsSection(title = stringResource(R.string.backup)) {
-                if (showBackupWarning) {
-                    BackupWarningCard(
-                        onDismiss = {
-                            showBackupWarning = false
-                            settingsManager.showBackupWarning = false
-                        }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.customization),
+                        supportingText = stringResource(R.string.customization_desc),
+                        icon = Icons.Default.Palette,
+                        position = SectionPosition.MIDDLE,
+                        onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
+                    )
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.language),
+                        supportingText = when(currentLanguage) {
+                            "en" -> stringResource(R.string.lang_english)
+                            "es" -> stringResource(R.string.lang_spanish)
+                            "pt-BR" -> stringResource(R.string.lang_portuguese)
+                            "fr" -> stringResource(R.string.lang_french)
+                            "zh" -> stringResource(R.string.lang_chinese)
+                            "de" -> stringResource(R.string.lang_german)
+                            "ru" -> stringResource(R.string.lang_russian)
+                            "fa" -> stringResource(R.string.lang_persian)
+                            "ar" -> stringResource(R.string.lang_arabic)
+                            else -> stringResource(R.string.lang_system)
+                        },
+                        icon = Icons.Default.Language,
+                        position = SectionPosition.LAST,
+                        onClick = { showLanguageDialog = true }
+                    )
                 }
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.export_playlists),
-                    supportingText = stringResource(R.string.export_playlists_desc),
-                    icon = Icons.Default.CloudDownload,
-                    position = SectionPosition.FIRST,
-                    onClick = { exportLauncher.launch("playlists_backup.json") }
-                )
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.import_playlists),
-                    supportingText = stringResource(R.string.import_playlists_desc),
-                    icon = Icons.Default.Refresh,
-                    position = SectionPosition.LAST,
-                    onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
-                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Backup Section
+                SettingsSection(title = stringResource(R.string.backup)) {
+                    if (showBackupWarning) {
+                        BackupWarningCard(
+                            onDismiss = {
+                                showBackupWarning = false
+                                settingsManager.showBackupWarning = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.export_playlists),
+                        supportingText = stringResource(R.string.export_playlists_desc),
+                        icon = Icons.Default.CloudDownload,
+                        position = SectionPosition.FIRST,
+                        onClick = { exportLauncher.launch("playlists_backup.json") }
+                    )
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.import_playlists),
+                        supportingText = stringResource(R.string.import_playlists_desc),
+                        icon = Icons.Default.Refresh,
+                        position = SectionPosition.LAST,
+                        onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Security Section
+                SettingsSection(title = stringResource(R.string.security)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.permissions),
+                        supportingText = stringResource(R.string.permissions_desc),
+                        icon = Icons.Default.Security,
+                        position = SectionPosition.SINGLE,
+                        onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // About Section
+                SettingsSection(title = stringResource(R.string.about)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.about),
+                        icon = Icons.Default.Info,
+                        position = SectionPosition.SINGLE,
+                        onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Security Section
-            SettingsSection(title = stringResource(R.string.security)) {
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.permissions),
-                    supportingText = stringResource(R.string.permissions_desc),
-                    icon = Icons.Default.Security,
-                    position = SectionPosition.SINGLE,
-                    onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // About Section
-            SettingsSection(title = stringResource(R.string.about)) {
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.about),
-                    icon = Icons.Default.Info,
-                    position = SectionPosition.SINGLE,
-                    onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -415,11 +445,21 @@ fun SettingsSection(
     title: String,
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     Column {
         Text(
             text = title,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
             fontWeight = FontWeight.Bold
         )
@@ -436,6 +476,16 @@ fun SettingsPreferenceItem(
     onClick: (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     val shape = when (position) {
         SectionPosition.FIRST -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
         SectionPosition.MIDDLE -> RoundedCornerShape(4.dp)
@@ -443,28 +493,39 @@ fun SettingsPreferenceItem(
         SectionPosition.SINGLE -> RoundedCornerShape(28.dp)
     }
 
+    val cardBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
+
+    val iconBg = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+    val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+    val headlineColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val supportingColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 1.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        tonalElevation = 1.dp
+        color = cardBg,
+        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
     ) {
         ListItem(
-            supportingContent = supportingText?.let { { Text(it) } },
+            supportingContent = supportingText?.let { { Text(it, color = supportingColor) } },
             leadingContent = {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    color = iconBg,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
                         Icon(
                             icon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = iconTint,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -472,25 +533,45 @@ fun SettingsPreferenceItem(
             },
             trailingContent = trailingContent,
             colors = ListItemDefaults.colors(
-                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                containerColor = Color.Transparent
             )
         ) {
-            Text(headlineText, fontWeight = FontWeight.Bold)
+            Text(headlineText, fontWeight = FontWeight.Bold, color = headlineColor)
         }
     }
 }
 
-
-
 @Composable
 fun BackupWarningCard(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
+    val cardBg = if (hasBlurBackground) {
+        Color.Black.copy(alpha = 0.35f)
+    } else {
+        Color(0xFFFDE8E8)
+    }
+    val borderColor = if (hasBlurBackground) Color.White.copy(alpha = 0.20f) else Color(0xFFF8B4B4)
+    val titleColor = if (hasBlurBackground) Color.White else Color(0xFF9B1C1C)
+    val descColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else Color(0xFF9B1C1C).copy(alpha = 0.85f)
+    val iconTint = if (hasBlurBackground) Color(0xFFFF8A80) else Color(0xFF9B1C1C)
+    val btnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else Color(0xFFFBD5D5)
+    val btnTint = if (hasBlurBackground) Color.White else Color(0xFF9B1C1C)
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(24.dp),
-        color = Color(0xFFFDE8E8), // Beautiful soft red background (pastel red)
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF8B4B4))
+        color = cardBg,
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
@@ -501,7 +582,7 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = Color(0xFF9B1C1C), // Stronger red for icon
+                tint = iconTint,
                 modifier = Modifier.size(24.dp)
             )
             
@@ -512,13 +593,13 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
                     text = stringResource(com.demonlab.lune.R.string.backup_warning_title),
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF9B1C1C) // Nice contrast text color
+                    color = titleColor
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(com.demonlab.lune.R.string.backup_warning_desc),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF9B1C1C).copy(alpha = 0.85f)
+                    color = descColor
                 )
             }
             
@@ -529,12 +610,12 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFFBD5D5)) // Slightly darker soft red for button background
+                    .background(btnBg)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close",
-                    tint = Color(0xFF9B1C1C),
+                    tint = btnTint,
                     modifier = Modifier.size(16.dp)
                 )
             }

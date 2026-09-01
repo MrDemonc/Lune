@@ -68,6 +68,8 @@ import com.demonlab.lune.ui.components.BouncySwitch
 import com.demonlab.lune.ui.activities.SectionPosition
 import com.demonlab.lune.ui.activities.SettingsPreferenceItem
 import com.demonlab.lune.ui.activities.SettingsSection
+import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
 import androidx.compose.foundation.isSystemInDarkTheme
 
@@ -126,6 +128,14 @@ fun WidgetCustomizationScreen(
     settingsManager: SettingsManager
 ) {
     val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
 
     var widgetUseSolidBackground by remember { mutableStateOf(settingsManager.widgetUseSolidBackground) }
     var widgetLightBackgroundColor by remember { mutableIntStateOf(settingsManager.widgetLightBackgroundColor) }
@@ -158,75 +168,81 @@ fun WidgetCustomizationScreen(
         context.sendBroadcast(broadcastIntent)
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.widget_customization),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.cd_back),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
+    AppBlurBackdrop(
+        hasBlurBackground = hasBlurBackground,
+        isDarkTheme = isDarkTheme,
+        currentSong = currentSong
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(R.string.widget_customization),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            // Live Preview Card
-            Surface(
+            }
+        ) { innerPadding ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Live Preview Card
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    border = BorderStroke(1.dp, if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = stringResource(R.string.cover_preview),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.cover_preview),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
                         // Mode switcher for preview (Light / Dark)
                         Surface(
@@ -518,7 +534,8 @@ fun WidgetCustomizationScreen(
                             .fillMaxWidth()
                             .padding(vertical = 1.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                     ) {
                         Column(
                             modifier = Modifier
@@ -534,7 +551,7 @@ fun WidgetCustomizationScreen(
                                     Icon(
                                         Icons.Default.BlurOn,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -543,12 +560,12 @@ fun WidgetCustomizationScreen(
                                             text = stringResource(R.string.widget_blur),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
                                             text = stringResource(R.string.widget_blur_desc),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -556,7 +573,7 @@ fun WidgetCustomizationScreen(
                                     text = "${widgetBackgroundBlur}%",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
                                 )
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -569,16 +586,23 @@ fun WidgetCustomizationScreen(
                                     notifyWidgetUpdate()
                                 },
                                 valueRange = 10f..100f,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    activeTickColor = if (hasBlurBackground) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onPrimary,
+                                    inactiveTickColor = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("10%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("50%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("100%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("10%", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("50%", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("100%", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -589,7 +613,8 @@ fun WidgetCustomizationScreen(
                             .fillMaxWidth()
                             .padding(vertical = 1.dp),
                         shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                     ) {
                         Column(
                             modifier = Modifier
@@ -605,7 +630,7 @@ fun WidgetCustomizationScreen(
                                     Icon(
                                         Icons.Default.Opacity,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -614,12 +639,12 @@ fun WidgetCustomizationScreen(
                                             text = stringResource(R.string.widget_darkness),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
                                             text = stringResource(R.string.widget_darkness_desc),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
@@ -627,7 +652,7 @@ fun WidgetCustomizationScreen(
                                     text = "${(widgetBackgroundDarkness * 100).toInt()}%",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
                                 )
                             }
                             Spacer(modifier = Modifier.height(10.dp))
@@ -640,16 +665,23 @@ fun WidgetCustomizationScreen(
                                     notifyWidgetUpdate()
                                 },
                                 valueRange = 0.10f..0.90f,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    activeTickColor = if (hasBlurBackground) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onPrimary,
+                                    inactiveTickColor = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("10%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("50%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("90%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("10%", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("50%", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("90%", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -719,4 +751,5 @@ fun WidgetCustomizationScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+}
 }

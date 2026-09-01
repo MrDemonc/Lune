@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.demonlab.lune.ui.utils.bounceClick
+import androidx.compose.ui.draw.blur
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
@@ -81,6 +82,52 @@ import com.demonlab.lune.ui.utils.formatDurationCompact
 import com.demonlab.lune.ui.utils.formatLongDuration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+@Composable
+fun AppBlurBackdrop(
+    hasBlurBackground: Boolean,
+    isDarkTheme: Boolean,
+    currentSong: Song? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        if (hasBlurBackground && currentSong != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(80.dp)
+                    .alpha(if (isDarkTheme) 0.35f else 0.45f)
+            ) {
+                val req = remember(currentSong.id, currentSong.coverUrl) {
+                    coil.request.ImageRequest.Builder(context)
+                        .data(currentSong.coverUrl ?: currentSong.albumArtUri ?: currentSong.uri)
+                        .crossfade(true)
+                        .build()
+                }
+                AsyncImage(
+                    model = req,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (isDarkTheme) Color.Black.copy(alpha = 0.52f) else Color.Black.copy(alpha = 0.28f)
+                    )
+            )
+        }
+        content()
+    }
+}
 
 @Composable
 fun ResponsiveText(
@@ -1371,9 +1418,34 @@ fun BouncySwitch(
     onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    colors: SwitchColors? = null,
     thumbContent: @Composable (() -> Unit)? = null
 ) {
     val scale = remember { Animatable(initialValue = 1f) }
+    val context = LocalContext.current
+    val settingsManager = remember { com.demonlab.lune.tools.SettingsManager.getInstance(context) }
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
+    val switchColors = colors ?: if (hasBlurBackground) {
+        SwitchDefaults.colors(
+            checkedThumbColor = Color.Black,
+            checkedTrackColor = Color.White,
+            checkedBorderColor = Color.White,
+            checkedIconColor = Color.Black,
+            uncheckedThumbColor = Color.White.copy(alpha = 0.85f),
+            uncheckedTrackColor = Color.White.copy(alpha = 0.15f),
+            uncheckedBorderColor = Color.White.copy(alpha = 0.35f),
+            uncheckedIconColor = Color.Black
+        )
+    } else {
+        SwitchDefaults.colors()
+    }
 
     LaunchedEffect(checked) {
         scale.snapTo(1f)
@@ -1392,6 +1464,7 @@ fun BouncySwitch(
         onCheckedChange = onCheckedChange,
         modifier = modifier.graphicsLayer(scaleX = scale.value, scaleY = scale.value),
         enabled = enabled,
+        colors = switchColors,
         thumbContent = thumbContent
     )
 }

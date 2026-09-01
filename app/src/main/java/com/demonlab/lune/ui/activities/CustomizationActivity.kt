@@ -41,6 +41,9 @@ import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.filled.Widgets
 
+import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.ui.components.AppBlurBackdrop
+
 class CustomizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,6 +127,16 @@ fun CustomizationScreen(
     onSongInfoChanged: (Boolean) -> Unit,
     onCinematicChanged: (Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     var showCustomTitleDialog by remember { mutableStateOf(false) }
     var customTitle by remember { mutableStateOf(settingsManager.customTitle) }
     var showBitrateSheet by remember { mutableStateOf(false) }
@@ -140,7 +153,14 @@ fun CustomizationScreen(
         var tempTitle by remember { mutableStateOf(customTitle) }
         AlertDialog(
             onDismissRequest = { showCustomTitleDialog = false },
-            title = { Text(stringResource(R.string.custom_title)) },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.custom_title),
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
                 OutlinedTextField(
                     value = tempTitle,
@@ -148,9 +168,21 @@ fun CustomizationScreen(
                     label = { Text("Titulo") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = if (hasBlurBackground) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline,
+                        focusedLabelColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
                     trailingIcon = {
                         IconButton(onClick = { tempTitle = "" }) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.restore_default_title))
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.restore_default_title),
+                                tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 )
@@ -161,64 +193,76 @@ fun CustomizationScreen(
                     settingsManager.customTitle = tempTitle
                     showCustomTitleDialog = false
                 }) {
-                    Text(stringResource(R.string.ok))
+                    Text(
+                        stringResource(R.string.ok),
+                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomTitleDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                    Text(
+                        stringResource(R.string.cancel),
+                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             },
             shape = RoundedCornerShape(28.dp)
         )
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.customization),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.cd_back),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
+    AppBlurBackdrop(
+        hasBlurBackground = hasBlurBackground,
+        isDarkTheme = isDarkTheme,
+        currentSong = currentSong
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(R.string.customization),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
             SettingsSection(title = stringResource(R.string.general)) {
                 SettingsPreferenceItem(
                     headlineText = stringResource(R.string.custom_title),
@@ -261,8 +305,8 @@ fun CustomizationScreen(
                             .fillMaxWidth()
                             .padding(vertical = 1.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        tonalElevation = 1.dp
+                        color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                     ) {
                         Row(
                             modifier = Modifier
@@ -290,14 +334,22 @@ fun CustomizationScreen(
                                         settingsManager.hiddenSectionTabs = newHidden
                                     },
                                     shape = CircleShape,
-                                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                                    color = if (isActive) {
+                                        if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                    } else {
+                                        if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer
+                                    },
                                     modifier = Modifier.size(44.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             icon,
                                             contentDescription = null,
-                                            tint = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                                            tint = if (isActive) {
+                                                if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
+                                            } else {
+                                                if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSecondaryContainer
+                                            },
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -333,15 +385,15 @@ fun CustomizationScreen(
                             .fillMaxWidth()
                             .padding(vertical = 1.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        tonalElevation = 1.dp
+                        color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = stringResource(R.string.color_palette),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(12.dp))
 
@@ -372,7 +424,7 @@ fun CustomizationScreen(
                                             modifier = Modifier.fillMaxSize(),
                                             border = if (isSelected) androidx.compose.foundation.BorderStroke(
                                                 3.dp,
-                                                MaterialTheme.colorScheme.onSurface
+                                                if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                                             ) else null
                                         ) {
                                             if (isSelected) {
@@ -384,7 +436,7 @@ fun CustomizationScreen(
                                                         Icons.Default.Brush,
                                                         contentDescription = null,
                                                         tint = Color.White,
-                                                        modifier = Modifier.size(18.dp)
+                                                        modifier = Modifier.size(24.dp)
                                                     )
                                                 }
                                             }
@@ -472,8 +524,8 @@ fun CustomizationScreen(
                         .clip(RoundedCornerShape(4.dp))
                         .clickable { showBitrateSheet = true },
                     shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    tonalElevation = 1.dp
+                    color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                 ) {
                     Row(
                         modifier = Modifier
@@ -483,14 +535,14 @@ fun CustomizationScreen(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                             modifier = Modifier.size(40.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.MusicNote,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -500,12 +552,13 @@ fun CustomizationScreen(
                             Text(
                                 stringResource(R.string.song_info),
                                 fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 stringResource(R.string.song_info_desc),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -611,8 +664,8 @@ fun CustomizationScreen(
                             .fillMaxWidth()
                             .padding(vertical = 1.dp),
                         shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        tonalElevation = 1.dp
+                        color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                     ) {
                         Column(
                             modifier = Modifier
@@ -623,7 +676,7 @@ fun CustomizationScreen(
                                 text = "${crossfadeDurationSeconds}s",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
                             )
                             Slider(
                                 value = crossfadeDurationSeconds.toFloat(),
@@ -633,14 +686,21 @@ fun CustomizationScreen(
                                 },
                                 valueRange = 1f..12f,
                                 steps = 10,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    activeTickColor = if (hasBlurBackground) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onPrimary,
+                                    inactiveTickColor = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("1s", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("12s", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("1s", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("12s", style = MaterialTheme.typography.bodySmall, color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -699,7 +759,14 @@ fun CustomizationScreen(
         var tempOnPlayer by remember { mutableStateOf(settingsManager.isBitrateOnPlayer) }
         AlertDialog(
             onDismissRequest = { showBitrateSheet = false },
-            title = { Text(stringResource(R.string.song_info), fontWeight = FontWeight.Bold) },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.song_info),
+                    fontWeight = FontWeight.Bold,
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+            },
             text = {
                 Column {
                     Row(
@@ -709,9 +776,20 @@ fun CustomizationScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(checked = tempOnList, onCheckedChange = { tempOnList = it })
+                        Checkbox(
+                            checked = tempOnList,
+                            onCheckedChange = { tempOnList = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                checkmarkColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                uncheckedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(stringResource(R.string.show_in_song_list))
+                        Text(
+                            stringResource(R.string.show_in_song_list),
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                     Row(
                         modifier = Modifier
@@ -720,9 +798,20 @@ fun CustomizationScreen(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(checked = tempOnPlayer, onCheckedChange = { tempOnPlayer = it })
+                        Checkbox(
+                            checked = tempOnPlayer,
+                            onCheckedChange = { tempOnPlayer = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                checkmarkColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                uncheckedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(stringResource(R.string.show_in_full_player))
+                        Text(
+                            stringResource(R.string.show_in_full_player),
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             },
@@ -733,9 +822,13 @@ fun CustomizationScreen(
                         settingsManager.isBitrateOnPlayer = tempOnPlayer
                         showBitrateSheet = false
                     },
-                    shape = RoundedCornerShape(percent = 50)
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                        contentColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Text(stringResource(R.string.save))
+                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -743,7 +836,8 @@ fun CustomizationScreen(
                     onClick = { showBitrateSheet = false },
                     shape = RoundedCornerShape(percent = 50),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 ) {
                     Text(stringResource(R.string.cancel))
@@ -752,4 +846,5 @@ fun CustomizationScreen(
             shape = RoundedCornerShape(28.dp)
         )
     }
+}
 }

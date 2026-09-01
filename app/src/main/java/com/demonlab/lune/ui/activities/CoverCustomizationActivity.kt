@@ -24,12 +24,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
+import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
+import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
 
 class CoverCustomizationActivity : ComponentActivity() {
@@ -84,6 +87,16 @@ fun CoverCustomizationScreen(
     onBack: () -> Unit,
     settingsManager: SettingsManager
 ) {
+    val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+
     var coverShape by remember { mutableIntStateOf(settingsManager.coverShape) }
     var coverScale by remember { mutableFloatStateOf(settingsManager.coverScale) }
     var coverSpin by remember { mutableStateOf(settingsManager.coverSpin) }
@@ -102,70 +115,76 @@ fun CoverCustomizationScreen(
         label = "SpinAnimation"
     )
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.cover_player),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.cd_back),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
+    AppBlurBackdrop(
+        hasBlurBackground = hasBlurBackground,
+        isDarkTheme = isDarkTheme,
+        currentSong = currentSong
+    ) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(R.string.cover_player),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            // Live Preview Card
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.cover_preview),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
                     )
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                // Live Preview Card
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    border = BorderStroke(1.dp, if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = stringResource(R.string.cover_preview),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     Spacer(modifier = Modifier.height(20.dp))
 
                     val mockCoverPainter = painterResource(R.drawable.ic_launcher_foreground)
@@ -252,7 +271,8 @@ fun CoverCustomizationScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
                     shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(20.dp),
@@ -278,14 +298,22 @@ fun CoverCustomizationScreen(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                    border = BorderStroke(2.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent),
+                                    color = if (isSelected) {
+                                        if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer
+                                    } else {
+                                        if (hasBlurBackground) Color.White.copy(alpha = 0.10f) else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                                    },
+                                    border = BorderStroke(2.dp, if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else Color.Transparent),
                                     modifier = Modifier.size(72.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                         Surface(
                                             shape = shape,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                            color = if (isSelected) {
+                                                if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                            } else {
+                                                if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            },
                                             modifier = Modifier.size(36.dp)
                                         ) {}
                                     }
@@ -295,7 +323,7 @@ fun CoverCustomizationScreen(
                                     text = label,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                             }
                         }
@@ -310,22 +338,23 @@ fun CoverCustomizationScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
                     shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(stringResource(R.string.size_small), style = MaterialTheme.typography.labelSmall, color = if (coverScale == 0.70f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(stringResource(R.string.size_medium), style = MaterialTheme.typography.labelSmall, color = if (coverScale == 0.85f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(stringResource(R.string.size_large), style = MaterialTheme.typography.labelSmall, color = if (coverScale == 1.0f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.size_small), style = MaterialTheme.typography.labelSmall, color = if (coverScale == 0.70f) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant))
+                            Text(stringResource(R.string.size_medium), style = MaterialTheme.typography.labelSmall, color = if (coverScale == 0.85f) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant))
+                            Text(stringResource(R.string.size_large), style = MaterialTheme.typography.labelSmall, color = if (coverScale == 1.0f) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant))
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Row(
-                            modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(24.dp)).background(if (hasBlurBackground) Color.White.copy(alpha = 0.12f) else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val sizes = listOf(
@@ -340,7 +369,7 @@ fun CoverCustomizationScreen(
                                         .weight(1f)
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(24.dp))
-                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                        .background(if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else Color.Transparent)
                                         .clickable {
                                             coverScale = scaleVal
                                             settingsManager.coverScale = scaleVal
@@ -350,7 +379,7 @@ fun CoverCustomizationScreen(
                                     Text(
                                         text = text,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
+                                        color = if (isSelected) (if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSecondaryContainer)
                                     )
                                 }
                             }
@@ -411,6 +440,7 @@ fun CoverCustomizationScreen(
             }
         }
     }
+}
 }
 
 @Composable
