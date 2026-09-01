@@ -2089,6 +2089,11 @@ fun MainScreen(
                                         showSectionMenuSheet = { showSectionMenuSheet = true },
                                         showSearchScreen = { showSearchScreen = true },
                                         playbackManager = playbackManager,
+                                        song = song,
+                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        isDarkTheme = isDarkThemeMini,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
                                         sTabResume = sTabResume,
                                         sTabAll = sTabAll,
                                         sTabFavorites = sTabFavorites,
@@ -2132,6 +2137,11 @@ fun MainScreen(
                                         showSectionMenuSheet = { showSectionMenuSheet = true },
                                         showSearchScreen = { showSearchScreen = true },
                                         playbackManager = playbackManager,
+                                        song = song,
+                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        isDarkTheme = isDarkThemeMini,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
                                         sTabResume = sTabResume,
                                         sTabAll = sTabAll,
                                         sTabFavorites = sTabFavorites,
@@ -2197,6 +2207,11 @@ fun MainScreen(
                             showSectionMenuSheet = { showSectionMenuSheet = true },
                             showSearchScreen = { showSearchScreen = true },
                             playbackManager = playbackManager,
+                            song = null,
+                            hasBlurBackground = hasBlurBackgroundMini,
+                            isDarkTheme = isDarkThemeMini,
+                            useCustomControlsColor = useCustomControlsColor,
+                            controlsColorPalette = controlsColorPalette,
                             sTabResume = sTabResume,
                             sTabAll = sTabAll,
                             sTabFavorites = sTabFavorites,
@@ -2593,6 +2608,11 @@ fun UnifiedHeaderPill(
     showSectionMenuSheet: () -> Unit,
     showSearchScreen: () -> Unit,
     playbackManager: PlaybackManager,
+    song: Song? = null,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     sTabResume: String,
     sTabAll: String,
     sTabFavorites: String,
@@ -2603,22 +2623,60 @@ fun UnifiedHeaderPill(
     sTabFolders: String,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val surfaceColor = MaterialTheme.colorScheme.surface
     val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
-    val isDark = luma < 0.5f
-    val selectedBg = if (isDark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary
-    val onSelected = if (isDark) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary
+    val isDark = if (hasBlurBackground) isDarkTheme else luma < 0.5f
 
-    val outerPillColor = if (isDark) {
+    val outerPillColor = if (hasBlurBackground) {
+        MaterialTheme.colorScheme.surface
+    } else if (isDark) {
         MaterialTheme.colorScheme.surfaceContainerHighest
     } else {
         MaterialTheme.colorScheme.secondaryContainer
     }
 
-    val outerBorder = if (isDark) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val selectedBg = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        if (isDark) Color.White.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.35f)
+    } else if (isDark) {
+        MaterialTheme.colorScheme.primaryContainer
     } else {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        MaterialTheme.colorScheme.primary
+    }
+
+    val onSelected = if (hasBlurBackground) {
+        Color.White
+    } else if (useCustomControlsColor) {
+        Color.White
+    } else if (isDark) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onPrimary
+    }
+
+    val searchTextColor = if (hasBlurBackground) {
+        Color.White.copy(alpha = 0.85f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val searchIconBg = if (useCustomControlsColor) {
+        activePrimary.copy(alpha = 0.25f)
+    } else if (hasBlurBackground) {
+        Color.White.copy(alpha = 0.2f)
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    }
+
+    val searchIconTint = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.primary
     }
 
     val entranceNudge = remember { Animatable(0f) }
@@ -2645,129 +2703,166 @@ fun UnifiedHeaderPill(
     Surface(
         shape = RoundedCornerShape(30.dp),
         color = outerPillColor,
-        border = outerBorder,
-        tonalElevation = 8.dp,
-        shadowElevation = 4.dp,
+        tonalElevation = if (hasBlurBackground) 0.dp else 6.dp,
         modifier = modifier
             .fillMaxWidth()
             .height(60.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // LEFT SIDE: Active Section Pill
-            val activeLabel = when(selectedFolder) {
-                "RESUME" -> sTabResume
-                "ALL" -> sTabAll
-                "FAVORITES" -> sTabFavorites
-                "ALBUMS" -> sTabAlbums
-                "ARTISTS" -> sTabArtists
-                "GENRES" -> sTabGenres
-                "PLAYLISTS" -> sTabPlaylists
-                "FOLDERS" -> sTabFolders
-                else -> selectedFolder
-            }
-
-            val isCurrentContext = playbackManager.activeCategory == selectedFolder && playbackManager.currentSong != null && playbackManager.activePlaylistId != -300L
-
-            Surface(
-                onClick = { showSectionMenuSheet() },
-                shape = RoundedCornerShape(24.dp),
-                color = selectedBg,
-                modifier = Modifier
-                    .graphicsLayer {
-                        translationX = entranceNudge.value
-                        scaleX = sectionPillScale.value
-                        scaleY = sectionPillScale.value
-                    }
-                    .bounceClick()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (hasBlurBackground) {
+                if (song != null) {
                     Box(
-                        modifier = Modifier.size(28.dp),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(80.dp)
+                            .alpha(if (isDark) 0.2f else 0.35f)
                     ) {
-                        when (selectedFolder) {
-                            "RESUME" -> Icon(Icons.Default.History, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "GENRES" -> Icon(Icons.Default.Category, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                            else -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                        val pillBlurRequest = remember(song.id, song.coverUrl) {
+                            ImageRequest.Builder(context)
+                                .data(song.coverUrl ?: song.uri)
+                                .crossfade(true)
+                                .build()
                         }
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    AnimatedContent(
-                        targetState = activeLabel,
-                        transitionSpec = {
-                            fadeIn(animationSpec = tween(200)) + slideInHorizontally { it / 2 } togetherWith
-                                fadeOut(animationSpec = tween(150)) + slideOutHorizontally { -it / 2 }
-                        },
-                        label = "section_label"
-                    ) { label ->
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = onSelected
+                        AsyncImage(
+                            model = pillBlurRequest,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = onSelected.copy(alpha = 0.8f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    if (isCurrentContext) {
-                        Spacer(modifier = Modifier.width(4.dp))
+                    if (!isDark) {
                         Box(
                             modifier = Modifier
-                                .size(6.dp)
-                                .background(onSelected, CircleShape)
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.28f))
                         )
                     }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.06f))
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // RIGHT SIDE: Search Bar (Text + Icon)
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(22.dp))
-                    .clickable { showSearchScreen() }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.search),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.width(6.dp))
+                // LEFT SIDE: Active Section Pill
+                val activeLabel = when(selectedFolder) {
+                    "RESUME" -> sTabResume
+                    "ALL" -> sTabAll
+                    "FAVORITES" -> sTabFavorites
+                    "ALBUMS" -> sTabAlbums
+                    "ARTISTS" -> sTabArtists
+                    "GENRES" -> sTabGenres
+                    "PLAYLISTS" -> sTabPlaylists
+                    "FOLDERS" -> sTabFolders
+                    else -> selectedFolder
+                }
+
+                val isCurrentContext = playbackManager.activeCategory == selectedFolder && playbackManager.currentSong != null && playbackManager.activePlaylistId != -300L
+
                 Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    modifier = Modifier.size(34.dp)
+                    onClick = { showSectionMenuSheet() },
+                    shape = RoundedCornerShape(24.dp),
+                    color = selectedBg,
+                    modifier = Modifier
+                        .graphicsLayer {
+                            translationX = entranceNudge.value
+                            scaleX = sectionPillScale.value
+                            scaleY = sectionPillScale.value
+                        }
+                        .bounceClick()
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier.size(28.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when (selectedFolder) {
+                                "RESUME" -> Icon(Icons.Default.History, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "GENRES" -> Icon(Icons.Default.Category, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                else -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        AnimatedContent(
+                            targetState = activeLabel,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(200)) + slideInHorizontally { it / 2 } togetherWith
+                                    fadeOut(animationSpec = tween(150)) + slideOutHorizontally { -it / 2 }
+                            },
+                            label = "section_label"
+                        ) { label ->
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSelected
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search),
-                            tint = MaterialTheme.colorScheme.primary,
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = onSelected.copy(alpha = 0.8f),
                             modifier = Modifier.size(18.dp)
                         )
+                        if (isCurrentContext) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(onSelected, CircleShape)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // RIGHT SIDE: Search Bar (Text + Icon)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(22.dp))
+                        .clickable { showSearchScreen() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.search),
+                        color = searchTextColor,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = searchIconBg,
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search),
+                                tint = searchIconTint,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
