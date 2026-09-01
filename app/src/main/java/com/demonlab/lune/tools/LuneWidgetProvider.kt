@@ -21,14 +21,25 @@ import androidx.core.graphics.scale
 class LuneWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
+        val serviceIntent = Intent(context, MusicService::class.java).apply {
+            action = MusicService.ACTION_UPDATE_WIDGET
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            for (appWidgetId in appWidgetIds) {
+                updateAppWidget(context, appWidgetManager, appWidgetId)
+            }
         }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == "com.demonlab.lune.WIDGET_UPDATE") {
+        if (intent.action == "com.demonlab.lune.WIDGET_UPDATE" || intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val componentName = ComponentName(context, LuneWidgetProvider::class.java)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
@@ -43,7 +54,18 @@ class LuneWidgetProvider : AppWidgetProvider() {
         newOptions: android.os.Bundle
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        updateAppWidget(context, appWidgetManager, appWidgetId)
+        val serviceIntent = Intent(context, MusicService::class.java).apply {
+            action = MusicService.ACTION_UPDATE_WIDGET
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            updateAppWidget(context, appWidgetManager, appWidgetId)
+        }
     }
 
     companion object {

@@ -144,6 +144,28 @@ class MusicService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        
+        val channelId = "music_playback_channel"
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId, "Music Playback", android.app.NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(channel)
+        }
+        val loadingNotif = androidx.core.app.NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Lune Music")
+            .setContentText("Loading...")
+            .setOngoing(true)
+            .build()
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                startForeground(1, loadingNotif, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(1, loadingNotif)
+            }
+        } catch (e: Exception) {}
+
 
         becomingNoisyReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
@@ -341,17 +363,6 @@ class MusicService : MediaLibraryService() {
         return START_STICKY
     }
 
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        val notification = NotificationCompat.Builder(this, "music_playback_channel")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setOngoing(true)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText(getString(R.string.no_song_playing))
-            .setSilent(true)
-            .build()
-        startForeground(1, notification)
-        super.onTaskRemoved(rootIntent)
-    }
 
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -602,6 +613,7 @@ class MusicService : MediaLibraryService() {
             val customLayout = buildCustomLayout()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(sessionCommands)
+                .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
                 .setCustomLayout(customLayout)
                 .setMediaButtonPreferences(customLayout)
                 .build()
@@ -1391,10 +1403,15 @@ class MusicService : MediaLibraryService() {
         val notification = builder.build()
 
         if (isPlaying) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-            } else {
-                startForeground(1, notification)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                } else {
+                    startForeground(1, notification)
+                }
+            } catch (e: Exception) {
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager.notify(1, notification)
             }
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
