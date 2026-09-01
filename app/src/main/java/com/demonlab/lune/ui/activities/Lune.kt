@@ -2004,154 +2004,209 @@ fun MainScreen(
             val hasBlurBackgroundMini = blurEnabled &&
                 (if (isDarkThemeMini) blurDarkMode else blurLightMode)
 
-            if (currentSong != null) {
-                val song = currentSong
-                AnimatedContent(
-                    targetState = settingsManager.isMiniPlayerMinimized,
-                    transitionSpec = {
-                        fadeIn(tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300, easing = FastOutSlowInEasing)) togetherWith
-                        fadeOut(tween(150)) + scaleOut(targetScale = 0.8f, animationSpec = tween(250, easing = FastOutSlowInEasing)) using
-                        SizeTransform(clip = false) { _, _ ->
-                            tween(300, easing = FastOutSlowInEasing)
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                    label = "miniPlayerTransition"
-                ) { minimized ->
-                    if (minimized) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 12.dp, end = 12.dp, bottom = bottomInset + 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                UnifiedHeaderPill(
-                                    selectedFolder = selectedFolder,
-                                    folders = folders,
-                                    onSelectedFolderChange = onSelectedFolderChange,
-                                    showSectionMenuSheet = { showSectionMenuSheet = true },
-                                    showSearchScreen = { showSearchScreen = true },
-                                    playbackManager = playbackManager,
-                                    sTabResume = sTabResume,
-                                    sTabAll = sTabAll,
-                                    sTabFavorites = sTabFavorites,
-                                    sTabAlbums = sTabAlbums,
-                                    sTabArtists = sTabArtists,
-                                    sTabGenres = sTabGenres,
-                                    sTabPlaylists = sTabPlaylists,
-                                    sTabFolders = sTabFolders
+            AnimatedContent(
+                targetState = currentSong != null,
+                transitionSpec = {
+                    (fadeIn(tween(250)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetY = { it / 2 }
+                    ) + scaleIn(
+                        initialScale = 0.9f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )) togetherWith (
+                        fadeOut(tween(180)) + slideOutVertically(
+                            animationSpec = tween(200),
+                            targetOffsetY = { it / 2 }
+                        ) + scaleOut(
+                            targetScale = 0.9f,
+                            animationSpec = tween(200)
+                        )
+                    ) using SizeTransform(clip = false) { _, _ ->
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                label = "bottomContainerTransition"
+            ) { hasSong ->
+                if (hasSong && currentSong != null) {
+                    val song = currentSong
+                    AnimatedContent(
+                        targetState = settingsManager.isMiniPlayerMinimized,
+                        transitionSpec = {
+                            (fadeIn(tween(250)) + slideInVertically(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                initialOffsetY = { it / 3 }
+                            ) + scaleIn(
+                                initialScale = 0.88f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            )) togetherWith (
+                                fadeOut(tween(180)) + slideOutVertically(
+                                    animationSpec = tween(200),
+                                    targetOffsetY = { it / 3 }
+                                ) + scaleOut(
+                                    targetScale = 0.88f,
+                                    animationSpec = tween(200)
+                                )
+                            ) using SizeTransform(clip = false) { _, _ ->
+                                spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
                                 )
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            MiniPlayerMinimized(
-                                song = song,
-                                coverShape = coverShape,
-                                coverScale = coverScale,
-                                coverSpin = coverSpin,
-                                coverVinylEffect = coverVinylEffect,
-                                hasBlurBackground = hasBlurBackgroundMini,
-                                isDarkTheme = isDarkThemeMini,
-                                isPlaying = isPlaying,
-                                onRestore = { settingsManager.isMiniPlayerMinimized = false },
-                                onExpandPlayer = { onIsPlayerExpandedChange(true) }
-                            )
-                        }
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = bottomInset + 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Box(
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = "miniPlayerMinimizedTransition"
+                    ) { minimized ->
+                        if (minimized) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp)
+                                    .padding(start = 12.dp, end = 12.dp, bottom = bottomInset + 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                UnifiedHeaderPill(
-                                    selectedFolder = selectedFolder,
-                                    folders = folders,
-                                    onSelectedFolderChange = onSelectedFolderChange,
-                                    showSectionMenuSheet = { showSectionMenuSheet = true },
-                                    showSearchScreen = { showSearchScreen = true },
-                                    playbackManager = playbackManager,
-                                    sTabResume = sTabResume,
-                                    sTabAll = sTabAll,
-                                    sTabFavorites = sTabFavorites,
-                                    sTabAlbums = sTabAlbums,
-                                    sTabArtists = sTabArtists,
-                                    sTabGenres = sTabGenres,
-                                    sTabPlaylists = sTabPlaylists,
-                                    sTabFolders = sTabFolders
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 25.dp)
-                            ) {
-                                MiniPlayer(
+                                Box(modifier = Modifier.weight(1f)) {
+                                    UnifiedHeaderPill(
+                                        selectedFolder = selectedFolder,
+                                        folders = folders,
+                                        onSelectedFolderChange = onSelectedFolderChange,
+                                        showSectionMenuSheet = { showSectionMenuSheet = true },
+                                        showSearchScreen = { showSearchScreen = true },
+                                        playbackManager = playbackManager,
+                                        sTabResume = sTabResume,
+                                        sTabAll = sTabAll,
+                                        sTabFavorites = sTabFavorites,
+                                        sTabAlbums = sTabAlbums,
+                                        sTabArtists = sTabArtists,
+                                        sTabGenres = sTabGenres,
+                                        sTabPlaylists = sTabPlaylists,
+                                        sTabFolders = sTabFolders
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                MiniPlayerMinimized(
                                     song = song,
-                                    isPlaying = isPlaying,
-                                    showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
-                                    visualizerData = visualizerData,
-                                    currentOutputIcon = playbackManager.currentOutputIcon,
                                     coverShape = coverShape,
                                     coverScale = coverScale,
                                     coverSpin = coverSpin,
                                     coverVinylEffect = coverVinylEffect,
-                                    controlsIconStyle = controlsIconStyle,
-                                    isControlsFilled = isControlsFilled,
-                                    useCustomControlsColor = useCustomControlsColor,
-                                    controlsColorPalette = controlsColorPalette,
-                                    shape = miniPlayerShape,
                                     hasBlurBackground = hasBlurBackgroundMini,
                                     isDarkTheme = isDarkThemeMini,
-                                    onTogglePlay = { 
-                                        if (settingsManager.isHapticVibrationEnabled) {
-                                            vibrator.triggerLightVibration()
-                                        }
-                                        if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                        onIsPlayingChange(!isPlaying)
-                                    },
-                                    onExpand = { onIsPlayerExpandedChange(true) },
-                                    onPrevious = playPrevious,
-                                    onNext = playNext,
-                                    onSearchClick = { showSearchScreen = true },
-                                    onScrollToCurrent = { scrollToCurrentTrigger.value++ },
-                                    onMinimize = { settingsManager.isMiniPlayerMinimized = true }
+                                    isPlaying = isPlaying,
+                                    onRestore = { settingsManager.isMiniPlayerMinimized = false },
+                                    onExpandPlayer = { onIsPlayerExpandedChange(true) }
                                 )
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = bottomInset + 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp)
+                                ) {
+                                    UnifiedHeaderPill(
+                                        selectedFolder = selectedFolder,
+                                        folders = folders,
+                                        onSelectedFolderChange = onSelectedFolderChange,
+                                        showSectionMenuSheet = { showSectionMenuSheet = true },
+                                        showSearchScreen = { showSearchScreen = true },
+                                        playbackManager = playbackManager,
+                                        sTabResume = sTabResume,
+                                        sTabAll = sTabAll,
+                                        sTabFavorites = sTabFavorites,
+                                        sTabAlbums = sTabAlbums,
+                                        sTabArtists = sTabArtists,
+                                        sTabGenres = sTabGenres,
+                                        sTabPlaylists = sTabPlaylists,
+                                        sTabFolders = sTabFolders
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp)
+                                ) {
+                                    MiniPlayer(
+                                        song = song,
+                                        isPlaying = isPlaying,
+                                        progress = playbackProgress,
+                                        showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
+                                        visualizerData = visualizerData,
+                                        currentOutputIcon = playbackManager.currentOutputIcon,
+                                        coverShape = coverShape,
+                                        coverScale = coverScale,
+                                        coverSpin = coverSpin,
+                                        coverVinylEffect = coverVinylEffect,
+                                        controlsIconStyle = controlsIconStyle,
+                                        isControlsFilled = isControlsFilled,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
+                                        shape = miniPlayerShape,
+                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        isDarkTheme = isDarkThemeMini,
+                                        onTogglePlay = { 
+                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                vibrator.triggerLightVibration()
+                                            }
+                                            if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                                            onIsPlayingChange(!isPlaying)
+                                        },
+                                        onExpand = { onIsPlayerExpandedChange(true) },
+                                        onPrevious = playPrevious,
+                                        onNext = playNext,
+                                        onSearchClick = { showSearchScreen = true },
+                                        onScrollToCurrent = { scrollToCurrentTrigger.value++ },
+                                        onMinimize = { settingsManager.isMiniPlayerMinimized = true }
+                                    )
+                                }
                             }
                         }
                     }
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(start = 14.dp, end = 14.dp, bottom = bottomInset + 8.dp)
-                ) {
-                    UnifiedHeaderPill(
-                        selectedFolder = selectedFolder,
-                        folders = folders,
-                        onSelectedFolderChange = onSelectedFolderChange,
-                        showSectionMenuSheet = { showSectionMenuSheet = true },
-                        showSearchScreen = { showSearchScreen = true },
-                        playbackManager = playbackManager,
-                        sTabResume = sTabResume,
-                        sTabAll = sTabAll,
-                        sTabFavorites = sTabFavorites,
-                        sTabAlbums = sTabAlbums,
-                        sTabArtists = sTabArtists,
-                        sTabGenres = sTabGenres,
-                        sTabPlaylists = sTabPlaylists,
-                        sTabFolders = sTabFolders
-                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 14.dp, end = 14.dp, bottom = bottomInset + 8.dp)
+                    ) {
+                        UnifiedHeaderPill(
+                            selectedFolder = selectedFolder,
+                            folders = folders,
+                            onSelectedFolderChange = onSelectedFolderChange,
+                            showSectionMenuSheet = { showSectionMenuSheet = true },
+                            showSearchScreen = { showSearchScreen = true },
+                            playbackManager = playbackManager,
+                            sTabResume = sTabResume,
+                            sTabAll = sTabAll,
+                            sTabFavorites = sTabFavorites,
+                            sTabAlbums = sTabAlbums,
+                            sTabArtists = sTabArtists,
+                            sTabGenres = sTabGenres,
+                            sTabPlaylists = sTabPlaylists,
+                            sTabFolders = sTabFolders
+                        )
+                    }
                 }
             }
         }

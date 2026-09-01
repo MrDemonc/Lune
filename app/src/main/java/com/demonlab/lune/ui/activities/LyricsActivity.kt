@@ -62,6 +62,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import coil.request.ImageRequest
 import android.os.Vibrator
+import com.demonlab.lune.ui.player.MiniPlayer
+import com.demonlab.lune.ui.player.MiniPlayerMinimized
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.utils.triggerLightVibration
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
@@ -254,25 +256,76 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                         maxLines = 1
                     )
                 }
-                IconButton(onClick = { showOffsetControl = !showOffsetControl }) {
-                    Surface(
-                        shape = CircleShape,
-                        color = if (showOffsetControl || userOffsetMs != 0L) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else if (isBlurActive) {
-                            Color.White.copy(alpha = 0.15f)
-                        } else {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        },
-                        modifier = Modifier.size(40.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            val next = (textAlignIndex + 1) % alignments.size
+                            textAlignIndex = next
+                            lyricsSettings.lyricsTextAlignment = next
+                        }
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Tune,
-                                contentDescription = "Ajustar sincronización",
-                                tint = if (showOffsetControl || userOffsetMs != 0L) MaterialTheme.colorScheme.onPrimaryContainer else if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isBlurActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = if (alignments[textAlignIndex] == TextAlign.Start) Icons.AutoMirrored.Filled.FormatAlignLeft else Icons.Default.FormatAlignCenter,
+                                    contentDescription = "Alineación",
+                                    tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            val next = (speedIndex + 1) % speedOptions.size
+                            speedIndex = next
+                            lyricsSettings.lyricsSpeedIndex = next
+                        }
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isBlurActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "${speedOptions[speedIndex]}x",
+                                    color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    IconButton(onClick = { showOffsetControl = !showOffsetControl }) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (showOffsetControl || userOffsetMs != 0L) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else if (isBlurActive) {
+                                Color.White.copy(alpha = 0.15f)
+                            } else {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Tune,
+                                    contentDescription = "Ajustar sincronización",
+                                    tint = if (showOffsetControl || userOffsetMs != 0L) MaterialTheme.colorScheme.onPrimaryContainer else if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -595,301 +648,100 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
 
         // Mini Player
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             AnimatedContent(
                 targetState = isLyricsMiniPlayerMinimized,
                 transitionSpec = {
-                    fadeIn(tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)) togetherWith
-                    fadeOut(tween(150)) + scaleOut(targetScale = 0.8f, animationSpec = tween(250)) using
-                    SizeTransform(clip = false) { _, _ -> tween(300) }
+                    (fadeIn(tween(250)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetY = { it / 2 }
+                    ) + scaleIn(
+                        initialScale = 0.88f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )) togetherWith (
+                        fadeOut(tween(180)) + slideOutVertically(
+                            animationSpec = tween(200),
+                            targetOffsetY = { it / 2 }
+                        ) + scaleOut(
+                            targetScale = 0.88f,
+                            animationSpec = tween(200)
+                        )
+                    ) using SizeTransform(clip = false) { _, _ ->
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 label = "lyricsMiniPlayerTransition"
             ) { minimized ->
                 if (minimized) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Surface(
-                            onClick = { isLyricsMiniPlayerMinimized = false },
-                            shape = CircleShape,
-                            color = if (isBlurActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
-                            tonalElevation = if (isBlurActive) 0.dp else 8.dp,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 16.dp, bottom = 24.dp)
-                                .size(52.dp)
-                                .shadow(6.dp, CircleShape)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                if (isBlurActive) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(40.dp)
-                                            .alpha(if (isDarkTheme) 0.2f else 0.35f)
-                                    ) {
-                                        val miniCtx = LocalContext.current
-                                        val blurRequest = remember(song.id, miniCtx) {
-                                            ImageRequest.Builder(miniCtx)
-                                                .data(song.coverUrl ?: song.uri)
-                                                .crossfade(true)
-                                                .build()
-                                        }
-                                        AsyncImage(
-                                            model = blurRequest,
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
-                                    if (!isDarkTheme) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.Black.copy(alpha = 0.28f))
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                                    contentDescription = null,
-                                    tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 16.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        MiniPlayerMinimized(
+                            song = song,
+                            coverShape = lyricsSettings.coverShape,
+                            coverScale = lyricsSettings.coverScale,
+                            coverSpin = lyricsSettings.coverSpin,
+                            coverVinylEffect = lyricsSettings.coverVinylEffect,
+                            hasBlurBackground = isBlurActive,
+                            isDarkTheme = isDarkTheme,
+                            isPlaying = isPlaying,
+                            onRestore = { isLyricsMiniPlayerMinimized = false },
+                            onExpandPlayer = { isLyricsMiniPlayerMinimized = false }
+                        )
                     }
                 } else {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 24.dp)
+                            .padding(horizontal = 14.dp)
                     ) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (isBlurActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
-                            tonalElevation = if (isBlurActive) 0.dp else 8.dp
-                        ) {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                if (isBlurActive) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(80.dp)
-                                            .alpha(if (isDarkTheme) 0.2f else 0.35f)
-                                    ) {
-                                        val blurReq = remember(song.id, song.coverUrl) {
-                                            ImageRequest.Builder(context)
-                                                .data(song.coverUrl ?: song.uri)
-                                                .crossfade(true)
-                                                .build()
-                                        }
-                                        AsyncImage(
-                                            model = blurReq,
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
-                                    if (!isDarkTheme) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(Color.Black.copy(alpha = 0.28f))
-                                        )
-                                    }
+                        MiniPlayer(
+                            song = song,
+                            isPlaying = isPlaying,
+                            progress = currentProgress,
+                            showWaveform = false,
+                            visualizerData = FloatArray(0),
+                            currentOutputIcon = playbackManager.currentOutputIcon,
+                            coverShape = lyricsSettings.coverShape,
+                            coverScale = lyricsSettings.coverScale,
+                            coverSpin = lyricsSettings.coverSpin,
+                            coverVinylEffect = lyricsSettings.coverVinylEffect,
+                            controlsIconStyle = lyricsSettings.controlsIconStyle,
+                            isControlsFilled = lyricsSettings.isControlsFilled,
+                            useCustomControlsColor = lyricsSettings.useCustomControlsColor,
+                            controlsColorPalette = lyricsSettings.controlsColorPalette,
+                            shape = CircleShape,
+                            hasBlurBackground = isBlurActive,
+                            isDarkTheme = isDarkTheme,
+                            onTogglePlay = {
+                                if (lyricsSettings.isHapticVibrationEnabled) {
+                                    vibrator?.triggerLightVibration()
                                 }
-
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                                ) {
-                                    // Progress bar area
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        Column(modifier = Modifier.fillMaxSize()) {
-                                            Spacer(modifier = Modifier.weight(1f))
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                LinearWavyProgressIndicator(
-                                                    progress = { currentProgress },
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(horizontal = 4.dp),
-                                                    color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
-                                                    trackColor = if (isBlurActive) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
-                                                    amplitude = { 1f }
-                                                )
-                                                Slider(
-                                                    value = currentProgress,
-                                                    onValueChange = { playbackManager.seekTo(it) },
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    thumb = {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .size(14.dp)
-                                                                .background(
-                                                                    color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
-                                                                    shape = RoundedCornerShape(5.dp)
-                                                                )
-                                                        )
-                                                    },
-                                                    colors = SliderDefaults.colors(
-                                                        activeTrackColor = Color.Transparent,
-                                                        inactiveTrackColor = Color.Transparent
-                                                    )
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
-
-                                        IconButton(
-                                            onClick = { isLyricsMiniPlayerMinimized = true },
-                                            modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .size(24.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.KeyboardArrowDown,
-                                                contentDescription = "Minimize",
-                                                tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
-
-                                    // Controls row
-                                    val activePrimary = getControlsPrimaryColor(
-                                        useCustomControlsColor = false,
-                                        controlsColorPalette = 0
-                                    )
-                                    val pillMiniColor = if (isBlurActive) {
-                                        if (isDarkTheme) Color.Black.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.4f)
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh
-                                    }
-                                    val pillMiniIconTint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Text align button
-                                        Surface(
-                                            onClick = {
-                                                val next = (textAlignIndex + 1) % alignments.size
-                                                textAlignIndex = next
-                                                lyricsSettings.lyricsTextAlignment = next
-                                            },
-                                            shape = CircleShape,
-                                            color = pillMiniColor,
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .bounceClick()
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = if (alignments[textAlignIndex] == TextAlign.Start) Icons.AutoMirrored.Filled.FormatAlignLeft else Icons.Default.FormatAlignCenter,
-                                                    contentDescription = null,
-                                                    tint = pillMiniIconTint,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.weight(1f))
-
-                                        // Prev / PlayPause / Next
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Surface(
-                                                onClick = playPrevious,
-                                                shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                                                color = pillMiniColor,
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .bounceClick()
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.SkipPrevious,
-                                                        contentDescription = null,
-                                                        tint = pillMiniIconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                }
-                                            }
-                                            Surface(
-                                                onClick = { if (isPlaying) playbackManager.pause() else playbackManager.resume() },
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = pillMiniColor,
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .bounceClick()
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                                                        contentDescription = null,
-                                                        tint = pillMiniIconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                }
-                                            }
-                                            Surface(
-                                                onClick = playNext,
-                                                shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                                                color = pillMiniColor,
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .bounceClick()
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.SkipNext,
-                                                        contentDescription = null,
-                                                        tint = pillMiniIconTint,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.weight(1f))
-
-                                        // Speed button
-                                        Surface(
-                                            onClick = {
-                                                val next = (speedIndex + 1) % speedOptions.size
-                                                speedIndex = next
-                                                lyricsSettings.lyricsSpeedIndex = next
-                                            },
-                                            shape = CircleShape,
-                                            color = pillMiniColor,
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .bounceClick()
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = "${speedOptions[speedIndex]}x",
-                                                    color = pillMiniIconTint,
-                                                    style = MaterialTheme.typography.titleSmall
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                            },
+                            onExpand = { /* already viewing lyrics */ },
+                            onPrevious = playPrevious,
+                            onNext = playNext,
+                            onMinimize = { isLyricsMiniPlayerMinimized = true }
+                        )
                     }
                 }
             }

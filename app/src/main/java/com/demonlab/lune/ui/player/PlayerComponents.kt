@@ -12,6 +12,7 @@ import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -20,8 +21,14 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.IntOffset
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -85,6 +92,7 @@ import com.demonlab.lune.ui.sheets.PlayerOptionsBottomSheet
 import com.demonlab.lune.ui.sheets.QueueBottomSheet
 import com.demonlab.lune.ui.sheets.VisualizerSettingsBottomSheet
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
+import com.demonlab.lune.ui.utils.MaterialExpressiveScallopShape
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.utils.formatDuration
 import com.demonlab.lune.ui.utils.songSwipeGestures
@@ -1299,9 +1307,164 @@ fun PlayerActionButton(
 }
 
 @Composable
+fun ScallopPlayPauseButtonWithProgress(
+    isPlaying: Boolean,
+    progress: Float,
+    onClick: () -> Unit,
+    hasBlurBackground: Boolean,
+    useCustomControlsColor: Boolean,
+    activePrimary: Color,
+    modifier: Modifier = Modifier
+) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress.coerceIn(0f, 1f),
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "ScallopProgress"
+    )
+
+    val scallopShape = remember { MaterialExpressiveScallopShape(lobes = 8, amplitude = 0.07f) }
+
+    val trackColor = if (useCustomControlsColor) {
+        activePrimary.copy(alpha = 0.25f)
+    } else if (hasBlurBackground) {
+        Color.White.copy(alpha = 0.28f)
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+    }
+
+    val progressColor = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    val buttonBg = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        Color.White.copy(alpha = 0.35f)
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    val iconTint = if (useCustomControlsColor) {
+        Color.White
+    } else if (hasBlurBackground) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.onPrimary
+    }
+
+    Box(
+        modifier = modifier
+            .size(52.dp)
+            .bounceClick(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Concentric Scalloped Progress Ring Canvas
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val lobes = 8
+            val amplitude = 0.07f
+            val strokeWidth = 3.5.dp.toPx()
+            val centerX = size.width / 2f
+            val centerY = size.height / 2f
+            val baseRadius = (minOf(size.width, size.height) / 2f - strokeWidth) / (1f + amplitude)
+            val steps = lobes * 16
+            val angleStep = (2.0 * Math.PI / steps).toFloat()
+
+            // 1. Background full track
+            val trackPath = Path()
+            for (i in 0..steps) {
+                val theta = i * angleStep - (Math.PI / 2.0).toFloat()
+                val r = baseRadius * (1f + amplitude * cos(lobes * theta))
+                val x = centerX + r * cos(theta)
+                val y = centerY + r * sin(theta)
+                if (i == 0) trackPath.moveTo(x, y) else trackPath.lineTo(x, y)
+            }
+            trackPath.close()
+            drawPath(
+                path = trackPath,
+                color = trackColor,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+
+            // 2. Active progress path
+            if (animatedProgress > 0.005f) {
+                val progressPath = Path()
+                val targetSteps = (steps * animatedProgress).toInt().coerceIn(1, steps)
+                val targetFraction = steps * animatedProgress
+
+                for (i in 0..targetSteps) {
+                    val theta = i * angleStep - (Math.PI / 2.0).toFloat()
+                    val r = baseRadius * (1f + amplitude * cos(lobes * theta))
+                    val x = centerX + r * cos(theta)
+                    val y = centerY + r * sin(theta)
+                    if (i == 0) progressPath.moveTo(x, y) else progressPath.lineTo(x, y)
+                }
+
+                if (targetSteps < steps) {
+                    val theta = targetFraction * angleStep - (Math.PI / 2.0).toFloat()
+                    val r = baseRadius * (1f + amplitude * cos(lobes * theta))
+                    val x = centerX + r * cos(theta)
+                    val y = centerY + r * sin(theta)
+                    progressPath.lineTo(x, y)
+                }
+
+                drawPath(
+                    path = progressPath,
+                    color = progressColor,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+            }
+        }
+
+        // Inner Scalloped Button
+        Surface(
+            onClick = onClick,
+            shape = scallopShape,
+            color = buttonBg,
+            modifier = Modifier.size(38.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (isPlaying) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(16.dp)
+                                .clip(CircleShape)
+                                .background(iconTint)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .height(16.dp)
+                                .clip(CircleShape)
+                                .background(iconTint)
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play",
+                        tint = iconTint,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun MiniPlayer(
     song: Song,
     isPlaying: Boolean,
+    progress: Float = 0f,
     showWaveform: Boolean,
     visualizerData: FloatArray,
     currentOutputIcon: ImageVector,
@@ -1313,7 +1476,7 @@ fun MiniPlayer(
     isControlsFilled: Boolean,
     useCustomControlsColor: Boolean,
     controlsColorPalette: Int,
-    shape: Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+    shape: Shape = CircleShape,
     hasBlurBackground: Boolean = false,
     isDarkTheme: Boolean = false,
     onTogglePlay: () -> Unit,
@@ -1337,285 +1500,218 @@ fun MiniPlayer(
 
     val miniContext = LocalContext.current
     val blurContainerColorMini = if (isDarkTheme) Color.Black.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.4f)
-    val blurPlayContainerColorMini = if (isDarkTheme) Color.Black.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.5f)
+    val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
-    Surface(
+    val pillMiniColor = if (useCustomControlsColor) {
+        activePrimary.copy(alpha = 0.25f)
+    } else if (hasBlurBackground) {
+        blurContainerColorMini
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val pillMiniIconTint = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    }
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .clickable { onExpand() },
-        shape = shape,
-        color = if (hasBlurBackground) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
-        tonalElevation = if (hasBlurBackground) 0.dp else 8.dp
+            .height(64.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box {
-            if (hasBlurBackground) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(80.dp)
-                        .alpha(if (isDarkTheme) 0.2f else 0.35f)
-                ) {
-                    val miniBlurRequest = remember(song.id, song.coverUrl) {
-                        ImageRequest.Builder(miniContext)
-                            .data(song.coverUrl ?: song.uri)
-                            .crossfade(true)
-                            .build()
-                    }
-                    AsyncImage(
-                        model = miniBlurRequest,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                if (!isDarkTheme) {
+        // 1. Cápsula / Píldora principal interactiva (A la izquierda)
+        val pillShape = CircleShape
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clip(pillShape)
+                .songSwipeGestures(
+                    enabled = true,
+                    onNext = onNext,
+                    onPrevious = onPrevious
+                )
+                .clickable { onExpand() },
+            shape = pillShape,
+            color = if (hasBlurBackground) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = if (hasBlurBackground) 0.dp else 6.dp
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (hasBlurBackground) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.28f))
-                    )
-                }
-            }
-
-            if (showWaveform) {
-                WaveformVisualizer(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha(0.3f)
-                        .blur(16.dp),
-                    magnitudes = visualizerData,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                    .fillMaxSize()
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
+                            .blur(80.dp)
+                            .alpha(if (isDarkTheme) 0.2f else 0.35f)
                     ) {
+                        val miniBlurRequest = remember(song.id, song.coverUrl) {
+                            ImageRequest.Builder(miniContext)
+                                .data(song.coverUrl ?: song.uri)
+                                .crossfade(true)
+                                .build()
+                        }
+                        AsyncImage(
+                            model = miniBlurRequest,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    if (!isDarkTheme) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
-                                .scale(coverScale),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (coverShape == 2 && coverVinylEffect) {
-                                VinylRecordAsyncCover(
-                                    model = song.coverUrl ?: song.uri,
-                                    rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                val activeShape = when (coverShape) {
-                                    1 -> RoundedCornerShape(0.dp)
-                                    2 -> CircleShape
-                                    else -> RoundedCornerShape(8.dp)
-                                }
-                                Surface(
-                                    shape = activeShape,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                                    color = MaterialTheme.colorScheme.secondaryContainer
-                                ) {
-                                    SongCoverImage(
-                                        coverUrl = song.coverUrl ?: song.uri,
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxSize(),
-                                        shape = activeShape,
-                                        iconScale = 0.68f
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.28f))
+                        )
+                    }
+                }
+
+                if (showWaveform) {
+                    WaveformVisualizer(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .alpha(0.3f)
+                            .blur(16.dp),
+                        magnitudes = visualizerData,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 18.dp, end = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Título de la canción y debajo icono de dispositivo + artista
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = song.title,
+                            modifier = Modifier.basicMarquee(),
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = currentOutputIcon,
+                                contentDescription = null,
+                                tint = if (hasBlurBackground) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = song.artist,
+                                modifier = Modifier.basicMarquee(),
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    // Controles a la derecha de la cápsula
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Botón Sonando Ahora (se mantiene)
+                        if (onScrollToCurrent != null) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "ScrollPulse")
+                            val pulseScale by infiniteTransition.animateFloat(
+                                initialValue = 1f,
+                                targetValue = 1.15f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(800, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "PulseAnim"
+                            )
+                            Surface(
+                                onClick = onScrollToCurrent,
+                                shape = CircleShape,
+                                color = pillMiniColor,
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .bounceClick()
+                                    .scale(pulseScale)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = "Scroll to current",
+                                        tint = pillMiniIconTint,
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = song.title,
-                                modifier = Modifier.basicMarquee(),
-                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = currentOutputIcon,
-                                    contentDescription = null,
-                                    tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = song.artist,
-                                    modifier = Modifier.basicMarquee().weight(1f, fill = false),
-                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1
-                                )
-                            }
-                        }
-                    }
-
-                    if (onMinimize != null) {
-                        IconButton(
-                            onClick = onMinimize,
-                            modifier = Modifier.align(Alignment.TopEnd).size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Minimize",
-                                tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-
-                val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
-                val pillMiniColor = if (useCustomControlsColor) {
-                    activePrimary.copy(alpha = 0.25f)
-                } else if (hasBlurBackground) {
-                    blurContainerColorMini
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHigh
-                }
-                val pillMiniIconTint = if (useCustomControlsColor) {
-                    activePrimary
-                } else if (hasBlurBackground) {
-                    Color.White
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                }
-
-                val miniCtx = LocalContext.current
-                val playbackManager = remember { PlaybackManager.getInstance(miniCtx) }
-                val repeatMode = playbackManager.repeatMode
-                val isRepeatActive = repeatMode != 0
-                val repeatIcon = if (repeatMode == 1) Icons.Default.RepeatOne else Icons.Default.Repeat
-                val repeatBg = if (isRepeatActive) {
-                    if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary
-                } else {
-                    pillMiniColor
-                }
-                val repeatTint = if (isRepeatActive) {
-                    if (useCustomControlsColor) Color.White else MaterialTheme.colorScheme.onPrimary
-                } else {
-                    pillMiniIconTint
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        onClick = { playbackManager.toggleRepeatMode() },
-                        shape = CircleShape,
-                        color = repeatBg,
-                        modifier = Modifier.size(36.dp).bounceClick()
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = repeatIcon,
-                                contentDescription = "Repeat",
-                                tint = repeatTint,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            onClick = onPrevious,
-                            shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                            color = pillMiniColor,
-                            modifier = Modifier.size(40.dp).bounceClick()
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                ReusableSkipIcon(
-                                    isNext = false,
-                                    controlsIconStyle = controlsIconStyle,
-                                    isControlsFilled = isControlsFilled,
-                                    tint = pillMiniIconTint,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Surface(
+                        // Botón Play/Pause con barra de progreso ondulada concéntrica Material 3 Expressive
+                        ScallopPlayPauseButtonWithProgress(
+                            isPlaying = isPlaying,
+                            progress = progress,
                             onClick = onTogglePlay,
-                            shape = RoundedCornerShape(4.dp),
-                            color = pillMiniColor,
-                            modifier = Modifier.size(40.dp).bounceClick()
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
-                                    contentDescription = null,
-                                    tint = pillMiniIconTint,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Surface(
-                            onClick = onNext,
-                            shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                            color = pillMiniColor,
-                            modifier = Modifier.size(40.dp).bounceClick()
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                ReusableSkipIcon(
-                                    isNext = true,
-                                    controlsIconStyle = controlsIconStyle,
-                                    isControlsFilled = isControlsFilled,
-                                    tint = pillMiniIconTint,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    if (onScrollToCurrent != null) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "ScrollPulse")
-                        val pulseScale by infiniteTransition.animateFloat(
-                            initialValue = 1f,
-                            targetValue = 1.15f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(800, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "PulseAnim"
+                            hasBlurBackground = hasBlurBackground,
+                            useCustomControlsColor = useCustomControlsColor,
+                            activePrimary = activePrimary
                         )
-                        Surface(
-                            onClick = onScrollToCurrent,
-                            shape = CircleShape,
-                            color = pillMiniColor,
-                            modifier = Modifier.size(36.dp).bounceClick().scale(pulseScale)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.MusicNote,
-                                    contentDescription = "Scroll to current",
-                                    tint = pillMiniIconTint,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.size(36.dp))
                     }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 2. Cover a la derecha de la píldora (siempre circular - CircleShape, al tocarlo minimiza el miniplayer)
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .bounceClick()
+                .clickable { onMinimize?.invoke() },
+            contentAlignment = Alignment.Center
+        ) {
+            val isVinylActive = coverShape == 2 && coverVinylEffect
+            val isSpinActive = coverShape == 2 && coverSpin && isPlaying
+
+            if (isVinylActive) {
+                VinylRecordAsyncCover(
+                    model = song.coverUrl ?: song.uri,
+                    rotation = if (isSpinActive) spinRotation else 0f,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(coverScale)
+                )
+            } else {
+                Surface(
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(coverScale)
+                        .rotate(if (isSpinActive) spinRotation else 0f),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    tonalElevation = 4.dp,
+                    shadowElevation = 2.dp
+                ) {
+                    SongCoverImage(
+                        coverUrl = song.coverUrl ?: song.uri,
+                        contentDescription = "Minimize player",
+                        modifier = Modifier.fillMaxSize(),
+                        shape = CircleShape,
+                        iconScale = 0.68f
+                    )
                 }
             }
         }
