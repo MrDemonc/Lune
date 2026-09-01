@@ -608,6 +608,29 @@ fun MainScreen(
     var undoProgress by remember { mutableFloatStateOf(1f) }
     var selectedPlaylist by remember { mutableStateOf<com.demonlab.lune.data.Playlist?>(null) }
     
+    val isDarkThemeMini = when (themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val miniPrefs = remember { context.getSharedPreferences("lune_settings", android.content.Context.MODE_PRIVATE) }
+    var blurEnabled by remember { mutableStateOf(settingsManager.isBlurEnabled) }
+    var blurDarkMode by remember { mutableStateOf(settingsManager.isBlurDarkMode) }
+    var blurLightMode by remember { mutableStateOf(settingsManager.isBlurLightMode) }
+    DisposableEffect(miniPrefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            when (key) {
+                "is_blur_enabled" -> blurEnabled = miniPrefs.getBoolean("is_blur_enabled", true)
+                "is_blur_dark_mode" -> blurDarkMode = miniPrefs.getBoolean("is_blur_dark_mode", true)
+                "is_blur_light_mode" -> blurLightMode = miniPrefs.getBoolean("is_blur_light_mode", false)
+            }
+        }
+        miniPrefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { miniPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    val hasBlurBackgroundMini = blurEnabled &&
+        (if (isDarkThemeMini) blurDarkMode else blurLightMode)
+
     val visualizerData by playbackManager.visualizerData.collectAsState()
     
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -827,7 +850,8 @@ fun MainScreen(
     @Composable
     fun AnimatedLogo(
         isPlaying: Boolean,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        tintColor: Color = MaterialTheme.colorScheme.primary
     ) {
         val rotation = remember { Animatable(0f) }
 
@@ -852,7 +876,7 @@ fun MainScreen(
             Icon(
                 painter = painterResource(id = R.drawable.ic_logo_diamonds),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                tint = tintColor.copy(alpha = 0.3f),
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer(rotationZ = rotation.value)
@@ -860,7 +884,7 @@ fun MainScreen(
             Icon(
                 painter = painterResource(id = R.drawable.ic_logo_note),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = tintColor,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -877,8 +901,45 @@ fun MainScreen(
 
     var showSearchScreen by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
         val scrollToCurrentTrigger = remember { mutableStateOf(0) }
+
+        if (hasBlurBackgroundMini && currentSong != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(80.dp)
+                    .alpha(if (isDarkThemeMini) 0.35f else 0.45f)
+            ) {
+                val sharedBlurReq = remember(currentSong.id, currentSong.coverUrl) {
+                    ImageRequest.Builder(context)
+                        .data(currentSong.coverUrl ?: currentSong.uri)
+                        .crossfade(true)
+                        .build()
+                }
+                AsyncImage(
+                    model = sharedBlurReq,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (isDarkThemeMini) {
+                            Color.Black.copy(alpha = 0.52f)
+                        } else {
+                            Color.Black.copy(alpha = 0.28f)
+                        }
+                    )
+            )
+        }
 
         Scaffold(
             snackbarHost = { 
@@ -953,8 +1014,33 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = if (hasBlurBackgroundMini && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
             topBar = {
+                val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+                val titleColor = if (useCustomControlsColor) {
+                    activePrimary
+                } else if (hasBlurBackgroundMini) {
+                    Color.White
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+
+                val actionBtnBg = if (useCustomControlsColor) {
+                    activePrimary.copy(alpha = 0.20f)
+                } else if (hasBlurBackgroundMini) {
+                    Color.White.copy(alpha = 0.15f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                }
+
+                val actionBtnTint = if (useCustomControlsColor) {
+                    activePrimary
+                } else if (hasBlurBackgroundMini) {
+                    Color.White
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+
                 LargeTopAppBar(
                     title = { 
                         val customTitle by settingsManager.customTitleFlow.collectAsState()
@@ -966,13 +1052,14 @@ fun MainScreen(
                         ) {
                             AnimatedLogo(
                                 isPlaying = isPlaying,
+                                tintColor = titleColor,
                                 modifier = Modifier.padding(end = 0.5.dp)
                             )
                             ResponsiveText(
                                 text = titleText,
                                 modifier = Modifier.weight(1f).fillMaxWidth(),
                                 targetTextSize = 32.sp,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = titleColor,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -984,8 +1071,10 @@ fun MainScreen(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(40.dp)
+                                color = actionBtnBg,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .bounceClick()
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -999,7 +1088,7 @@ fun MainScreen(
                                             2 -> stringResource(R.string.theme_dark)
                                             else -> stringResource(R.string.theme_auto)
                                         },
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = actionBtnTint,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -1012,14 +1101,16 @@ fun MainScreen(
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(40.dp)
+                                color = actionBtnBg,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .bounceClick()
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Outlined.Settings,
                                         contentDescription = stringResource(R.string.settings),
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = actionBtnTint,
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
@@ -1027,9 +1118,9 @@ fun MainScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
+                        titleContentColor = if (hasBlurBackgroundMini) (if (isDarkThemeMini) Color.White else MaterialTheme.colorScheme.onSurface) else MaterialTheme.colorScheme.onSurface
                     )
                 )
             }
@@ -1048,41 +1139,36 @@ fun MainScreen(
 
                 LaunchedEffect(selectedFolder) {
                     val target = folders.indexOf(selectedFolder)
-                    if (target != -1 && target != pagerState.currentPage) {
+                    if (target >= 0 && pagerState.currentPage != target) {
                         isPagerProgrammaticScroll = true
-                        pagerState.animateScrollToPage(target)
+                        pagerState.scrollToPage(target)
                         isPagerProgrammaticScroll = false
                     }
                 }
 
-                LaunchedEffect(pagerState.currentPage) {
-                    if (!isPagerProgrammaticScroll) {
-                        val f = folders.getOrNull(pagerState.currentPage)
-                        if (f != null && f != selectedFolder) {
-                            onSelectedFolderChange(f)
+                LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+                    if (!pagerState.isScrollInProgress && !isPagerProgrammaticScroll) {
+                        val currentTarget = folders.getOrNull(pagerState.currentPage)
+                        if (currentTarget != null && currentTarget != selectedFolder) {
+                            onSelectedFolderChange(currentTarget)
                         }
-                    }
-                }
-
-                LaunchedEffect(folders) {
-                    val target = folders.indexOf(selectedFolder)
-                    if (target != -1 && target != pagerState.currentPage) {
-                        isPagerProgrammaticScroll = true
-                        pagerState.animateScrollToPage(target)
-                        isPagerProgrammaticScroll = false
                     }
                 }
 
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    val folder = folders.getOrNull(page) ?: return@HorizontalPager
+                    modifier = Modifier.weight(1f),
+                    beyondViewportPageCount = 1
+                ) { pageIndex ->
+                    val folder = folders.getOrElse(pageIndex) { "ALL" }
 
                     val pageFilteredSongs = remember(visibleSongs, folder) {
                         when (folder) {
                             "RESUME", "ALL", "ALBUMS", "FOLDERS" -> visibleSongs
+                            "ARTISTS" -> visibleSongs
+                            "GENRES" -> visibleSongs
                             "FAVORITES" -> visibleSongs.filter { it.isFavorite }
+                            "PLAYLISTS" -> emptyList()
                             else -> visibleSongs.filter { it.folderName == folder }
                         }
                     }
@@ -1105,8 +1191,8 @@ fun MainScreen(
                             folder == "ALBUMS" -> "ALBUM_GRID"
                             folder == "ARTISTS" -> "ARTIST_GRID"
                             folder == "GENRES" -> "GENRE_GRID"
-                            folder == "PLAYLISTS" -> "PLAYLIST_GRID"
                             folder == "FOLDERS" -> "FOLDER_GRID"
+                            folder == "PLAYLISTS" -> "PLAYLIST_GRID"
                             pageFilteredSongs.isEmpty() -> "EMPTY"
                             else -> "LIST"
                         }
@@ -1124,7 +1210,12 @@ fun MainScreen(
                                 bottomPadding = bottomPadding,
                                 currentSong = currentSong,
                                 isPlaying = isPlaying,
-                                    onSongClick = { song, listContext ->
+                                playbackProgress = playbackProgress,
+                                hasBlurBackground = hasBlurBackgroundMini,
+                                isDarkTheme = isDarkThemeMini,
+                                useCustomControlsColor = useCustomControlsColor,
+                                controlsColorPalette = controlsColorPalette,
+                                onSongClick = { song, listContext ->
                                     onCurrentSongChange(song)
                                     playbackManager.play(song, listContext, -100L, category = "ALL", shuffleMode = playbackManager.isShuffle)
                                     onIsPlayingChange(true)
@@ -1181,7 +1272,8 @@ fun MainScreen(
                                 HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    hasBlurBackground = hasBlurBackgroundMini
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = albumsList.size,
@@ -1192,6 +1284,7 @@ fun MainScreen(
                                             settingsManager.albumViewStyle = newStyle
                                         },
                                         isAlbumView = true,
+                                        hasBlurBackground = hasBlurBackgroundMini,
                                         onToggleAlbumView = null
                                     )
                                 }
@@ -1202,6 +1295,7 @@ fun MainScreen(
                                             albums = albumsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
+                                            hasBlurBackground = hasBlurBackgroundMini,
                                             activePlaylistId = currentSong?.album?.hashCode()?.toLong()
                                         )
                                     } else {
@@ -1209,6 +1303,7 @@ fun MainScreen(
                                             albums = albumsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
+                                            hasBlurBackground = hasBlurBackgroundMini,
                                             activePlaylistId = currentSong?.album?.hashCode()?.toLong()
                                         )
                                     }
@@ -1222,7 +1317,8 @@ fun MainScreen(
                                 HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    hasBlurBackground = hasBlurBackgroundMini
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = artistsList.size,
@@ -1233,6 +1329,7 @@ fun MainScreen(
                                             settingsManager.albumViewStyle = newStyle
                                         },
                                         isAlbumView = false,
+                                        hasBlurBackground = hasBlurBackgroundMini,
                                         onToggleAlbumView = null
                                     )
                                 }
@@ -1243,6 +1340,7 @@ fun MainScreen(
                                             albums = artistsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
+                                            hasBlurBackground = hasBlurBackgroundMini,
                                             activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     } else {
@@ -1250,6 +1348,7 @@ fun MainScreen(
                                             albums = artistsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
+                                            hasBlurBackground = hasBlurBackgroundMini,
                                             activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     }
@@ -1263,7 +1362,8 @@ fun MainScreen(
                                 HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    hasBlurBackground = hasBlurBackgroundMini
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = genresList.size,
@@ -1274,6 +1374,7 @@ fun MainScreen(
                                             settingsManager.albumViewStyle = newStyle
                                         },
                                         isAlbumView = false,
+                                        hasBlurBackground = hasBlurBackgroundMini,
                                         onToggleAlbumView = null,
                                         title = sTabGenres,
                                         icon = Icons.Default.Category
@@ -1286,6 +1387,7 @@ fun MainScreen(
                                             albums = genresList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
+                                            hasBlurBackground = hasBlurBackgroundMini,
                                             activePlaylistId = null
                                         )
                                     } else {
@@ -1293,6 +1395,7 @@ fun MainScreen(
                                             albums = genresList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
+                                            hasBlurBackground = hasBlurBackgroundMini,
                                             activePlaylistId = null
                                         )
                                     }
@@ -1323,15 +1426,26 @@ fun MainScreen(
                                         }
                                     }
                                 },
-                                bottomPadding = bottomPadding
+                                bottomPadding = bottomPadding,
+                                hasBlurBackground = hasBlurBackgroundMini
                             )
                         }
                         "FOLDER_GRID" -> {
+                            val folderIconBg = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+                            val folderIconTint = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.primary
+                            val folderTitleColor = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.onSurface
+                            val folderCountColor = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            val folderActionInactiveBg = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+                            val folderActionInactiveTint = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+                            val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+                            val folderActionActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+
                             Column(modifier = Modifier.fillMaxSize()) {
                                 HeaderSurface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    hasBlurBackground = hasBlurBackgroundMini
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -1343,14 +1457,14 @@ fun MainScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Surface(
                                                 shape = RoundedCornerShape(12.dp),
-                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                color = folderIconBg,
                                                 modifier = Modifier.size(44.dp)
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         Icons.Default.Folder,
                                                         contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        tint = folderIconTint,
                                                         modifier = Modifier.size(24.dp)
                                                     )
                                                 }
@@ -1361,12 +1475,12 @@ fun MainScreen(
                                                     text = stringResource(R.string.tab_folders),
                                                     style = MaterialTheme.typography.titleMedium,
                                                     fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurface
+                                                    color = folderTitleColor
                                                 )
                                                 Text(
                                                     text = visibleFolders.size.toString(),
                                                     style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    color = folderCountColor
                                                 )
                                             }
                                         }
@@ -1377,14 +1491,14 @@ fun MainScreen(
                                                     settingsManager.folderHierarchyMode = folderHierarchyMode
                                                 },
                                                 shape = CircleShape,
-                                                color = if (folderHierarchyMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                                                color = if (folderHierarchyMode) folderActionActiveBg else folderActionInactiveBg,
                                                 modifier = Modifier.size(36.dp)
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         if (folderHierarchyMode) Icons.AutoMirrored.Filled.List else Icons.Default.Folder,
                                                         contentDescription = null,
-                                                        tint = if (folderHierarchyMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                                                        tint = if (folderHierarchyMode) Color.White else folderActionInactiveTint,
                                                         modifier = Modifier.size(18.dp)
                                                     )
                                                 }
@@ -1392,14 +1506,14 @@ fun MainScreen(
                                             Surface(
                                                 onClick = { onShowFolderSheetChange(true) },
                                                 shape = CircleShape,
-                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                color = folderActionInactiveBg,
                                                 modifier = Modifier.size(36.dp)
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         Icons.Default.FilterList,
                                                         contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                        tint = folderActionInactiveTint,
                                                         modifier = Modifier.size(18.dp)
                                                     )
                                                 }
@@ -1465,13 +1579,19 @@ fun MainScreen(
                                             val hasChildren = entry.name in parentFolders
                                             val isPlaying = isFolderCategory && playbackManager.activePlaylistId == entry.name.hashCode().toLong()
                                             val isAncestor = entry.name in ancestorNames
+                                            val folderTitleColor = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.onSurface
+                                            val folderSubColor = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                            val folderIconBg = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.18f) else (if (entry.isVirtual) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.secondaryContainer)
+                                            val folderIconTint = if (hasBlurBackgroundMini) Color.White else (if (entry.isVirtual) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSecondaryContainer)
+
                                             ListItem(
+                                                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                                 supportingContent = {
                                                     if (!entry.isVirtual) {
                                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = folderSubColor)
                                                             Spacer(modifier = Modifier.width(4.dp))
-                                                            Text("$songCount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            Text("$songCount", style = MaterialTheme.typography.bodySmall, color = folderSubColor)
                                                         }
                                                     }
                                                 },
@@ -1479,14 +1599,14 @@ fun MainScreen(
                                                     Box(contentAlignment = Alignment.Center) {
                                                         Surface(
                                                             shape = CircleShape,
-                                                            color = if (entry.isVirtual) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.secondaryContainer,
+                                                            color = folderIconBg,
                                                             modifier = Modifier.size(56.dp)
                                                         ) {
                                                             Box(contentAlignment = Alignment.Center) {
                                                                 Icon(
                                                                     Icons.Default.Folder,
                                                                     contentDescription = null,
-                                                                    tint = if (entry.isVirtual) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSecondaryContainer,
+                                                                    tint = folderIconTint,
                                                                     modifier = Modifier.size(24.dp)
                                                                 )
                                                             }
@@ -1497,7 +1617,7 @@ fun MainScreen(
                                                                     .align(Alignment.BottomEnd)
                                                                     .size(14.dp)
                                                                     .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                                    .border(2.dp, if (hasBlurBackgroundMini) Color.Transparent else MaterialTheme.colorScheme.surface, CircleShape)
                                                             )
                                                         }
                                                     }
@@ -1523,7 +1643,7 @@ fun MainScreen(
                                                                 Icon(
                                                                     if (entry.name in expandedFolders) Icons.Default.ArrowDropDown else Icons.AutoMirrored.Filled.ArrowRight,
                                                                     contentDescription = null,
-                                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                                    tint = folderSubColor
                                                                 )
                                                             }
                                                         }
@@ -1535,26 +1655,32 @@ fun MainScreen(
                                                         if (entry.isVirtual) Modifier else Modifier.clickable { selectedFolderItem = entry.name }
                                                     )
                                             ) {
-                                                Text(entry.name, fontWeight = FontWeight.SemiBold)
+                                                Text(entry.name, fontWeight = FontWeight.SemiBold, color = folderTitleColor)
                                             }
                                         }
                                     } else {
                                         itemsIndexed(hierarchyEntries) { index, entry ->
                                             val songCount = visibleSongs.count { it.folderName == entry.name }
                                             val isPlaying = isFolderCategory && playbackManager.activePlaylistId == entry.name.hashCode().toLong()
+                                            val folderTitleColor = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.onSurface
+                                            val folderSubColor = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                            val folderIconBg = if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+                                            val folderIconTint = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+
                                             ListItem(
+                                                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                                 supportingContent = {
                                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Icon(Icons.Default.MusicNote, null, modifier = Modifier.size(14.dp), tint = folderSubColor)
                                                         Spacer(modifier = Modifier.width(4.dp))
-                                                        Text("$songCount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        Text("$songCount", style = MaterialTheme.typography.bodySmall, color = folderSubColor)
                                                     }
                                                 },
                                                 leadingContent = {
                                                     Box(contentAlignment = Alignment.Center) {
-                                                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(56.dp)) {
+                                                        Surface(shape = CircleShape, color = folderIconBg, modifier = Modifier.size(56.dp)) {
                                                             Box(contentAlignment = Alignment.Center) {
-                                                                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(24.dp))
+                                                                Icon(Icons.Default.Folder, contentDescription = null, tint = folderIconTint, modifier = Modifier.size(24.dp))
                                                             }
                                                         }
                                                         if (isPlaying) {
@@ -1563,7 +1689,7 @@ fun MainScreen(
                                                                     .align(Alignment.BottomEnd)
                                                                     .size(14.dp)
                                                                     .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                                    .border(2.dp, if (hasBlurBackgroundMini) Color.Transparent else MaterialTheme.colorScheme.surface, CircleShape)
                                                             )
                                                         }
                                                     }
@@ -1572,7 +1698,7 @@ fun MainScreen(
                                                     .padding(start = (entry.depth * 24).dp)
                                                     .clickable { selectedFolderItem = entry.name }
                                             ) {
-                                                Text(entry.name, fontWeight = FontWeight.SemiBold)
+                                                Text(entry.name, fontWeight = FontWeight.SemiBold, color = folderTitleColor)
                                             }
                                         }
                                     }
@@ -1622,7 +1748,8 @@ fun MainScreen(
                                                 HeaderSurface(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(vertical = 8.dp)
+                                                        .padding(vertical = 8.dp),
+                                                    hasBlurBackground = hasBlurBackgroundMini
                                                 ) {
                                                     SongsListHeader(
                                                         songs = pageSortedSongs,
@@ -1630,6 +1757,9 @@ fun MainScreen(
                                                         isShuffleActive = isShuffleActive,
                                                         isCurrentListPlaying = isCurrentListPlaying,
                                                         isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                                        hasBlurBackground = hasBlurBackgroundMini,
+                                                        useCustomControlsColor = useCustomControlsColor,
+                                                        controlsColorPalette = controlsColorPalette,
                                                         onSortClick = { showSortSheet = true },
                                                         onPlayClick = {
                                                             if (settingsManager.isHapticVibrationEnabled) {
@@ -1663,6 +1793,9 @@ fun MainScreen(
                                                 song = song,
                                                 currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
                                                 isPlaying = isPlaying,
+                                                hasBlurBackground = hasBlurBackgroundMini,
+                                                useCustomControlsColor = useCustomControlsColor,
+                                                controlsColorPalette = controlsColorPalette,
                                                 onClick = {
                                                     if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
                                                         onCurrentSongChange(song)
@@ -1693,7 +1826,8 @@ fun MainScreen(
                                                 HeaderSurface(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                                    hasBlurBackground = hasBlurBackgroundMini
                                                 ) {
                                                     SongsListHeader(
                                                         songs = pageSortedSongs,
@@ -1701,6 +1835,9 @@ fun MainScreen(
                                                         isShuffleActive = isShuffleActive,
                                                         isCurrentListPlaying = isCurrentListPlaying,
                                                         isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                                        hasBlurBackground = hasBlurBackgroundMini,
+                                                        useCustomControlsColor = useCustomControlsColor,
+                                                        controlsColorPalette = controlsColorPalette,
                                                         onSortClick = { showSortSheet = true },
                                                         onPlayClick = {
                                                             if (settingsManager.isHapticVibrationEnabled) {
@@ -1745,6 +1882,9 @@ fun MainScreen(
                                                 song = song,
                                                 currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
                                                 isPlaying = isPlaying,
+                                                hasBlurBackground = hasBlurBackgroundMini,
+                                                useCustomControlsColor = useCustomControlsColor,
+                                                controlsColorPalette = controlsColorPalette,
                                                 onClick = {
                                                     if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
                                                         onCurrentSongChange(song)
@@ -1981,29 +2121,6 @@ fun MainScreen(
 
         // Bottom Controls (Unified Pill + Mini Player)
         if (!isPlayerExpanded) {
-            val isDarkThemeMini = when (themeMode) {
-                1 -> false
-                2 -> true
-                else -> isSystemInDarkTheme()
-            }
-            val miniPrefs = LocalContext.current.getSharedPreferences("lune_settings", android.content.Context.MODE_PRIVATE)
-            var blurEnabled by remember { mutableStateOf(settingsManager.isBlurEnabled) }
-            var blurDarkMode by remember { mutableStateOf(settingsManager.isBlurDarkMode) }
-            var blurLightMode by remember { mutableStateOf(settingsManager.isBlurLightMode) }
-            DisposableEffect(miniPrefs) {
-                val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    when (key) {
-                        "is_blur_enabled" -> blurEnabled = miniPrefs.getBoolean("is_blur_enabled", true)
-                        "is_blur_dark_mode" -> blurDarkMode = miniPrefs.getBoolean("is_blur_dark_mode", true)
-                        "is_blur_light_mode" -> blurLightMode = miniPrefs.getBoolean("is_blur_light_mode", false)
-                    }
-                }
-                miniPrefs.registerOnSharedPreferenceChangeListener(listener)
-                onDispose { miniPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
-            }
-            val hasBlurBackgroundMini = blurEnabled &&
-                (if (isDarkThemeMini) blurDarkMode else blurLightMode)
-
             AnimatedContent(
                 targetState = currentSong != null,
                 transitionSpec = {

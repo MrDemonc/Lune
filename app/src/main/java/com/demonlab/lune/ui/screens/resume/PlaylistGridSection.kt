@@ -25,6 +25,7 @@ import com.demonlab.lune.ui.viewmodels.MusicViewModel
 fun PlaylistGridSection(
     viewModel: MusicViewModel,
     playlists: List<Playlist>,
+    hasBlurBackground: Boolean = false,
     onPlaylistClick: (Playlist) -> Unit,
 ) {
     if (playlists.isEmpty()) return
@@ -37,7 +38,10 @@ fun PlaylistGridSection(
     }
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        SectionHeader(title = stringResource(R.string.resume_top_playlists))
+        SectionHeader(
+            title = stringResource(R.string.resume_top_playlists),
+            hasBlurBackground = hasBlurBackground
+        )
         Spacer(modifier = Modifier.height(6.dp))
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(14.dp),

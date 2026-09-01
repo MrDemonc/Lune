@@ -108,6 +108,7 @@ fun AlbumStackedCarousel(
     albums: List<Album>,
     onAlbumClick: (Album) -> Unit,
     bottomPadding: Dp,
+    hasBlurBackground: Boolean = false,
     activePlaylistId: Long? = null
 ) {
     val initialPage = remember(activePlaylistId, albums) {
@@ -181,8 +182,8 @@ fun AlbumStackedCarousel(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = if (hasBlurBackground) Color.Black.copy(alpha = 0.60f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                            contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
                         ) {
                             Text(
                                 text = album.name,

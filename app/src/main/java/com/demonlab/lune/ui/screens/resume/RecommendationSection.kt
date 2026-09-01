@@ -22,6 +22,7 @@ import com.demonlab.lune.ui.utils.bounceClick
 fun RecommendationSection(
     title: String,
     songs: List<Song>,
+    hasBlurBackground: Boolean = false,
     onSongClick: (Song) -> Unit,
 ) {
     if (songs.isEmpty()) return
@@ -35,7 +36,7 @@ fun RecommendationSection(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -126,12 +127,15 @@ private fun RecommendationCard(
 }
 
 @Composable
-fun SectionHeader(title: String) {
+fun SectionHeader(
+    title: String,
+    hasBlurBackground: Boolean = false
+) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-        color = MaterialTheme.colorScheme.onSurface
+        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
     )
 }

@@ -30,12 +30,16 @@ data class GenreItem(
 @Composable
 fun TopGenresSection(
     genres: List<GenreItem>,
+    hasBlurBackground: Boolean = false,
     onGenreClick: (String) -> Unit,
 ) {
     if (genres.isEmpty()) return
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        SectionHeader(title = stringResource(R.string.resume_top_genres))
+        SectionHeader(
+            title = stringResource(R.string.resume_top_genres),
+            hasBlurBackground = hasBlurBackground
+        )
         Spacer(modifier = Modifier.height(6.dp))
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(14.dp),

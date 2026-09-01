@@ -25,12 +25,16 @@ data class ArtistItem(
 @Composable
 fun TopArtistsSection(
     artists: List<ArtistItem>,
+    hasBlurBackground: Boolean = false,
     onArtistClick: (String) -> Unit,
 ) {
     if (artists.isEmpty()) return
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        SectionHeader(title = stringResource(R.string.resume_top_artists))
+        SectionHeader(
+            title = stringResource(R.string.resume_top_artists),
+            hasBlurBackground = hasBlurBackground
+        )
         Spacer(modifier = Modifier.height(6.dp))
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),

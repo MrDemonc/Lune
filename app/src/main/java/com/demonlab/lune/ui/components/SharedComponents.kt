@@ -22,6 +22,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -115,7 +116,10 @@ fun ResponsiveText(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PlayingSongDiamondsIndicator(isPlaying: Boolean) {
+private fun PlayingSongDiamondsIndicator(
+    isPlaying: Boolean,
+    tint: Color = MaterialTheme.colorScheme.primary
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "PlayingIndicatorRotation")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -142,7 +146,7 @@ private fun PlayingSongDiamondsIndicator(isPlaying: Boolean) {
         Icon(
             imageVector = if (isPlaying) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = tint,
             modifier = Modifier.size(24.dp)
         )
     }
@@ -156,6 +160,9 @@ fun SongItem(
     isPlaying: Boolean = false,
     isFirst: Boolean = false,
     isLast: Boolean = false,
+    hasBlurBackground: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     onOptionsClick: (() -> Unit)? = null,
@@ -163,6 +170,15 @@ fun SongItem(
 ) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
+    val themeMode = settingsManager.themeMode
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+
+    val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
     val shape = if (isFirst && isLast) {
         RoundedCornerShape(28.dp)
@@ -174,6 +190,19 @@ fun SongItem(
         RoundedCornerShape(4.dp)
     }
 
+    val cardBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)
+    } else {
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+    }
+
+    val titleColor = if (currentlyPlaying) activePrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (currentlyPlaying) activePrimary.copy(alpha = 0.85f) else if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val bitrateColor = if (hasBlurBackground) Color.White.copy(alpha = 0.60f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val favoriteIconTint = if (song.isFavorite) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val optionsBg = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+    val optionsTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -181,27 +210,27 @@ fun SongItem(
             .bounceClick(scaleDown = 0.96f),
         onClick = onClick ?: {},
         shape = shape,
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+        color = cardBg
     ) {
         ListItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             supportingContent = {
                 if (settingsManager.isBitrateOnList && (song.bitrate != null || song.format.isNotEmpty())) {
                     Column {
-                    Text(
-                        "${formatDuration(song.duration)} • ${song.artist}",
-                        maxLines = 1,
-                        modifier = Modifier.basicMarquee(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (currentlyPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    val bitrateText = if (song.bitrate != null) "${song.format} | ${song.bitrate / 1000}kbps" else song.format
-                    Text(
-                        bitrateText,
-                        maxLines = 1,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
+                        Text(
+                            "${formatDuration(song.duration)} • ${song.artist}",
+                            maxLines = 1,
+                            modifier = Modifier.basicMarquee(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = subtitleColor
+                        )
+                        val bitrateText = if (song.bitrate != null) "${song.format} | ${song.bitrate / 1000}kbps" else song.format
+                        Text(
+                            bitrateText,
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = bitrateColor
+                        )
                     }
                 } else {
                     Text(
@@ -209,7 +238,7 @@ fun SongItem(
                         maxLines = 1,
                         modifier = Modifier.basicMarquee(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (currentlyPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = subtitleColor
                     )
                 }
             },
@@ -222,34 +251,58 @@ fun SongItem(
                         shape = MaterialTheme.shapes.medium
                     )
                     if (currentlyPlaying) {
-                        PlayingSongDiamondsIndicator(isPlaying = isPlaying)
+                        PlayingSongDiamondsIndicator(isPlaying = isPlaying, tint = activePrimary)
                     }
                 }
             },
             trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val favBg = if (song.isFavorite) {
+                        if (hasBlurBackground) Color.White.copy(alpha = 0.28f) else (if (useCustomControlsColor) activePrimary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                    } else {
+                        if (hasBlurBackground) Color.White.copy(alpha = 0.10f) else Color.Transparent
+                    }
+                    val favTint = if (song.isFavorite) {
+                        if (hasBlurBackground) Color.White else (if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary)
+                    } else {
+                        favoriteIconTint
+                    }
+
+                    Surface(
                         onClick = { onFavoriteClick?.invoke(song) },
+                        shape = CircleShape,
+                        color = favBg,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .bounceClick(scaleDown = 0.80f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = stringResource(R.string.option_favorite),
+                                tint = favTint,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onOptionsClick ?: {},
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(
-                            imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = stringResource(R.string.option_favorite),
-                            tint = if (song.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    IconButton(onClick = onOptionsClick ?: {}) {
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            color = optionsBg,
                             modifier = Modifier.size(32.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Outlined.MoreVert,
                                     contentDescription = stringResource(R.string.player_options),
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = optionsTint,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -260,12 +313,13 @@ fun SongItem(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (song.isHiRes) {
+                    val hiResBg = if (hasBlurBackground) Color(0xFF2E2400).copy(alpha = 0.70f) else Color(0xFF2E2400)
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        color = Color(0xFF2E2400),
-                        border = androidx.compose.foundation.BorderStroke(
+                        color = hiResBg,
+                        border = BorderStroke(
                             1.dp,
-                            androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500)))
+                            Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500)))
                         )
                     ) {
                         Text(
@@ -278,15 +332,19 @@ fun SongItem(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                 } else if (song.isHiFi) {
+                    val hifiBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.tertiaryContainer
+                    val hifiTextColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
+                    val hifiBorder = if (hasBlurBackground) BorderStroke(0.8.dp, Color.White.copy(alpha = 0.35f)) else null
                     Surface(
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        color = hifiBg,
+                        border = hifiBorder,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             "HI-FI",
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            color = hifiTextColor,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -297,7 +355,7 @@ fun SongItem(
                     maxLines = 1,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f, fill = false).basicMarquee(),
-                    color = if (currentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    color = titleColor
                 )
             }
         }
@@ -310,10 +368,14 @@ fun SongGridItem(
     currentlyPlaying: Boolean,
     isPlaying: Boolean,
     onClick: () -> Unit,
+    hasBlurBackground: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     onOptionsClick: (() -> Unit)? = null,
     onFavoriteClick: ((Song) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val cardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
     val coverShape = RoundedCornerShape(24.dp)
     Column(
@@ -349,7 +411,7 @@ fun SongGridItem(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = activePrimary,
                         modifier = Modifier.size(42.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -367,10 +429,10 @@ fun SongGridItem(
             if (song.isHiRes) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFF2E2400).copy(alpha = 0.9f),
+                    color = if (hasBlurBackground) Color(0xFF2E2400).copy(alpha = 0.75f) else Color(0xFF2E2400).copy(alpha = 0.9f),
                     border = BorderStroke(
                         1.dp,
-                        androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500)))
+                        Brush.horizontalGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA500)))
                     ),
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -385,8 +447,12 @@ fun SongGridItem(
                     )
                 }
             } else if (song.isHiFi) {
+                val hifiBg = if (hasBlurBackground) Color.White.copy(alpha = 0.22f) else MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.9f)
+                val hifiTextColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
+                val hifiBorder = if (hasBlurBackground) BorderStroke(0.8.dp, Color.White.copy(alpha = 0.40f)) else null
                 Surface(
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.9f),
+                    color = hifiBg,
+                    border = hifiBorder,
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -396,27 +462,33 @@ fun SongGridItem(
                         "HI-FI",
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        color = hifiTextColor,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
             if (onFavoriteClick != null) {
+                val favBg = if (song.isFavorite) {
+                    if (hasBlurBackground) Color.White.copy(alpha = 0.32f) else (if (useCustomControlsColor) activePrimary.copy(alpha = 0.50f) else Color.Black.copy(alpha = 0.55f))
+                } else {
+                    if (hasBlurBackground) Color.Black.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.45f)
+                }
                 Surface(
                     onClick = { onFavoriteClick(song) },
                     shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.45f),
+                    color = favBg,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                         .size(32.dp)
+                        .bounceClick(scaleDown = 0.80f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (song.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = stringResource(R.string.option_favorite),
-                            tint = if (song.isFavorite) MaterialTheme.colorScheme.primary else Color.White,
+                            tint = if (song.isFavorite) (if (hasBlurBackground) Color.White else activePrimary) else Color.White,
                             modifier = Modifier.size(17.dp)
                         )
                     }
@@ -434,7 +506,7 @@ fun SongGridItem(
                 Box(
                     modifier = Modifier
                         .size(8.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .background(activePrimary, CircleShape)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
             }
@@ -444,18 +516,18 @@ fun SongGridItem(
                 maxLines = 1,
                 fontWeight = FontWeight.Bold,
                 overflow = TextOverflow.Ellipsis,
-                color = if (currentlyPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                color = if (currentlyPlaying) activePrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
             if (onOptionsClick != null) {
                 IconButton(
                     onClick = onOptionsClick,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.MoreVert,
                         contentDescription = stringResource(R.string.player_options),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -466,7 +538,7 @@ fun SongGridItem(
             text = song.artist,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
@@ -477,7 +549,8 @@ fun SongGridItem(
 @Composable
 fun Modifier.headerWaveBackground(
     strokeWidth: androidx.compose.ui.unit.Dp = 1.2.dp,
-    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp
+    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp,
+    hasBlurBackground: Boolean = false,
 ): Modifier {
     val infiniteTransition = rememberInfiniteTransition(label = "HeaderWaveTransition")
 
@@ -526,6 +599,66 @@ fun Modifier.headerWaveBackground(
         val amp1 = 7.dp.toPx()
         val amp2 = 9.dp.toPx()
 
+        val waveBrush1 = if (hasBlurBackground) {
+            Brush.horizontalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.08f),
+                    Color.White.copy(alpha = 0.16f),
+                    Color.White.copy(alpha = 0.11f),
+                    Color.White.copy(alpha = 0.08f)
+                )
+            )
+        } else {
+            Brush.horizontalGradient(
+                colors = listOf(
+                    primary.copy(alpha = 0.30f),
+                    tertiary.copy(alpha = 0.40f),
+                    secondary.copy(alpha = 0.35f),
+                    primary.copy(alpha = 0.30f)
+                )
+            )
+        }
+
+        val waveBrush2 = if (hasBlurBackground) {
+            Brush.horizontalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.12f),
+                    Color.White.copy(alpha = 0.24f),
+                    Color.White.copy(alpha = 0.18f),
+                    Color.White.copy(alpha = 0.10f)
+                )
+            )
+        } else {
+            Brush.horizontalGradient(
+                colors = listOf(
+                    primaryContainer.copy(alpha = 0.40f),
+                    primary.copy(alpha = 0.55f),
+                    tertiary.copy(alpha = 0.45f),
+                    primaryContainer.copy(alpha = 0.38f)
+                )
+            )
+        }
+
+        val borderBrush = if (hasBlurBackground) {
+            Brush.horizontalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.18f),
+                    Color.White.copy(alpha = 0.32f),
+                    Color.White.copy(alpha = 0.22f),
+                    Color.White.copy(alpha = 0.18f)
+                )
+            )
+        } else {
+            Brush.horizontalGradient(
+                colors = listOf(
+                    primary.copy(alpha = 0.35f),
+                    tertiary.copy(alpha = 0.50f),
+                    primaryContainer.copy(alpha = 0.45f),
+                    primary.copy(alpha = 0.35f)
+                )
+            )
+        }
+
         onDrawWithContent {
             val w = size.width
             val h = size.height
@@ -561,33 +694,6 @@ fun Modifier.headerWaveBackground(
             wavePath2.lineTo(w, h)
             wavePath2.close()
 
-            val waveBrush1 = Brush.horizontalGradient(
-                colors = listOf(
-                    primary.copy(alpha = 0.30f),
-                    tertiary.copy(alpha = 0.40f),
-                    secondary.copy(alpha = 0.35f),
-                    primary.copy(alpha = 0.30f)
-                )
-            )
-
-            val waveBrush2 = Brush.horizontalGradient(
-                colors = listOf(
-                    primaryContainer.copy(alpha = 0.40f),
-                    primary.copy(alpha = 0.55f),
-                    tertiary.copy(alpha = 0.45f),
-                    primaryContainer.copy(alpha = 0.38f)
-                )
-            )
-
-            val borderBrush = Brush.horizontalGradient(
-                colors = listOf(
-                    primary.copy(alpha = 0.35f),
-                    tertiary.copy(alpha = 0.50f),
-                    primaryContainer.copy(alpha = 0.45f),
-                    primary.copy(alpha = 0.35f)
-                )
-            )
-
             // 1. Draw waves in the BACKGROUND (behind the content, clipped to rounded corners)
             clipPath(clipPath) {
                 drawPath(path = wavePath1, brush = waveBrush1)
@@ -613,13 +719,15 @@ fun Modifier.headerWaveBackground(
 @Composable
 fun Modifier.headerWaveBorder(
     strokeWidth: androidx.compose.ui.unit.Dp = 1.2.dp,
-    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp
-): Modifier = headerWaveBackground(strokeWidth, cornerRadius)
+    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp,
+    hasBlurBackground: Boolean = false,
+): Modifier = headerWaveBackground(strokeWidth, cornerRadius, hasBlurBackground)
 
 @Composable
 fun HeaderSurface(
     modifier: Modifier = Modifier,
     cornerRadius: androidx.compose.ui.unit.Dp = 20.dp,
+    hasBlurBackground: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -640,15 +748,16 @@ fun HeaderSurface(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(cornerRadius),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 4.dp,
+        color = if (hasBlurBackground) Color.Black.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = if (!isWaveEnabled && hasBlurBackground) BorderStroke(1.2.dp, Color.White.copy(alpha = 0.16f)) else null,
+        tonalElevation = if (hasBlurBackground) 0.dp else 4.dp,
         shadowElevation = 0.dp
     ) {
         if (isWaveEnabled) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .headerWaveBackground(cornerRadius = cornerRadius)
+                    .headerWaveBackground(cornerRadius = cornerRadius, hasBlurBackground = hasBlurBackground)
             ) {
                 content()
             }
@@ -667,10 +776,18 @@ fun AlbumsListHeader(
     onToggleAlbumView: (() -> Unit)? = null,
     title: String? = null,
     icon: ImageVector? = null,
+    hasBlurBackground: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val displayTitle = title ?: if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists)
     val displayIcon = icon ?: if (isAlbumView) Icons.Default.Album else Icons.Default.Person
+
+    val iconContainerBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+    val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val countColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
 
     Row(
         modifier = modifier
@@ -684,14 +801,14 @@ fun AlbumsListHeader(
                 onClick = { onToggleAlbumView?.invoke() },
                 enabled = onToggleAlbumView != null,
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
+                color = iconContainerBg,
                 modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         displayIcon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = iconTint,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -702,12 +819,12 @@ fun AlbumsListHeader(
                     text = displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = titleColor
                 )
                 Text(
                     text = albumCount.toString(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = countColor
                 )
             }
         }
@@ -717,14 +834,14 @@ fun AlbumsListHeader(
                 Surface(
                     onClick = onToggleAlbumView,
                     shape = CircleShape,
-                    color = if (isAlbumView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                    color = if (isAlbumView) MaterialTheme.colorScheme.primary else actionBtnBg,
                     modifier = Modifier.size(36.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             if (isAlbumView) Icons.Default.Person else Icons.Default.Album,
                             contentDescription = null,
-                            tint = if (isAlbumView) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                            tint = if (isAlbumView) MaterialTheme.colorScheme.onPrimary else actionBtnTint,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -734,14 +851,14 @@ fun AlbumsListHeader(
             Surface(
                 onClick = onToggleViewStyle,
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
+                color = actionBtnBg,
                 modifier = Modifier.size(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         if (viewStyle == 0) Icons.Default.ViewCarousel else Icons.Default.GridView,
                         contentDescription = "Toggle View Style",
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        tint = actionBtnTint,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -762,11 +879,25 @@ fun SongsListHeader(
     modifier: Modifier = Modifier,
     folderName: String = "",
     isGridLayout: Boolean = false,
+    hasBlurBackground: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     onToggleLayout: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
     val isPlaying = playbackManager.isPlaying
+
+    val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+
+    val iconContainerBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+    val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val actionBtnInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val actionBtnInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+    val actionBtnActiveTint = Color.White
 
     Row(
         modifier = modifier
@@ -780,14 +911,14 @@ fun SongsListHeader(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = leftModifier) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    color = iconContainerBg,
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Default.Favorite,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = iconTint,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -798,7 +929,7 @@ fun SongsListHeader(
                         text = stringResource(R.string.tab_favorites),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = titleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -806,7 +937,7 @@ fun SongsListHeader(
                     Text(
                         text = "${songs.size} · ${formatDurationCompact(totalDuration)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtitleColor,
                         maxLines = 1
                     )
                 }
@@ -815,14 +946,14 @@ fun SongsListHeader(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = leftModifier) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    color = iconContainerBg,
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Default.MusicNote,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = iconTint,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -833,7 +964,7 @@ fun SongsListHeader(
                         text = stringResource(R.string.tab_all),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = titleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -841,7 +972,7 @@ fun SongsListHeader(
                     Text(
                         text = "${songs.size} · ${formatDurationCompact(totalDuration)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = subtitleColor,
                         maxLines = 1
                     )
                 }
@@ -852,7 +983,7 @@ fun SongsListHeader(
                 Text(
                     text = formatLongDuration(totalDuration),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = subtitleColor,
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -861,7 +992,7 @@ fun SongsListHeader(
                         Icons.Default.MusicNote,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = iconTint
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     val songsLabel = if (songs.size == 1) stringResource(R.string.song_singular) else stringResource(R.string.song_plural)
@@ -869,7 +1000,7 @@ fun SongsListHeader(
                         text = "${songs.size} $songsLabel",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = titleColor,
                         maxLines = 1
                     )
                 }
@@ -884,14 +1015,14 @@ fun SongsListHeader(
                 Surface(
                     onClick = onToggleLayout,
                     shape = CircleShape,
-                    color = if (isGridLayout) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                    color = if (isGridLayout) actionBtnActiveBg else actionBtnInactiveBg,
                     modifier = Modifier.size(36.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.List else Icons.Default.GridView,
                             contentDescription = "Toggle Layout",
-                            tint = if (isGridLayout) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                            tint = if (isGridLayout) actionBtnActiveTint else actionBtnInactiveTint,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -901,14 +1032,14 @@ fun SongsListHeader(
             Surface(
                 onClick = onSortClick,
                 shape = CircleShape,
-                color = if (isSortActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
                 modifier = Modifier.size(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
                         contentDescription = null,
-                        tint = if (isSortActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                        tint = if (isSortActive) actionBtnActiveTint else actionBtnInactiveTint,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -921,14 +1052,14 @@ fun SongsListHeader(
                 Surface(
                     onClick = onShuffleClick,
                     shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                    color = if (isShuffleActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+                    color = if (isShuffleActive) actionBtnActiveBg else actionBtnInactiveBg,
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Shuffle,
                             contentDescription = null,
-                            tint = if (isShuffleActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                            tint = if (isShuffleActive) actionBtnActiveTint else actionBtnInactiveTint,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -936,14 +1067,14 @@ fun SongsListHeader(
                 Surface(
                     onClick = onPlayClick,
                     shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = actionBtnActiveBg,
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (isCurrentListPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = actionBtnActiveTint,
                             modifier = Modifier.size(22.dp)
                         )
                     }

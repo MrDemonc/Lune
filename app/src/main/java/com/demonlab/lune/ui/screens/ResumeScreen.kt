@@ -38,6 +38,11 @@ fun ResumeScreen(
     bottomPadding: Dp,
     currentSong: Song?,
     isPlaying: Boolean,
+    playbackProgress: Float = 0f,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
     onArtistClick: (String) -> Unit,
@@ -195,6 +200,11 @@ fun ResumeScreen(
                 favoriteCount = favoriteCount,
                 topArtist = realTopArtistName,
                 showGreetingCard = showHeroSection,
+                hasBlurBackground = hasBlurBackground,
+                isDarkTheme = isDarkTheme,
+                useCustomControlsColor = useCustomControlsColor,
+                controlsColorPalette = controlsColorPalette,
+                playbackProgress = playbackProgress,
                 onContinueListening = onExpandPlayer,
                 onPlayToggle = onPlayToggle
             )
@@ -208,6 +218,7 @@ fun ResumeScreen(
                 RecommendationSection(
                     title = stringResource(R.string.resume_recommendations),
                     songs = recommendations,
+                    hasBlurBackground = hasBlurBackground,
                     onSongClick = { song -> onSongClick(song, allSongs) }
                 )
             }
@@ -221,6 +232,7 @@ fun ResumeScreen(
                 PlaylistGridSection(
                     viewModel = viewModel,
                     playlists = topPlaylists,
+                    hasBlurBackground = hasBlurBackground,
                     onPlaylistClick = onPlaylistClick
                 )
             }
@@ -233,6 +245,7 @@ fun ResumeScreen(
             ) {
                 TopArtistsSection(
                     artists = topArtistsList,
+                    hasBlurBackground = hasBlurBackground,
                     onArtistClick = onArtistClick
                 )
             }
@@ -245,6 +258,7 @@ fun ResumeScreen(
             ) {
                 TopGenresSection(
                     genres = topGenresList,
+                    hasBlurBackground = hasBlurBackground,
                     onGenreClick = onGenreClick
                 )
             }
@@ -257,6 +271,7 @@ fun ResumeScreen(
             ) {
                 RecentlyAddedSection(
                     songs = recentlyAdded,
+                    hasBlurBackground = hasBlurBackground,
                     onSongClick = { song -> onSongClick(song, allSongs) }
                 )
             }

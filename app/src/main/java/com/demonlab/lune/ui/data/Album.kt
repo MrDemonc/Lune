@@ -28,6 +28,8 @@ import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.SongCoverImage
 
+import androidx.compose.ui.graphics.Color
+
 data class Album(
     val id: Long,
     val name: String,
@@ -42,6 +44,7 @@ fun AlbumGrid(
     albums: List<Album>,
     onAlbumClick: (Album) -> Unit,
     bottomPadding: Dp,
+    hasBlurBackground: Boolean = false,
     activePlaylistId: Long? = null
 ) {
     val initialIndex = remember(activePlaylistId, albums) {
@@ -70,13 +73,23 @@ fun AlbumGrid(
             val isFirst = index == 0
             val isLast = index == albums.lastIndex
             val isPlaying = album.id == activePlaylistId
-            AlbumCard(album = album, onClick = { onAlbumClick(album) }, isPlaying = isPlaying)
+            AlbumCard(
+                album = album,
+                onClick = { onAlbumClick(album) },
+                hasBlurBackground = hasBlurBackground,
+                isPlaying = isPlaying
+            )
         }
     }
 }
 
 @Composable
-fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
+fun AlbumCard(
+    album: Album,
+    onClick: () -> Unit,
+    hasBlurBackground: Boolean = false,
+    isPlaying: Boolean = false
+) {
     val cardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
     val coverShape = RoundedCornerShape(24.dp)
     Column(
@@ -121,14 +134,15 @@ fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
             )
         }
         Text(
             text = album.artist,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )

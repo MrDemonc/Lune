@@ -44,6 +44,9 @@ import com.demonlab.lune.ui.components.SongCoverImage
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
+import com.demonlab.lune.ui.player.ScallopPlayPauseButtonWithProgress
+
 private data class HeroGreetingTheme(
     val greeting: String,
     val icon: ImageVector,
@@ -70,6 +73,11 @@ fun HeroSection(
     favoriteCount: Int,
     topArtist: String,
     showGreetingCard: Boolean = true,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
+    playbackProgress: Float = 0f,
     onContinueListening: () -> Unit,
     onPlayToggle: () -> Unit,
 ) {
@@ -77,8 +85,8 @@ fun HeroSection(
     val colorScheme = MaterialTheme.colorScheme
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
 
-    val heroTheme = remember(hour, colorScheme) {
-        val isDark = colorScheme.surface.luminance() < 0.5f
+    val heroTheme = remember(hour, colorScheme, hasBlurBackground, isDarkTheme) {
+        val isDark = if (hasBlurBackground) isDarkTheme else colorScheme.surface.luminance() < 0.5f
 
         val greetingStr = when (hour) {
             in 0..5 -> context.getString(R.string.welcome_early_morning)
@@ -96,7 +104,15 @@ fun HeroSection(
             in 18..19 -> Icons.Default.WbTwilight
             else -> Icons.Default.NightsStay
         }
-        val colors = when (hour) {
+        val colors = if (hasBlurBackground) {
+            val b = Brush.linearGradient(
+                colors = listOf(
+                    if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.28f),
+                    if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.16f)
+                )
+            )
+            ThemeColors(b, Color.White, Color.White.copy(alpha = 0.20f), Color.White)
+        } else when (hour) {
             // Madrugada (0..5h)
             in 0..5 -> {
                 if (isDark) {
@@ -341,16 +357,28 @@ fun HeroSection(
                     context.getString(R.string.tab_all)
                 } else if (cat == "FAVORITES") {
                     context.getString(R.string.tab_favorites)
+                } else if (cat == "RESUME") {
+                    context.getString(R.string.tab_resume)
                 } else if (pName != null) {
                     "$cat: $pName"
                 } else {
                     cat
                 }
             }
-            PlayingFromCard(sourceLabel = sourceLabel)
+
+            PlayingFromCard(
+                sourceLabel = sourceLabel,
+                hasBlurBackground = hasBlurBackground,
+                isDarkTheme = isDarkTheme
+            )
             ContinueListeningCard(
                 song = currentSong,
                 isPlaying = isPlaying,
+                playbackProgress = playbackProgress,
+                hasBlurBackground = hasBlurBackground,
+                isDarkTheme = isDarkTheme,
+                useCustomControlsColor = useCustomControlsColor,
+                controlsColorPalette = controlsColorPalette,
                 onClick = onContinueListening,
                 onPlayToggle = onPlayToggle
             )
@@ -477,12 +505,28 @@ private fun StatChip(
 private fun ContinueListeningCard(
     song: Song,
     isPlaying: Boolean,
+    playbackProgress: Float = 0f,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     onClick: () -> Unit,
     onPlayToggle: () -> Unit,
 ) {
+    val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+
+    val cardBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.25f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+    }
+
+    val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val artistColor = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+        color = cardBg,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
@@ -506,32 +550,26 @@ private fun ContinueListeningCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = titleColor
                 )
                 Text(
                     text = song.artist,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = artistColor
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
-            FilledIconButton(
+            ScallopPlayPauseButtonWithProgress(
+                isPlaying = isPlaying,
+                progress = playbackProgress,
                 onClick = onPlayToggle,
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
+                hasBlurBackground = hasBlurBackground,
+                useCustomControlsColor = useCustomControlsColor,
+                activePrimary = activePrimary,
+                modifier = Modifier.size(46.dp)
+            )
         }
     }
 }
@@ -539,10 +577,19 @@ private fun ContinueListeningCard(
 @Composable
 private fun PlayingFromCard(
     sourceLabel: String,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
 ) {
+    val cardBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.22f)
+    } else {
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+    }
+    val contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+        color = cardBg,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
@@ -555,14 +602,14 @@ private fun PlayingFromCard(
                 imageVector = Icons.Default.MusicNote,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                tint = contentColor
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.playing_from, sourceLabel),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

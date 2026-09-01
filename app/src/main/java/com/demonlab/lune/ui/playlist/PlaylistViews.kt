@@ -9,8 +9,10 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.demonlab.lune.ui.utils.bounceClick
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
@@ -117,7 +119,8 @@ fun PlaylistListScreen(
     onPlaylistClick: (Playlist) -> Unit,
     onPlayPlaylist: (Playlist) -> Unit,
     onDeletePlaylist: (Playlist) -> Unit,
-    bottomPadding: Dp
+    bottomPadding: Dp,
+    hasBlurBackground: Boolean = false,
 ) {
     val playlists = viewModel.playlists
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -125,6 +128,14 @@ fun PlaylistListScreen(
     
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val themeMode = settingsManager.themeMode
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
 
     if (showCreateDialog) {
         CreatePlaylistDialog(
@@ -154,10 +165,17 @@ fun PlaylistListScreen(
         contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
     ) {
         item {
+            val plIconBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+            val plIconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+            val plTitleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+            val plCountColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
+            val plAddBg = if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+
             HeaderSurface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                hasBlurBackground = hasBlurBackground
             ) {
                 Row(
                     modifier = Modifier
@@ -169,14 +187,14 @@ fun PlaylistListScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            color = plIconBg,
                             modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.QueueMusic,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = plIconTint,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -187,26 +205,26 @@ fun PlaylistListScreen(
                                 text = stringResource(R.string.playlists),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = plTitleColor
                             )
                             Text(
                                 text = "${playlists.size}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = plCountColor
                             )
                         }
                     }
                     Surface(
                         onClick = { showCreateDialog = true },
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = plAddBg,
                         modifier = Modifier.size(36.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.Default.Add,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary,
+                                tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -216,8 +234,6 @@ fun PlaylistListScreen(
         }
         
         itemsIndexed(playlists, key = { _, it -> it.id }) { index, playlist ->
-            val isFirst = index == 0
-            val isLast = index == playlists.lastIndex
             var songCount by remember { mutableIntStateOf(0) }
             var totalDuration by remember { mutableLongStateOf(0L) }
             
@@ -228,20 +244,24 @@ fun PlaylistListScreen(
                 }
             }
 
+            val itemTitleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+            val itemSubtitleColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+
             ListItem(
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 supportingContent = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.MusicNote, 
                             null, 
                             modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = itemSubtitleColor
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "$songCount • ${formatLongDuration(totalDuration)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = itemSubtitleColor
                         )
                     }
                 },
@@ -255,7 +275,7 @@ fun PlaylistListScreen(
                                     .padding(2.dp)
                                     .size(16.dp)
                                     .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .border(2.dp, if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface, CircleShape)
                             )
                         }
                     }
@@ -265,7 +285,11 @@ fun PlaylistListScreen(
                     onLongClick = { selectedOptionsPlaylist = playlist }
                 )
             ) {
-                Text(playlist.name, fontWeight = FontWeight.SemiBold)
+                Text(
+                    playlist.name,
+                    fontWeight = FontWeight.SemiBold,
+                    color = itemTitleColor
+                )
             }
         }
     }
