@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
@@ -154,6 +155,7 @@ fun SongItem(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 1.dp)
             .clip(shape)
+            .bounceClick()
             .clickable(onClick = onClick ?: {}),
         shape = shape,
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
@@ -310,6 +312,7 @@ fun SongGridItem(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .bounceClick()
             .clickable(onClick = onClick)
     ) {
         Box {

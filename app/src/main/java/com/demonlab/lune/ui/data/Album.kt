@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.SongCoverImage
@@ -78,6 +79,7 @@ fun AlbumCard(album: Album, onClick: () -> Unit, isPlaying: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .bounceClick()
             .clickable(onClick = onClick)
     ) {
         Box {
