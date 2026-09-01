@@ -71,12 +71,12 @@ class PlaylistBackupManager(context: Context) {
                 }
                 val playlistId = dao.insertPlaylist(Playlist(name = playlistData.name))
 
-                val songsToAdd = playlistData.songs.mapNotNull { meta ->
+                val songsToAdd = playlistData.songs.mapIndexedNotNull { index, meta ->
                     allSongs.find { song ->
                         song.title == meta.title &&
                                 song.artist == meta.artist &&
                                 kotlin.math.abs(song.duration - meta.duration) < 2_000L
-                    }?.let { PlaylistSong(playlistId, it.id) }
+                    }?.let { PlaylistSong(playlistId, it.id, position = index) }
                 }
 
                 if (songsToAdd.isNotEmpty()) dao.addSongsToPlaylist(songsToAdd)
