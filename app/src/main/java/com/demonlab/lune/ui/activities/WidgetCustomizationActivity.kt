@@ -247,7 +247,7 @@ fun WidgetCustomizationScreen(
                         // Mode switcher for preview (Light / Dark)
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest,
                             modifier = Modifier.clickable { previewIsNight = !previewIsNight }
                         ) {
                             Row(
@@ -258,14 +258,14 @@ fun WidgetCustomizationScreen(
                                     imageVector = if (previewIsNight) Icons.Default.DarkMode else Icons.Default.LightMode,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = if (previewIsNight) stringResource(R.string.theme_dark) else stringResource(R.string.theme_light),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -287,7 +287,7 @@ fun WidgetCustomizationScreen(
                             .height(140.dp),
                         shape = RoundedCornerShape(28.dp),
                         color = Color.Transparent,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                        border = BorderStroke(1.dp, if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
                         shadowElevation = 8.dp
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
@@ -308,7 +308,7 @@ fun WidgetCustomizationScreen(
                                                 listOf(Color(0xFF2A292E), Color(0xFF1B1A1E), Color(0xFF111013))
                                             )
                                         )
-                                )
+                                    )
                                 // Simulated album art blurred glow with darkness and blur
                                 val mockCover = painterResource(R.drawable.ic_launcher_foreground)
                                 Image(
@@ -318,7 +318,7 @@ fun WidgetCustomizationScreen(
                                         .fillMaxSize()
                                         .blur((widgetBackgroundBlur * 0.4f).dp)
                                         .background(
-                                            MaterialTheme.colorScheme.primaryContainer.copy(
+                                            (if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer).copy(
                                                 alpha = (1f - (widgetBackgroundDarkness * 0.7f)).coerceIn(0.1f, 0.9f)
                                             )
                                         )
@@ -363,7 +363,7 @@ fun WidgetCustomizationScreen(
                                             Surface(
                                                 shape = CircleShape,
                                                 modifier = Modifier.fillMaxSize(0.55f),
-                                                color = MaterialTheme.colorScheme.primaryContainer,
+                                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer,
                                                 border = BorderStroke(2.dp, Color(0xFF252525))
                                             ) {
                                                 Image(
@@ -384,7 +384,7 @@ fun WidgetCustomizationScreen(
                                     } else if (widgetCircularCover) {
                                         Surface(
                                             shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer,
                                             modifier = Modifier.fillMaxSize(),
                                             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
                                         ) {
@@ -397,7 +397,7 @@ fun WidgetCustomizationScreen(
                                     } else {
                                         Surface(
                                             shape = RoundedCornerShape(20.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer,
                                             modifier = Modifier.fillMaxSize()
                                         ) {
                                             Image(

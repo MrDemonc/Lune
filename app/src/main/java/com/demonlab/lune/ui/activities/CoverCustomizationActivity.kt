@@ -212,8 +212,8 @@ fun CoverCustomizationScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .rotate(if (coverShape == 2 && coverSpin) rotation else 0f),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                tonalElevation = 8.dp
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer,
+                                tonalElevation = if (hasBlurBackground) 0.dp else 8.dp
                             ) {
                                 Image(
                                     painter = mockCoverPainter,
@@ -238,24 +238,24 @@ fun CoverCustomizationScreen(
                                 "Starlight Sonata",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 "Lune MrDemonc",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(48.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.PlayArrow,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    tint = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }

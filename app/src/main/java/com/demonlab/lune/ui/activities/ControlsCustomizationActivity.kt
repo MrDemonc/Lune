@@ -217,14 +217,14 @@ fun ControlsCustomizationScreen(
 
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.size(80.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    tint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(40.dp)
                                 )
                             }

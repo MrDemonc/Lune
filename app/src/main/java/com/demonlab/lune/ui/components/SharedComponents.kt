@@ -1437,14 +1437,18 @@ fun BouncySwitch(
             checkedThumbColor = Color.Black,
             checkedTrackColor = Color.White,
             checkedBorderColor = Color.White,
-            checkedIconColor = Color.Black,
+            checkedIconColor = Color.White,
             uncheckedThumbColor = Color.White.copy(alpha = 0.85f),
             uncheckedTrackColor = Color.White.copy(alpha = 0.15f),
             uncheckedBorderColor = Color.White.copy(alpha = 0.35f),
             uncheckedIconColor = Color.Black
         )
     } else {
-        SwitchDefaults.colors()
+        SwitchDefaults.colors(
+            checkedIconColor = Color.White,
+            checkedThumbColor = MaterialTheme.colorScheme.primary,
+            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+        )
     }
 
     LaunchedEffect(checked) {
