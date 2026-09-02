@@ -82,13 +82,12 @@ fun BlurCustomizationScreen(
         2 -> true
         else -> isSystemInDarkTheme()
     }
-    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
-
-    var isBlurEnabled by remember { mutableStateOf(settingsManager.isBlurEnabled) }
-    var isBlurDarkMode by remember { mutableStateOf(settingsManager.isBlurDarkMode) }
-    var isBlurCinematicMode by remember { mutableStateOf(settingsManager.isBlurCinematicMode) }
-    var isBlurLightMode by remember { mutableStateOf(settingsManager.isBlurLightMode) }
-    var isBlurControlsEnabled by remember { mutableStateOf(settingsManager.isBlurControlsEnabled) }
+    val isBlurEnabled = settingsManager.isBlurEnabled
+    val isBlurDarkMode = settingsManager.isBlurDarkMode
+    val isBlurCinematicMode = settingsManager.isBlurCinematicMode
+    val isBlurLightMode = settingsManager.isBlurLightMode
+    val isBlurControlsEnabled = settingsManager.isBlurControlsEnabled
+    val hasBlurBackground = isBlurEnabled && ((isDarkTheme && isBlurDarkMode) || (!isDarkTheme && isBlurLightMode))
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -159,7 +158,6 @@ fun BlurCustomizationScreen(
                         BouncySwitch(
                             checked = isBlurEnabled,
                             onCheckedChange = {
-                                isBlurEnabled = it
                                 settingsManager.isBlurEnabled = it
                             },
                             thumbContent = {
@@ -188,10 +186,8 @@ fun BlurCustomizationScreen(
                                 BouncySwitch(
                                     checked = isBlurDarkMode,
                                     onCheckedChange = {
-                                        isBlurDarkMode = it
                                         settingsManager.isBlurDarkMode = it
                                         if (!it && !isBlurLightMode) {
-                                            isBlurEnabled = false
                                             settingsManager.isBlurEnabled = false
                                         }
                                     },
@@ -215,10 +211,8 @@ fun BlurCustomizationScreen(
                                 BouncySwitch(
                                     checked = isBlurLightMode,
                                     onCheckedChange = {
-                                        isBlurLightMode = it
                                         settingsManager.isBlurLightMode = it
                                         if (!it && !isBlurDarkMode) {
-                                            isBlurEnabled = false
                                             settingsManager.isBlurEnabled = false
                                         }
                                     },
@@ -250,7 +244,6 @@ fun BlurCustomizationScreen(
                                 checked = isBlurControlsEnabled,
                                 enabled = isBlurEnabled,
                                 onCheckedChange = {
-                                    isBlurControlsEnabled = it
                                     settingsManager.isBlurControlsEnabled = it
                                 },
                                 thumbContent = {
@@ -274,7 +267,6 @@ fun BlurCustomizationScreen(
                                 checked = isBlurCinematicMode,
                                 enabled = isBlurEnabled,
                                 onCheckedChange = {
-                                    isBlurCinematicMode = it
                                     settingsManager.isBlurCinematicMode = it
                                 },
                                 thumbContent = {

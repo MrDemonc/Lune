@@ -51,9 +51,13 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("keep_screen_on", false)
         set(value) = prefs.edit().putBoolean("keep_screen_on", value).apply()
 
+    private val _themeMode = mutableStateOf(prefs.getInt("theme_mode", 0))
     var themeMode: Int
-        get() = prefs.getInt("theme_mode", 0) // 0: Auto, 1: Light, 2: Dark
-        set(value) = prefs.edit().putInt("theme_mode", value).apply()
+        get() = _themeMode.value
+        set(value) {
+            _themeMode.value = value
+            prefs.edit().putInt("theme_mode", value).apply()
+        }
 
     var forceDarkMode: Boolean
         get() = prefs.getBoolean("force_dark_mode", false)
@@ -290,25 +294,45 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_mini_player_minimized", value).apply()
         }
 
+    private val _isBlurEnabled = mutableStateOf(prefs.getBoolean("is_blur_enabled", true))
     var isBlurEnabled: Boolean
-        get() = prefs.getBoolean("is_blur_enabled", true)
-        set(value) = prefs.edit().putBoolean("is_blur_enabled", value).apply()
+        get() = _isBlurEnabled.value
+        set(value) {
+            _isBlurEnabled.value = value
+            prefs.edit().putBoolean("is_blur_enabled", value).apply()
+        }
 
+    private val _isBlurDarkMode = mutableStateOf(prefs.getBoolean("is_blur_dark_mode", true))
     var isBlurDarkMode: Boolean
-        get() = prefs.getBoolean("is_blur_dark_mode", true)
-        set(value) = prefs.edit().putBoolean("is_blur_dark_mode", value).apply()
+        get() = _isBlurDarkMode.value
+        set(value) {
+            _isBlurDarkMode.value = value
+            prefs.edit().putBoolean("is_blur_dark_mode", value).apply()
+        }
 
+    private val _isBlurLightMode = mutableStateOf(prefs.getBoolean("is_blur_light_mode", false))
     var isBlurLightMode: Boolean
-        get() = prefs.getBoolean("is_blur_light_mode", false)
-        set(value) = prefs.edit().putBoolean("is_blur_light_mode", value).apply()
+        get() = _isBlurLightMode.value
+        set(value) {
+            _isBlurLightMode.value = value
+            prefs.edit().putBoolean("is_blur_light_mode", value).apply()
+        }
 
+    private val _isBlurCinematicMode = mutableStateOf(prefs.getBoolean("is_blur_cinematic_mode", false))
     var isBlurCinematicMode: Boolean
-        get() = prefs.getBoolean("is_blur_cinematic_mode", false)
-        set(value) = prefs.edit().putBoolean("is_blur_cinematic_mode", value).apply()
+        get() = _isBlurCinematicMode.value
+        set(value) {
+            _isBlurCinematicMode.value = value
+            prefs.edit().putBoolean("is_blur_cinematic_mode", value).apply()
+        }
 
+    private val _isBlurControlsEnabled = mutableStateOf(prefs.getBoolean("is_blur_controls_enabled", false))
     var isBlurControlsEnabled: Boolean
-        get() = prefs.getBoolean("is_blur_controls_enabled", false)
-        set(value) = prefs.edit().putBoolean("is_blur_controls_enabled", value).apply()
+        get() = _isBlurControlsEnabled.value
+        set(value) {
+            _isBlurControlsEnabled.value = value
+            prefs.edit().putBoolean("is_blur_controls_enabled", value).apply()
+        }
 
     var lyricsTextAlignment: Int
         get() = prefs.getInt("lyrics_text_alignment", 0)
@@ -318,9 +342,13 @@ class SettingsManager(context: Context) {
         get() = prefs.getInt("lyrics_speed_index", 0)
         set(value) = prefs.edit().putInt("lyrics_speed_index", value).apply()
 
+    private val _isGesturesEnabled = mutableStateOf(prefs.getBoolean("is_gestures_enabled", false))
     var isGesturesEnabled: Boolean
-        get() = prefs.getBoolean("is_gestures_enabled", false)
-        set(value) = prefs.edit().putBoolean("is_gestures_enabled", value).apply()
+        get() = _isGesturesEnabled.value
+        set(value) {
+            _isGesturesEnabled.value = value
+            prefs.edit().putBoolean("is_gestures_enabled", value).apply()
+        }
 
     var swipeUpAction: Int
         get() = prefs.getInt("swipe_up_action", 0)
@@ -370,37 +398,69 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("show_hero_section", true)
         set(value) = prefs.edit().putBoolean("show_hero_section", value).apply()
 
+    private val _coverShape = mutableStateOf(prefs.getInt("cover_shape", 0))
     var coverShape: Int
-        get() = prefs.getInt("cover_shape", 0)
-        set(value) = prefs.edit().putInt("cover_shape", value).apply()
+        get() = _coverShape.value
+        set(value) {
+            _coverShape.value = value
+            prefs.edit().putInt("cover_shape", value).apply()
+        }
 
+    private val _coverScale = mutableStateOf(prefs.getFloat("cover_scale", 1.0f))
     var coverScale: Float
-        get() = prefs.getFloat("cover_scale", 1.0f)
-        set(value) = prefs.edit().putFloat("cover_scale", value).apply()
+        get() = _coverScale.value
+        set(value) {
+            _coverScale.value = value
+            prefs.edit().putFloat("cover_scale", value).apply()
+        }
 
+    private val _coverSpin = mutableStateOf(prefs.getBoolean("cover_spin", true))
     var coverSpin: Boolean
-        get() = prefs.getBoolean("cover_spin", true)
-        set(value) = prefs.edit().putBoolean("cover_spin", value).apply()
+        get() = _coverSpin.value
+        set(value) {
+            _coverSpin.value = value
+            prefs.edit().putBoolean("cover_spin", value).apply()
+        }
 
+    private val _coverVinylEffect = mutableStateOf(prefs.getBoolean("cover_vinyl_effect", false))
     var coverVinylEffect: Boolean
-        get() = prefs.getBoolean("cover_vinyl_effect", false)
-        set(value) = prefs.edit().putBoolean("cover_vinyl_effect", value).apply()
+        get() = _coverVinylEffect.value
+        set(value) {
+            _coverVinylEffect.value = value
+            prefs.edit().putBoolean("cover_vinyl_effect", value).apply()
+        }
 
+    private val _controlsIconStyle = mutableStateOf(prefs.getInt("controls_icon_style", 0))
     var controlsIconStyle: Int
-        get() = prefs.getInt("controls_icon_style", 0) // 0: Default Android, 1: play_2, 2: play_3
-        set(value) = prefs.edit().putInt("controls_icon_style", value).apply()
+        get() = _controlsIconStyle.value
+        set(value) {
+            _controlsIconStyle.value = value
+            prefs.edit().putInt("controls_icon_style", value).apply()
+        }
 
+    private val _isControlsFilled = mutableStateOf(prefs.getBoolean("is_controls_filled", false))
     var isControlsFilled: Boolean
-        get() = prefs.getBoolean("is_controls_filled", false)
-        set(value) = prefs.edit().putBoolean("is_controls_filled", value).apply()
+        get() = _isControlsFilled.value
+        set(value) {
+            _isControlsFilled.value = value
+            prefs.edit().putBoolean("is_controls_filled", value).apply()
+        }
 
+    private val _useCustomControlsColor = mutableStateOf(prefs.getBoolean("use_custom_controls_color", false))
     var useCustomControlsColor: Boolean
-        get() = prefs.getBoolean("use_custom_controls_color", false)
-        set(value) = prefs.edit().putBoolean("use_custom_controls_color", value).apply()
+        get() = _useCustomControlsColor.value
+        set(value) {
+            _useCustomControlsColor.value = value
+            prefs.edit().putBoolean("use_custom_controls_color", value).apply()
+        }
 
+    private val _controlsColorPalette = mutableStateOf(prefs.getInt("controls_color_palette", 0))
     var controlsColorPalette: Int
-        get() = prefs.getInt("controls_color_palette", 0) // 0: Material You/App default, 1: Sunset Peach, 2: Sage Green, etc.
-        set(value) = prefs.edit().putInt("controls_color_palette", value).apply()
+        get() = _controlsColorPalette.value
+        set(value) {
+            _controlsColorPalette.value = value
+            prefs.edit().putInt("controls_color_palette", value).apply()
+        }
 
     var playbackSpeed: Float
         get() = prefs.getFloat("playback_speed", 1.0f)

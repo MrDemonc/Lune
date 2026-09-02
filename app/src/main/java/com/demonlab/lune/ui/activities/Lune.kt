@@ -613,23 +613,8 @@ fun MainScreen(
         2 -> true
         else -> isSystemInDarkTheme()
     }
-    val miniPrefs = remember { context.getSharedPreferences("lune_settings", android.content.Context.MODE_PRIVATE) }
-    var blurEnabled by remember { mutableStateOf(settingsManager.isBlurEnabled) }
-    var blurDarkMode by remember { mutableStateOf(settingsManager.isBlurDarkMode) }
-    var blurLightMode by remember { mutableStateOf(settingsManager.isBlurLightMode) }
-    DisposableEffect(miniPrefs) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            when (key) {
-                "is_blur_enabled" -> blurEnabled = miniPrefs.getBoolean("is_blur_enabled", true)
-                "is_blur_dark_mode" -> blurDarkMode = miniPrefs.getBoolean("is_blur_dark_mode", true)
-                "is_blur_light_mode" -> blurLightMode = miniPrefs.getBoolean("is_blur_light_mode", false)
-            }
-        }
-        miniPrefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose { miniPrefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
-    val hasBlurBackgroundMini = blurEnabled &&
-        (if (isDarkThemeMini) blurDarkMode else blurLightMode)
+    val hasBlurBackgroundMini = settingsManager.isBlurEnabled &&
+        (if (isDarkThemeMini) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
 
     val visualizerData by playbackManager.visualizerData.collectAsState()
     
@@ -643,6 +628,32 @@ fun MainScreen(
     var isAlbumView by remember { mutableStateOf(settingsManager.albumBrowseMode) }
     var folderHierarchyMode by remember { mutableStateOf(settingsManager.folderHierarchyMode) }
     var tracksViewStyle by remember { mutableIntStateOf(settingsManager.tracksViewStyle) }
+
+    val pagerState = rememberPagerState(
+        pageCount = { folders.size },
+        initialPage = (folders.indexOf(selectedFolder).coerceAtLeast(0))
+    )
+
+    val currentActiveFolder = folders.getOrNull(pagerState.currentPage) ?: selectedFolder
+    var isPagerProgrammaticScroll by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedFolder) {
+        val target = folders.indexOf(selectedFolder)
+        if (target >= 0 && pagerState.currentPage != target) {
+            isPagerProgrammaticScroll = true
+            pagerState.scrollToPage(target)
+            isPagerProgrammaticScroll = false
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        if (!isPagerProgrammaticScroll) {
+            val currentTarget = folders.getOrNull(pagerState.currentPage)
+            if (currentTarget != null && currentTarget != selectedFolder) {
+                onSelectedFolderChange(currentTarget)
+            }
+        }
+    }
 
     val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
         rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
@@ -1126,34 +1137,6 @@ fun MainScreen(
             }
         ) { innerPadding ->
             Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
-
-
-
-
-                val pagerState = rememberPagerState(
-                    pageCount = { folders.size },
-                    initialPage = (folders.indexOf(selectedFolder).coerceAtLeast(0))
-                )
-
-                var isPagerProgrammaticScroll by remember { mutableStateOf(false) }
-
-                LaunchedEffect(selectedFolder) {
-                    val target = folders.indexOf(selectedFolder)
-                    if (target >= 0 && pagerState.currentPage != target) {
-                        isPagerProgrammaticScroll = true
-                        pagerState.scrollToPage(target)
-                        isPagerProgrammaticScroll = false
-                    }
-                }
-
-                LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
-                    if (!pagerState.isScrollInProgress && !isPagerProgrammaticScroll) {
-                        val currentTarget = folders.getOrNull(pagerState.currentPage)
-                        if (currentTarget != null && currentTarget != selectedFolder) {
-                            onSelectedFolderChange(currentTarget)
-                        }
-                    }
-                }
 
                 HorizontalPager(
                     state = pagerState,
@@ -2212,7 +2195,7 @@ fun MainScreen(
                             ) {
                                 Box(modifier = Modifier.weight(1f)) {
                                     UnifiedHeaderPill(
-                                        selectedFolder = selectedFolder,
+                                        selectedFolder = currentActiveFolder,
                                         folders = folders,
                                         onSelectedFolderChange = onSelectedFolderChange,
                                         showSectionMenuSheet = { showSectionMenuSheet = true },
@@ -2260,7 +2243,7 @@ fun MainScreen(
                                         .padding(horizontal = 14.dp)
                                 ) {
                                     UnifiedHeaderPill(
-                                        selectedFolder = selectedFolder,
+                                        selectedFolder = currentActiveFolder,
                                         folders = folders,
                                         onSelectedFolderChange = onSelectedFolderChange,
                                         showSectionMenuSheet = { showSectionMenuSheet = true },
@@ -2330,7 +2313,7 @@ fun MainScreen(
                             .padding(start = 14.dp, end = 14.dp, bottom = bottomInset + 8.dp)
                     ) {
                         UnifiedHeaderPill(
-                            selectedFolder = selectedFolder,
+                            selectedFolder = currentActiveFolder,
                             folders = folders,
                             onSelectedFolderChange = onSelectedFolderChange,
                             showSectionMenuSheet = { showSectionMenuSheet = true },
