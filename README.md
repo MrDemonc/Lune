@@ -1,10 +1,14 @@
 <div align="center">
   <img src="assets/logo.svg" alt="Lune Logo" width="120" />
 
-# Official Website for Lune
+  <h1>Official Website for Lune</h1>
 
   <p>
     The official landing page and web showcase for <strong>Lune</strong> — a minimalist, elegant, and 100% private offline music player for Android.
+  </p>
+
+  <p>
+    <a href="https://mrdemonc.github.io/Lune/"><strong>🌐 Visit Official Website</strong></a>
   </p>
 </div>
 
@@ -21,5 +25,3 @@ This repository hosts the official GitHub Pages website for the **Lune** music p
 - **Dynamic Release Updates**: Automatically fetches latest version notes, dates, and direct APK download links via GitHub API.
 - **Animated Wave Background**: Lightweight canvas wave animation responding to theme changes.
 - **Donations & Community**: Quick support links (PayPal, Ko-fi, Monero XMR) and live contributor credits.
-
----
