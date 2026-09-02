@@ -383,6 +383,7 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         currentSong = song
         isPlaying = true
+        com.demonlab.lune.ai.LuneAiEngine.getInstance(context).onSongStarted(song)
         if (playlist.isNotEmpty() && (playlist != activePlaylist || activePlaylist.isEmpty() || playlistId != activePlaylistId)) {
             queueSections = sections
             activePlaylist = playlist
@@ -814,6 +815,12 @@ class PlaybackManager private constructor(private val context: Context) {
         if (pendingStatsTimeMs == 0L) return
         val song = currentSong
         if (song != null) {
+            val aiEngine = com.demonlab.lune.ai.LuneAiEngine.getInstance(context)
+            if (pendingStatsTimeMs >= (song.duration * 0.75f) || pendingStatsTimeMs >= 60_000L) {
+                aiEngine.onSongCompleted(song)
+            } else if (pendingStatsTimeMs < 20_000L) {
+                aiEngine.onSongSkipped(song, pendingStatsTimeMs / 1000L, song.duration / 1000L)
+            }
             updatePlaybackStats("SONG", "SONG_${song.id}", timeMs = pendingStatsTimeMs)
             if (song.artist.isNotBlank() && song.artist != "<unknown>") {
                 updatePlaybackStats("ARTIST", "ARTIST_${song.artist}", timeMs = pendingStatsTimeMs)
@@ -1309,6 +1316,7 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         
         // Persist to DB
+        com.demonlab.lune.ai.LuneAiEngine.getInstance(context).onSongFavoriteToggled(targetSong, newFavoriteStatus)
         val metadataManager = MetadataManager(context)
         kotlinx.coroutines.MainScope().launch {
             metadataManager.updateFavoriteStatus(targetSong.id, newFavoriteStatus)

@@ -49,6 +49,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">Resume</string>
+    <string name="tab_mixes">Mixes AI</string>
     <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Recommendations</string>
     <string name="resume_top_playlists">Top Playlists</string>
