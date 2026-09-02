@@ -2004,7 +2004,11 @@ fun MainScreen(
                             musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                         }
                     },
-                    scrollToCurrentTrigger = scrollToCurrentTrigger
+                    scrollToCurrentTrigger = scrollToCurrentTrigger,
+                    hasBlurBackground = hasBlurBackgroundMini,
+                    isDarkTheme = isDarkThemeMini,
+                    useCustomControlsColor = useCustomControlsColor,
+                    controlsColorPalette = controlsColorPalette
                 )
             }
         }
@@ -2066,7 +2070,11 @@ fun MainScreen(
                             musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                         }
                     },
-                    scrollToCurrentTrigger = scrollToCurrentTrigger
+                    scrollToCurrentTrigger = scrollToCurrentTrigger,
+                    hasBlurBackground = hasBlurBackgroundMini,
+                    isDarkTheme = isDarkThemeMini,
+                    useCustomControlsColor = useCustomControlsColor,
+                    controlsColorPalette = controlsColorPalette
                 )
             }
         }
@@ -2110,7 +2118,11 @@ fun MainScreen(
                             musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
                         }
                     },
-                    scrollToCurrentTrigger = scrollToCurrentTrigger
+                    scrollToCurrentTrigger = scrollToCurrentTrigger,
+                    hasBlurBackground = hasBlurBackgroundMini,
+                    isDarkTheme = isDarkThemeMini,
+                    useCustomControlsColor = useCustomControlsColor,
+                    controlsColorPalette = controlsColorPalette
                 )
             }
         }
