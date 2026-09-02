@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -31,6 +32,8 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.SongItem
+import com.demonlab.lune.ui.components.rememberBlurSheetColors
+import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
@@ -673,52 +676,65 @@ fun SearchScreen(
         val isArtistsDisabled = sectionCustomizationEnabled && "ALBUMS" in hiddenTabs
         val isFoldersDisabled = sectionCustomizationEnabled && "FOLDERS" in hiddenTabs
 
+        val blurColors = rememberBlurSheetColors()
+        val checkboxColors = CheckboxDefaults.colors(
+            checkedColor = blurColors.primaryTint,
+            checkmarkColor = if (blurColors.hasBlur && blurColors.isDark) Color.Black else Color.White
+        )
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
-            title = { Text(sFilterTitle) },
+            containerColor = blurColors.containerColor,
+            shape = RoundedCornerShape(28.dp),
+            title = { Text(sFilterTitle, fontWeight = FontWeight.Bold, color = blurColors.textColor) },
             text = {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterSongs, enabled = !isAllDisabled, onCheckedChange = { if (!isAllDisabled) filterSongs = it })
+                        Checkbox(checked = filterSongs, enabled = !isAllDisabled, onCheckedChange = { if (!isAllDisabled) filterSongs = it }, colors = checkboxColors)
                         Spacer(Modifier.width(8.dp))
-                        Text(sFilterAll, modifier = Modifier.clickable { if (!isAllDisabled) filterSongs = !filterSongs }, color = if (isAllDisabled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) else Color.Unspecified)
+                        Text(sFilterAll, modifier = Modifier.clickable { if (!isAllDisabled) filterSongs = !filterSongs }, color = if (isAllDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterPlaylists, enabled = !isPlaylistsDisabled, onCheckedChange = { if (!isPlaylistsDisabled) filterPlaylists = it })
+                        Checkbox(checked = filterPlaylists, enabled = !isPlaylistsDisabled, onCheckedChange = { if (!isPlaylistsDisabled) filterPlaylists = it }, colors = checkboxColors)
                         Spacer(Modifier.width(8.dp))
-                        Text(sFilterPlaylist, modifier = Modifier.clickable { if (!isPlaylistsDisabled) filterPlaylists = !filterPlaylists }, color = if (isPlaylistsDisabled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) else Color.Unspecified)
+                        Text(sFilterPlaylist, modifier = Modifier.clickable { if (!isPlaylistsDisabled) filterPlaylists = !filterPlaylists }, color = if (isPlaylistsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterAlbums, enabled = !isAlbumsDisabled, onCheckedChange = { if (!isAlbumsDisabled) filterAlbums = it })
+                        Checkbox(checked = filterAlbums, enabled = !isAlbumsDisabled, onCheckedChange = { if (!isAlbumsDisabled) filterAlbums = it }, colors = checkboxColors)
                         Spacer(Modifier.width(8.dp))
-                        Text(sFilterAlbum, modifier = Modifier.clickable { if (!isAlbumsDisabled) filterAlbums = !filterAlbums }, color = if (isAlbumsDisabled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) else Color.Unspecified)
+                        Text(sFilterAlbum, modifier = Modifier.clickable { if (!isAlbumsDisabled) filterAlbums = !filterAlbums }, color = if (isAlbumsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterArtists, enabled = !isArtistsDisabled, onCheckedChange = { if (!isArtistsDisabled) filterArtists = it })
+                        Checkbox(checked = filterArtists, enabled = !isArtistsDisabled, onCheckedChange = { if (!isArtistsDisabled) filterArtists = it }, colors = checkboxColors)
                         Spacer(Modifier.width(8.dp))
-                        Text(sFilterArtist, modifier = Modifier.clickable { if (!isArtistsDisabled) filterArtists = !filterArtists }, color = if (isArtistsDisabled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) else Color.Unspecified)
+                        Text(sFilterArtist, modifier = Modifier.clickable { if (!isArtistsDisabled) filterArtists = !filterArtists }, color = if (isArtistsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterFolders, enabled = !isFoldersDisabled, onCheckedChange = { if (!isFoldersDisabled) filterFolders = it })
+                        Checkbox(checked = filterFolders, enabled = !isFoldersDisabled, onCheckedChange = { if (!isFoldersDisabled) filterFolders = it }, colors = checkboxColors)
                         Spacer(Modifier.width(8.dp))
-                        Text(sFilterFolder, modifier = Modifier.clickable { if (!isFoldersDisabled) filterFolders = !filterFolders }, color = if (isFoldersDisabled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) else Color.Unspecified)
+                        Text(sFilterFolder, modifier = Modifier.clickable { if (!isFoldersDisabled) filterFolders = !filterFolders }, color = if (isFoldersDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    filterSongs = true
-                    filterPlaylists = true
-                    filterAlbums = true
-                    filterArtists = true
-                    filterFolders = true
-                }) {
-                    Text(sFilterAll)
+                TextButton(
+                    onClick = {
+                        filterSongs = true
+                        filterPlaylists = true
+                        filterAlbums = true
+                        filterArtists = true
+                        filterFolders = true
+                    },
+                    modifier = Modifier.bounceClick()
+                ) {
+                    Text(sFilterAll, color = blurColors.primaryTint, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showFilterDialog = false }) {
-                    Text(sFilterCancel)
+                TextButton(
+                    onClick = { showFilterDialog = false },
+                    modifier = Modifier.bounceClick()
+                ) {
+                    Text(sFilterCancel, color = blurColors.textSecondaryColor)
                 }
             }
         )

@@ -32,6 +32,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
@@ -43,6 +45,8 @@ import com.demonlab.lune.ui.components.HeaderSurface
 import com.demonlab.lune.ui.components.headerWaveBorder
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
+import com.demonlab.lune.ui.components.rememberBlurSheetColors
+import com.demonlab.lune.ui.components.AppBlurBackdrop
 
 @Composable
 fun PlaylistPreviewCovers(
@@ -300,24 +304,68 @@ fun DeletePlaylistDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
+    val blurColors = rememberBlurSheetColors(currentSong)
+
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.delete_playlist)) },
-        text = { Text(stringResource(R.string.delete_playlist_confirm)) },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = currentSong,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 380.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Surface(
+                color = Color.Transparent,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.delete))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.delete_playlist),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        stringResource(R.string.delete_playlist_confirm),
+                        color = blurColors.textSecondaryColor
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = onDismiss, modifier = Modifier.bounceClick()) {
+                            Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = onConfirm,
+                            colors = ButtonDefaults.textButtonColors(contentColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.error),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -332,38 +380,63 @@ fun PlaylistOptionsAndRename(
     val currentPlaylist = playlists.find { it.id == playlist.id } ?: playlist
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val blurColors = rememberBlurSheetColors()
 
     if (showRenameDialog) {
         var newName by remember { mutableStateOf(currentPlaylist.name) }
+        val textFieldColors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = blurColors.textColor,
+            unfocusedTextColor = blurColors.textColor,
+            focusedBorderColor = blurColors.primaryTint,
+            unfocusedBorderColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outline,
+            focusedLabelColor = blurColors.primaryTint,
+            unfocusedLabelColor = blurColors.textSecondaryColor
+        )
         AlertDialog(
             onDismissRequest = { showRenameDialog = false },
-            title = { Text(stringResource(R.string.edit_playlist_name)) },
+            containerColor = blurColors.containerColor,
+            title = { 
+                Text(
+                    stringResource(R.string.edit_playlist_name),
+                    fontWeight = FontWeight.Bold,
+                    color = blurColors.textColor
+                ) 
+            },
             text = {
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = textFieldColors
                 )
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         if (newName.isNotBlank()) {
                             viewModel.renamePlaylist(currentPlaylist.id, newName.trim())
                         }
                         showRenameDialog = false
                         onDismissRequest()
-                    }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = blurColors.primaryTint,
+                        contentColor = if (blurColors.hasBlur && blurColors.isDark) Color.Black else Color.White
+                    ),
+                    modifier = Modifier.bounceClick()
                 ) {
-                    Text(stringResource(R.string.save))
+                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                TextButton(onClick = { showRenameDialog = false }, modifier = Modifier.bounceClick()) {
+                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 
@@ -398,100 +471,118 @@ fun PlaylistOptionsSheet(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
+    val blurColors = rememberBlurSheetColors(currentSong)
     
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        containerColor = blurColors.containerColor,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = currentSong,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
-            // Header (Cover left, Name right)
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp)
             ) {
-                PlaylistPreviewCovers(playlist.id, viewModel, 64.dp)
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    playlist.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Options
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 1.dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-            ) {
-                ListItem(
-                    leadingContent = {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.clickable { onRenameClick() },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                // Header (Cover left, Name right)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.edit_name))
+                    PlaylistPreviewCovers(playlist.id, viewModel, 64.dp)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        playlist.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-            }
-            
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 1.dp),
-                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-            ) {
-                ListItem(
-                    leadingContent = {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.clickable { onDeleteClick() },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Options
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 1.dp)
+                        .bounceClick(),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                    color = blurColors.itemContainerColor,
+                    border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
                 ) {
-                    Text(stringResource(R.string.delete_playlist), color = MaterialTheme.colorScheme.error)
+                    ListItem(
+                        leadingContent = {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = null,
+                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.clickable { onRenameClick() },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    ) {
+                        Text(stringResource(R.string.edit_name), color = blurColors.textColor)
+                    }
+                }
+                
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 1.dp)
+                        .bounceClick(),
+                    shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 28.dp, bottomEnd = 28.dp),
+                    color = blurColors.itemContainerColor,
+                    border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
+                ) {
+                    ListItem(
+                        leadingContent = {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.errorContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.clickable { onDeleteClick() },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    ) {
+                        Text(stringResource(R.string.delete_playlist), color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }

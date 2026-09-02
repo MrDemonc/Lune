@@ -73,6 +73,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import com.demonlab.lune.ui.components.SongGridItem
 import com.demonlab.lune.ui.components.HeaderSurface
 import com.demonlab.lune.ui.components.headerWaveBorder
+import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.text.style.TextAlign
@@ -1927,20 +1928,32 @@ fun MainScreen(
         }
 
         if (showFolderSheet) {
+            val blurColors = rememberBlurSheetColors(currentSong)
             val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
             ModalBottomSheet(
                 onDismissRequest = { onShowFolderSheetChange(false) },
                 sheetState = sheetState,
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                containerColor = MaterialTheme.colorScheme.surface,
-                dragHandle = { BottomSheetDefaults.DragHandle() }
+                containerColor = blurColors.containerColor,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+                contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
             ) {
-                FolderFilterContent(
-                    allFolders = allFolders,
-                    hiddenFolders = hiddenFolders,
-                    selectedFolder = selectedFolder,
-                    onSelectedFolderChange = onSelectedFolderChange
-                )
+                AppBlurBackdrop(
+                    hasBlurBackground = blurColors.hasBlur,
+                    isDarkTheme = blurColors.isDark,
+                    currentSong = currentSong,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+                        FolderFilterContent(
+                            allFolders = allFolders,
+                            hiddenFolders = hiddenFolders,
+                            selectedFolder = selectedFolder,
+                            onSelectedFolderChange = onSelectedFolderChange
+                        )
+                    }
+                }
             }
         }
 
@@ -2543,10 +2556,24 @@ fun MainScreen(
     }
 
     if (showDeleteDialog && songToDelete != null) {
+        val blurColors = rememberBlurSheetColors()
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.delete_song)) },
-            text = { Text(stringResource(R.string.delete_song_warning)) },
+            containerColor = blurColors.containerColor,
+            shape = RoundedCornerShape(28.dp),
+            title = { 
+                Text(
+                    stringResource(R.string.delete_song),
+                    fontWeight = FontWeight.Bold,
+                    color = blurColors.textColor
+                ) 
+            },
+            text = { 
+                Text(
+                    stringResource(R.string.delete_song_warning),
+                    color = blurColors.textSecondaryColor
+                ) 
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -2595,14 +2622,15 @@ fun MainScreen(
                              snackbarHostState.currentSnackbarData?.dismiss()
                         }
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier.bounceClick()
                 ) {
-                    Text(stringResource(R.string.delete))
+                    Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                TextButton(onClick = { showDeleteDialog = false }, modifier = Modifier.bounceClick()) {
+                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
                 }
             }
         )
@@ -2618,95 +2646,109 @@ fun MainScreen(
     }
 
     if (showSectionMenuSheet) {
+        val blurColors = rememberBlurSheetColors(currentSong)
         ModalBottomSheet(
             onDismissRequest = { showSectionMenuSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            dragHandle = { BottomSheetDefaults.DragHandle() }
+            containerColor = blurColors.containerColor,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+            contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            AppBlurBackdrop(
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark,
+                currentSong = currentSong,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.sections_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.sections_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor,
+                        modifier = Modifier.padding(start = 8.dp, bottom = 16.dp)
+                    )
 
-                folders.forEach { folder ->
-                    val isSelected = selectedFolder == folder
-                    val label = when (folder) {
-                        "RESUME" -> sTabResume
-                        "ALL" -> sTabAll
-                        "FAVORITES" -> sTabFavorites
-                        "ALBUMS" -> sTabAlbums
-                        "ARTISTS" -> sTabArtists
-                        "GENRES" -> sTabGenres
-                        "PLAYLISTS" -> sTabPlaylists
-                        "FOLDERS" -> sTabFolders
-                        else -> folder
-                    }
+                    folders.forEach { folder ->
+                        val isSelected = selectedFolder == folder
+                        val label = when (folder) {
+                            "RESUME" -> sTabResume
+                            "ALL" -> sTabAll
+                            "FAVORITES" -> sTabFavorites
+                            "ALBUMS" -> sTabAlbums
+                            "ARTISTS" -> sTabArtists
+                            "GENRES" -> sTabGenres
+                            "PLAYLISTS" -> sTabPlaylists
+                            "FOLDERS" -> sTabFolders
+                            else -> folder
+                        }
 
-                    Surface(
-                        onClick = {
-                            onSelectedFolderChange(folder)
-                            showSectionMenuSheet = false
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .bounceClick()
-                    ) {
-                        Row(
+                        Surface(
+                            onClick = {
+                                onSelectedFolderChange(folder)
+                                showSectionMenuSheet = false
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (isSelected) (if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer) else blurColors.itemContainerColor,
+                            border = if (isSelected) BorderStroke(1.dp, blurColors.primaryTint.copy(alpha = 0.5f)) else blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(vertical = 4.dp)
+                                .bounceClick()
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                modifier = Modifier.size(40.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    when (folder) {
-                                        "RESUME" -> Icon(Icons.Default.History, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "GENRES" -> Icon(Icons.Default.Category, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                                        else -> Icon(Icons.Default.Folder, contentDescription = null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isSelected) blurColors.primaryTint else (if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceContainerHigh),
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        val iconTint = if (isSelected) (if (blurColors.hasBlur && blurColors.isDark) Color.Black else MaterialTheme.colorScheme.onPrimary) else blurColors.textSecondaryColor
+                                        when (folder) {
+                                            "RESUME" -> Icon(Icons.Default.History, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "GENRES" -> Icon(Icons.Default.Category, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            else -> Icon(Icons.Default.Folder, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                        }
                                     }
                                 }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) (if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer) else blurColors.textColor,
+                                    modifier = Modifier.weight(1f)
                                 )
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = blurColors.primaryTint,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
                         }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

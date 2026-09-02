@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -89,18 +90,20 @@ fun AppBlurBackdrop(
     isDarkTheme: Boolean,
     currentSong: Song? = null,
     modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = androidx.compose.ui.graphics.RectangleShape,
     content: @Composable BoxScope.() -> Unit
 ) {
     val context = LocalContext.current
+    val baseBgColor = if (isDarkTheme) Color(0xFF141416) else MaterialTheme.colorScheme.surface
     Box(
         modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .clip(shape)
+            .background(if (hasBlurBackground && currentSong != null) baseBgColor else MaterialTheme.colorScheme.surface)
     ) {
         if (hasBlurBackground && currentSong != null) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .matchParentSize()
                     .blur(80.dp)
                     .alpha(if (isDarkTheme) 0.35f else 0.45f)
             ) {
@@ -119,13 +122,67 @@ fun AppBlurBackdrop(
             }
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (isDarkTheme) Color.Black.copy(alpha = 0.52f) else Color.Black.copy(alpha = 0.28f)
-                    )
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = if (isDarkTheme) 0.50f else 0.20f))
             )
         }
         content()
+    }
+}
+
+data class BlurSheetColors(
+    val hasBlur: Boolean,
+    val isDark: Boolean,
+    val containerColor: Color,
+    val itemContainerColor: Color,
+    val textColor: Color,
+    val textSecondaryColor: Color,
+    val primaryTint: Color,
+    val itemBorderColor: Color? = null,
+    val useCustomControlsColor: Boolean = false,
+    val controlsColorPalette: Int = 0
+)
+
+@Composable
+fun rememberBlurSheetColors(currentSong: Song? = null): BlurSheetColors {
+    val context = LocalContext.current
+    val settingsManager = SettingsManager.getInstance(context)
+    val isDarkTheme = when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
+    val hasBlur = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+    val useCustomControlsColor = settingsManager.useCustomControlsColor
+    val controlsColorPalette = settingsManager.controlsColorPalette
+    val primaryTint = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+
+    return if (hasBlur) {
+        BlurSheetColors(
+            hasBlur = true,
+            isDark = isDarkTheme,
+            containerColor = if (currentSong != null) Color.Transparent else (if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)),
+            itemContainerColor = Color.White.copy(alpha = 0.12f),
+            textColor = Color.White,
+            textSecondaryColor = Color.White.copy(alpha = 0.70f),
+            primaryTint = if (useCustomControlsColor) primaryTint else Color.White,
+            itemBorderColor = Color.White.copy(alpha = 0.08f),
+            useCustomControlsColor = useCustomControlsColor,
+            controlsColorPalette = controlsColorPalette
+        )
+    } else {
+        BlurSheetColors(
+            hasBlur = false,
+            isDark = isDarkTheme,
+            containerColor = MaterialTheme.colorScheme.surface,
+            itemContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+            textColor = MaterialTheme.colorScheme.onSurface,
+            textSecondaryColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            primaryTint = if (useCustomControlsColor) primaryTint else MaterialTheme.colorScheme.primary,
+            itemBorderColor = null,
+            useCustomControlsColor = useCustomControlsColor,
+            controlsColorPalette = controlsColorPalette
+        )
     }
 }
 
@@ -225,7 +282,7 @@ fun SongItem(
         else -> isSystemDark
     }
 
-    val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val activePrimary = if (hasBlurBackground && !useCustomControlsColor) Color.White else com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
     val shape = if (isFirst && isLast) {
         RoundedCornerShape(28.dp)
@@ -238,10 +295,18 @@ fun SongItem(
     }
 
     val cardBg = if (hasBlurBackground) {
-        if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)
+        if (currentlyPlaying) {
+            if (useCustomControlsColor) activePrimary.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.20f)
+        } else {
+            Color.White.copy(alpha = 0.10f)
+        }
     } else {
-        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+        if (currentlyPlaying) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
     }
+
+    val itemBorder = if (hasBlurBackground && currentlyPlaying) {
+        BorderStroke(1.dp, (if (useCustomControlsColor) activePrimary else Color.White).copy(alpha = 0.45f))
+    } else null
 
     val titleColor = if (currentlyPlaying) activePrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
     val subtitleColor = if (currentlyPlaying) activePrimary.copy(alpha = 0.85f) else if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
@@ -257,7 +322,8 @@ fun SongItem(
             .bounceClick(scaleDown = 0.96f),
         onClick = onClick ?: {},
         shape = shape,
-        color = cardBg
+        color = cardBg,
+        border = itemBorder
     ) {
         ListItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -1148,6 +1214,7 @@ fun FolderFilterContent(
 ) {
     val context = LocalContext.current
     val settingsManager = SettingsManager.getInstance(context)
+    val blurColors = rememberBlurSheetColors()
 
     Column(
         modifier = Modifier
@@ -1159,6 +1226,7 @@ fun FolderFilterContent(
             stringResource(R.string.filter_folders),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+            color = blurColors.textColor,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
         )
 
@@ -1176,9 +1244,11 @@ fun FolderFilterContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 1.dp),
+                    .padding(horizontal = 16.dp, vertical = 1.dp)
+                    .bounceClick(),
                 shape = shape,
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                color = blurColors.itemContainerColor,
+                border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
             ) {
                 ListItem(
                     trailingContent = {
@@ -1206,7 +1276,7 @@ fun FolderFilterContent(
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 ) {
-                    Text(folder)
+                    Text(folder, color = blurColors.textColor)
                 }
             }
         }
@@ -1247,10 +1317,22 @@ fun OptionButton(
     onLongClick: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    val blurColors = rememberBlurSheetColors()
+    val activeBg = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary
+    val inactiveBg = if (blurColors.hasBlur) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val activeTint = if (blurColors.hasBlur) (if (blurColors.isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onPrimary
+    val inactiveTint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+    val labelColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val sublabelBg = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primaryContainer
+    val sublabelColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.bounceClick()
+    ) {
         Surface(
             shape = CircleShape,
-            color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+            color = if (active) activeBg else inactiveBg,
             modifier = Modifier
                 .size(56.dp)
                 .alpha(if (enabled) 1f else 0.5f)
@@ -1274,7 +1356,7 @@ fun OptionButton(
                 Icon(
                     icon,
                     contentDescription = label,
-                    tint = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                    tint = if (active) activeTint else inactiveTint,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -1283,19 +1365,19 @@ fun OptionButton(
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = labelColor
         )
         if (sublabel != null) {
             Spacer(modifier = Modifier.height(2.dp))
             Surface(
                 shape = MaterialTheme.shapes.extraSmall,
-                color = MaterialTheme.colorScheme.primaryContainer
+                color = sublabelBg
             ) {
                 Text(
                     sublabel,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = sublabelColor,
                     maxLines = 1
                 )
             }
