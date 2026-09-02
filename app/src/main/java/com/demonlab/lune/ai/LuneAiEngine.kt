@@ -2,6 +2,7 @@ package com.demonlab.lune.ai
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import com.demonlab.lune.R
 import com.demonlab.lune.ai.model.AiMix
 import com.demonlab.lune.ai.model.DayType
 import com.demonlab.lune.ai.model.MixCategory
@@ -388,8 +389,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                 generated.add(
                     AiMix(
                         id = "ai_daily_flow",
-                        title = "Mix del Día",
-                        subtitle = "Tus canciones esenciales con transiciones fluidas",
+                        title = context.getString(R.string.ai_mix_daily_title),
+                        subtitle = context.getString(R.string.ai_mix_daily_sub),
                         category = MixCategory.DAILY_FLOW,
                         songs = generateSmartShuffle(dailySongs),
                         gradientColors = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)),
@@ -405,8 +406,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                 generated.add(
                     AiMix(
                         id = "ai_discovery_flow",
-                        title = "Modo Descubrimiento",
-                        subtitle = "Tus favoritos intercalados con joyas que casi no escuchas",
+                        title = context.getString(R.string.ai_mix_discovery_title),
+                        subtitle = context.getString(R.string.ai_mix_discovery_sub),
                         category = MixCategory.DISCOVERY,
                         songs = discoverySongs,
                         gradientColors = listOf(Color(0xFF0D9488), Color(0xFF059669), Color(0xFF10B981)),
@@ -426,8 +427,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                 generated.add(
                     AiMix(
                         id = "ai_energy_boost",
-                        title = "Energy Boost",
-                        subtitle = "Ritmos dinámicos para motivarte y entrenar",
+                        title = context.getString(R.string.ai_mix_energy_title),
+                        subtitle = context.getString(R.string.ai_mix_energy_sub),
                         category = MixCategory.ENERGY,
                         songs = generateSmartShuffle(energySongs),
                         gradientColors = listOf(Color(0xFFF97316), Color(0xFFEF4444), Color(0xFFEC4899)),
@@ -447,8 +448,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                 generated.add(
                     AiMix(
                         id = "ai_chill_flow",
-                        title = "Chill & Relax",
-                        subtitle = "Melodías suaves para relajarte y concentrarte",
+                        title = context.getString(R.string.ai_mix_chill_title),
+                        subtitle = context.getString(R.string.ai_mix_chill_sub),
                         category = MixCategory.CHILL,
                         songs = generateSmartShuffle(chillSongs),
                         gradientColors = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6), Color(0xFF6366F1)),
@@ -460,19 +461,18 @@ class LuneAiEngine private constructor(private val context: Context) {
 
             // 5. Contexto Temporal & Fin de Semana
             val timeName = when {
-                isWeekend && currentTime == TimeOfDay.NIGHT -> "Mix Fin de Semana • Noche"
-                isWeekend -> "Mix Fin de Semana"
-                currentTime == TimeOfDay.MORNING -> "Mix de la Mañana"
-                currentTime == TimeOfDay.AFTERNOON -> "Mix de la Tarde"
-                currentTime == TimeOfDay.EVENING -> "Mix del Atardecer"
-                else -> "Mix Nocturno"
+                isWeekend -> context.getString(R.string.ai_mix_weekend_title)
+                currentTime == TimeOfDay.MORNING -> context.getString(R.string.ai_mix_morning_title)
+                currentTime == TimeOfDay.AFTERNOON -> context.getString(R.string.ai_mix_afternoon_title)
+                currentTime == TimeOfDay.EVENING -> context.getString(R.string.ai_mix_evening_title)
+                else -> context.getString(R.string.ai_mix_night_title)
             }
             val timeSub = when {
-                isWeekend -> "Música perfecta para disfrutar tu fin de semana"
-                currentTime == TimeOfDay.MORNING -> "Despierta con la mejor selección para empezar tu día"
-                currentTime == TimeOfDay.AFTERNOON -> "El acompañamiento perfecto para tu jornada"
-                currentTime == TimeOfDay.EVENING -> "Música cálida para desconectar al final del día"
-                else -> "Ambiente envolvente para la noche"
+                isWeekend -> context.getString(R.string.ai_mix_weekend_sub)
+                currentTime == TimeOfDay.MORNING -> context.getString(R.string.ai_mix_morning_sub)
+                currentTime == TimeOfDay.AFTERNOON -> context.getString(R.string.ai_mix_afternoon_sub)
+                currentTime == TimeOfDay.EVENING -> context.getString(R.string.ai_mix_evening_sub)
+                else -> context.getString(R.string.ai_mix_night_sub)
             }
             val timeGradients = when (currentTime) {
                 TimeOfDay.MORNING -> listOf(Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFF06B6D4))
@@ -514,8 +514,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                 generated.add(
                     AiMix(
                         id = "ai_forgotten_gems",
-                        title = "Joyas Olvidadas",
-                        subtitle = "Canciones que te encantan pero hace tiempo no escuchas",
+                        title = context.getString(R.string.ai_mix_forgotten_title),
+                        subtitle = context.getString(R.string.ai_mix_forgotten_sub),
                         category = MixCategory.FORGOTTEN_GEMS,
                         songs = forgottenSongs,
                         gradientColors = listOf(Color(0xFF10B981), Color(0xFF059669), Color(0xFF047857)),
@@ -531,8 +531,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                 generated.add(
                     AiMix(
                         id = "ai_acoustic_live",
-                        title = "Acústico & En Directo",
-                        subtitle = "Sesiones unplugged, directos y versiones íntimas",
+                        title = context.getString(R.string.ai_mix_acoustic_title),
+                        subtitle = context.getString(R.string.ai_mix_acoustic_sub),
                         category = MixCategory.ACOUSTIC_LIVE,
                         songs = generateSmartShuffle(acousticLiveSongs),
                         gradientColors = listOf(Color(0xFFD97706), Color(0xFFB45309), Color(0xFF78350F)),
@@ -559,8 +559,8 @@ class LuneAiEngine private constructor(private val context: Context) {
                     generated.add(
                         AiMix(
                             id = "ai_artist_${topArtist.key.hashCode()}",
-                            title = "Radio: ${topArtist.key}",
-                            subtitle = "Lo mejor de ${topArtist.key} y artistas afines",
+                            title = context.getString(R.string.ai_mix_artist_radio_title, topArtist.key),
+                            subtitle = context.getString(R.string.ai_mix_artist_radio_sub, topArtist.key),
                             category = MixCategory.ARTIST_SPOTLIGHT,
                             songs = generateSmartShuffle(spotlightPool),
                             gradientColors = listOf(Color(0xFFE11D48), Color(0xFFBE123C), Color(0xFF881337)),

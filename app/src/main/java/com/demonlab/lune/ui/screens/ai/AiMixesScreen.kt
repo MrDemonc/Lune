@@ -182,8 +182,8 @@ fun AiMixesScreen(
             ) {
                 // Discovery Mode Card
                 AiActionCard(
-                    title = "Descubrimiento",
-                    subtitle = "Joyas afines sin escuchar",
+                    title = stringResource(R.string.ai_discovery_title),
+                    subtitle = stringResource(R.string.ai_discovery_desc),
                     icon = Icons.Default.Explore,
                     gradient = listOf(Color(0xFF0D9488), Color(0xFF10B981)),
                     modifier = Modifier.weight(1f),
@@ -192,7 +192,7 @@ fun AiMixesScreen(
                         if (allSongs.isNotEmpty()) {
                             val discoveryQueue = aiEngine.generateDiscoveryQueue(allSongs, playbackManager.currentSong)
                             if (discoveryQueue.isNotEmpty()) {
-                                playbackManager.play(discoveryQueue.first(), discoveryQueue, category = "MIXES", playlistName = "Modo Descubrimiento")
+                                playbackManager.play(discoveryQueue.first(), discoveryQueue, category = "MIXES", playlistName = discoveryQueue.first().title)
                             }
                         }
                     }
@@ -200,8 +200,8 @@ fun AiMixesScreen(
 
                 // Instant Flow Card
                 AiActionCard(
-                    title = "Radio Inteligente",
-                    subtitle = "Mix infinito para ti",
+                    title = stringResource(R.string.ai_smart_radio_title),
+                    subtitle = stringResource(R.string.ai_smart_radio_desc),
                     icon = Icons.Default.AutoAwesome,
                     gradient = listOf(Color(0xFFEC4899), Color(0xFFF43F5E)),
                     modifier = Modifier.weight(1f),
@@ -210,7 +210,7 @@ fun AiMixesScreen(
                         val seed = playbackManager.currentSong ?: allSongs.maxByOrNull { aiEngine.getSongAffinity(it.id) } ?: allSongs.firstOrNull()
                         if (seed != null) {
                             val smartQueue = aiEngine.generateSmartShuffle(allSongs, seed)
-                            playbackManager.play(seed, smartQueue, category = "MIXES", playlistName = "Radio Inteligente")
+                            playbackManager.play(seed, smartQueue, category = "MIXES", playlistName = seed.title)
                         }
                     }
                 )
@@ -221,7 +221,7 @@ fun AiMixesScreen(
         if (mixes.isNotEmpty()) {
             item {
                 Text(
-                    text = "Tus Mixes Personalizados",
+                    text = stringResource(R.string.ai_custom_mixes_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
@@ -251,7 +251,7 @@ fun AiMixesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Analizando tu música para generar Mixes personalizados...",
+                        text = stringResource(R.string.ai_analyzing_library),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -327,7 +327,7 @@ private fun AiExpressiveCollageBanner(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Lune AI Core",
+                                text = stringResource(R.string.ai_core_title),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary
@@ -338,13 +338,13 @@ private fun AiExpressiveCollageBanner(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Inteligencia Musical",
+                        text = stringResource(R.string.ai_musical_intelligence),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (hasBlur) Color.White else MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Aprendizaje 100% local y privado",
+                        text = stringResource(R.string.ai_local_learning_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (hasBlur) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -443,13 +443,13 @@ private fun AiExpressiveCollageBanner(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Flujo y afinidad de biblioteca",
+                        text = stringResource(R.string.ai_affinity_flow),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
                         color = if (hasBlur) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${allSongs.size} canciones aprendidas",
+                        text = stringResource(R.string.ai_songs_learned, allSongs.size),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary
@@ -483,7 +483,7 @@ private fun AiExpressiveCollageBanner(
                 Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Iniciar Smart Shuffle con IA",
+                    text = stringResource(R.string.ai_start_smart_shuffle),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -651,7 +651,7 @@ private fun AiMixCard(
                         color = if (hasBlur) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest
                     ) {
                         Text(
-                            text = "${mix.songs.size} canciones",
+                            text = stringResource(R.string.ai_mix_songs_count, mix.songs.size),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary,
