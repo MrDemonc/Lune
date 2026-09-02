@@ -50,6 +50,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">概览</string>
+    <string name="tab_mixes">AI 混音</string>
     <string name="tab_genres">流派</string>
     <string name="resume_recommendations">推荐</string>
     <string name="resume_top_playlists">热门播放列表</string>

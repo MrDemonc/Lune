@@ -49,6 +49,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">متابعة</string>
+    <string name="tab_mixes">خلطات AI</string>
     <string name="tab_genres">الأنواع</string>
     <string name="resume_recommendations">توصيات</string>
     <string name="resume_top_playlists">أفضل قوائم التشغيل</string>

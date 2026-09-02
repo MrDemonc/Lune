@@ -49,6 +49,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">ادامه</string>
+    <string name="tab_mixes">میکس‌های هوش مصنوعی</string>
     <string name="tab_genres">سبک‌ها</string>
     <string name="resume_recommendations">پیشنهادیا</string>
     <string name="resume_top_playlists">پلی‌لیست‌های تاپ</string>

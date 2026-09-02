@@ -50,6 +50,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">Résumé</string>
+    <string name="tab_mixes">Mix IA</string>
     <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Recommandations</string>
     <string name="resume_top_playlists">Playlists les plus écoutées</string>

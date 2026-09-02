@@ -20,13 +20,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -51,24 +51,82 @@ import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import kotlin.math.sin
 
 /**
- * Expressive Wave Shape for Material 3 Cards & Headers
+ * Material 3 Expressive Asymmetric Card Shapes
  */
-val ExpressiveWaveShape: Shape = GenericShape { size, _ ->
-    val width = size.width
-    val height = size.height
-    val cornerRadius = 28f
+val M3ExpressiveBannerShape = RoundedCornerShape(topStart = 32.dp, topEnd = 16.dp, bottomEnd = 32.dp, bottomStart = 16.dp)
+val M3ExpressiveCollageShape1 = RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
+val M3ExpressiveCollageShape2 = RoundedCornerShape(topStart = 12.dp, topEnd = 28.dp, bottomEnd = 12.dp, bottomStart = 28.dp)
+val M3ExpressiveTileShape = RoundedCornerShape(22.dp)
 
-    moveTo(cornerRadius, 0f)
-    cubicTo(width * 0.25f, 0f, width * 0.35f, 16f, width * 0.5f, 12f)
-    cubicTo(width * 0.65f, 8f, width * 0.75f, 0f, width - cornerRadius, 0f)
-    quadraticTo(width, 0f, width, cornerRadius)
-    lineTo(width, height - cornerRadius)
-    quadraticTo(width, height, width - cornerRadius, height)
-    lineTo(cornerRadius, height)
-    quadraticTo(0f, height, 0f, height - cornerRadius)
-    lineTo(0f, cornerRadius)
-    quadraticTo(0f, 0f, cornerRadius, 0f)
-    close()
+/**
+ * Material 3 Expressive Wavy Progress Indicator
+ */
+@Composable
+fun M3WavyProgressIndicator(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    waveColor: Color = MaterialTheme.colorScheme.primary,
+    strokeWidth: Dp = 5.dp,
+    amplitude: Float = 6f,
+    wavelength: Float = 36f
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "m3_wave_progress")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * Math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "phase"
+    )
+
+    Canvas(modifier = modifier.height(18.dp)) {
+        val width = size.width
+        val height = size.height
+        val midY = height / 2f
+        val strokePx = strokeWidth.toPx()
+        val activeWidth = (width * progress.coerceIn(0f, 1f))
+
+        // Inactive background track (straight line)
+        drawLine(
+            color = trackColor,
+            start = Offset(0f, midY),
+            end = Offset(width, midY),
+            strokeWidth = strokePx * 0.8f,
+            cap = StrokeCap.Round
+        )
+
+        // Active Wavy progress line
+        if (activeWidth > 2f) {
+            val wavePath = Path()
+            wavePath.moveTo(0f, midY)
+
+            var x = 0f
+            val step = 3f
+            while (x <= activeWidth) {
+                val waveRatio = (x / activeWidth).coerceIn(0f, 1f)
+                val currentAmp = amplitude * waveRatio // Smooth ramp up at the start
+                val y = midY + (sin((x / wavelength) * (2 * Math.PI).toFloat() + phase) * currentAmp)
+                wavePath.lineTo(x, y)
+                x += step
+            }
+
+            drawPath(
+                path = wavePath,
+                color = waveColor,
+                style = Stroke(width = strokePx, cap = StrokeCap.Round)
+            )
+
+            // Leading Indicator Dot
+            drawCircle(
+                color = waveColor,
+                radius = strokePx * 1.2f,
+                center = Offset(activeWidth, midY)
+            )
+        }
+    }
 }
 
 @Composable
@@ -98,10 +156,10 @@ fun AiMixesScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 1. Interactive AI Wave Header Banner
+        // 1. Material 3 Expressive Collage Header Banner
         item {
-            AiWaveHeaderBanner(
-                totalSongs = allSongs.size,
+            AiExpressiveCollageBanner(
+                allSongs = allSongs,
                 hasBlur = hasBlurBackground,
                 isDark = isDarkTheme,
                 blurColors = blurColors,
@@ -114,7 +172,7 @@ fun AiMixesScreen(
             )
         }
 
-        // 2. Quick Action Feature Cards (Smart Shuffle & Daily Flow)
+        // 2. Quick Action Feature Cards (Smart Shuffle & Radio Inteligente)
         item {
             Row(
                 modifier = Modifier
@@ -122,18 +180,20 @@ fun AiMixesScreen(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Smart Shuffle Card
+                // Discovery Mode Card
                 AiActionCard(
-                    title = "Smart Shuffle",
-                    subtitle = "Transiciones armónicas",
-                    icon = Icons.Default.Shuffle,
-                    gradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6)),
+                    title = "Descubrimiento",
+                    subtitle = "Joyas afines sin escuchar",
+                    icon = Icons.Default.Explore,
+                    gradient = listOf(Color(0xFF0D9488), Color(0xFF10B981)),
                     modifier = Modifier.weight(1f),
                     hasBlur = hasBlurBackground,
                     onClick = {
                         if (allSongs.isNotEmpty()) {
-                            val shuffled = aiEngine.generateSmartShuffle(allSongs, playbackManager.currentSong)
-                            playbackManager.play(shuffled.first(), shuffled, category = "MIXES", playlistName = "Smart Shuffle")
+                            val discoveryQueue = aiEngine.generateDiscoveryQueue(allSongs, playbackManager.currentSong)
+                            if (discoveryQueue.isNotEmpty()) {
+                                playbackManager.play(discoveryQueue.first(), discoveryQueue, category = "MIXES", playlistName = "Modo Descubrimiento")
+                            }
                         }
                     }
                 )
@@ -201,155 +261,231 @@ fun AiMixesScreen(
     }
 }
 
+/**
+ * Material 3 Expressive Collage Header with Wavy Progress Indicator
+ */
 @Composable
-private fun AiWaveHeaderBanner(
-    totalSongs: Int,
+private fun AiExpressiveCollageBanner(
+    allSongs: List<Song>,
     hasBlur: Boolean,
     isDark: Boolean,
     blurColors: com.demonlab.lune.ui.components.BlurSheetColors,
     onSmartShuffleClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "wave_anim")
-    val wavePhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave_phase"
-    )
+    val topSongs = remember(allSongs) { allSongs.take(4) }
+    val analyzedPercent = if (allSongs.isNotEmpty()) 0.92f else 0.40f
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .shadow(elevation = 6.dp, shape = ExpressiveWaveShape, spotColor = Color(0xFF6366F1).copy(alpha = 0.35f)),
-        shape = ExpressiveWaveShape,
+            .shadow(
+                elevation = if (hasBlur) 0.dp else 4.dp,
+                shape = M3ExpressiveBannerShape,
+                spotColor = Color(0xFF6366F1).copy(alpha = 0.20f)
+            ),
+        shape = M3ExpressiveBannerShape,
         color = if (hasBlur) {
             Color.White.copy(alpha = 0.12f)
         } else if (isDark) {
-            Color(0xFF1E1B2E)
+            MaterialTheme.colorScheme.surfaceContainer
         } else {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+            MaterialTheme.colorScheme.surfaceContainerHigh
         },
-        border = if (hasBlur) BorderStroke(1.dp, Color.White.copy(alpha = 0.18f)) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        border = if (hasBlur) {
+            BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
+        } else {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        }
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(170.dp)
+                .padding(20.dp)
         ) {
-            // Live Ambient Wave Canvas
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val waveColor1 = Color(0xFF6366F1).copy(alpha = if (isDark || hasBlur) 0.22f else 0.14f)
-                val waveColor2 = Color(0xFFEC4899).copy(alpha = if (isDark || hasBlur) 0.18f else 0.10f)
+            // Top Row: Expressive Badge + Status + Dynamic Collage
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left: Title and M3 Expressive Pill Badge
+                Column(modifier = Modifier.weight(1f)) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (hasBlur) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Lune AI Core",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
 
-                val path1 = Path()
-                val path2 = Path()
-                val width = size.width
-                val height = size.height
-                val midY = height * 0.65f
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                path1.moveTo(0f, height)
-                path1.lineTo(0f, midY)
-                path2.moveTo(0f, height)
-                path2.lineTo(0f, midY + 10f)
-
-                val steps = 40
-                for (i in 0..steps) {
-                    val x = (width / steps) * i
-                    val rad = (i.toFloat() / steps.toFloat()) * (4 * Math.PI).toFloat() + wavePhase
-                    val y1 = midY + (sin(rad) * 16f)
-                    val y2 = (midY + 12f) + (sin(rad + 1.2f) * 14f)
-                    path1.lineTo(x, y1)
-                    path2.lineTo(x, y2)
+                    Text(
+                        text = "Inteligencia Musical",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasBlur) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Aprendizaje 100% local y privado",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (hasBlur) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                path1.lineTo(width, height)
-                path1.close()
-                path2.lineTo(width, height)
-                path2.close()
 
-                drawPath(path1, waveColor1)
-                drawPath(path2, waveColor2)
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Right: Material 3 Expressive Covers Collage
+                Box(
+                    modifier = Modifier
+                        .size(width = 110.dp, height = 75.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Tile 3 (Background right, angled)
+                    if (topSongs.size >= 3) {
+                        Surface(
+                            shape = M3ExpressiveCollageShape1,
+                            border = BorderStroke(1.5.dp, if (hasBlur) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface),
+                            modifier = Modifier
+                                .size(50.dp)
+                                .offset(x = 28.dp, y = (-4).dp)
+                                .rotate(10f)
+                                .shadow(4.dp, M3ExpressiveCollageShape1)
+                        ) {
+                            SongCoverImage(
+                                coverUrl = topSongs[2].coverUrl ?: topSongs[2].uri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                shape = M3ExpressiveCollageShape1
+                            )
+                        }
+                    }
+
+                    // Tile 2 (Background left, angled)
+                    if (topSongs.size >= 2) {
+                        Surface(
+                            shape = M3ExpressiveCollageShape2,
+                            border = BorderStroke(1.5.dp, if (hasBlur) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface),
+                            modifier = Modifier
+                                .size(54.dp)
+                                .offset(x = (-24).dp, y = 4.dp)
+                                .rotate(-8f)
+                                .shadow(4.dp, M3ExpressiveCollageShape2)
+                        ) {
+                            SongCoverImage(
+                                coverUrl = topSongs[1].coverUrl ?: topSongs[1].uri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                shape = M3ExpressiveCollageShape2
+                            )
+                        }
+                    }
+
+                    // Tile 1 (Front center, main expressive squircle)
+                    if (topSongs.isNotEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            border = BorderStroke(2.dp, if (hasBlur) Color.White else MaterialTheme.colorScheme.surface),
+                            modifier = Modifier
+                                .size(58.dp)
+                                .shadow(8.dp, RoundedCornerShape(18.dp))
+                        ) {
+                            SongCoverImage(
+                                coverUrl = topSongs[0].coverUrl ?: topSongs[0].uri,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                shape = RoundedCornerShape(18.dp)
+                            )
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            modifier = Modifier.size(54.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.MusicNote,
+                                    contentDescription = null,
+                                    tint = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
-            // Header Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Material 3 Wavy Progress Bar
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF6366F1).copy(alpha = 0.25f),
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = if (hasBlur) Color.White else Color(0xFF818CF8),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Lune AI Engine",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (hasBlur) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "IA local • Aprendizaje de hábitos sin conexión",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (hasBlur) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = CircleShape,
-                        color = if (hasBlur) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHigh
-                    ) {
-                        Text(
-                            text = "$totalSongs pistas",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-
-                // CTA Button
-                Button(
-                    onClick = onSmartShuffleClick,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary,
-                        contentColor = if (hasBlur) Color.Black else MaterialTheme.colorScheme.onPrimary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .bounceClick()
-                ) {
-                    Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Reproducir con Smart Shuffle",
-                        fontWeight = FontWeight.Bold
+                        text = "Flujo y afinidad de biblioteca",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = if (hasBlur) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${allSongs.size} canciones aprendidas",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasBlur) Color.White else MaterialTheme.colorScheme.primary
                     )
                 }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                M3WavyProgressIndicator(
+                    progress = analyzedPercent,
+                    modifier = Modifier.fillMaxWidth(),
+                    trackColor = if (hasBlur) Color.White.copy(alpha = 0.20f) else MaterialTheme.colorScheme.surfaceVariant,
+                    waveColor = if (hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // CTA Button with Material 3 Expressive Styling
+            Button(
+                onClick = onSmartShuffleClick,
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary,
+                    contentColor = if (hasBlur) Color.Black else MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .bounceClick()
+            ) {
+                Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Iniciar Smart Shuffle con IA",
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

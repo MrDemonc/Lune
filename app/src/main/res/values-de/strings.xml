@@ -50,6 +50,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">Übersicht</string>
+    <string name="tab_mixes">KI-Mixe</string>
     <string name="tab_genres">Genres</string>
     <string name="resume_recommendations">Empfehlungen</string>
     <string name="resume_top_playlists">Beliebte Playlists</string>

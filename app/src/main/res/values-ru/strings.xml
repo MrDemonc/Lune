@@ -50,6 +50,7 @@
 
     <!-- Library Tabs -->
     <string name="tab_resume">Продолжить</string>
+    <string name="tab_mixes">ИИ-миксы</string>
     <string name="tab_genres">Жанры</string>
     <string name="resume_recommendations">Рекомендации</string>
     <string name="resume_top_playlists">Лучшие плейлисты</string>
