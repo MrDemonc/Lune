@@ -34,6 +34,7 @@ import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.player.ReusableSkipIcon
 import com.demonlab.lune.ui.theme.LuneTheme
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
+import com.demonlab.lune.ui.utils.bounceClick
 
 class ControlsCustomizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -140,7 +141,10 @@ fun ControlsCustomizationScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.bounceClick()
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -276,10 +280,12 @@ fun ControlsCustomizationScreen(
 
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.clickable {
-                                    controlsIconStyle = index
-                                    settingsManager.controlsIconStyle = index
-                                }
+                                modifier = Modifier
+                                    .bounceClick()
+                                    .clickable {
+                                        controlsIconStyle = index
+                                        settingsManager.controlsIconStyle = index
+                                    }
                             ) {
                                 Surface(
                                     shape = CircleShape,
@@ -401,6 +407,7 @@ fun ControlsCustomizationScreen(
                                             .size(40.dp)
                                             .clip(CircleShape)
                                             .background(color)
+                                            .bounceClick()
                                             .clickable {
                                                 controlsColorPalette = index
                                                 settingsManager.controlsColorPalette = index

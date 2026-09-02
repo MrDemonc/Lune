@@ -46,6 +46,7 @@ import java.util.Calendar
 
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.player.ScallopPlayPauseButtonWithProgress
+import com.demonlab.lune.ui.utils.bounceClick
 
 private data class HeroGreetingTheme(
     val greeting: String,
@@ -340,7 +341,9 @@ fun HeroSection(
                     type = infoCardType ?: "",
                     dailyListeningTimeStr = dailyListeningTimeStr,
                     totalSongs = totalSongs,
-                    favoriteCount = favoriteCount
+                    favoriteCount = favoriteCount,
+                    hasBlurBackground = hasBlurBackground,
+                    isDarkTheme = isDarkTheme
                 )
             }
         }
@@ -392,6 +395,8 @@ private fun InfoCard(
     dailyListeningTimeStr: String,
     totalSongs: Int,
     favoriteCount: Int,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false
 ) {
     val context = LocalContext.current
     val (emoji, message) = remember(type, dailyListeningTimeStr, totalSongs, favoriteCount) {
@@ -427,12 +432,20 @@ private fun InfoCard(
         label = "scale"
     )
 
+    val cardBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.25f)
+    } else {
+        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
+    }
+    val textColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
+
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f),
+        color = cardBg,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(16.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +465,7 @@ private fun InfoCard(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = textColor,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -475,6 +488,8 @@ private fun StatChip(
         border = BorderStroke(1.dp, contentColor.copy(alpha = 0.25f)),
         modifier = modifier
             .height(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .bounceClick()
             .clickable(onClick = onClick)
     ) {
         Row(
@@ -530,6 +545,8 @@ private fun ContinueListeningCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .bounceClick()
             .clickable(onClick = onClick)
     ) {
         Row(
@@ -593,6 +610,7 @@ private fun PlayingFromCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(16.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

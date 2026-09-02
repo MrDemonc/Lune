@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Widgets
 
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.ui.components.AppBlurBackdrop
+import com.demonlab.lune.ui.utils.bounceClick
 
 class CustomizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -230,7 +231,10 @@ fun CustomizationScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.bounceClick()
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -339,7 +343,9 @@ fun CustomizationScreen(
                                     } else {
                                         if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer
                                     },
-                                    modifier = Modifier.size(44.dp)
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .bounceClick()
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
@@ -415,6 +421,7 @@ fun CustomizationScreen(
                                         modifier = Modifier
                                             .size(48.dp)
                                             .clip(CircleShape)
+                                            .bounceClick()
                                             .clickable { onPaletteChanged(index) },
                                         contentAlignment = Alignment.Center
                                     ) {

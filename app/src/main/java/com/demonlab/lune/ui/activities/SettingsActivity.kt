@@ -58,6 +58,7 @@ import com.demonlab.lune.BuildConfig
 import com.demonlab.lune.tools.PlaybackManager
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.demonlab.lune.ui.theme.LuneTheme
+import com.demonlab.lune.ui.utils.bounceClick
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -253,7 +254,10 @@ fun SettingsScreen(
                         ) 
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.bounceClick()
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -504,11 +508,19 @@ fun SettingsPreferenceItem(
     val headlineColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
     val supportingColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val clickModifier = if (onClick != null) {
+        Modifier
+            .bounceClick()
+            .clip(shape)
+            .clickable(onClick = onClick)
+    } else Modifier
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 1.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            .clip(shape)
+            .then(clickModifier),
         shape = shape,
         color = cardBg,
         tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
@@ -610,6 +622,7 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
+                    .bounceClick()
                     .background(btnBg)
             ) {
                 Icon(

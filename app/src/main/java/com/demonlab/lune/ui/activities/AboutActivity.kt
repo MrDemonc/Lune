@@ -43,6 +43,7 @@ import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
+import com.demonlab.lune.ui.utils.bounceClick
 import androidx.compose.ui.platform.LocalUriHandler
 
 class AboutActivity : ComponentActivity() {
@@ -115,12 +116,15 @@ fun AboutScreen() {
                 TopAppBar(
                     title = { },
                     actions = {
-                        IconButton(onClick = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
-                            }
-                            context.startActivity(intent)
-                        }) {
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.bounceClick()
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -210,7 +214,9 @@ fun AboutScreen() {
                         onClick = { 
                             uriHandler.openUri("https://github.com/MrDemonc/Lune/tree/main")
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .bounceClick(),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant,
@@ -229,7 +235,9 @@ fun AboutScreen() {
                     }
                     Button(
                         onClick = { showDonateDialog = true },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .bounceClick(),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
@@ -437,7 +445,9 @@ fun DonateDialog(
             ) {
                 Button(
                     onClick = { uriHandler.openUri("https://paypal.me/TommyZambrano") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bounceClick(),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
@@ -455,7 +465,9 @@ fun DonateDialog(
 
                 Button(
                     onClick = { showMonero = !showMonero },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bounceClick(),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
@@ -496,7 +508,8 @@ fun DonateDialog(
                                     val clip = ClipData.newPlainText("Monero Address", context.getString(R.string.monero_address))
                                     clipboard.setPrimaryClip(clip)
                                     Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
-                                }
+                                },
+                                modifier = Modifier.bounceClick()
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.ContentCopy,
@@ -513,6 +526,7 @@ fun DonateDialog(
             FilledTonalButton(
                 onClick = onDismiss,
                 shape = CircleShape,
+                modifier = Modifier.bounceClick(),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant

@@ -2955,6 +2955,7 @@ fun UnifiedHeaderPill(
                 // RIGHT SIDE: Search Bar (Text + Icon)
                 Row(
                     modifier = Modifier
+                        .bounceClick()
                         .clip(RoundedCornerShape(22.dp))
                         .clickable { showSearchScreen() }
                         .padding(horizontal = 10.dp, vertical = 6.dp),

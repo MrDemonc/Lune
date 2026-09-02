@@ -1063,7 +1063,9 @@ fun SongsListHeader(
                     onClick = onToggleLayout,
                     shape = CircleShape,
                     color = if (isGridLayout) actionBtnActiveBg else actionBtnInactiveBg,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier
+                        .size(36.dp)
+                        .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -1080,7 +1082,9 @@ fun SongsListHeader(
                 onClick = onSortClick,
                 shape = CircleShape,
                 color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .size(36.dp)
+                    .bounceClick()
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -1100,7 +1104,9 @@ fun SongsListHeader(
                     onClick = onShuffleClick,
                     shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
                     color = if (isShuffleActive) actionBtnActiveBg else actionBtnInactiveBg,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier
+                        .size(44.dp)
+                        .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -1115,7 +1121,9 @@ fun SongsListHeader(
                     onClick = onPlayClick,
                     shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
                     color = actionBtnActiveBg,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier
+                        .size(44.dp)
+                        .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(

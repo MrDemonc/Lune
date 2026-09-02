@@ -45,9 +45,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
-import com.demonlab.lune.tools.SettingsManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
 
@@ -128,7 +130,10 @@ fun PermissionsScreen(onBack: () -> Unit) {
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.bounceClick()
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -302,6 +307,8 @@ fun PermissionsPreferenceItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 1.dp)
+            .clip(shape)
+            .bounceClick()
             .clickable(onClick = onClick),
         shape = shape,
         color = cardBg,

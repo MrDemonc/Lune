@@ -72,6 +72,7 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.theme.LuneTheme
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.demonlab.lune.ui.utils.bounceClick
 
 class WidgetCustomizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -187,7 +188,10 @@ fun WidgetCustomizationScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.bounceClick()
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -248,7 +252,9 @@ fun WidgetCustomizationScreen(
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest,
-                            modifier = Modifier.clickable { previewIsNight = !previewIsNight }
+                            modifier = Modifier
+                                .bounceClick()
+                                .clickable { previewIsNight = !previewIsNight }
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
