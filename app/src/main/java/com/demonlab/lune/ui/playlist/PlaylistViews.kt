@@ -482,7 +482,7 @@ fun PlaylistOptionsSheet(
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = blurColors.containerColor,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -498,11 +498,19 @@ fun PlaylistOptionsSheet(
                     .navigationBarsPadding()
                     .padding(bottom = 24.dp)
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 // Header (Cover left, Name right)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     PlaylistPreviewCovers(playlist.id, viewModel, 64.dp)

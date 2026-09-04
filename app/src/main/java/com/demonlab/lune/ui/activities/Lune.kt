@@ -1971,7 +1971,7 @@ fun MainScreen(
                 sheetState = sheetState,
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 containerColor = blurColors.containerColor,
-                dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+                dragHandle = null,
                 contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
             ) {
                 AppBlurBackdrop(
@@ -1981,7 +1981,15 @@ fun MainScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+                    Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            BottomSheetDefaults.DragHandle(
+                                color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         FolderFilterContent(
                             allFolders = allFolders,
                             hiddenFolders = hiddenFolders,
@@ -2690,7 +2698,7 @@ fun MainScreen(
             onDismissRequest = { showSectionMenuSheet = false },
             containerColor = blurColors.containerColor,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+            dragHandle = null,
             contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
         ) {
             AppBlurBackdrop(
@@ -2706,6 +2714,14 @@ fun MainScreen(
                         .navigationBarsPadding()
                         .padding(horizontal = 20.dp, vertical = 8.dp)
                 ) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        BottomSheetDefaults.DragHandle(
+                            color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.sections_title),
                         style = MaterialTheme.typography.titleLarge,

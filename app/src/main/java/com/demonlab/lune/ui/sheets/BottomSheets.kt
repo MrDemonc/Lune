@@ -95,7 +95,7 @@ fun SongOptionsBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -111,10 +111,18 @@ fun SongOptionsBottomSheet(
                     .navigationBarsPadding()
                     .padding(bottom = 8.dp)
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SongCoverImage(
@@ -315,7 +323,7 @@ fun SortBottomSheet(
         sheetState = sheetState,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -331,13 +339,21 @@ fun SortBottomSheet(
                     .navigationBarsPadding()
                     .padding(bottom = 24.dp)
             ) {
-            Text(
-                text = stringResource(R.string.sort_options_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = blurColors.textColor,
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
-            )
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.sort_options_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = blurColors.textColor,
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
+                )
             
             // Top row with Pill switch and Restore button (Restore + Switch side by side on the left)
             Row(
@@ -521,7 +537,7 @@ fun EqBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -537,9 +553,18 @@ fun EqBottomSheet(
                     .fillMaxHeight(0.9f)
                     .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .padding(bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -855,7 +880,8 @@ fun QueueBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) }
+        dragHandle = null,
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         val activePlaylist = playbackManager.activePlaylist
         
@@ -863,6 +889,7 @@ fun QueueBottomSheet(
             hasBlurBackground = blurColors.hasBlur,
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Column(
@@ -870,12 +897,20 @@ fun QueueBottomSheet(
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     stringResource(R.string.player_queue),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = blurColors.textColor,
-                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
                 )
 
                 LazyColumn(
@@ -1148,7 +1183,7 @@ fun PlayerOptionsBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -1177,10 +1212,18 @@ fun PlayerOptionsBottomSheet(
                     .navigationBarsPadding()
                     .padding(bottom = 24.dp)
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 16.dp),
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     val context = LocalContext.current
@@ -1331,7 +1374,7 @@ fun VisualizerSettingsBottomSheet(
         onDismissRequest = onClose,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -1345,9 +1388,17 @@ fun VisualizerSettingsBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp)
                     .padding(bottom = 24.dp)
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     stringResource(R.string.option_visualizer),
                     style = MaterialTheme.typography.titleLarge,
@@ -1436,13 +1487,15 @@ fun EditSongBottomSheet(
         sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = blurColors.containerColor,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+        dragHandle = null,
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         modifier = Modifier.imePadding() // Fix keyboard compression
     ) {
         AppBlurBackdrop(
             hasBlurBackground = blurColors.hasBlur,
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Column(
@@ -1453,10 +1506,18 @@ fun EditSongBottomSheet(
                     .verticalScroll(rememberScrollState()), // Fix keyboard compression
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp),
+                        .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

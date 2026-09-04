@@ -95,10 +95,11 @@ fun AppBlurBackdrop(
 ) {
     val context = LocalContext.current
     val baseBgColor = if (isDarkTheme) Color(0xFF141416) else MaterialTheme.colorScheme.surface
+    val fallbackBlurBg = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)
     Box(
         modifier = modifier
             .clip(shape)
-            .background(if (hasBlurBackground && currentSong != null) baseBgColor else MaterialTheme.colorScheme.surface)
+            .background(if (hasBlurBackground) (if (currentSong != null) baseBgColor else fallbackBlurBg) else MaterialTheme.colorScheme.surface)
     ) {
         if (hasBlurBackground && currentSong != null) {
             Box(
@@ -161,7 +162,7 @@ fun rememberBlurSheetColors(currentSong: Song? = null): BlurSheetColors {
         BlurSheetColors(
             hasBlur = true,
             isDark = isDarkTheme,
-            containerColor = if (currentSong != null) Color.Transparent else (if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)),
+            containerColor = Color.Transparent,
             itemContainerColor = Color.White.copy(alpha = 0.12f),
             textColor = Color.White,
             textSecondaryColor = Color.White.copy(alpha = 0.70f),
