@@ -25,17 +25,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
-import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
+import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
 data class SearchResults(
@@ -68,7 +71,10 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val context = LocalContext.current
     val pm = PlaybackManager.getInstance(context)
+    val currentSong = pm.currentSong
     val settings = remember { SettingsManager.getInstance(context) }
+    val blurColors = rememberBlurSheetColors(currentSong)
+
     var showFilterDialog by remember { mutableStateOf(false) }
     var filterSongs by remember { mutableStateOf(true) }
     var filterPlaylists by remember { mutableStateOf(true) }
@@ -229,438 +235,535 @@ fun SearchScreen(
 
     BackHandler(onBack = onDismiss)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 8.dp)
-                            .focusRequester(focusRequester),
-                        placeholder = { Text(stringResource(R.string.search_hint), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        singleLine = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent
+    AppBlurBackdrop(
+        hasBlurBackground = blurColors.hasBlur,
+        isDarkTheme = blurColors.isDark,
+        currentSong = currentSong,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 8.dp)
+                                .focusRequester(focusRequester),
+                            placeholder = { 
+                                Text(
+                                    stringResource(R.string.search_hint), 
+                                    maxLines = 1, 
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = blurColors.textSecondaryColor
+                                ) 
+                            },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = blurColors.textColor,
+                                unfocusedTextColor = blurColors.textColor,
+                                cursorColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent
+                            )
                         )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onDismiss) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.14f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack, 
+                                        contentDescription = "Back",
+                                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showFilterDialog = true }) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.14f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.FilterList,
+                                        contentDescription = "Filter",
+                                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack, 
-                                    contentDescription = "Back",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showFilterDialog = true }) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.FilterList,
-                                    contentDescription = "Filter",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
                 )
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            if (filterSongs && searchResults.songs.isNotEmpty()) {
-                item {
-                    Text(
-                        text = sTabAll,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clickable { onNavigateToFolder("ALL") }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .fillMaxWidth()
-                    )
-                }
-                if (searchResults.songs.size > 1) {
+            }
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                if (filterSongs && searchResults.songs.isNotEmpty()) {
                     item {
-                        val pm = PlaybackManager.getInstance(LocalContext.current)
-                        val btnHeight = 52.dp
-                        Row(
+                        Text(
+                            text = sTabAll,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
                             modifier = Modifier
+                                .clickable { onNavigateToFolder("ALL") }
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(0.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        )
+                    }
+                    if (searchResults.songs.size > 1) {
+                        item {
+                            val btnHeight = 52.dp
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Surface(
-                                    onClick = { onPlayAll(searchResults.songs, searchShuffle) },
-                                    shape = RoundedCornerShape(topStart = 26.dp, bottomStart = 26.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(btnHeight)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
+                                    val playBtnTint = if (blurColors.hasBlur) {
+                                        if (blurColors.useCustomControlsColor) Color.White else Color.Black
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    }
+                                    Surface(
+                                        onClick = { onPlayAll(searchResults.songs, searchShuffle) },
+                                        shape = RoundedCornerShape(topStart = 26.dp, bottomStart = 26.dp, topEnd = 4.dp, bottomEnd = 4.dp),
+                                        color = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(btnHeight)
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
                                         ) {
-                                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                stringResource(R.string.search_play_all),
-                                                color = MaterialTheme.colorScheme.onPrimary
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.PlayArrow, 
+                                                    contentDescription = null, 
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = playBtnTint
+                                                )
+                                                Spacer(Modifier.width(8.dp))
+                                                Text(
+                                                    stringResource(R.string.search_play_all),
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = playBtnTint
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                                Surface(
-                                    onClick = {
-                                        if (isSearchActive) {
-                                            pm.toggleShuffle()
-                                            searchShuffle = pm.isShuffle
+                                    val shuffleActiveTint = if (blurColors.hasBlur) {
+                                        if (blurColors.useCustomControlsColor) Color.White else Color.Black
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    }
+                                    val shuffleInactiveTint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurface
+                                    Surface(
+                                        onClick = {
+                                            if (isSearchActive) {
+                                                pm.toggleShuffle()
+                                                searchShuffle = pm.isShuffle
+                                            } else {
+                                                val newState = !searchShuffle
+                                                searchShuffle = newState
+                                                settings.setPlaylistShuffle(-300L, newState)
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 26.dp, bottomEnd = 26.dp),
+                                        color = if (searchShuffle) {
+                                            if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary
                                         } else {
-                                            val newState = !searchShuffle
-                                            searchShuffle = newState
-                                            settings.setPlaylistShuffle(-300L, newState)
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 26.dp, bottomEnd = 26.dp),
-                                    color = if (searchShuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(btnHeight)
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
+                                            if (blurColors.hasBlur) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(btnHeight)
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
                                         ) {
-                                            Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                stringResource(R.string.search_shuffle),
-                                                color = if (searchShuffle) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Shuffle, 
+                                                    contentDescription = null, 
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = if (searchShuffle) shuffleActiveTint else shuffleInactiveTint
+                                                )
+                                                Spacer(Modifier.width(8.dp))
+                                                Text(
+                                                    stringResource(R.string.search_shuffle),
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (searchShuffle) shuffleActiveTint else shuffleInactiveTint
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                itemsIndexed(searchResults.songs) { index, song ->
-                    val isFirst = index == 0
-                    val isLast = index == searchResults.songs.lastIndex
-                    val isCurrent = song.id == currentlyPlayingId && activeCategory == "ALL"
-                    SongItem(
-                        isFirst = isFirst,
-                        isLast = isLast,
-                        song = song,
-                        currentlyPlaying = isCurrent,
-                        isPlaying = isPlaying && isCurrent,
-                        onClick = { onSongClick(song, allSongs, "ALL", -300L) },
-                        onOptionsClick = { onOptionsClick(song) },
-                        onFavoriteClick = onFavoriteClick
-                    )
-                }
-            }
-
-            if (filterFavorites) searchResults.tagResults[sTabFavorites]?.let { songs ->
-                if (songs.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = sTabFavorites,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clickable { onNavigateToFolder("FAVORITES") }
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .fillMaxWidth()
-                        )
-                    }
-                    itemsIndexed(songs) { index, song ->
+                    itemsIndexed(searchResults.songs) { index, song ->
                         val isFirst = index == 0
-                        val isLast = index == songs.lastIndex
-                        val isCurrent = song.id == currentlyPlayingId && activeCategory == "FAVORITES"
+                        val isLast = index == searchResults.songs.lastIndex
+                        val isCurrent = song.id == currentlyPlayingId && activeCategory == "ALL"
                         SongItem(
                             isFirst = isFirst,
                             isLast = isLast,
                             song = song,
                             currentlyPlaying = isCurrent,
                             isPlaying = isPlaying && isCurrent,
-                            onClick = { onSongClick(song, searchResults.favoriteSongs, "FAVORITES", -200L) },
+                            hasBlurBackground = blurColors.hasBlur,
+                            useCustomControlsColor = blurColors.useCustomControlsColor,
+                            controlsColorPalette = blurColors.controlsColorPalette,
+                            onClick = { onSongClick(song, allSongs, "ALL", -300L) },
                             onOptionsClick = { onOptionsClick(song) },
                             onFavoriteClick = onFavoriteClick
                         )
                     }
-                } else {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ListItem(
-                            leadingContent = { 
-                                Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary) 
-                            },
-                            modifier = Modifier.clickable { onNavigateToFolder("FAVORITES") }
-                        ) {
-                            Text(sTabFavorites)
-                        }
-                    }
                 }
-            }
 
-            if (filterPlaylists && searchResults.playlistResults.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.playlists),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-                val playlistList = searchResults.playlistResults.toList()
-                if (playlistList.isNotEmpty()) {
-                    for ((playlist, matchingSongs) in playlistList) {
+                if (filterFavorites) searchResults.tagResults[sTabFavorites]?.let { songs ->
+                    if (songs.isNotEmpty()) {
                         item {
-                            val context = LocalContext.current
-                            ListItem(
-                                leadingContent = {
-                                    PlaylistPreviewCovers(playlistId = playlist.id, viewModel = viewModel, size = 50.dp)
-                                },
-                                modifier = Modifier.clickable { onNavigateToPlaylist(playlist) }
-                            ) {
-                                Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = sTabFavorites,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clickable { onNavigateToFolder("FAVORITES") }
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .fillMaxWidth()
+                            )
                         }
-                        itemsIndexed(matchingSongs) { index, song ->
+                        itemsIndexed(songs) { index, song ->
                             val isFirst = index == 0
-                            val isLast = index == matchingSongs.lastIndex
-                            val isCurrent = song.id == currentlyPlayingId && activeCategory == "PLAYLISTS" && activePlaylistId == playlist.id
+                            val isLast = index == songs.lastIndex
+                            val isCurrent = song.id == currentlyPlayingId && activeCategory == "FAVORITES"
                             SongItem(
                                 isFirst = isFirst,
                                 isLast = isLast,
                                 song = song,
                                 currentlyPlaying = isCurrent,
                                 isPlaying = isPlaying && isCurrent,
-                                modifier = Modifier.padding(start = 32.dp),
-                                onClick = { 
-                                    val fullPlaylistSongs = playlistMappings.filter { it.playlistId == playlist.id }
-                                        .mapNotNull { mapping -> allSongs.find { s -> s.id == mapping.songId } }
-                                    onSongClick(song, fullPlaylistSongs, "PLAYLISTS", playlist.id) 
-                                    onNavigateToPlaylist(playlist)
-                                },
+                                hasBlurBackground = blurColors.hasBlur,
+                                useCustomControlsColor = blurColors.useCustomControlsColor,
+                                controlsColorPalette = blurColors.controlsColorPalette,
+                                onClick = { onSongClick(song, searchResults.favoriteSongs, "FAVORITES", -200L) },
                                 onOptionsClick = { onOptionsClick(song) },
                                 onFavoriteClick = onFavoriteClick
                             )
                         }
-                    }
-                }
-            }
-
-            if (filterAlbums && searchResults.realAlbumResults.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = sTabAlbumsReal,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-                val realAlbumList = searchResults.realAlbumResults.toList()
-                if (realAlbumList.isNotEmpty()) {
-                    for ((album, matchingSongs) in realAlbumList) {
+                    } else {
                         item {
-                            val context = LocalContext.current
+                            Spacer(modifier = Modifier.height(8.dp))
                             ListItem(
-                                supportingContent = { Text(album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                leadingContent = {
-                                    AsyncImage(
-                                        model = album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri } ?: R.drawable.ic_launcher_foreground,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                colors = ListItemDefaults.colors(
+                                    containerColor = Color.Transparent,
+                                    headlineColor = blurColors.textColor,
+                                    leadingIconColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                                ),
+                                leadingContent = { 
+                                    Icon(
+                                        Icons.Default.Favorite, 
+                                        contentDescription = null, 
+                                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                                    ) 
                                 },
-                                modifier = Modifier.clickable { onNavigateToAlbum(album) }
+                                modifier = Modifier.clickable { onNavigateToFolder("FAVORITES") }
                             ) {
-                                Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(sTabFavorites, color = blurColors.textColor)
                             }
                         }
-                        itemsIndexed(matchingSongs) { index, song ->
-                            val isFirst = index == 0
-                            val isLast = index == matchingSongs.lastIndex
-                            val isCurrent = song.id == currentlyPlayingId && activeCategory == "ALBUMS" && activePlaylistId == album.id
-                            SongItem(
-                                isFirst = isFirst,
-                                isLast = isLast,
-                                song = song,
-                                currentlyPlaying = isCurrent,
-                                isPlaying = isPlaying && isCurrent,
-                                modifier = Modifier.padding(start = 32.dp),
-                                onClick = { 
-                                    onSongClick(song, album.songs, "ALBUMS", album.id)
-                                    onNavigateToAlbum(album)
-                                },
-                                onOptionsClick = { onOptionsClick(song) },
-                                onFavoriteClick = onFavoriteClick
-                            )
-                        }
                     }
                 }
-            }
 
-            if (filterArtists && searchResults.albumResults.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.tab_albums),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-                val albumList = searchResults.albumResults.toList()
-                if (albumList.isNotEmpty()) {
-                    for ((album, matchingSongs) in albumList) {
-                        item {
-                            val context = LocalContext.current
-                            ListItem(
-                                supportingContent = { Text("${album.songs.size} canciones") },
-                                leadingContent = {
-                                    AsyncImage(
-                                        model = album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri } ?: R.drawable.ic_launcher_foreground,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                },
-                                modifier = Modifier.clickable { onNavigateToAlbum(album) }
-                            ) {
-                                Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                        itemsIndexed(matchingSongs) { index, song ->
-                            val isFirst = index == 0
-                            val isLast = index == matchingSongs.lastIndex
-                            val isCurrent = song.id == currentlyPlayingId && activeCategory == "ALBUMS" && activePlaylistId == album.id
-                            SongItem(
-                                isFirst = isFirst,
-                                isLast = isLast,
-                                song = song,
-                                currentlyPlaying = isCurrent,
-                                isPlaying = isPlaying && isCurrent,
-                                modifier = Modifier.padding(start = 32.dp),
-                                onClick = { 
-                                    onSongClick(song, album.songs, "ALBUMS", album.id)
-                                    onNavigateToAlbum(album)
-                                },
-                                onOptionsClick = { onOptionsClick(song) },
-                                onFavoriteClick = onFavoriteClick
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (filterFolders) {
-            searchResults.tagResults.filterKeys { it != sTabFavorites }.forEach { (tagName, songs) ->
-                if (songs.isNotEmpty()) {
+                if (filterPlaylists && searchResults.playlistResults.isNotEmpty()) {
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = tagName,
+                            text = stringResource(R.string.playlists),
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clickable { onNavigateToFolder(tagName) }
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .fillMaxWidth()
+                            fontWeight = FontWeight.Bold,
+                            color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
-                    itemsIndexed(songs) { index, song ->
-                        val isFirst = index == 0
-                        val isLast = index == songs.lastIndex
-                        val isCurrent = song.id == currentlyPlayingId && activeCategory == "FOLDERS"
-                        SongItem(
-                            isFirst = isFirst,
-                            isLast = isLast,
-                            song = song,
-                            currentlyPlaying = isCurrent,
-                            isPlaying = isPlaying && isCurrent,
-                            onClick = {
-                                onSongClick(song, songs, "FOLDERS", tagName.hashCode().toLong())
-                                onNavigateToFolder(tagName)
-                            },
-                            onOptionsClick = { onOptionsClick(song) },
-                            onFavoriteClick = onFavoriteClick
-                        )
-                    }
-                } else {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ListItem(
-                            leadingContent = { 
-                                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) 
-                            },
-                            modifier = Modifier.clickable { onNavigateToFolder(tagName) }
-                        ) {
-                            Text(tagName)
+                    val playlistList = searchResults.playlistResults.toList()
+                    if (playlistList.isNotEmpty()) {
+                        for ((playlist, matchingSongs) in playlistList) {
+                            item {
+                                ListItem(
+                                    colors = ListItemDefaults.colors(
+                                        containerColor = Color.Transparent,
+                                        headlineColor = blurColors.textColor
+                                    ),
+                                    leadingContent = {
+                                        PlaylistPreviewCovers(playlistId = playlist.id, viewModel = viewModel, size = 50.dp)
+                                    },
+                                    modifier = Modifier.clickable { onNavigateToPlaylist(playlist) }
+                                ) {
+                                    Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis, color = blurColors.textColor)
+                                }
+                            }
+                            itemsIndexed(matchingSongs) { index, song ->
+                                val isFirst = index == 0
+                                val isLast = index == matchingSongs.lastIndex
+                                val isCurrent = song.id == currentlyPlayingId && activeCategory == "PLAYLISTS" && activePlaylistId == playlist.id
+                                SongItem(
+                                    isFirst = isFirst,
+                                    isLast = isLast,
+                                    song = song,
+                                    currentlyPlaying = isCurrent,
+                                    isPlaying = isPlaying && isCurrent,
+                                    hasBlurBackground = blurColors.hasBlur,
+                                    useCustomControlsColor = blurColors.useCustomControlsColor,
+                                    controlsColorPalette = blurColors.controlsColorPalette,
+                                    modifier = Modifier.padding(start = 32.dp),
+                                    onClick = { 
+                                        val fullPlaylistSongs = playlistMappings.filter { it.playlistId == playlist.id }
+                                            .mapNotNull { mapping -> allSongs.find { s -> s.id == mapping.songId } }
+                                        onSongClick(song, fullPlaylistSongs, "PLAYLISTS", playlist.id) 
+                                        onNavigateToPlaylist(playlist)
+                                    },
+                                    onOptionsClick = { onOptionsClick(song) },
+                                    onFavoriteClick = onFavoriteClick
+                                )
+                            }
                         }
                     }
                 }
-            }
-            }
-            
-            if (query.isNotBlank() && (!filterSongs || searchResults.songs.isEmpty()) && (!filterPlaylists || searchResults.playlistResults.isEmpty()) && (!filterAlbums || searchResults.realAlbumResults.isEmpty()) && (!filterArtists || searchResults.albumResults.isEmpty()) && (!filterFolders || searchResults.tagResults.filterKeys { it != sTabFavorites }.all { (_, songs) -> songs.isEmpty() })) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text(text = "No results found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                if (filterAlbums && searchResults.realAlbumResults.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = sTabAlbumsReal,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    val realAlbumList = searchResults.realAlbumResults.toList()
+                    if (realAlbumList.isNotEmpty()) {
+                        for ((album, matchingSongs) in realAlbumList) {
+                            item {
+                                ListItem(
+                                    colors = ListItemDefaults.colors(
+                                        containerColor = Color.Transparent,
+                                        headlineColor = blurColors.textColor,
+                                        supportingColor = blurColors.textSecondaryColor
+                                    ),
+                                    supportingContent = { Text(album.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, color = blurColors.textSecondaryColor) },
+                                    leadingContent = {
+                                        AsyncImage(
+                                            model = album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri } ?: R.drawable.ic_launcher_foreground,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    },
+                                    modifier = Modifier.clickable { onNavigateToAlbum(album) }
+                                ) {
+                                    Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis, color = blurColors.textColor)
+                                }
+                            }
+                            itemsIndexed(matchingSongs) { index, song ->
+                                val isFirst = index == 0
+                                val isLast = index == matchingSongs.lastIndex
+                                val isCurrent = song.id == currentlyPlayingId && activeCategory == "ALBUMS" && activePlaylistId == album.id
+                                SongItem(
+                                    isFirst = isFirst,
+                                    isLast = isLast,
+                                    song = song,
+                                    currentlyPlaying = isCurrent,
+                                    isPlaying = isPlaying && isCurrent,
+                                    hasBlurBackground = blurColors.hasBlur,
+                                    useCustomControlsColor = blurColors.useCustomControlsColor,
+                                    controlsColorPalette = blurColors.controlsColorPalette,
+                                    modifier = Modifier.padding(start = 32.dp),
+                                    onClick = { 
+                                        onSongClick(song, album.songs, "ALBUMS", album.id)
+                                        onNavigateToAlbum(album)
+                                    },
+                                    onOptionsClick = { onOptionsClick(song) },
+                                    onFavoriteClick = onFavoriteClick
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (filterArtists && searchResults.albumResults.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.tab_albums),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    val albumList = searchResults.albumResults.toList()
+                    if (albumList.isNotEmpty()) {
+                        for ((album, matchingSongs) in albumList) {
+                            item {
+                                ListItem(
+                                    colors = ListItemDefaults.colors(
+                                        containerColor = Color.Transparent,
+                                        headlineColor = blurColors.textColor,
+                                        supportingColor = blurColors.textSecondaryColor
+                                    ),
+                                    supportingContent = { Text("${album.songs.size} canciones", color = blurColors.textSecondaryColor) },
+                                    leadingContent = {
+                                        AsyncImage(
+                                            model = album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri } ?: R.drawable.ic_launcher_foreground,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    },
+                                    modifier = Modifier.clickable { onNavigateToAlbum(album) }
+                                ) {
+                                    Text(album.name, maxLines = 1, overflow = TextOverflow.Ellipsis, color = blurColors.textColor)
+                                }
+                            }
+                            itemsIndexed(matchingSongs) { index, song ->
+                                val isFirst = index == 0
+                                val isLast = index == matchingSongs.lastIndex
+                                val isCurrent = song.id == currentlyPlayingId && activeCategory == "ALBUMS" && activePlaylistId == album.id
+                                SongItem(
+                                    isFirst = isFirst,
+                                    isLast = isLast,
+                                    song = song,
+                                    currentlyPlaying = isCurrent,
+                                    isPlaying = isPlaying && isCurrent,
+                                    hasBlurBackground = blurColors.hasBlur,
+                                    useCustomControlsColor = blurColors.useCustomControlsColor,
+                                    controlsColorPalette = blurColors.controlsColorPalette,
+                                    modifier = Modifier.padding(start = 32.dp),
+                                    onClick = { 
+                                        onSongClick(song, album.songs, "ALBUMS", album.id)
+                                        onNavigateToAlbum(album)
+                                    },
+                                    onOptionsClick = { onOptionsClick(song) },
+                                    onFavoriteClick = onFavoriteClick
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (filterFolders) {
+                    searchResults.tagResults.filterKeys { it != sTabFavorites }.forEach { (tagName, songs) ->
+                        if (songs.isNotEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = tagName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clickable { onNavigateToFolder(tagName) }
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .fillMaxWidth()
+                                )
+                            }
+                            itemsIndexed(songs) { index, song ->
+                                val isFirst = index == 0
+                                val isLast = index == songs.lastIndex
+                                val isCurrent = song.id == currentlyPlayingId && activeCategory == "FOLDERS"
+                                SongItem(
+                                    isFirst = isFirst,
+                                    isLast = isLast,
+                                    song = song,
+                                    currentlyPlaying = isCurrent,
+                                    isPlaying = isPlaying && isCurrent,
+                                    hasBlurBackground = blurColors.hasBlur,
+                                    useCustomControlsColor = blurColors.useCustomControlsColor,
+                                    controlsColorPalette = blurColors.controlsColorPalette,
+                                    onClick = {
+                                        onSongClick(song, songs, "FOLDERS", tagName.hashCode().toLong())
+                                        onNavigateToFolder(tagName)
+                                    },
+                                    onOptionsClick = { onOptionsClick(song) },
+                                    onFavoriteClick = onFavoriteClick
+                                )
+                            }
+                        } else {
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ListItem(
+                                    colors = ListItemDefaults.colors(
+                                        containerColor = Color.Transparent,
+                                        headlineColor = blurColors.textColor,
+                                        leadingIconColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                                    ),
+                                    leadingContent = { 
+                                        Icon(
+                                            Icons.Default.Folder, 
+                                            contentDescription = null, 
+                                            tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                                        ) 
+                                    },
+                                    modifier = Modifier.clickable { onNavigateToFolder(tagName) }
+                                ) {
+                                    Text(tagName, color = blurColors.textColor)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (query.isNotBlank() && (!filterSongs || searchResults.songs.isEmpty()) && (!filterPlaylists || searchResults.playlistResults.isEmpty()) && (!filterAlbums || searchResults.realAlbumResults.isEmpty()) && (!filterArtists || searchResults.albumResults.isEmpty()) && (!filterFolders || searchResults.tagResults.filterKeys { it != sTabFavorites }.all { (_, songs) -> songs.isEmpty() })) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text(text = "No results found", color = blurColors.textSecondaryColor)
+                        }
                     }
                 }
             }
@@ -676,67 +779,175 @@ fun SearchScreen(
         val isArtistsDisabled = sectionCustomizationEnabled && "ALBUMS" in hiddenTabs
         val isFoldersDisabled = sectionCustomizationEnabled && "FOLDERS" in hiddenTabs
 
-        val blurColors = rememberBlurSheetColors()
         val checkboxColors = CheckboxDefaults.colors(
             checkedColor = blurColors.primaryTint,
-            checkmarkColor = if (blurColors.hasBlur && blurColors.isDark) Color.Black else Color.White
-        )
-        AlertDialog(
-            onDismissRequest = { showFilterDialog = false },
-            containerColor = blurColors.containerColor,
-            shape = RoundedCornerShape(28.dp),
-            title = { Text(sFilterTitle, fontWeight = FontWeight.Bold, color = blurColors.textColor) },
-            text = {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterSongs, enabled = !isAllDisabled, onCheckedChange = { if (!isAllDisabled) filterSongs = it }, colors = checkboxColors)
-                        Spacer(Modifier.width(8.dp))
-                        Text(sFilterAll, modifier = Modifier.clickable { if (!isAllDisabled) filterSongs = !filterSongs }, color = if (isAllDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterPlaylists, enabled = !isPlaylistsDisabled, onCheckedChange = { if (!isPlaylistsDisabled) filterPlaylists = it }, colors = checkboxColors)
-                        Spacer(Modifier.width(8.dp))
-                        Text(sFilterPlaylist, modifier = Modifier.clickable { if (!isPlaylistsDisabled) filterPlaylists = !filterPlaylists }, color = if (isPlaylistsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterAlbums, enabled = !isAlbumsDisabled, onCheckedChange = { if (!isAlbumsDisabled) filterAlbums = it }, colors = checkboxColors)
-                        Spacer(Modifier.width(8.dp))
-                        Text(sFilterAlbum, modifier = Modifier.clickable { if (!isAlbumsDisabled) filterAlbums = !filterAlbums }, color = if (isAlbumsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterArtists, enabled = !isArtistsDisabled, onCheckedChange = { if (!isArtistsDisabled) filterArtists = it }, colors = checkboxColors)
-                        Spacer(Modifier.width(8.dp))
-                        Text(sFilterArtist, modifier = Modifier.clickable { if (!isArtistsDisabled) filterArtists = !filterArtists }, color = if (isArtistsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = filterFolders, enabled = !isFoldersDisabled, onCheckedChange = { if (!isFoldersDisabled) filterFolders = it }, colors = checkboxColors)
-                        Spacer(Modifier.width(8.dp))
-                        Text(sFilterFolder, modifier = Modifier.clickable { if (!isFoldersDisabled) filterFolders = !filterFolders }, color = if (isFoldersDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor)
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        filterSongs = true
-                        filterPlaylists = true
-                        filterAlbums = true
-                        filterArtists = true
-                        filterFolders = true
-                    },
-                    modifier = Modifier.bounceClick()
-                ) {
-                    Text(sFilterAll, color = blurColors.primaryTint, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showFilterDialog = false },
-                    modifier = Modifier.bounceClick()
-                ) {
-                    Text(sFilterCancel, color = blurColors.textSecondaryColor)
-                }
+            checkmarkColor = if (blurColors.hasBlur) {
+                if (blurColors.useCustomControlsColor) Color.White else Color.Black
+            } else {
+                MaterialTheme.colorScheme.onPrimary
             }
         )
+        Dialog(
+            onDismissRequest = { showFilterDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AppBlurBackdrop(
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark,
+                currentSong = currentSong,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Surface(
+                    color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Text(
+                            text = sFilterTitle,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(enabled = !isAllDisabled) { filterSongs = !filterSongs }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = filterSongs,
+                                    enabled = !isAllDisabled,
+                                    onCheckedChange = { if (!isAllDisabled) filterSongs = it },
+                                    colors = checkboxColors
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    sFilterAll,
+                                    color = if (isAllDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(enabled = !isPlaylistsDisabled) { filterPlaylists = !filterPlaylists }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = filterPlaylists,
+                                    enabled = !isPlaylistsDisabled,
+                                    onCheckedChange = { if (!isPlaylistsDisabled) filterPlaylists = it },
+                                    colors = checkboxColors
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    sFilterPlaylist,
+                                    color = if (isPlaylistsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(enabled = !isAlbumsDisabled) { filterAlbums = !filterAlbums }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = filterAlbums,
+                                    enabled = !isAlbumsDisabled,
+                                    onCheckedChange = { if (!isAlbumsDisabled) filterAlbums = it },
+                                    colors = checkboxColors
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    sFilterAlbum,
+                                    color = if (isAlbumsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(enabled = !isArtistsDisabled) { filterArtists = !filterArtists }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = filterArtists,
+                                    enabled = !isArtistsDisabled,
+                                    onCheckedChange = { if (!isArtistsDisabled) filterArtists = it },
+                                    colors = checkboxColors
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    sFilterArtist,
+                                    color = if (isArtistsDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(enabled = !isFoldersDisabled) { filterFolders = !filterFolders }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = filterFolders,
+                                    enabled = !isFoldersDisabled,
+                                    onCheckedChange = { if (!isFoldersDisabled) filterFolders = it },
+                                    colors = checkboxColors
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    sFilterFolder,
+                                    color = if (isFoldersDisabled) blurColors.textSecondaryColor.copy(alpha = 0.4f) else blurColors.textColor
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showFilterDialog = false },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(sFilterCancel, color = blurColors.textSecondaryColor)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    filterSongs = true
+                                    filterPlaylists = true
+                                    filterAlbums = true
+                                    filterArtists = true
+                                    filterFolders = true
+                                },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(sFilterAll, color = blurColors.primaryTint, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
