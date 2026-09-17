@@ -137,9 +137,8 @@ keyPassword=password
 1. **Clone the repository**:
 
 ```bash
-git clone [https://github.com/MrDemonc/Lune.git](https://github.com/MrDemonc/Lune.git)
+git clone https://github.com/MrDemonc/Lune.git
 cd Lune
-
 ```
 
 2. **Setup Environment**:
@@ -149,7 +148,6 @@ cd Lune
 
 ```bash
 ./gradlew assembleRelease
-
 ```
 
 The output APK will be available at: `app/build/outputs/apk/release/Lune-release.apk`
