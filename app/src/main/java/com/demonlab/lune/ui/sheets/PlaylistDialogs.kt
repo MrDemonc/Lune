@@ -31,6 +31,7 @@ import com.demonlab.lune.data.Playlist
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.tools.normalizeForSearch
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import com.demonlab.lune.ui.utils.bounceClick
@@ -86,9 +87,14 @@ fun AddSongsToPlaylistDialog(
 
     val filteredSongs = remember(searchQuery, sortedSongs) {
         if (searchQuery.isBlank()) sortedSongs
-        else sortedSongs.filter {
-            it.title.contains(searchQuery, ignoreCase = true) ||
-            it.artist.contains(searchQuery, ignoreCase = true)
+        else {
+            val normalizedQuery = searchQuery.normalizeForSearch()
+            val queryTerms = normalizedQuery.split(Regex("\\s+")).filter { it.isNotBlank() }
+            if (queryTerms.isEmpty()) sortedSongs
+            else sortedSongs.filter { song ->
+                val searchTarget = "${song.title} ${song.artist}".normalizeForSearch()
+                queryTerms.all { term -> searchTarget.contains(term) }
+            }
         }
     }
 

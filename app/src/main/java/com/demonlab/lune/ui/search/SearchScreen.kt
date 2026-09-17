@@ -33,6 +33,7 @@ import com.demonlab.lune.data.Playlist
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.tools.normalizeForSearch
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
@@ -155,20 +156,20 @@ fun SearchScreen(
     val searchResults = remember(query, allSongs, allAlbums, allRealAlbums, allPlaylists, allFolders, sTabFavorites, playlistMappings) {
         if (query.isBlank()) return@remember SearchResults(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap())
         
-        val searchTerms = query.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val normalizedQuery = query.normalizeForSearch()
+        val searchTerms = normalizedQuery.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (searchTerms.isEmpty()) return@remember SearchResults(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap())
         
         val matchedSongs = allSongs.filter { song ->
-            val searchTarget = "${song.title} ${song.artist} ${song.album}".lowercase()
+            val searchTarget = "${song.title} ${song.artist} ${song.album}".normalizeForSearch()
             searchTerms.all { term -> searchTarget.contains(term) }
         }
+        val matchedSongIds = matchedSongs.map { it.id }.toHashSet()
 
         val albumResults = mutableMapOf<Album, List<Song>>()
         allAlbums.forEach { album ->
-            val nameMatches = searchTerms.all { term -> album.name.lowercase().contains(term) }
-            val matchingSongs = album.songs.filter { song ->
-                val searchTarget = "${song.title} ${song.artist} ${song.album}".lowercase()
-                searchTerms.all { term -> searchTarget.contains(term) }
-            }
+            val nameMatches = searchTerms.all { term -> album.name.normalizeForSearch().contains(term) }
+            val matchingSongs = album.songs.filter { it.id in matchedSongIds }
             if (nameMatches || matchingSongs.isNotEmpty()) {
                 albumResults[album] = matchingSongs
             }
@@ -176,11 +177,8 @@ fun SearchScreen(
 
         val realAlbumResults = mutableMapOf<Album, List<Song>>()
         allRealAlbums.forEach { album ->
-            val nameMatches = searchTerms.all { term -> album.name.lowercase().contains(term) }
-            val matchingSongs = album.songs.filter { song ->
-                val searchTarget = "${song.title} ${song.artist} ${song.album}".lowercase()
-                searchTerms.all { term -> searchTarget.contains(term) }
-            }
+            val nameMatches = searchTerms.all { term -> album.name.normalizeForSearch().contains(term) }
+            val matchingSongs = album.songs.filter { it.id in matchedSongIds }
             if (nameMatches || matchingSongs.isNotEmpty()) {
                 realAlbumResults[album] = matchingSongs
             }
@@ -188,15 +186,12 @@ fun SearchScreen(
 
         val playlistResults = mutableMapOf<Playlist, List<Song>>()
         allPlaylists.forEach { playlist ->
-            val nameMatches = searchTerms.all { term -> playlist.name.lowercase().contains(term) }
+            val nameMatches = searchTerms.all { term -> playlist.name.normalizeForSearch().contains(term) }
             
             val playlistSongs = playlistMappings.filter { it.playlistId == playlist.id }
                 .mapNotNull { mapping -> allSongs.find { it.id == mapping.songId } }
                 
-            val matchingSongs = playlistSongs.filter { song ->
-                val searchTarget = "${song.title} ${song.artist} ${song.album}".lowercase()
-                searchTerms.all { term -> searchTarget.contains(term) }
-            }
+            val matchingSongs = playlistSongs.filter { it.id in matchedSongIds }
             
             if (nameMatches || matchingSongs.isNotEmpty()) {
                 playlistResults[playlist] = matchingSongs
@@ -212,12 +207,13 @@ fun SearchScreen(
         }
 
         allFolders.forEach { folder ->
-            if (folder.lowercase() == sTabFavorites.lowercase() || folder.lowercase() == "favorites" || folder.lowercase() == "favoritos") {
+            val normalizedFolder = folder.normalizeForSearch()
+            if (normalizedFolder == sTabFavorites.normalizeForSearch() || normalizedFolder == "favorites" || normalizedFolder == "favoritos") {
                 return@forEach
             }
-            val nameMatches = searchTerms.all { term -> folder.lowercase().contains(term) }
+            val nameMatches = searchTerms.all { term -> normalizedFolder.contains(term) }
             if (nameMatches) {
-                val folderSongs = allSongs.filter { it.folderName == folder && matchedSongs.contains(it) }
+                val folderSongs = allSongs.filter { it.folderName == folder && it.id in matchedSongIds }
                 tagResults[folder] = folderSongs
             }
         }
@@ -225,7 +221,7 @@ fun SearchScreen(
         matchedSongs.forEach { song ->
             val folder = song.folderName
             if (allFolders.contains(folder) && !tagResults.containsKey(folder)) {
-                val folderSongs = allSongs.filter { it.folderName == folder && matchedSongs.contains(it) }
+                val folderSongs = allSongs.filter { it.folderName == folder && it.id in matchedSongIds }
                 tagResults[folder] = folderSongs
             }
         }

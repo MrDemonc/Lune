@@ -4,8 +4,37 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
+import java.text.Normalizer
 
 object CharsetUtils {
+
+    private val COMBINING_MARKS_REGEX = Regex("[\\p{M}\\p{InCombiningDiacriticalMarks}]+")
+
+    /**
+     * Normaliza un texto para búsquedas insensibles a mayúsculas/minúsculas, acentos, diacríticos
+     * y ligaduras (ej. "Tiësto" -> "tiesto", "Mötley Crüe" -> "motley crue", "canción" -> "cancion").
+     */
+    fun normalizeForSearch(input: String?): String {
+        if (input.isNullOrBlank()) return ""
+        val sb = StringBuilder(input.length)
+        for (i in 0 until input.length) {
+            when (val c = input[i]) {
+                'ø', 'Ø' -> sb.append('o')
+                'æ', 'Æ' -> sb.append("ae")
+                'œ', 'Œ' -> sb.append("oe")
+                'ł', 'Ł' -> sb.append('l')
+                'đ', 'Đ' -> sb.append('d')
+                'ð', 'Ð' -> sb.append('d')
+                'þ', 'Þ' -> sb.append("th")
+                'ß' -> sb.append("ss")
+                'ı', 'İ' -> sb.append('i')
+                else -> sb.append(c)
+            }
+        }
+        val decomposed = Normalizer.normalize(sb.toString(), Normalizer.Form.NFKD)
+        val stripped = COMBINING_MARKS_REGEX.replace(decomposed, "")
+        return stripped.lowercase()
+    }
 
     private val GB18030_CHARSET by lazy {
         try {
@@ -148,3 +177,6 @@ object CharsetUtils {
         return text.contains("Ã") || text.contains("Â·") || text.contains("Â")
     }
 }
+
+fun String?.normalizeForSearch(): String = CharsetUtils.normalizeForSearch(this)
+
