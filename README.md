@@ -81,35 +81,35 @@ height="40">](https://f-droid.org/es/packages/com.demonlab.lune/)
 ## 📱 Screenshots
 
 <p align="center">
-  <img src="readme-res/1.png" width="140">
-  <img src="readme-res/2.png" width="140">
-  <img src="readme-res/3.png" width="140">
-  <img src="readme-res/4.png" width="140">
-  <img src="readme-res/5.png" width="140">
+  <img src="readme-res/1.jpg" width="140">
+  <img src="readme-res/2.jpg" width="140">
+  <img src="readme-res/3.jpg" width="140">
+  <img src="readme-res/4.jpg" width="140">
+  <img src="readme-res/5.jpg" width="140">
 </p>
 
 <p align="center">
-  <img src="readme-res/6.png" width="140">
-  <img src="readme-res/7.png" width="140">
-  <img src="readme-res/8.png" width="140">
-  <img src="readme-res/9.png" width="140">
-  <img src="readme-res/10.png" width="140">
+  <img src="readme-res/6.jpg" width="140">
+  <img src="readme-res/7.jpg" width="140">
+  <img src="readme-res/8.jpg" width="140">
+  <img src="readme-res/9.jpg" width="140">
+  <img src="readme-res/10.jpg" width="140">
 </p>
 
 <p align="center">
-  <img src="readme-res/11.png" width="140">
-  <img src="readme-res/12.png" width="140">
-  <img src="readme-res/13.png" width="140">
-  <img src="readme-res/14.png" width="140">
-  <img src="readme-res/15.png" width="140">
+  <img src="readme-res/11.jpg" width="140">
+  <img src="readme-res/12.jpg" width="140">
+  <img src="readme-res/13.jpg" width="140">
+  <img src="readme-res/14.jpg" width="140">
+  <img src="readme-res/15.jpg" width="140">
 </p>
 
 <p align="center">
-  <img src="readme-res/16.png" width="140">
-  <img src="readme-res/17.png" width="140">
-  <img src="readme-res/18.png" width="140">
-  <img src="readme-res/19.png" width="140">
-  <img src="readme-res/20.png" width="140">
+  <img src="readme-res/16.jpg" width="140">
+  <img src="readme-res/17.jpg" width="140">
+  <img src="readme-res/18.jpg" width="140">
+  <img src="readme-res/19.jpg" width="140">
+  <img src="readme-res/20.jpg" width="140">
 </p>
 
 ## 🛠 Build Requirements
@@ -165,7 +165,6 @@ The output APK will be available at: `app/build/outputs/apk/release/Lune-release
 
 ```text
 monero:88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9
-
 ```
 
 ## 🤝 Credits
