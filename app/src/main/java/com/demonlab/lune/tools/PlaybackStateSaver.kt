@@ -1,7 +1,9 @@
 package com.demonlab.lune.tools
 
 import android.content.SharedPreferences
+import android.net.Uri
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 
 data class SavedPlaybackState(
@@ -16,11 +18,14 @@ data class SavedPlaybackState(
     val frontQueueInsertCount: Int = 0,
     val wasPlaying: Boolean = false,
     val queueSections: List<QueuedSection> = emptyList(),
+    val savedSong: Song? = null,
 )
 
 class PlaybackStateSaver(private val prefs: SharedPreferences) {
 
-    private val gson = Gson()
+    private val gson: Gson = GsonBuilder()
+        .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
+        .create()
 
     fun save(state: SavedPlaybackState) {
         prefs.edit().putString(KEY_SAVED_STATE, gson.toJson(state)).apply()

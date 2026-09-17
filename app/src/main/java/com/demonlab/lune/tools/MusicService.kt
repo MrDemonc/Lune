@@ -349,6 +349,10 @@ class MusicService : MediaLibraryService() {
                 updatePlaybackState()
             }
             ACTION_UPDATE_WIDGET -> {
+                val pm = PlaybackManager.getInstance(this)
+                if (pm.currentSong == null && !pm.stateRestored) {
+                    pm.restorePlaybackState()
+                }
                 lastSongForRounded = null
                 lastSongForBlur = null
                 cachedRoundedArt = null
@@ -1028,9 +1032,27 @@ class MusicService : MediaLibraryService() {
         isNotificationDismissed = false
         pauseTimeoutJob?.cancel()
         requestAudioFocus()
+
+        val pm = PlaybackManager.getInstance(applicationContext)
+        if (mediaPlayer == null) {
+            if (pm.currentSong == null && !pm.stateRestored) {
+                pm.restorePlaybackState()
+            }
+            val song = pm.currentSong
+            if (song != null) {
+                val savedPos = pm.playbackStateSaver.restore()?.playbackPositionMs ?: 0L
+                restorePlayback(song, savedPos, andPlay = true)
+                return
+            } else {
+                pm.updatePlayingState(false)
+                updateWidget()
+                return
+            }
+        }
+
         mediaPlayer?.start()
         secondaryPlayer?.start()
-        PlaybackManager.getInstance(applicationContext).updatePlayingState(true)
+        pm.updatePlayingState(true)
         updatePlaybackState()
         startWidgetUpdateTimer()
         updateWidget()
@@ -1041,6 +1063,7 @@ class MusicService : MediaLibraryService() {
         }
     }
 
+    fun hasPlayer(): Boolean = mediaPlayer != null
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true || secondaryPlayer?.isPlaying == true
     fun currentPosition(): Int = mediaPlayer?.currentPosition ?: 0
     fun duration(): Int = mediaPlayer?.duration ?: 0
@@ -1120,13 +1143,18 @@ class MusicService : MediaLibraryService() {
                 seekTo(positionMs.toInt())
                 start()
                 if (!andPlay) pause()
+                pm.updatePlayingState(andPlay)
+                if (andPlay) {
+                    startWidgetUpdateTimer()
+                } else {
+                    stopWidgetUpdateTimer()
+                }
                 val sessionId = audioSessionId
                 setupAudioFx(sessionId, false)
                 setVolume(1f, 1f)
-                applyBalance(PlaybackManager.getInstance(applicationContext).balance)
+                applyBalance(pm.balance)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try {
-                        val pm = PlaybackManager.getInstance(applicationContext)
                         val speed = pm.playbackSpeed
                         val pitch = pm.playbackPitch
                         if (speed != 1.0f || pitch != 1.0f) {
@@ -1142,8 +1170,9 @@ class MusicService : MediaLibraryService() {
                     val art = fetchAlbumArt(song)
                     updateMetadata(song, art)
                     showNotification(song, andPlay, art)
-                    PlaybackManager.getInstance(applicationContext).clearLyrics()
+                    pm.clearLyrics()
                     extractLyrics(song)
+                    updateWidget()
                 }
             }
             setOnErrorListener { _, _, _ -> true }
@@ -1593,6 +1622,10 @@ class MusicService : MediaLibraryService() {
     }
 
     private fun updateWidget() {
+        val pm = PlaybackManager.getInstance(applicationContext)
+        if (pm.currentSong == null && !pm.stateRestored) {
+            pm.restorePlaybackState()
+        }
         val song = currentSong()
         val isPlaying = isPlaying()
 
@@ -1725,10 +1758,7 @@ class MusicService : MediaLibraryService() {
     }
 
     private fun getWidgetServicePendingIntent(action: String): PendingIntent {
-        val intent = Intent(this, MusicService::class.java).apply {
-            this.action = action
-        }
-        return PendingIntent.getService(this, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+        return LuneWidgetProvider.getServicePendingIntent(this, action)
     }
 
     private fun getOutputIconRes(): Int {

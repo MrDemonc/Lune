@@ -102,8 +102,9 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun savePlaybackState(wasPlaying: Boolean = isPlaying) {
+        val current = currentSong ?: return
         val pos = musicService?.currentPosition()?.toLong() ?: 0L
-        val currentId = currentSong?.id ?: -1L
+        val currentId = current.id
         val qIds = activePlaylist.map { it.id }
         val pId = activePlaylistId
         val pName = activePlaylistName
@@ -126,35 +127,48 @@ class PlaybackManager private constructor(private val context: Context) {
                     shufflePosition = sPos,
                     frontQueueInsertCount = fCount,
                     wasPlaying = wasPlaying,
-                    queueSections = qSec
+                    queueSections = qSec,
+                    savedSong = current
                 )
             )
         }
     }
 
-    fun restorePlaybackState(songs: List<Song>) {
+    fun restorePlaybackState(songs: List<Song> = emptyList()) {
         val saved = playbackStateSaver.restore() ?: run {
             stateRestored = true
             return
         }
-        if (saved.currentSongId == -1L || saved.queueIds.isEmpty()) {
+        if (saved.currentSongId == -1L && saved.savedSong == null) {
             stateRestored = true
             return
         }
-        val restoredSongs = saved.queueIds.mapNotNull { id -> songs.find { it.id == id } }
-        if (restoredSongs.isEmpty()) {
+        val songPool = if (songs.isNotEmpty()) songs else MusicProvider(context).getCachedSongs()
+        val restoredSongs = if (songPool.isNotEmpty()) {
+            saved.queueIds.mapNotNull { id -> songPool.find { it.id == id } }
+        } else emptyList()
+
+        val restoredCurrent = (if (songPool.isNotEmpty()) songPool.find { it.id == saved.currentSongId } else null)
+            ?: saved.savedSong
+            ?: restoredSongs.firstOrNull()
+
+        if (restoredCurrent == null) {
             stateRestored = true
             return
         }
-        val restoredCurrent = restoredSongs.find { it.id == saved.currentSongId }
-            ?: restoredSongs.first()
+
+        val finalQueue = if (restoredSongs.isNotEmpty()) {
+            restoredSongs
+        } else {
+            listOf(restoredCurrent)
+        }
 
         // Read shuffle preference for this playlist
         val plId = saved.playlistId
         val shuffle = if (plId != null) settings.getPlaylistShuffle(plId) else settings.isShuffle
 
         currentSong = restoredCurrent
-        activePlaylist = restoredSongs
+        activePlaylist = finalQueue
         activePlaylistId = saved.playlistId
         activePlaylistName = saved.playlistName
         queueSections = saved.queueSections
@@ -167,7 +181,7 @@ class PlaybackManager private constructor(private val context: Context) {
 
         if (shuffle && saved.shuffledIndices.isNotEmpty()) {
             // Validate and restore shuffled indices
-            val validIndices = saved.shuffledIndices.filter { it < restoredSongs.size }
+            val validIndices = saved.shuffledIndices.filter { it < finalQueue.size }
             if (validIndices.isNotEmpty()) {
                 shuffledIndices = validIndices
                 currentShufflePosition = saved.shufflePosition.coerceIn(0, validIndices.size - 1)
@@ -180,7 +194,13 @@ class PlaybackManager private constructor(private val context: Context) {
 
         frontQueueInsertCount = saved.frontQueueInsertCount
         isQueueFinished = false
+        isPlaying = false
         stateRestored = true
+
+        // If music is already playing in service, do NOT disrupt it
+        if (musicService?.isPlaying() == true || musicService?.hasPlayer() == true) {
+            return
+        }
 
         // Restore playback position (always paused — user taps play to resume)
         if (musicService != null) {
@@ -586,6 +606,9 @@ class PlaybackManager private constructor(private val context: Context) {
 
 
     fun playNextFromService(isNaturalEnd: Boolean = false, startPlayback: Boolean = true) {
+        if (activePlaylist.isEmpty() && !stateRestored) {
+            restorePlaybackState()
+        }
         if (activePlaylist.isEmpty()) return
         if (frontQueueInsertCount > 0) {
             frontQueueInsertCount--
@@ -648,6 +671,9 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun playPreviousFromService() {
+        if (activePlaylist.isEmpty() && !stateRestored) {
+            restorePlaybackState()
+        }
         if (activePlaylist.isEmpty()) return
         
         // Spotify-style: if > 3s into song, restart it; otherwise go to previous

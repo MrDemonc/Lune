@@ -313,8 +313,12 @@ class Lune : AppCompatActivity() {
 
             // Restore playback state once songs are loaded
             LaunchedEffect(musicViewModel.allSongs) {
-                if (musicViewModel.allSongs.isNotEmpty() && !playbackManager.stateRestored) {
-                    playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                if (musicViewModel.allSongs.isNotEmpty()) {
+                    if (!playbackManager.stateRestored) {
+                        playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                    } else if (playbackManager.activePlaylist.size <= 1 && playbackManager.currentSong != null) {
+                        playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                    }
                 }
             }
 
