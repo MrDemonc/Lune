@@ -401,6 +401,8 @@
     <string name="no_songs_folder">هیچ آهنگی تو این پوشه نیست حاجی</string>
     <string name="show_hero_section">نشون دادن کارت خوش‌آمدگویی</string>
     <string name="show_hero_section_desc">وقتی وارد اپ میشی آمار گوش دادنات رو بهت نشون بده</string>
+    <string name="show_ai_section">نمایش بخش هوش مصنوعی</string>
+    <string name="show_ai_section_desc">نمایش تب میکس‌ها و پیشنهادات هوشمند هوش مصنوعی</string>
     <string name="seamless_looping">تکرار بدون وقفه</string>
     <string name="seamless_looping_desc">پخش مجدد آهنگ‌های تکرار شونده بدون مکث یا سکوت</string>
     <string name="sort_custom">ترتیب دستی</string>

@@ -394,6 +394,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("use_amoled_pitch_black", false)
         set(value) = prefs.edit().putBoolean("use_amoled_pitch_black", value).apply()
 
+    var showAiSection: Boolean
+        get() = prefs.getBoolean("show_ai_section", true)
+        set(value) = prefs.edit().putBoolean("show_ai_section", value).apply()
+
     var showHeroSection: Boolean
         get() = prefs.getBoolean("show_hero_section", true)
         set(value) = prefs.edit().putBoolean("show_hero_section", value).apply()

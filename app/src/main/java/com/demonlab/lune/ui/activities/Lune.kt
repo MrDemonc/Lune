@@ -267,6 +267,7 @@ class Lune : AppCompatActivity() {
             var useAmoledPitchBlack by remember { mutableStateOf(settingsManager.useAmoledPitchBlack) }
             var isSectionCustomizationEnabled by remember { mutableStateOf(settingsManager.isSectionCustomizationEnabled) }
             var hiddenSectionTabs by remember { mutableStateOf(settingsManager.hiddenSectionTabs) }
+            var showAiSection by remember { mutableStateOf(settingsManager.showAiSection) }
             var keepScreenOn by remember { mutableStateOf(settingsManager.keepScreenOn) }
 
             LaunchedEffect(keepScreenOn) {
@@ -419,6 +420,7 @@ class Lune : AppCompatActivity() {
                         controlsColorPalette = settingsManager.controlsColorPalette
                         isSectionCustomizationEnabled = settingsManager.isSectionCustomizationEnabled
                         hiddenSectionTabs = settingsManager.hiddenSectionTabs
+                        showAiSection = settingsManager.showAiSection
                         keepScreenOn = settingsManager.keepScreenOn
                         if (hasPermission) {
                             musicViewModel.loadSongs()
@@ -470,9 +472,12 @@ class Lune : AppCompatActivity() {
             val visibleFolders = remember(allFolders, hiddenFolders.value) {
                 allFolders.filter { !hiddenFolders.value.contains(it) }
             }
-            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs) {
+            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs, showAiSection) {
                 val hasFavorites = rawAllSongs.any { it.isFavorite }
-                val base = mutableListOf("RESUME", "MIXES", "ALL", "PLAYLISTS")
+                val base = mutableListOf("RESUME")
+                if (showAiSection) base.add("MIXES")
+                base.add("ALL")
+                base.add("PLAYLISTS")
                 if (hasFavorites) base.add("FAVORITES")
                 base.add("ALBUMS")
                 base.add("ARTISTS")

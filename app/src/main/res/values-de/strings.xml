@@ -402,6 +402,8 @@
     <string name="no_songs_folder">Keine Songs in diesem Ordner gefunden</string>
     <string name="show_hero_section">Begrüßungskarte anzeigen</string>
     <string name="show_hero_section_desc">Begrüßungs- und Statistikkarte im Startbildschirm anzeigen</string>
+    <string name="show_ai_section">KI-Bereich anzeigen</string>
+    <string name="show_ai_section_desc">Tab für KI-Mixe und intelligente Empfehlungen anzeigen</string>
     <string name="seamless_looping">Nahtloses Wiederholen</string>
     <string name="seamless_looping_desc">Wiederhole Titel sofort ohne Pausen oder Stille</string>
     <string name="sort_custom">Benutzerdefinierte Reihenfolge</string>

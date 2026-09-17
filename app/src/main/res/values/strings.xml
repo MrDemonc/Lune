@@ -405,6 +405,8 @@
     <string name="no_songs_folder">No songs found in this folder</string>
     <string name="show_hero_section">Show Greeting Card</string>
     <string name="show_hero_section_desc">Display the greeting and statistics card in the Resume screen</string>
+    <string name="show_ai_section">Show AI Section</string>
+    <string name="show_ai_section_desc">Display the AI mixes and smart recommendations tab</string>
     <string name="seamless_looping">Seamless Looping</string>
     <string name="seamless_looping_desc">Replay looped tracks instantly without gaps or silence</string>
     <string name="sort_custom">Custom Order</string>

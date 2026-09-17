@@ -475,6 +475,30 @@ fun CustomizationScreen(
                     }
                 )
 
+                var showAiSection by remember { mutableStateOf(settingsManager.showAiSection) }
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.show_ai_section),
+                    supportingText = stringResource(R.string.show_ai_section_desc),
+                    icon = Icons.Default.AutoAwesome,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = showAiSection,
+                            onCheckedChange = { enabled ->
+                                showAiSection = enabled
+                                settingsManager.showAiSection = enabled
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (showAiSection) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+
                 var showHeroSection by remember { mutableStateOf(settingsManager.showHeroSection) }
                 SettingsPreferenceItem(
                     headlineText = stringResource(R.string.show_hero_section),

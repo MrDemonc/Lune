@@ -405,6 +405,8 @@
     <string name="no_songs_folder">В этой папке нет песен</string>
     <string name="show_hero_section">Показывать карточку приветствия</string>
     <string name="show_hero_section_desc">Отображать карточку приветствия и статистики на главном экране</string>
+    <string name="show_ai_section">Показывать раздел AI</string>
+    <string name="show_ai_section_desc">Отображать вкладку AI миксов и умных рекомендаций</string>
     <string name="seamless_looping">Бесшовный повтор</string>
     <string name="seamless_looping_desc">Мгновенный повтор трека без пауз и тишины</string>
     <string name="sort_custom">Свой порядок</string>
