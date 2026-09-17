@@ -1090,7 +1090,7 @@ fun FullPlayer(
                                     ) {
                                         IconButton(
                                             onClick = onShowLyrics,
-                                            enabled = hasLyrics
+                                            enabled = true
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Lyrics,

@@ -427,4 +427,33 @@
     <string name="widget_circular_cover_desc">استخدام تصميم دائري للغلاف الرئيسي</string>
     <string name="widget_vinyl_cover">تأثير الفينيل</string>
     <string name="widget_vinyl_cover_desc">عرض الغلاف كأسطوانة فينيل كلاسيكية</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">تشغيل سريع</string>
+    <string name="open_in_lune">فتح في Lune</string>
+    <string name="close">إغلاق</string>
+    <string name="cd_open_in_lune">فتح في Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">تعديل الكلمات</string>
+    <string name="lyrics_editor">محرر الكلمات</string>
+    <string name="tab_text_lrc">نص / LRC</string>
+    <string name="tab_sync">مزامنة مباشرة</string>
+    <string name="paste_clipboard">لصق</string>
+    <string name="clear_lyrics">مسح</string>
+    <string name="strip_timestamps">إزالة الطوابع الزمنية</string>
+    <string name="import_lrc_file">استيراد .lrc</string>
+    <string name="export_lrc_file">تصدير .lrc</string>
+    <string name="lyrics_saved">تم حفظ الكلمات بنجاح</string>
+    <string name="lyrics_deleted">تمت إزالة الكلمات المخصصة</string>
+    <string name="delete_custom_lyrics">حذف الكلمات المخصصة</string>
+    <string name="sync_tap_button">تحديد الوقت</string>
+    <string name="sync_instruction">اضغط على الزر عند غناء كل سطر لتسجيل التوقيت</string>
+    <string name="sync_reset">إعادة تعيين المزامنة</string>
+    <string name="add_lyrics">إضافة كلمات</string>
+    <string name="no_lyrics_title">لم يتم العثور على كلمات</string>
+    <string name="no_lyrics_subtitle">يمكنك كتابة أو مزامنة الكلمات لهذا المقطع</string>
+    <string name="auto_sync_backup">مزامنة النسخ الاحتياطي تلقائياً</string>
+    <string name="auto_sync_backup_desc">تحديث النسخة الاحتياطية المصدرة تلقائياً عند تغيير القوائم أو الكلمات</string>
+    <string name="auto_sync_requires_export">قم بتصدير نسخة احتياطية أولاً لتفعيل المزامنة التلقائية</string>
 </resources>

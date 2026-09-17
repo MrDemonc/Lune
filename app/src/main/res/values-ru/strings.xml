@@ -429,4 +429,33 @@
     <string name="widget_circular_cover_desc">Использовать круглую форму для главной обложки</string>
     <string name="widget_vinyl_cover">Эффект винила</string>
     <string name="widget_vinyl_cover_desc">Отображать обложку в виде виниловой пластинки</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Быстрое воспроизведение</string>
+    <string name="open_in_lune">Открыть в Lune</string>
+    <string name="close">Закрыть</string>
+    <string name="cd_open_in_lune">Открыть в Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Редактировать текст</string>
+    <string name="lyrics_editor">Редактор текста</string>
+    <string name="tab_text_lrc">Текст / LRC</string>
+    <string name="tab_sync">Синхронизация</string>
+    <string name="paste_clipboard">Вставить</string>
+    <string name="clear_lyrics">Очистить</string>
+    <string name="strip_timestamps">Удалить таймкоды</string>
+    <string name="import_lrc_file">Импорт .lrc</string>
+    <string name="export_lrc_file">Экспорт .lrc</string>
+    <string name="lyrics_saved">Текст успешно сохранён</string>
+    <string name="lyrics_deleted">Пользовательский текст удалён</string>
+    <string name="delete_custom_lyrics">Удалить пользовательский текст</string>
+    <string name="sync_tap_button">Отметить время</string>
+    <string name="sync_instruction">Нажимайте кнопку в такт пению для записи тайминга</string>
+    <string name="sync_reset">Сбросить синхронизацию</string>
+    <string name="add_lyrics">Добавить текст</string>
+    <string name="no_lyrics_title">Текст песни не найден</string>
+    <string name="no_lyrics_subtitle">Вы можете написать или синхронизировать текст для этого трека</string>
+    <string name="auto_sync_backup">Автосинхронизация резервной копии</string>
+    <string name="auto_sync_backup_desc">Автоматически обновлять экспортированную копию при изменении плейлистов или текстов</string>
+    <string name="auto_sync_requires_export">Сначала экспортируйте резервную копию для включения автосинхронизации</string>
 </resources>

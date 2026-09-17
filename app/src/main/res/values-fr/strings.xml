@@ -429,4 +429,33 @@
     <string name="widget_circular_cover_desc">Utiliser un design circulaire pour la pochette principale</string>
     <string name="widget_vinyl_cover">Effet vinyle</string>
     <string name="widget_vinyl_cover_desc">Afficher la pochette sous forme de disque vinyle classique</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Lecture rapide</string>
+    <string name="open_in_lune">Ouvrir dans Lune</string>
+    <string name="close">Fermer</string>
+    <string name="cd_open_in_lune">Ouvrir dans Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Modifier les paroles</string>
+    <string name="lyrics_editor">Éditeur de paroles</string>
+    <string name="tab_text_lrc">Texte / LRC</string>
+    <string name="tab_sync">Synchro en direct</string>
+    <string name="paste_clipboard">Coller</string>
+    <string name="clear_lyrics">Effacer</string>
+    <string name="strip_timestamps">Supprimer les horodatages</string>
+    <string name="import_lrc_file">Importer .lrc</string>
+    <string name="export_lrc_file">Exporter .lrc</string>
+    <string name="lyrics_saved">Paroles enregistrées avec succès</string>
+    <string name="lyrics_deleted">Paroles personnalisées supprimées</string>
+    <string name="delete_custom_lyrics">Supprimer les paroles personnalisées</string>
+    <string name="sync_tap_button">Marquer le temps</string>
+    <string name="sync_instruction">Appuyez sur le bouton quand chaque ligne est chantée</string>
+    <string name="sync_reset">Réinitialiser la synchronisation</string>
+    <string name="add_lyrics">Ajouter des paroles</string>
+    <string name="no_lyrics_title">Aucune parole trouvée</string>
+    <string name="no_lyrics_subtitle">Vous pouvez écrire ou synchroniser les paroles pour cette piste</string>
+    <string name="auto_sync_backup">Sauvegarde synchronisée automatiquement</string>
+    <string name="auto_sync_backup_desc">Met à jour automatiquement la sauvegarde exportée lors de modifications</string>
+    <string name="auto_sync_requires_export">Exportez d\'abord une sauvegarde pour activer la synchronisation automatique</string>
 </resources>

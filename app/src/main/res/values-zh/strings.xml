@@ -426,4 +426,33 @@
     <string name="widget_circular_cover_desc">为主封面使用圆形设计</string>
     <string name="widget_vinyl_cover">黑胶唱片效果</string>
     <string name="widget_vinyl_cover_desc">将封面显示为经典黑胶唱片</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">快捷播放</string>
+    <string name="open_in_lune">在 Lune 中打开</string>
+    <string name="close">关闭</string>
+    <string name="cd_open_in_lune">在 Lune 中打开</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">编辑歌词</string>
+    <string name="lyrics_editor">歌词编辑器</string>
+    <string name="tab_text_lrc">文本 / LRC</string>
+    <string name="tab_sync">实时同步</string>
+    <string name="paste_clipboard">粘贴</string>
+    <string name="clear_lyrics">清空</string>
+    <string name="strip_timestamps">清除时间戳</string>
+    <string name="import_lrc_file">导入 .lrc</string>
+    <string name="export_lrc_file">导出 .lrc</string>
+    <string name="lyrics_saved">歌词保存成功</string>
+    <string name="lyrics_deleted">自定义歌词已删除</string>
+    <string name="delete_custom_lyrics">删除自定义歌词</string>
+    <string name="sync_tap_button">打点时间</string>
+    <string name="sync_instruction">唱到每一句时点击按钮记录时间</string>
+    <string name="sync_reset">重置同步</string>
+    <string name="add_lyrics">添加歌词</string>
+    <string name="no_lyrics_title">未找到歌词</string>
+    <string name="no_lyrics_subtitle">您可以为此曲目编写或同步歌词</string>
+    <string name="auto_sync_backup">自动同步备份</string>
+    <string name="auto_sync_backup_desc">播放列表或歌词更改时自动更新已导出的备份</string>
+    <string name="auto_sync_requires_export">请先导出备份以启用自动同步</string>
 </resources>

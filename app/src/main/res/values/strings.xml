@@ -435,4 +435,27 @@
     <string name="open_in_lune">Open in Lune</string>
     <string name="close">Close</string>
     <string name="cd_open_in_lune">Open in Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Edit Lyrics</string>
+    <string name="lyrics_editor">Lyrics Editor</string>
+    <string name="tab_text_lrc">Text / LRC</string>
+    <string name="tab_sync">Live Sync</string>
+    <string name="paste_clipboard">Paste</string>
+    <string name="clear_lyrics">Clear</string>
+    <string name="strip_timestamps">Remove timestamps</string>
+    <string name="import_lrc_file">Import .lrc</string>
+    <string name="export_lrc_file">Export .lrc</string>
+    <string name="lyrics_saved">Lyrics saved successfully</string>
+    <string name="lyrics_deleted">Custom lyrics removed</string>
+    <string name="delete_custom_lyrics">Delete custom lyrics</string>
+    <string name="sync_tap_button">Stamp time</string>
+    <string name="sync_instruction">Tap the button as each line is sung to record timing</string>
+    <string name="sync_reset">Reset sync</string>
+    <string name="add_lyrics">Add Lyrics</string>
+    <string name="no_lyrics_title">No lyrics found</string>
+    <string name="no_lyrics_subtitle">You can write or sync lyrics for this track</string>
+    <string name="auto_sync_backup">Auto-sync backup</string>
+    <string name="auto_sync_backup_desc">Automatically update the exported backup when playlists or lyrics change</string>
+    <string name="auto_sync_requires_export">Export a backup first to enable auto-sync</string>
 </resources>

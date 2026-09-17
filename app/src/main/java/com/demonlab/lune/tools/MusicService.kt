@@ -1194,6 +1194,16 @@ class MusicService : MediaLibraryService() {
                 playbackManager.updateLyrics(null)
             }
 
+            // 0. Check custom lyrics saved by user
+            val customLyrics = LyricsStorageManager.getInstance(applicationContext).getCustomLyrics(song)
+            if (!customLyrics.isNullOrBlank()) {
+                Log.d("MusicService", "Found custom user lyrics for: ${song.title}")
+                withContext(Dispatchers.Main) {
+                    playbackManager.updateLyrics(customLyrics)
+                }
+                return@launch
+            }
+
             // 1. Try to find a .lrc file in the same directory, subdirectories or Music/Lyrics
             val songFile = File(song.path)
             val parentDir = songFile.parentFile

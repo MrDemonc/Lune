@@ -7,13 +7,16 @@ import com.demonlab.lune.data.PlaylistSong
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.io.OutputStream
 
 data class PlaylistExportData(
-    val version: Int = 1,
+    val version: Int = 2,
     val playlists: List<PlaylistData>,
+    val lyrics: List<LyricBackupItem> = emptyList(),
 )
 
 data class PlaylistData(
@@ -30,7 +33,7 @@ data class SongMetadata(
 
 private val gson: Gson = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
 
-class PlaylistBackupManager(context: Context) {
+class PlaylistBackupManager(private val context: Context) {
 
     private val dao = MusicDatabase.getDatabase(context).playlistDao()
     private val musicProvider = MusicProvider(context)
@@ -41,7 +44,11 @@ class PlaylistBackupManager(context: Context) {
                 .ifEmpty { musicProvider.syncSongs() }
                 .associateBy { it.id }
 
+            val lyricsStorage = LyricsStorageManager.getInstance(context)
+            val customLyrics = lyricsStorage.getAllCustomLyrics()
+
             val exportData = PlaylistExportData(
+                version = 2,
                 playlists = dao.getAllPlaylists().map { playlist ->
                     PlaylistData(
                         name = playlist.name,
@@ -50,6 +57,7 @@ class PlaylistBackupManager(context: Context) {
                         },
                     )
                 },
+                lyrics = customLyrics,
             )
 
             outputStream.bufferedWriter().use { it.write(gson.toJson(exportData)) }
@@ -81,6 +89,32 @@ class PlaylistBackupManager(context: Context) {
 
                 if (songsToAdd.isNotEmpty()) dao.addSongsToPlaylist(songsToAdd)
             }
+
+            if (!exportData.lyrics.isNullOrEmpty()) {
+                val lyricsStorage = LyricsStorageManager.getInstance(context)
+                lyricsStorage.restoreCustomLyrics(exportData.lyrics, allSongs)
+            }
         }.isSuccess
+    }
+
+    suspend fun syncBackupIfNeeded(): Boolean = withContext(Dispatchers.IO) {
+        val settings = SettingsManager.getInstance(context)
+        if (!settings.isAutoSyncBackupEnabled) return@withContext false
+        val uriString = settings.autoSyncBackupUri ?: return@withContext false
+        try {
+            val uri = android.net.Uri.parse(uriString)
+            context.contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
+                exportPlaylists(outputStream)
+            } ?: false
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun triggerAutoSync() {
+        CoroutineScope(Dispatchers.IO).launch {
+            syncBackupIfNeeded()
+        }
     }
 }

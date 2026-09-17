@@ -203,7 +203,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             loadPlaylists()
+            notifyPlaylistsChanged()
         }
+    }
+
+    private fun notifyPlaylistsChanged() {
+        com.demonlab.lune.tools.PlaylistBackupManager(getApplication()).triggerAutoSync()
     }
 
     private suspend fun awaitLoadPlaylists() {
@@ -225,6 +230,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             awaitLoadPlaylists()
+            notifyPlaylistsChanged()
             onComplete?.invoke()
         }
     }
@@ -240,6 +246,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 db.playlistDao().addSongsToPlaylist(playlistSongs)
             }
             awaitLoadPlaylists()
+            notifyPlaylistsChanged()
             onComplete?.invoke()
         }
     }
@@ -260,6 +267,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             awaitLoadPlaylists()
+            notifyPlaylistsChanged()
         }
     }
 
@@ -278,6 +286,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             awaitLoadPlaylists()
+            notifyPlaylistsChanged()
         }
     }
 
@@ -288,6 +297,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 db.playlistDao().removeSongsFromPlaylist(playlistId, songIds)
             }
             awaitLoadPlaylists()
+            notifyPlaylistsChanged()
             onComplete?.invoke()
         }
     }
@@ -298,6 +308,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().removeSongFromPlaylist(playlistId, songId)
             }
             awaitLoadPlaylists()
+            notifyPlaylistsChanged()
             onComplete?.invoke()
         }
     }
@@ -344,6 +355,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().deletePlaylist(playlist)
             }
             loadPlaylists()
+            notifyPlaylistsChanged()
             onComplete?.invoke()
         }
     }
@@ -358,6 +370,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             loadPlaylists()
+            notifyPlaylistsChanged()
             onComplete?.invoke()
         }
     }

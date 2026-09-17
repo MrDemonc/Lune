@@ -123,11 +123,21 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val backupManager = remember { PlaylistBackupManager(context) }
     val musicProvider = remember { MusicProvider(context) }
+    var autoSyncBackupUri by remember { mutableStateOf(settingsManager.autoSyncBackupUri) }
+    var isAutoSyncEnabled by remember { mutableStateOf(settingsManager.isAutoSyncBackupEnabled) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
         uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: Exception) {}
+            settingsManager.autoSyncBackupUri = it.toString()
+            autoSyncBackupUri = it.toString()
             scope.launch {
                 context.contentResolver.openOutputStream(it)?.use { outputStream ->
                     val success = backupManager.exportPlaylists(outputStream)
@@ -404,8 +414,39 @@ fun SettingsScreen(
                         headlineText = stringResource(R.string.import_playlists),
                         supportingText = stringResource(R.string.import_playlists_desc),
                         icon = Icons.Default.Refresh,
-                        position = SectionPosition.LAST,
+                        position = SectionPosition.MIDDLE,
                         onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
+                    )
+                    val hasExportDestination = !autoSyncBackupUri.isNullOrBlank()
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.auto_sync_backup),
+                        supportingText = if (hasExportDestination) {
+                            stringResource(R.string.auto_sync_backup_desc)
+                        } else {
+                            stringResource(R.string.auto_sync_requires_export)
+                        },
+                        icon = Icons.Default.Sync,
+                        position = SectionPosition.LAST,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = isAutoSyncEnabled && hasExportDestination,
+                                enabled = hasExportDestination,
+                                onCheckedChange = { enabled ->
+                                    isAutoSyncEnabled = enabled
+                                    settingsManager.isAutoSyncBackupEnabled = enabled
+                                    if (enabled) {
+                                        backupManager.triggerAutoSync()
+                                    }
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isAutoSyncEnabled && hasExportDestination) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
                     )
                 }
 

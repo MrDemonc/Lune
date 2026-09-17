@@ -436,4 +436,27 @@
     <string name="open_in_lune">Abrir en Lune</string>
     <string name="close">Cerrar</string>
     <string name="cd_open_in_lune">Abrir en Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Editar letra</string>
+    <string name="lyrics_editor">Editor de letras</string>
+    <string name="tab_text_lrc">Texto / LRC</string>
+    <string name="tab_sync">Sincronizador</string>
+    <string name="paste_clipboard">Pegar</string>
+    <string name="clear_lyrics">Limpiar</string>
+    <string name="strip_timestamps">Quitar tiempos</string>
+    <string name="import_lrc_file">Importar .lrc</string>
+    <string name="export_lrc_file">Exportar .lrc</string>
+    <string name="lyrics_saved">Letras guardadas correctamente</string>
+    <string name="lyrics_deleted">Letras personalizadas eliminadas</string>
+    <string name="delete_custom_lyrics">Eliminar letra personalizada</string>
+    <string name="sync_tap_button">Marcar tiempo</string>
+    <string name="sync_instruction">Toca el botón cuando suene cada verso para marcar el tiempo</string>
+    <string name="sync_reset">Reiniciar sincronización</string>
+    <string name="add_lyrics">Agregar letra</string>
+    <string name="no_lyrics_title">No se encontraron letras</string>
+    <string name="no_lyrics_subtitle">Puedes escribir o sincronizar letras para esta canción</string>
+    <string name="auto_sync_backup">Sincronización automática de respaldo</string>
+    <string name="auto_sync_backup_desc">Actualiza automáticamente el respaldo cuando cambien tus listas o letras</string>
+    <string name="auto_sync_requires_export">Exporta un respaldo primero para activar la sincronización</string>
 </resources>

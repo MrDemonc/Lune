@@ -1524,16 +1524,45 @@ fun BouncySwitch(
     val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
 
     val switchColors = colors ?: if (hasBlurBackground) {
-        SwitchDefaults.colors(
-            checkedThumbColor = Color.Black,
-            checkedTrackColor = Color.White,
-            checkedBorderColor = Color.White,
-            checkedIconColor = Color.White,
-            uncheckedThumbColor = Color.White.copy(alpha = 0.85f),
-            uncheckedTrackColor = Color.White.copy(alpha = 0.15f),
-            uncheckedBorderColor = Color.White.copy(alpha = 0.35f),
-            uncheckedIconColor = Color.Black
-        )
+        if (isDarkTheme) {
+            SwitchDefaults.colors(
+                checkedThumbColor = Color.Black,
+                checkedTrackColor = Color.White,
+                checkedBorderColor = Color.White,
+                checkedIconColor = Color.White,
+                uncheckedThumbColor = Color.White.copy(alpha = 0.85f),
+                uncheckedTrackColor = Color.White.copy(alpha = 0.15f),
+                uncheckedBorderColor = Color.White.copy(alpha = 0.35f),
+                uncheckedIconColor = Color.Black,
+                disabledCheckedThumbColor = Color.Black.copy(alpha = 0.4f),
+                disabledCheckedTrackColor = Color.White.copy(alpha = 0.25f),
+                disabledCheckedBorderColor = Color.White.copy(alpha = 0.25f),
+                disabledCheckedIconColor = Color.White.copy(alpha = 0.4f),
+                disabledUncheckedThumbColor = Color.White.copy(alpha = 0.35f),
+                disabledUncheckedTrackColor = Color.White.copy(alpha = 0.08f),
+                disabledUncheckedBorderColor = Color.White.copy(alpha = 0.15f),
+                disabledUncheckedIconColor = Color.Black.copy(alpha = 0.3f)
+            )
+        } else {
+            SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color.Black,
+                checkedBorderColor = Color.Black,
+                checkedIconColor = Color.Black,
+                uncheckedThumbColor = Color.Black.copy(alpha = 0.85f),
+                uncheckedTrackColor = Color.Black.copy(alpha = 0.15f),
+                uncheckedBorderColor = Color.Black.copy(alpha = 0.35f),
+                uncheckedIconColor = Color.White,
+                disabledCheckedThumbColor = Color.White.copy(alpha = 0.4f),
+                disabledCheckedTrackColor = Color.Black.copy(alpha = 0.25f),
+                disabledCheckedBorderColor = Color.Black.copy(alpha = 0.25f),
+                disabledCheckedIconColor = Color.Black.copy(alpha = 0.4f),
+                disabledUncheckedThumbColor = Color.Black.copy(alpha = 0.35f),
+                disabledUncheckedTrackColor = Color.Black.copy(alpha = 0.08f),
+                disabledUncheckedBorderColor = Color.Black.copy(alpha = 0.15f),
+                disabledUncheckedIconColor = Color.White.copy(alpha = 0.3f)
+            )
+        }
     } else {
         SwitchDefaults.colors(
             checkedIconColor = Color.White,
