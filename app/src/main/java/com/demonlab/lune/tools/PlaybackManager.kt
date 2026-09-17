@@ -448,6 +448,8 @@ class PlaybackManager private constructor(private val context: Context) {
 
         // Start service as foreground when playing begins
         Intent(context, MusicService::class.java).also { intent ->
+            intent.data = song.uri
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -1287,6 +1289,9 @@ class PlaybackManager private constructor(private val context: Context) {
         val target = if (isTuning432) 432f / 440f else 1.0f
         updatePitch(target)
     }
+
+    fun currentPosition(): Int = musicService?.currentPosition() ?: 0
+    fun duration(): Int = musicService?.duration() ?: 0
 
     fun getProgress(): Float {
         musicService?.let {

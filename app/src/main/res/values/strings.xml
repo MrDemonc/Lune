@@ -131,6 +131,7 @@
     <string name="crossfade_time_desc">Set the duration of the crossfade transition</string>
     <string name="unknown_artist">Unknown Artist</string>
     <string name="unknown_song">Unknown Song</string>
+    <string name="unknown_album">Unknown Album</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">Back</string>
@@ -426,4 +427,10 @@
     <string name="widget_circular_cover_desc">Use a circular design for the main cover</string>
     <string name="widget_vinyl_cover">Vinyl Effect</string>
     <string name="widget_vinyl_cover_desc">Display cover as a classic vinyl record</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Quick Play</string>
+    <string name="open_in_lune">Open in Lune</string>
+    <string name="close">Close</string>
+    <string name="cd_open_in_lune">Open in Lune</string>
 </resources>

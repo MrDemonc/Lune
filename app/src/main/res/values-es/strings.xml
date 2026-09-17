@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">Establecer la duración de la transición</string>
     <string name="unknown_artist">Artista desconocido</string>
     <string name="unknown_song">Canción desconocida</string>
+    <string name="unknown_album">Álbum desconocido</string>
 
     <!-- Accessibility / Icons -->
     <string name="cd_back">Atrás</string>
@@ -427,4 +428,10 @@
     <string name="widget_circular_cover_desc">Usa un diseño circular para la carátula principal</string>
     <string name="widget_vinyl_cover">Efecto vinilo</string>
     <string name="widget_vinyl_cover_desc">Muestra la carátula como un disco de vinilo clásico</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Reproducción rápida</string>
+    <string name="open_in_lune">Abrir en Lune</string>
+    <string name="close">Cerrar</string>
+    <string name="cd_open_in_lune">Abrir en Lune</string>
 </resources>

@@ -186,9 +186,11 @@ import coil.request.ImageRequest
 class Lune : AppCompatActivity() {
     companion object {
         const val ACTION_VIEW_PLAYLISTS = "com.demonlab.lune.ACTION_VIEW_PLAYLISTS"
+        const val EXTRA_EXPAND_PLAYER = "com.demonlab.lune.EXTRA_EXPAND_PLAYER"
     }
 
     private var shortcutFolder = mutableStateOf<String?>(null)
+    private var pendingExpandPlayer = mutableStateOf(false)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -198,6 +200,23 @@ class Lune : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         if (intent?.action == ACTION_VIEW_PLAYLISTS) {
             shortcutFolder.value = "PLAYLISTS"
+        }
+        if (intent?.getBooleanExtra(EXTRA_EXPAND_PLAYER, false) == true) {
+            pendingExpandPlayer.value = true
+        }
+        if (intent?.action == Intent.ACTION_VIEW) {
+            val uri = intent.data ?: intent.clipData?.let { if (it.itemCount > 0) it.getItemAt(0).uri else null }
+            if (uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+                val song = SongResolver.resolveSongFromUri(this, uri)
+                if (song != null) {
+                    val siblings = SongResolver.resolveSiblingSongs(this, song)
+                    PlaybackManager.getInstance(this).play(song, siblings, playlistName = song.folderName)
+                    pendingExpandPlayer.value = true
+                }
+            }
         }
     }
 
@@ -308,8 +327,15 @@ class Lune : AppCompatActivity() {
             
             val currentSong = playbackManager.currentSong
             val isPlaying = playbackManager.isPlaying
-            var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
+            var isPlayerExpanded by rememberSaveable { mutableStateOf(pendingExpandPlayer.value) }
             var playbackProgress by remember { mutableStateOf(playbackManager.getProgress()) }
+
+            LaunchedEffect(pendingExpandPlayer.value) {
+                if (pendingExpandPlayer.value) {
+                    isPlayerExpanded = true
+                    pendingExpandPlayer.value = false
+                }
+            }
 
             var coverShape by remember { mutableIntStateOf(settingsManager.coverShape) }
             var coverScale by remember { mutableFloatStateOf(settingsManager.coverScale) }

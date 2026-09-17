@@ -667,7 +667,26 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer = null
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(applicationContext, song.uri)
+            try {
+                setDataSource(applicationContext, song.uri)
+            } catch (e: Exception) {
+                var loaded = false
+                if (song.uri.scheme == "content") {
+                    try {
+                        applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")?.use { afd ->
+                            setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                            loaded = true
+                        }
+                    } catch (_: Exception) {}
+                }
+                if (!loaded && song.path.isNotBlank()) {
+                    try {
+                        setDataSource(song.path)
+                        loaded = true
+                    } catch (_: Exception) {}
+                }
+                if (!loaded) throw e
+            }
             val pm = PlaybackManager.getInstance(applicationContext)
             isLooping = pm.shouldLoopCurrentSong()
             setOnPreparedListener {
@@ -932,8 +951,12 @@ class MusicService : MediaLibraryService() {
         val loader = this.imageLoader
         val artUri = if (song.coverUrl != null) {
             Uri.parse(song.coverUrl)
-        } else {
+        } else if (song.albumArtUri != null) {
+            song.albumArtUri
+        } else if (song.albumId > 0) {
             ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+        } else {
+            song.uri
         }
         val request = ImageRequest.Builder(this)
             .data(artUri)
@@ -942,17 +965,35 @@ class MusicService : MediaLibraryService() {
             .build()
 
         val result = loader.execute(request)
-        return (result as? SuccessResult)?.drawable?.let {
-            val bitmap = android.graphics.Bitmap.createBitmap(
+        var bitmap = (result as? SuccessResult)?.drawable?.let {
+            val bmp = android.graphics.Bitmap.createBitmap(
                 it.intrinsicWidth.coerceAtLeast(1),
                 it.intrinsicHeight.coerceAtLeast(1),
                 android.graphics.Bitmap.Config.ARGB_8888
             )
-            val canvas = android.graphics.Canvas(bitmap)
+            val canvas = android.graphics.Canvas(bmp)
             it.setBounds(0, 0, canvas.width, canvas.height)
             it.draw(canvas)
-            bitmap
+            bmp
         }
+
+        if (bitmap == null) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                if (song.uri.scheme == "file" && song.path.isNotBlank() && java.io.File(song.path).exists()) {
+                    retriever.setDataSource(song.path)
+                } else {
+                    retriever.setDataSource(this, song.uri)
+                }
+                val pic = retriever.embeddedPicture
+                retriever.release()
+                if (pic != null) {
+                    bitmap = android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size)
+                }
+            } catch (_: Exception) {}
+        }
+
+        return bitmap
     }
 
     fun pause() {
