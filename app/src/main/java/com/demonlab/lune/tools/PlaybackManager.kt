@@ -203,12 +203,16 @@ class PlaybackManager private constructor(private val context: Context) {
         }
 
         // Restore playback position (always paused — user taps play to resume)
-        if (musicService != null) {
-            musicService?.restorePlayback(restoredCurrent, saved.playbackPositionMs, andPlay = false)
-        } else {
-            pendingRestoreSong = restoredCurrent
-            pendingRestorePosition = saved.playbackPositionMs
-            pendingRestorePlay = false
+        try {
+            if (musicService != null) {
+                musicService?.restorePlayback(restoredCurrent, saved.playbackPositionMs, andPlay = false)
+            } else {
+                pendingRestoreSong = restoredCurrent
+                pendingRestorePosition = saved.playbackPositionMs
+                pendingRestorePlay = false
+            }
+        } catch (e: Exception) {
+            Log.e("PlaybackManager", "Error restoring playback state: ${e.message}", e)
         }
     }
 
@@ -302,11 +306,19 @@ class PlaybackManager private constructor(private val context: Context) {
             musicService = binder.getService()
             isBound = true
             pendingPlaySong?.let { 
-                musicService?.playSong(it)
+                try {
+                    musicService?.playSong(it)
+                } catch (e: Exception) {
+                    Log.e("PlaybackManager", "Error playing pending song: ${e.message}", e)
+                }
                 pendingPlaySong = null
             }
             pendingRestoreSong?.let { song ->
-                musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
+                try {
+                    musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
+                } catch (e: Exception) {
+                    Log.e("PlaybackManager", "Error restoring pending playback: ${e.message}", e)
+                }
                 pendingRestoreSong = null
             }
         }
@@ -478,8 +490,12 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         
         if (musicService != null) {
-            musicService?.playSong(song)
-            startVisualizer()
+            try {
+                musicService?.playSong(song)
+                startVisualizer()
+            } catch (e: Exception) {
+                Log.e("PlaybackManager", "Error calling playSong on musicService: ${e.message}", e)
+            }
         } else {
             pendingPlaySong = song
         }

@@ -654,6 +654,53 @@ class MusicService : MediaLibraryService() {
         )
     }
 
+    private fun setPlayerDataSource(player: MediaPlayer, song: Song): Boolean {
+        try {
+            player.setDataSource(applicationContext, song.uri)
+            return true
+        } catch (e: Exception) {
+            Log.w("MusicService", "Primary setDataSource failed for ${song.title} (${song.uri}), attempting fallbacks: ${e.message}")
+        }
+
+        if (song.uri.scheme == "content") {
+            try {
+                applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")?.use { afd ->
+                    player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.w("MusicService", "openAssetFileDescriptor fallback failed for ${song.title}: ${e.message}")
+            }
+        }
+
+        if (song.path.isNotBlank()) {
+            try {
+                val file = File(song.path)
+                if (file.exists() && file.canRead()) {
+                    player.setDataSource(song.path)
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.w("MusicService", "song.path fallback failed for ${song.title}: ${e.message}")
+            }
+        }
+
+        val uriPath = song.uri.path
+        if (!uriPath.isNullOrBlank() && uriPath != song.path) {
+            try {
+                val file = File(uriPath)
+                if (file.exists() && file.canRead()) {
+                    player.setDataSource(uriPath)
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.w("MusicService", "uri.path fallback failed for ${song.title}: ${e.message}")
+            }
+        }
+
+        return false
+    }
+
     fun playSong(song: Song) {
         isNotificationDismissed = false
         isCrossfading = false
@@ -670,73 +717,77 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer?.release()
         secondaryPlayer = null
 
-        mediaPlayer = MediaPlayer().apply {
+        val player = MediaPlayer()
+        val loaded = setPlayerDataSource(player, song)
+        if (!loaded) {
+            Log.e("MusicService", "Failed to load data source for song: ${song.title} (${song.uri})")
             try {
-                setDataSource(applicationContext, song.uri)
-            } catch (e: Exception) {
-                var loaded = false
-                if (song.uri.scheme == "content") {
-                    try {
-                        applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")?.use { afd ->
-                            setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                            loaded = true
-                        }
-                    } catch (_: Exception) {}
-                }
-                if (!loaded && song.path.isNotBlank()) {
-                    try {
-                        setDataSource(song.path)
-                        loaded = true
-                    } catch (_: Exception) {}
-                }
-                if (!loaded) throw e
-            }
-            val pm = PlaybackManager.getInstance(applicationContext)
-            isLooping = pm.shouldLoopCurrentSong()
-            setOnPreparedListener {
-                start()
-                val sessionId = audioSessionId
-                setupAudioFx(sessionId, false)
-                setVolume(1f, 1f)
-                applyBalance(PlaybackManager.getInstance(applicationContext).balance)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try {
-                        val pm = PlaybackManager.getInstance(applicationContext)
-                        val speed = pm.playbackSpeed
-                        val pitch = pm.playbackPitch
-                        if (speed != 1.0f || pitch != 1.0f) {
-                            val params = playbackParams
-                            params.speed = speed
-                            params.pitch = pitch
-                            playbackParams = params
-                        }
-                    } catch (e: Exception) {}
-                }
-                updatePlaybackState()
-
-                // Load metadata/notifications AFTER starting for instant audio response
-                serviceScope.launch {
-                    val art = fetchAlbumArt(song)
-                    updateMetadata(song, art)
-                    showNotification(song, true, art)
-                    updateWidget()
-                    PlaybackManager.getInstance(applicationContext).clearLyrics()
-                    extractLyrics(song)
-                }
-            }
-            setOnErrorListener { _, _, _ ->
-                true // returning true prevents onCompletionListener from firing on broken tracks
-            }
-            prepareAsync()
-            setOnCompletionListener {
-                if (!isCrossfading) {
-                    PlaybackManager.getInstance(applicationContext).playNextFromService(true)
-                }
-            }
+                player.release()
+            } catch (_: Exception) {}
+            mediaPlayer = null
+            PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+            return
         }
 
-        // Start monitor regardless of metadata
-        startCrossfadeMonitor()
+        try {
+            mediaPlayer = player.apply {
+                val pm = PlaybackManager.getInstance(applicationContext)
+                isLooping = pm.shouldLoopCurrentSong()
+                setOnPreparedListener {
+                    try {
+                        start()
+                        val sessionId = audioSessionId
+                        setupAudioFx(sessionId, false)
+                        setVolume(1f, 1f)
+                        applyBalance(PlaybackManager.getInstance(applicationContext).balance)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            try {
+                                val speed = pm.playbackSpeed
+                                val pitch = pm.playbackPitch
+                                if (speed != 1.0f || pitch != 1.0f) {
+                                    val params = playbackParams
+                                    params.speed = speed
+                                    params.pitch = pitch
+                                    playbackParams = params
+                                }
+                            } catch (e: Exception) {}
+                        }
+                        updatePlaybackState()
+
+                        // Load metadata/notifications AFTER starting for instant audio response
+                        serviceScope.launch {
+                            val art = fetchAlbumArt(song)
+                            updateMetadata(song, art)
+                            showNotification(song, true, art)
+                            updateWidget()
+                            PlaybackManager.getInstance(applicationContext).clearLyrics()
+                            extractLyrics(song)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MusicService", "Error during onPrepared in playSong", e)
+                    }
+                }
+                setOnErrorListener { _, _, _ ->
+                    true // returning true prevents onCompletionListener from firing on broken tracks
+                }
+                prepareAsync()
+                setOnCompletionListener {
+                    if (!isCrossfading) {
+                        PlaybackManager.getInstance(applicationContext).playNextFromService(true)
+                    }
+                }
+            }
+
+            // Start monitor regardless of metadata
+            startCrossfadeMonitor()
+        } catch (e: Exception) {
+            Log.e("MusicService", "Error configuring MediaPlayer in playSong", e)
+            try {
+                player.release()
+            } catch (_: Exception) {}
+            mediaPlayer = null
+            PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+        }
     }
 
     fun crossfadeToSong(song: Song) {
@@ -824,10 +875,13 @@ class MusicService : MediaLibraryService() {
                 var prepared = false
                 withContext(Dispatchers.IO) {
                     try {
-                        secondaryPlayer?.setDataSource(applicationContext, nextSong.uri)
-                        secondaryPlayer?.setVolume(0f, 0f)
-                        secondaryPlayer?.prepare()
-                        prepared = true
+                        secondaryPlayer?.let { secPlayer ->
+                            if (setPlayerDataSource(secPlayer, nextSong)) {
+                                secPlayer.setVolume(0f, 0f)
+                                secPlayer.prepare()
+                                prepared = true
+                            }
+                        }
                     } catch (e: Exception) {
                         Log.e("MusicService", "Failed to prepare secondary player", e)
                     }
@@ -1050,8 +1104,14 @@ class MusicService : MediaLibraryService() {
             }
         }
 
-        mediaPlayer?.start()
-        secondaryPlayer?.start()
+        try {
+            mediaPlayer?.start()
+            secondaryPlayer?.start()
+        } catch (e: Exception) {
+            Log.e("MusicService", "Failed to start player on resume", e)
+            pm.updatePlayingState(false)
+            return
+        }
         pm.updatePlayingState(true)
         updatePlaybackState()
         startWidgetUpdateTimer()
@@ -1135,53 +1195,78 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer?.release()
         secondaryPlayer = null
 
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(applicationContext, song.uri)
+        val player = MediaPlayer()
+        val loaded = setPlayerDataSource(player, song)
+        if (!loaded) {
+            Log.w("MusicService", "Failed to set data source for restorePlayback: ${song.title} (${song.uri})")
+            try {
+                player.release()
+            } catch (_: Exception) {}
+            mediaPlayer = null
             val pm = PlaybackManager.getInstance(applicationContext)
-            isLooping = pm.shouldLoopCurrentSong()
-            setOnPreparedListener {
-                seekTo(positionMs.toInt())
-                start()
-                if (!andPlay) pause()
-                pm.updatePlayingState(andPlay)
-                if (andPlay) {
-                    startWidgetUpdateTimer()
-                } else {
-                    stopWidgetUpdateTimer()
-                }
-                val sessionId = audioSessionId
-                setupAudioFx(sessionId, false)
-                setVolume(1f, 1f)
-                applyBalance(pm.balance)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pm.updatePlayingState(false)
+            return
+        }
+
+        try {
+            mediaPlayer = player.apply {
+                val pm = PlaybackManager.getInstance(applicationContext)
+                isLooping = pm.shouldLoopCurrentSong()
+                setOnPreparedListener {
                     try {
-                        val speed = pm.playbackSpeed
-                        val pitch = pm.playbackPitch
-                        if (speed != 1.0f || pitch != 1.0f) {
-                            val params = playbackParams
-                            params.speed = speed
-                            params.pitch = pitch
-                            playbackParams = params
+                        seekTo(positionMs.toInt())
+                        start()
+                        if (!andPlay) pause()
+                        pm.updatePlayingState(andPlay)
+                        if (andPlay) {
+                            startWidgetUpdateTimer()
+                        } else {
+                            stopWidgetUpdateTimer()
                         }
-                    } catch (e: Exception) {}
+                        val sessionId = audioSessionId
+                        setupAudioFx(sessionId, false)
+                        setVolume(1f, 1f)
+                        applyBalance(pm.balance)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            try {
+                                val speed = pm.playbackSpeed
+                                val pitch = pm.playbackPitch
+                                if (speed != 1.0f || pitch != 1.0f) {
+                                    val params = playbackParams
+                                    params.speed = speed
+                                    params.pitch = pitch
+                                    playbackParams = params
+                                }
+                            } catch (e: Exception) {}
+                        }
+                        updatePlaybackState()
+                        serviceScope.launch {
+                            val art = fetchAlbumArt(song)
+                            updateMetadata(song, art)
+                            showNotification(song, andPlay, art)
+                            pm.clearLyrics()
+                            extractLyrics(song)
+                            updateWidget()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MusicService", "Error during onPrepared in restorePlayback", e)
+                    }
                 }
-                updatePlaybackState()
-                serviceScope.launch {
-                    val art = fetchAlbumArt(song)
-                    updateMetadata(song, art)
-                    showNotification(song, andPlay, art)
-                    pm.clearLyrics()
-                    extractLyrics(song)
-                    updateWidget()
+                setOnErrorListener { _, _, _ -> true }
+                prepareAsync()
+                setOnCompletionListener {
+                    if (!isCrossfading) {
+                        PlaybackManager.getInstance(applicationContext).playNextFromService(true)
+                    }
                 }
             }
-            setOnErrorListener { _, _, _ -> true }
-            prepareAsync()
-            setOnCompletionListener {
-                if (!isCrossfading) {
-                    PlaybackManager.getInstance(applicationContext).playNextFromService(true)
-                }
-            }
+        } catch (e: Exception) {
+            Log.e("MusicService", "Error configuring MediaPlayer in restorePlayback", e)
+            try {
+                player.release()
+            } catch (_: Exception) {}
+            mediaPlayer = null
+            PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         }
     }
 

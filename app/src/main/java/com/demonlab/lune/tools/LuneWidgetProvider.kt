@@ -121,7 +121,11 @@ class LuneWidgetProvider : AppWidgetProvider() {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val playbackManager = PlaybackManager.getInstance(context)
             if (playbackManager.currentSong == null && !playbackManager.stateRestored) {
-                playbackManager.restorePlaybackState()
+                try {
+                    playbackManager.restorePlaybackState()
+                } catch (e: Exception) {
+                    android.util.Log.e("LuneWidget", "Failed to restore playback state: ${e.message}", e)
+                }
             }
             val currentSong = playbackManager.currentSong
             val isPlaying = playbackManager.isPlaying
