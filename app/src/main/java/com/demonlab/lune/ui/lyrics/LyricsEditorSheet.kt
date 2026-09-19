@@ -100,6 +100,10 @@ fun LyricsEditorSheet(
         if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.12f)
     } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
 
+    val tabIndicatorColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White else Color(0xFF1C1C1E)
+    } else MaterialTheme.colorScheme.primary
+
     var selectedTab by remember { mutableIntStateOf(0) }
     var textContent by remember { mutableStateOf(initialLyrics ?: "") }
     val hasCustomLyrics = remember(song.id) { lyricsStorage.hasCustomLyrics(song) }
@@ -368,10 +372,19 @@ fun LyricsEditorSheet(
                 }
 
                 // Tabs: Text / LRC & Live Sync
-                TabRow(
+                PrimaryTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
                     contentColor = sheetTextColor,
+                    indicator = {
+                        TabRowDefaults.PrimaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(selectedTab),
+                            color = tabIndicatorColor,
+                            width = 48.dp,
+                            height = 3.dp,
+                            shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                        )
+                    },
                     divider = {}
                 ) {
                     Tab(
@@ -388,13 +401,13 @@ fun LyricsEditorSheet(
                                     Icons.Default.Edit,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (selectedTab == 0) sheetTextColor else sheetTextSecondaryColor
+                                    tint = if (selectedTab == 0) tabIndicatorColor else sheetTextSecondaryColor
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     stringResource(R.string.tab_text_lrc),
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (selectedTab == 0) sheetTextColor else sheetTextSecondaryColor
+                                    color = if (selectedTab == 0) tabIndicatorColor else sheetTextSecondaryColor
                                 )
                             }
                         }
@@ -411,13 +424,13 @@ fun LyricsEditorSheet(
                                     Icons.Default.Timer,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (selectedTab == 1) sheetTextColor else sheetTextSecondaryColor
+                                    tint = if (selectedTab == 1) tabIndicatorColor else sheetTextSecondaryColor
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     stringResource(R.string.tab_sync),
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (selectedTab == 1) sheetTextColor else sheetTextSecondaryColor
+                                    color = if (selectedTab == 1) tabIndicatorColor else sheetTextSecondaryColor
                                 )
                             }
                         }

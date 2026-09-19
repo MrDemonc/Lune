@@ -526,6 +526,7 @@ fun SortBottomSheet(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("DEPRECATION")
 @Composable
 fun EqBottomSheet(
     playbackManager: PlaybackManager,
@@ -1659,6 +1660,7 @@ fun EditSongBottomSheet(
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 fun CustomSleepTimerDialog(
     currentMinutes: Int,

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -306,17 +307,42 @@ private fun QuickPlayerDialogScreen(
                                     )
                                 }
 
-                                // Close Button
-                                IconButton(
-                                    onClick = onClose,
-                                    modifier = Modifier.size(36.dp).bounceClick()
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.close),
-                                        tint = blurColors.textSecondaryColor,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    // Open in Lune
+                                    IconButton(
+                                        onClick = {
+                                            val fullAppIntent = Intent(context, Lune::class.java).apply {
+                                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                                putExtra(Lune.EXTRA_EXPAND_PLAYER, true)
+                                            }
+                                            context.startActivity(fullAppIntent)
+                                            onClose()
+                                        },
+                                        modifier = Modifier.size(36.dp).bounceClick()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                            contentDescription = stringResource(R.string.open_in_lune),
+                                            tint = blurColors.textSecondaryColor,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+
+                                    // Close Button
+                                    IconButton(
+                                        onClick = onClose,
+                                        modifier = Modifier.size(36.dp).bounceClick()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.close),
+                                            tint = blurColors.textSecondaryColor,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
 
@@ -468,8 +494,15 @@ private fun QuickPlayerDialogScreen(
                             }
                             val displayProgress = if (isDragging) dragProgress else currentProgress
 
+                            val sliderState = remember { SliderState(displayProgress.coerceIn(0f, 1f)) }
+                            LaunchedEffect(displayProgress) {
+                                if (!isDragging) {
+                                    sliderState.value = displayProgress.coerceIn(0f, 1f)
+                                }
+                            }
+
                             Slider(
-                                value = displayProgress.coerceIn(0f, 1f),
+                                state = sliderState,
                                 onValueChange = {
                                     isDragging = true
                                     dragProgress = it
@@ -481,7 +514,7 @@ private fun QuickPlayerDialogScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(26.dp),
-                                thumb = {
+                                thumb = { _ ->
                                     Box(
                                         modifier = Modifier
                                             .size(14.dp)

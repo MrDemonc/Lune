@@ -780,11 +780,16 @@ fun FullPlayer(
                         label = "thumbRotation"
                     )
 
+                    val progressSliderState = remember { SliderState(progress.coerceIn(0f, 1f)) }
+                    LaunchedEffect(progress) {
+                        progressSliderState.value = progress.coerceIn(0f, 1f)
+                    }
+
                     Slider(
-                        value = progress,
+                        state = progressSliderState,
                         onValueChange = onProgressChange,
                         modifier = Modifier.fillMaxWidth(),
-                        thumb = {
+                        thumb = { _ ->
                             Box(
                                 modifier = Modifier
                                     .size(14.dp)
@@ -946,13 +951,18 @@ fun FullPlayer(
                             )
                         }
 
+                        val volumeSliderState = remember { SliderState(sliderValue.coerceIn(0f, 1f)) }
+                        LaunchedEffect(sliderValue) {
+                            volumeSliderState.value = sliderValue.coerceIn(0f, 1f)
+                        }
+
                         Slider(
-                            value = sliderValue,
+                            state = volumeSliderState,
                             onValueChange = {
                                 sliderValue = it
                                 playbackManager.setVolume(it)
                             },
-                            thumb = {},
+                            thumb = { _ -> },
                             modifier = Modifier.weight(0.5f),
                             colors = SliderDefaults.colors(
                                 activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
