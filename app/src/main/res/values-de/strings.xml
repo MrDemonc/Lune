@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">Übergangsdauer für Crossfade festlegen</string>
     <string name="unknown_artist">Unbekannter Künstler</string>
     <string name="unknown_song">Unbekannter Song</string>
+    <string name="unknown_album">Unbekanntes Album</string>
 
     <!-- Accessibility / Icons -->
     <string name="cd_back">Zurück</string>
@@ -157,6 +158,16 @@
     <string name="ok">OK</string>
     <string name="cd_activate_eq">EQ aktivieren</string>
     <string name="cd_play_pause">Play/Pause</string>
+    <string name="play_state_play">Wiedergabe</string>
+    <string name="play_state_pause">Pause</string>
+    <string name="audio_quality_details">Audioqualitätsdetails</string>
+    <string name="audio_lossless">Verlustfrei</string>
+    <string name="audio_compressed">Komprimiert</string>
+    <string name="audio_bitrate">Bitrate</string>
+    <string name="audio_sample_rate">Abtastrate</string>
+    <string name="audio_bit_depth">Bittiefe</string>
+    <string name="audio_file_format">Dateiformat</string>
+    <string name="audio_file_path">Dateipfad</string>
     <string name="cd_change_cover">Cover ändern</string>
     <string name="playlists">Playlists</string>
     <string name="add_to_playlist">Playlist</string>
@@ -455,4 +466,19 @@
     <string name="auto_sync_backup">Automatische Backup-Synchronisation</string>
     <string name="auto_sync_backup_desc">Aktualisiert das exportierte Backup automatisch bei Änderungen an Playlists oder Songtexten</string>
     <string name="auto_sync_requires_export">Exportiere zuerst ein Backup, um die Autosynchronisation zu aktivieren</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">Titel-Wischgesten</string>
+    <string name="track_swipe_gestures_desc">Nach links oder rechts wischen, um Titel schnell zur Warteschlange hinzuzufügen oder Aktionen auszuführen</string>
+    <string name="swipe_right_action">Aktion für Wischen nach rechts</string>
+    <string name="swipe_left_action">Aktion für Wischen nach links</string>
+    <string name="add_to_queue">Zur Warteschlange hinzufügen</string>
+    <string name="added_to_queue">Zur Warteschlange hinzugefügt: %1$s</string>
+    <string name="played_next">Wird als nächstes gespielt: %1$s</string>
+    <string name="progress_indicator_style">Fortschrittsbalken-Stil</string>
+    <string name="progress_indicator_style_desc">Wählen Sie den Fortschrittsbalken-Stil im Wiedergabebildschirm</string>
+    <string name="progress_style_wavy">Wellenförmig</string>
+    <string name="progress_style_slider">Schieberegler</string>
+    <string name="progress_style_bars">Wellenform-Balken</string>
+    <string name="mini_player_scrubbing">Ziehen zum Spulen</string>
 </resources>

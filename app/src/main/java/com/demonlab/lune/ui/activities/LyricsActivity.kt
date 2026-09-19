@@ -863,7 +863,8 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                             onExpand = { /* already viewing lyrics */ },
                             onPrevious = playPrevious,
                             onNext = playNext,
-                            onMinimize = { isLyricsMiniPlayerMinimized = true }
+                            onMinimize = { isLyricsMiniPlayerMinimized = true },
+                            onSeek = { playbackManager.seekTo(it) }
                         )
                     }
                 }

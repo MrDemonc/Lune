@@ -468,4 +468,19 @@
     <string name="auto_sync_backup">Auto-sync backup</string>
     <string name="auto_sync_backup_desc">Automatically update the exported backup when playlists or lyrics change</string>
     <string name="auto_sync_requires_export">Export a backup first to enable auto-sync</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">Track swipe actions</string>
+    <string name="track_swipe_gestures_desc">Swipe left or right on tracks to quickly queue or perform actions</string>
+    <string name="swipe_right_action">Swipe right action</string>
+    <string name="swipe_left_action">Swipe left action</string>
+    <string name="add_to_queue">Add to queue</string>
+    <string name="added_to_queue">Added to queue: %1$s</string>
+    <string name="played_next">Playing next: %1$s</string>
+    <string name="progress_indicator_style">Progress bar style</string>
+    <string name="progress_indicator_style_desc">Choose the seeker style in the player screen</string>
+    <string name="progress_style_wavy">Wavy</string>
+    <string name="progress_style_slider">Slider</string>
+    <string name="progress_style_bars">Bars</string>
+    <string name="mini_player_scrubbing">Slide to seek</string>
 </resources>

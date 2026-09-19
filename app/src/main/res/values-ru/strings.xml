@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">Установить длительность перехода кроссфейда</string>
     <string name="unknown_artist">Неизвестный исполнитель</string>
     <string name="unknown_song">Неизвестная песня</string>
+    <string name="unknown_album">Неизвестный альбом</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">Назад</string>
@@ -157,6 +158,16 @@
     <string name="ok">ОК</string>
     <string name="cd_activate_eq">Включить эквалайзер</string>
     <string name="cd_play_pause">Играть/Пауза</string>
+    <string name="play_state_play">Воспроизведение</string>
+    <string name="play_state_pause">Пауза</string>
+    <string name="audio_quality_details">Сведения о качестве аудио</string>
+    <string name="audio_lossless">Без потерь (Lossless)</string>
+    <string name="audio_compressed">Сжатый</string>
+    <string name="audio_bitrate">Битрейт</string>
+    <string name="audio_sample_rate">Частота дискретизации</string>
+    <string name="audio_bit_depth">Разрядность</string>
+    <string name="audio_file_format">Формат файла</string>
+    <string name="audio_file_path">Путь к файлу</string>
     <string name="cd_change_cover">Изменить обложку</string>
     <string name="playlists">Плейлисты</string>
     <string name="add_to_playlist">В плейлист</string>
@@ -458,4 +469,19 @@
     <string name="auto_sync_backup">Автосинхронизация резервной копии</string>
     <string name="auto_sync_backup_desc">Автоматически обновлять экспортированную копию при изменении плейлистов или текстов</string>
     <string name="auto_sync_requires_export">Сначала экспортируйте резервную копию для включения автосинхронизации</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">Жесты смахивания треков</string>
+    <string name="track_swipe_gestures_desc">Смахивайте треки влево или вправо, чтобы быстро добавить их в очередь или выполнить действия</string>
+    <string name="swipe_right_action">Действие при смахивании вправо</string>
+    <string name="swipe_left_action">Действие при смахивании влево</string>
+    <string name="add_to_queue">Добавить в очередь</string>
+    <string name="added_to_queue">Добавлено в очередь: %1$s</string>
+    <string name="played_next">Следующий трек: %1$s</string>
+    <string name="progress_indicator_style">Стиль индикатора выполнения</string>
+    <string name="progress_indicator_style_desc">Выберите стиль полосы перемотки на экране плеера</string>
+    <string name="progress_style_wavy">Волнистый</string>
+    <string name="progress_style_slider">Обычный ползунок</string>
+    <string name="progress_style_bars">Полосы спектра</string>
+    <string name="mini_player_scrubbing">Проведите для перемотки</string>
 </resources>

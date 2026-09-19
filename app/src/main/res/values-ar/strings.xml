@@ -131,6 +131,7 @@
     <string name="crossfade_time_desc">تعيين مدة انتقال التداخل الصوتي</string>
     <string name="unknown_artist">فنان غير معروف</string>
     <string name="unknown_song">أغنية غير معروفة</string>
+    <string name="unknown_album">ألبوم غير معروف</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">رجوع</string>
@@ -156,6 +157,16 @@
     <string name="ok">موافق</string>
     <string name="cd_activate_eq">تفعيل معادل الصوت</string>
     <string name="cd_play_pause">تشغيل/إيقاف مؤقت</string>
+    <string name="play_state_play">تشغيل</string>
+    <string name="play_state_pause">إيقاف مؤقت</string>
+    <string name="audio_quality_details">تفاصيل جودة الصوت</string>
+    <string name="audio_lossless">بدون فقدان (Lossless)</string>
+    <string name="audio_compressed">مضغوط</string>
+    <string name="audio_bitrate">معدل البت</string>
+    <string name="audio_sample_rate">معدل العينة</string>
+    <string name="audio_bit_depth">عمق البت</string>
+    <string name="audio_file_format">صيغة الملف</string>
+    <string name="audio_file_path">مسار الملف</string>
     <string name="cd_change_cover">تغيير الغلاف</string>
     <string name="playlists">قوائم التشغيل</string>
     <string name="add_to_playlist">قائمة تشغيل</string>
@@ -456,4 +467,19 @@
     <string name="auto_sync_backup">مزامنة النسخ الاحتياطي تلقائياً</string>
     <string name="auto_sync_backup_desc">تحديث النسخة الاحتياطية المصدرة تلقائياً عند تغيير القوائم أو الكلمات</string>
     <string name="auto_sync_requires_export">قم بتصدير نسخة احتياطية أولاً لتفعيل المزامنة التلقائية</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">إيماءات السحب للمسارات</string>
+    <string name="track_swipe_gestures_desc">اسحب لليسار أو لليمين على المسارات للإضافة إلى قائمة الانتظار أو تنفيذ إجراءات سريعة</string>
+    <string name="swipe_right_action">إجراء السحب لليمين</string>
+    <string name="swipe_left_action">إجراء السحب لليسار</string>
+    <string name="add_to_queue">إضافة إلى قائمة الانتظار</string>
+    <string name="added_to_queue">تمت الإضافة إلى قائمة الانتظار: %1$s</string>
+    <string name="played_next">تشغيل التالي: %1$s</string>
+    <string name="progress_indicator_style">نمط شريط التقدم</string>
+    <string name="progress_indicator_style_desc">اختر نمط شريط التقدم في شاشة المشغل</string>
+    <string name="progress_style_wavy">متموج</string>
+    <string name="progress_style_slider">شريط تقليدي</string>
+    <string name="progress_style_bars">أعمدة ترددية</string>
+    <string name="mini_player_scrubbing">اسحب للتمرير السريع</string>
 </resources>

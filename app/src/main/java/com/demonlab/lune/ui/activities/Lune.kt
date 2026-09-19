@@ -2398,7 +2398,8 @@ fun MainScreen(
                                         onNext = playNext,
                                         onSearchClick = { showSearchScreen = true },
                                         onScrollToCurrent = { scrollToCurrentTrigger.value++ },
-                                        onMinimize = { settingsManager.isMiniPlayerMinimized = true }
+                                        onMinimize = { settingsManager.isMiniPlayerMinimized = true },
+                                        onSeek = { playbackManager.seekTo(it) }
                                     )
                                 }
                             }

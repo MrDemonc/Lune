@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">Définir la durée de la transition</string>
     <string name="unknown_artist">Artiste inconnu</string>
     <string name="unknown_song">Chanson inconnue</string>
+    <string name="unknown_album">Album inconnu</string>
 
     <!-- Accessibility / Icons -->
     <string name="cd_back">Retour</string>
@@ -157,6 +158,16 @@
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Activer l’EQ</string>
     <string name="cd_play_pause">Lecture/Pause</string>
+    <string name="play_state_play">Lecture</string>
+    <string name="play_state_pause">Pause</string>
+    <string name="audio_quality_details">Détails de la qualité audio</string>
+    <string name="audio_lossless">Sans perte</string>
+    <string name="audio_compressed">Compressé</string>
+    <string name="audio_bitrate">Débit binaire</string>
+    <string name="audio_sample_rate">Taux d\'échantillonnage</string>
+    <string name="audio_bit_depth">Profondeur de bits</string>
+    <string name="audio_file_format">Format de fichier</string>
+    <string name="audio_file_path">Chemin du fichier</string>
     <string name="cd_change_cover">Changer la pochette</string>
     <string name="playlists">Playlists</string>
     <string name="add_to_playlist">Ajouter à la playlist</string>
@@ -458,4 +469,19 @@
     <string name="auto_sync_backup">Sauvegarde synchronisée automatiquement</string>
     <string name="auto_sync_backup_desc">Met à jour automatiquement la sauvegarde exportée lors de modifications</string>
     <string name="auto_sync_requires_export">Exportez d\'abord une sauvegarde pour activer la synchronisation automatique</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">Actions de glissement de piste</string>
+    <string name="track_swipe_gestures_desc">Glissez vers la gauche ou la droite sur les morceaux pour les mettre en file d\'attente ou effectuer des actions</string>
+    <string name="swipe_right_action">Action glisser vers la droite</string>
+    <string name="swipe_left_action">Action glisser vers la gauche</string>
+    <string name="add_to_queue">Ajouter à la file d\'attente</string>
+    <string name="added_to_queue">Ajouté à la file d\'attente : %1$s</string>
+    <string name="played_next">Lecture suivante : %1$s</string>
+    <string name="progress_indicator_style">Style de la barre de progression</string>
+    <string name="progress_indicator_style_desc">Choisissez le style de la barre de progression dans le lecteur</string>
+    <string name="progress_style_wavy">Ondulée</string>
+    <string name="progress_style_slider">Curseur classique</string>
+    <string name="progress_style_bars">Barres d\'ondes</string>
+    <string name="mini_player_scrubbing">Glisser pour chercher</string>
 </resources>

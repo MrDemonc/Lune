@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">设置交叉淡化的过渡时长</string>
     <string name="unknown_artist">未知艺术家</string>
     <string name="unknown_song">未知歌曲</string>
+    <string name="unknown_album">未知专辑</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">返回</string>
@@ -157,6 +158,16 @@
     <string name="ok">确定</string>
     <string name="cd_activate_eq">启用均衡器</string>
     <string name="cd_play_pause">播放/暂停</string>
+    <string name="play_state_play">播放</string>
+    <string name="play_state_pause">暂停</string>
+    <string name="audio_quality_details">音质详情</string>
+    <string name="audio_lossless">无损</string>
+    <string name="audio_compressed">有损压缩</string>
+    <string name="audio_bitrate">比特率</string>
+    <string name="audio_sample_rate">采样率</string>
+    <string name="audio_bit_depth">位深度</string>
+    <string name="audio_file_format">文件格式</string>
+    <string name="audio_file_path">文件路径</string>
     <string name="cd_change_cover">更换封面</string>
     <string name="playlists">播放列表</string>
     <string name="add_to_playlist">播放列表</string>
@@ -455,4 +466,19 @@
     <string name="auto_sync_backup">自动同步备份</string>
     <string name="auto_sync_backup_desc">播放列表或歌词更改时自动更新已导出的备份</string>
     <string name="auto_sync_requires_export">请先导出备份以启用自动同步</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">曲目滑动操作</string>
+    <string name="track_swipe_gestures_desc">在歌曲上向左或向右滑动以快速加入队列或执行快捷操作</string>
+    <string name="swipe_right_action">右滑操作</string>
+    <string name="swipe_left_action">左滑操作</string>
+    <string name="add_to_queue">加入队列</string>
+    <string name="added_to_queue">已加入队列：%1$s</string>
+    <string name="played_next">下一首播放：%1$s</string>
+    <string name="progress_indicator_style">进度条样式</string>
+    <string name="progress_indicator_style_desc">选择播放器界面的进度条样式</string>
+    <string name="progress_style_wavy">波浪形</string>
+    <string name="progress_style_slider">经典滑块</string>
+    <string name="progress_style_bars">频谱音柱</string>
+    <string name="mini_player_scrubbing">滑动进行快进/快退</string>
 </resources>
