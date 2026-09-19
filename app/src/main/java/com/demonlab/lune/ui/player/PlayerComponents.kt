@@ -849,26 +849,95 @@ fun FullPlayer(
             } else if (useCustomControlsColor) {
                 activePrimary.copy(alpha = 0.2f)
             } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
             }
             val activeIconTint = if (useBlurControls) {
                 Color.White
             } else if (useCustomControlsColor) {
                 activePrimary
             } else {
-                MaterialTheme.colorScheme.onSurface
+                MaterialTheme.colorScheme.primary
             }
 
+            val playBgColor = if (useBlurControls) {
+                blurPlayContainerColor
+            } else if (useCustomControlsColor) {
+                activePrimary
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
+
+            val playIconTint = if (useBlurControls) {
+                Color.White
+            } else if (useCustomControlsColor) {
+                Color.White
+            } else {
+                MaterialTheme.colorScheme.onPrimary
+            }
+
+            var showPlayStateLabel by remember { mutableStateOf(false) }
+            var isFirstPlayComposition by remember { mutableStateOf(true) }
+            var labelTrigger by remember { mutableIntStateOf(0) }
+
+            LaunchedEffect(isPlaying, labelTrigger) {
+                if (isFirstPlayComposition) {
+                    isFirstPlayComposition = false
+                    return@LaunchedEffect
+                }
+                showPlayStateLabel = true
+                delay(1300L)
+                showPlayStateLabel = false
+            }
+
+            val playButtonWidth by animateDpAsState(
+                targetValue = if (showPlayStateLabel) 156.dp else 96.dp,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                label = "PlayWidthAnim"
+            )
+
+            val playShape = RoundedCornerShape(30.dp)
+            val skipShape = RoundedCornerShape(26.dp)
+
+            val playBorder = BorderStroke(
+                width = 1.dp,
+                color = if (useBlurControls) {
+                    if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)
+                } else if (useCustomControlsColor) {
+                    activePrimary.copy(alpha = 0.35f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                }
+            )
+
+            val skipBorder = BorderStroke(
+                width = 1.dp,
+                color = if (useBlurControls) {
+                    if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+                } else if (useCustomControlsColor) {
+                    activePrimary.copy(alpha = 0.20f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                }
+            )
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     onClick = onPrevious,
-                    shape = CircleShape,
+                    shape = skipShape,
                     color = activeContainerColor,
-                    modifier = Modifier.size(64.dp).bounceClick()
+                    border = skipBorder,
+                    modifier = Modifier
+                        .size(68.dp)
+                        .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         ReusableSkipIcon(
@@ -876,34 +945,91 @@ fun FullPlayer(
                             controlsIconStyle = controlsIconStyle,
                             isControlsFilled = isControlsFilled,
                             tint = activeIconTint,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(34.dp)
                         )
                     }
                 }
 
                 @OptIn(ExperimentalAnimationGraphicsApi::class)
                 Surface(
-                    onClick = onTogglePlay,
-                    shape = CircleShape,
-                    color = if (useBlurControls) blurPlayContainerColor else MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(80.dp).bounceClick()
+                    onClick = {
+                        labelTrigger++
+                        onTogglePlay()
+                    },
+                    shape = playShape,
+                    color = playBgColor,
+                    border = playBorder,
+                    modifier = Modifier
+                        .height(68.dp)
+                        .width(playButtonWidth)
+                        .bounceClick()
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val avd = AnimatedImageVector.animatedVectorResource(R.drawable.avd_play_pause_morph)
-                        Icon(
-                            painter = rememberAnimatedVectorPainter(avd, atEnd = isPlaying),
-                            contentDescription = stringResource(R.string.cd_play_pause),
-                            modifier = Modifier.size(40.dp),
-                            tint = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        ) {
+                            val avd = AnimatedImageVector.animatedVectorResource(R.drawable.avd_play_pause_morph)
+                            Icon(
+                                painter = rememberAnimatedVectorPainter(avd, atEnd = isPlaying),
+                                contentDescription = stringResource(R.string.cd_play_pause),
+                                modifier = Modifier.size(38.dp),
+                                tint = playIconTint
+                            )
+
+                            AnimatedVisibility(
+                                visible = showPlayStateLabel,
+                                enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                        expandHorizontally(
+                                            expandFrom = Alignment.Start,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMediumLow
+                                            )
+                                        ) +
+                                        scaleIn(
+                                            initialScale = 0.8f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMediumLow
+                                            )
+                                        ),
+                                exit = fadeOut(animationSpec = tween(150)) +
+                                       shrinkHorizontally(
+                                           shrinkTowards = Alignment.Start,
+                                           animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                                       )
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(start = 6.dp, end = 4.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(if (isPlaying) R.string.play_state_play else R.string.play_state_pause),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = playIconTint,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Clip
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
                 Surface(
                     onClick = onNext,
-                    shape = CircleShape,
+                    shape = skipShape,
                     color = activeContainerColor,
-                    modifier = Modifier.size(64.dp).bounceClick()
+                    border = skipBorder,
+                    modifier = Modifier
+                        .size(68.dp)
+                        .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         ReusableSkipIcon(
@@ -911,7 +1037,7 @@ fun FullPlayer(
                             controlsIconStyle = controlsIconStyle,
                             isControlsFilled = isControlsFilled,
                             tint = activeIconTint,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(34.dp)
                         )
                     }
                 }

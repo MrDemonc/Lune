@@ -157,6 +157,8 @@
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Activate EQ</string>
     <string name="cd_play_pause">Play/Pause</string>
+    <string name="play_state_play">Play</string>
+    <string name="play_state_pause">Pause</string>
     <string name="cd_change_cover">Change cover</string>
     <string name="playlists">Playlists</string>
     <string name="add_to_playlist">Playlist</string>

@@ -158,6 +158,8 @@
     <string name="ok">Aceptar</string>
     <string name="cd_activate_eq">Activar EQ</string>
     <string name="cd_play_pause">Reproducir/Pausa</string>
+    <string name="play_state_play">Play</string>
+    <string name="play_state_pause">Pausa</string>
     <string name="cd_change_cover">Cambiar portada</string>
     <string name="playlists">Listas</string>
     <string name="add_to_playlist">Lista</string>
