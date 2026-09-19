@@ -1033,44 +1033,50 @@ fun FullPlayer(
                         }
                     }
                 } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    val pillBg = if (useBlurControls) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)
+                    } else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+
+                    val pillBorder = if (useBlurControls) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+                    } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+
+                    val pillDivider = if (useBlurControls) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.15f)
+                    } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+                    val itemTint = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+
+                    val hasLyrics = playbackManager.currentLyrics != null
+                    val lyricsTint by animateColorAsState(
+                        targetValue = if (hasLyrics) {
+                            if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            if (useBlurControls) Color.White.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                        },
+                        label = "lyricsTint"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        AnimatedVisibility(visible = settingsManager.isOptionsBarVisible) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 32.dp)
-                                    .graphicsLayer {
-                                        scaleX = pillAnim.value
-                                        scaleY = pillAnim.value
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val pillBg = if (useBlurControls) {
-                                    if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)
-                                } else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-
-                                val pillBorder = if (useBlurControls) {
-                                    if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
-                                } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-
-                                val pillDivider = if (useBlurControls) {
-                                    if (isDarkTheme) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.15f)
-                                } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-
-                                val itemTint = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                val hasLyrics = playbackManager.currentLyrics != null
-                                val lyricsTint by animateColorAsState(
-                                    targetValue = if (hasLyrics) {
-                                        if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-                                    } else {
-                                        if (useBlurControls) Color.White.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                                    },
-                                    label = "lyricsTint"
-                                )
-
+                        AnimatedContent(
+                            targetState = settingsManager.isOptionsBarVisible,
+                            transitionSpec = {
+                                (fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                    scaleIn(initialScale = 0.85f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)))
+                                    .togetherWith(
+                                        fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                        scaleOut(targetScale = 0.85f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+                                    )
+                            },
+                            label = "OptionsPillMorph"
+                        ) { isExpanded ->
+                            if (isExpanded) {
+                                // Full Divided Pill Toolbar (Expanded)
                                 Surface(
                                     shape = CircleShape,
                                     color = pillBg,
@@ -1197,21 +1203,61 @@ fun FullPlayer(
                                                 modifier = Modifier.size(19.dp)
                                             )
                                         }
+
+                                        // Divider
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.dp)
+                                                .height(18.dp)
+                                                .background(pillDivider)
+                                        )
+
+                                        // 6. Collapse Button
+                                        Box(
+                                            modifier = Modifier
+                                                .bounceClick(0.92f)
+                                                .clip(CircleShape)
+                                                .clickable { settingsManager.isOptionsBarVisible = false }
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = stringResource(R.string.hide_options),
+                                                tint = itemTint.copy(alpha = 0.7f),
+                                                modifier = Modifier.size(17.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Discreet Mini-Capsule (Collapsed: '•••')
+                                Surface(
+                                    shape = CircleShape,
+                                    color = pillBg,
+                                    border = BorderStroke(1.dp, pillBorder),
+                                    modifier = Modifier
+                                        .height(36.dp)
+                                        .bounceClick(0.92f)
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            settingsManager.isOptionsBarVisible = true
+                                            retriggerPillAnim()
+                                        }
+                                ) {
+                                    Box(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreHoriz,
+                                            contentDescription = stringResource(R.string.show_options),
+                                            tint = itemTint,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
                             }
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        IconButton(
-                            onClick = { settingsManager.isOptionsBarVisible = !settingsManager.isOptionsBarVisible },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (settingsManager.isOptionsBarVisible) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                                contentDescription = if (settingsManager.isOptionsBarVisible) stringResource(R.string.hide_options) else stringResource(R.string.show_options),
-                                tint = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp)
-                            )
                         }
                     }
                 }
