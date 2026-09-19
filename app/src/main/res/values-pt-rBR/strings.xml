@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">Definir a duração da transição</string>
     <string name="unknown_artist">Artista desconhecido</string>
     <string name="unknown_song">Música desconhecida</string>
+    <string name="unknown_album">Álbum desconhecido</string>
 	
     <!-- Accessibility / Icons -->
     <string name="cd_back">Voltar</string>
@@ -157,6 +158,16 @@
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Ativar EQ</string>
     <string name="cd_play_pause">Reproduzir/Pausar</string>
+    <string name="play_state_play">Reproduzir</string>
+    <string name="play_state_pause">Pausar</string>
+    <string name="audio_quality_details">Detalhes da qualidade de áudio</string>
+    <string name="audio_lossless">Sem perdas (Lossless)</string>
+    <string name="audio_compressed">Comprimido</string>
+    <string name="audio_bitrate">Taxa de bits</string>
+    <string name="audio_sample_rate">Taxa de amostragem</string>
+    <string name="audio_bit_depth">Profundidade de bits</string>
+    <string name="audio_file_format">Formato do arquivo</string>
+    <string name="audio_file_path">Caminho do arquivo</string>
     <string name="cd_change_cover">Alterar capa</string>
     <string name="playlists">Playlists</string>
     <string name="add_to_playlist">Playlist</string>
@@ -458,4 +469,19 @@
     <string name="auto_sync_backup">Sincronização automática do backup</string>
     <string name="auto_sync_backup_desc">Atualiza automaticamente o backup exportado quando playlists ou letras mudarem</string>
     <string name="auto_sync_requires_export">Exporte um backup primeiro para ativar a sincronização automática</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">Ações de deslizar faixas</string>
+    <string name="track_swipe_gestures_desc">Deslize para a esquerda ou direita nas faixas para adicionar à fila ou realizar ações rápidas</string>
+    <string name="swipe_right_action">Ação ao deslizar para a direita</string>
+    <string name="swipe_left_action">Ação ao deslizar para a esquerda</string>
+    <string name="add_to_queue">Adicionar à fila</string>
+    <string name="added_to_queue">Adicionado à fila: %1$s</string>
+    <string name="played_next">Tocando a seguir: %1$s</string>
+    <string name="progress_indicator_style">Estilo da barra de progresso</string>
+    <string name="progress_indicator_style_desc">Escolha o estilo do indicador de progresso na tela do player</string>
+    <string name="progress_style_wavy">Ondulado</string>
+    <string name="progress_style_slider">Controle deslizante</string>
+    <string name="progress_style_bars">Barras de onda</string>
+    <string name="mini_player_scrubbing">Deslize para buscar</string>
 </resources>

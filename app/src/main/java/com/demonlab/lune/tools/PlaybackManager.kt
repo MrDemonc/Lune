@@ -1432,6 +1432,29 @@ class PlaybackManager private constructor(private val context: Context) {
         }
     }
 
+    fun addToQueue(song: Song) {
+        val current = currentSong
+        if (current == null || activePlaylist.isEmpty()) {
+            play(song)
+            return
+        }
+        val exists = activePlaylist.any { it.id == song.id }
+        if (exists) {
+            reorderQueueForSong(song, moveToFront = false)
+        } else {
+            val mutable = activePlaylist.toMutableList()
+            mutable.add(song)
+            activePlaylist = mutable
+
+            if (isShuffle && shuffledIndices.isNotEmpty()) {
+                val newIndex = activePlaylist.size - 1
+                val mutableShuffle = shuffledIndices.toMutableList()
+                mutableShuffle.add(newIndex)
+                shuffledIndices = mutableShuffle
+            }
+        }
+    }
+
     fun reorderQueueForSong(song: Song, moveToFront: Boolean) {
         val current = currentSong ?: return
         if (moveToFront) {

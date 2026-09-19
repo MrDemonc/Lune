@@ -30,6 +30,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.MoreVert
@@ -81,6 +85,13 @@ import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.utils.formatDuration
 import com.demonlab.lune.ui.utils.formatDurationCompact
 import com.demonlab.lune.ui.utils.formatLongDuration
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
+import android.os.Vibrator
+import android.widget.Toast
+import com.demonlab.lune.ui.utils.triggerLightVibration
+import kotlin.math.roundToInt
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -316,16 +327,195 @@ fun SongItem(
     val optionsBg = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
     val optionsTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
 
-    Surface(
+    val isTrackSwipeEnabled = settingsManager.isTrackSwipeEnabled
+    val rightAction = settingsManager.trackSwipeRightAction
+    val leftAction = settingsManager.trackSwipeLeftAction
+    val vibrator = remember(context) { context.getSystemService(Vibrator::class.java) }
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val coroutineScope = rememberCoroutineScope()
+    val offsetX = remember { Animatable(0f) }
+    var hasVibratedThreshold by remember { mutableStateOf(false) }
+
+    fun executeTrackAction(action: Int) {
+        if (settingsManager.isHapticVibrationEnabled) {
+            vibrator?.triggerLightVibration()
+        }
+        when (action) {
+            0 -> {
+                playbackManager.playNext(song)
+                Toast.makeText(context, context.getString(R.string.played_next, song.title), Toast.LENGTH_SHORT).show()
+            }
+            1 -> {
+                playbackManager.addToQueue(song)
+                Toast.makeText(context, context.getString(R.string.added_to_queue, song.title), Toast.LENGTH_SHORT).show()
+            }
+            2 -> {
+                onFavoriteClick?.invoke(song) ?: run {
+                    playbackManager.toggleFavorite(song)
+                }
+            }
+            3 -> {
+                onOptionsClick?.invoke()
+            }
+        }
+    }
+
+    val currentOffset = offsetX.value
+    val absOffset = abs(currentOffset)
+    val threshold = 72f
+    val isPastThreshold = absOffset >= threshold
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 1.dp)
-            .bounceClick(scaleDown = 0.96f),
-        onClick = onClick ?: {},
-        shape = shape,
-        color = cardBg,
-        border = itemBorder
+            .clip(shape)
     ) {
+        if (isTrackSwipeEnabled && absOffset > 4f) {
+            val isSwipingRight = currentOffset > 0
+            val action = if (isSwipingRight) rightAction else leftAction
+            if (action != 4) {
+                val (actionIcon, actionLabel) = when (action) {
+                    0 -> Icons.AutoMirrored.Filled.PlaylistPlay to stringResource(R.string.play_next)
+                    1 -> Icons.AutoMirrored.Filled.QueueMusic to stringResource(R.string.add_to_queue)
+                    2 -> (if (song.isFavorite) Icons.Default.FavoriteBorder else Icons.Default.Favorite) to stringResource(R.string.option_favorite)
+                    3 -> Icons.AutoMirrored.Filled.PlaylistAdd to stringResource(R.string.add_to_playlist)
+                    else -> Icons.Default.Check to ""
+                }
+
+                val actionBgColor = if (isPastThreshold) {
+                    if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else activePrimary.copy(alpha = 0.30f)
+                } else {
+                    if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else activePrimary.copy(alpha = 0.12f)
+                }
+
+                val actionIconTint = if (hasBlurBackground) Color.White else activePrimary
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(actionBgColor)
+                        .padding(horizontal = 18.dp),
+                    contentAlignment = if (isSwipingRight) Alignment.CenterStart else Alignment.CenterEnd
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.graphicsLayer {
+                            val scale = if (isPastThreshold) 1.15f else (0.8f + (absOffset / threshold) * 0.2f).coerceIn(0.8f, 1f)
+                            scaleX = scale
+                            scaleY = scale
+                        }
+                    ) {
+                        if (isSwipingRight) {
+                            Icon(
+                                imageVector = actionIcon,
+                                contentDescription = actionLabel,
+                                tint = actionIconTint,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            if (isPastThreshold) {
+                                Text(
+                                    text = actionLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = actionIconTint
+                                )
+                            }
+                        } else {
+                            if (isPastThreshold) {
+                                Text(
+                                    text = actionLabel,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = actionIconTint
+                                )
+                            }
+                            Icon(
+                                imageVector = actionIcon,
+                                contentDescription = actionLabel,
+                                tint = actionIconTint,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .then(
+                    if (isTrackSwipeEnabled) {
+                        Modifier.pointerInput(song.id, isTrackSwipeEnabled, rightAction, leftAction) {
+                            detectHorizontalDragGestures(
+                                onDragStart = {
+                                    hasVibratedThreshold = false
+                                },
+                                onDragEnd = {
+                                    val finalOffset = offsetX.value
+                                    if (abs(finalOffset) >= threshold) {
+                                        val action = if (finalOffset > 0) rightAction else leftAction
+                                        if (action != 4) {
+                                            executeTrackAction(action)
+                                        }
+                                    }
+                                    hasVibratedThreshold = false
+                                    coroutineScope.launch {
+                                        offsetX.animateTo(
+                                            0f,
+                                            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
+                                        )
+                                    }
+                                },
+                                onDragCancel = {
+                                    hasVibratedThreshold = false
+                                    coroutineScope.launch {
+                                        offsetX.animateTo(
+                                            0f,
+                                            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
+                                        )
+                                    }
+                                },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    val current = offsetX.value
+                                    val target = current + dragAmount * 0.65f
+                                    val canSwipeRight = rightAction != 4
+                                    val canSwipeLeft = leftAction != 4
+
+                                    val clamped = if (target > 0 && !canSwipeRight) {
+                                        target.coerceAtMost(10f)
+                                    } else if (target < 0 && !canSwipeLeft) {
+                                        target.coerceAtLeast(-10f)
+                                    } else {
+                                        target.coerceIn(-140f, 140f)
+                                    }
+
+                                    if (abs(clamped) >= threshold && !hasVibratedThreshold) {
+                                        hasVibratedThreshold = true
+                                        if (settingsManager.isHapticVibrationEnabled) {
+                                            vibrator?.triggerLightVibration()
+                                        }
+                                    } else if (abs(clamped) < threshold) {
+                                        hasVibratedThreshold = false
+                                    }
+
+                                    coroutineScope.launch {
+                                        offsetX.snapTo(clamped)
+                                    }
+                                }
+                            )
+                        }
+                    } else Modifier
+                )
+                .bounceClick(scaleDown = 0.96f),
+            onClick = onClick ?: {},
+            shape = shape,
+            color = cardBg,
+            border = itemBorder
+        ) {
         ListItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             supportingContent = {
@@ -474,6 +664,7 @@ fun SongItem(
             }
         }
     }
+}
 }
 
 @Composable

@@ -469,4 +469,19 @@
     <string name="auto_sync_backup">Sincronización automática de respaldo</string>
     <string name="auto_sync_backup_desc">Actualiza automáticamente el respaldo cuando cambien tus listas o letras</string>
     <string name="auto_sync_requires_export">Exporta un respaldo primero para activar la sincronización</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">Acciones al deslizar pistas</string>
+    <string name="track_swipe_gestures_desc">Desliza a la izquierda o derecha en las canciones para encolar o realizar acciones rápidas</string>
+    <string name="swipe_right_action">Acción al deslizar a la derecha</string>
+    <string name="swipe_left_action">Acción al deslizar a la izquierda</string>
+    <string name="add_to_queue">Añadir a la cola</string>
+    <string name="added_to_queue">Añadido a la cola: %1$s</string>
+    <string name="played_next">Reproduciendo a continuación: %1$s</string>
+    <string name="progress_indicator_style">Estilo de la barra de progreso</string>
+    <string name="progress_indicator_style_desc">Elige el estilo de la barra de reproducción en la pantalla del reproductor</string>
+    <string name="progress_style_wavy">Ondulada</string>
+    <string name="progress_style_slider">Deslizador clásico</string>
+    <string name="progress_style_bars">Barras de onda</string>
+    <string name="mini_player_scrubbing">Desliza para buscar</string>
 </resources>

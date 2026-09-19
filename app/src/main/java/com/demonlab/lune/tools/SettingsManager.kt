@@ -354,6 +354,30 @@ class SettingsManager(context: Context) {
         get() = prefs.getInt("swipe_up_action", 0)
         set(value) = prefs.edit().putInt("swipe_up_action", value).apply()
 
+    private val _isTrackSwipeEnabled = mutableStateOf(prefs.getBoolean("is_track_swipe_enabled", true))
+    var isTrackSwipeEnabled: Boolean
+        get() = _isTrackSwipeEnabled.value
+        set(value) {
+            _isTrackSwipeEnabled.value = value
+            prefs.edit().putBoolean("is_track_swipe_enabled", value).apply()
+        }
+
+    var trackSwipeRightAction: Int
+        get() = prefs.getInt("track_swipe_right_action", 0)
+        set(value) = prefs.edit().putInt("track_swipe_right_action", value).apply()
+
+    var trackSwipeLeftAction: Int
+        get() = prefs.getInt("track_swipe_left_action", 1)
+        set(value) = prefs.edit().putInt("track_swipe_left_action", value).apply()
+
+    private val _progressIndicatorStyle = mutableStateOf(prefs.getInt("progress_indicator_style", 0))
+    var progressIndicatorStyle: Int
+        get() = _progressIndicatorStyle.value
+        set(value) {
+            _progressIndicatorStyle.value = value
+            prefs.edit().putInt("progress_indicator_style", value).apply()
+        }
+
     var dailyListeningTime: Long
         get() = prefs.getLong("daily_listening_time", 0L)
         set(value) = prefs.edit().putLong("daily_listening_time", value).apply()

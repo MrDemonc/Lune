@@ -18,15 +18,22 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.composed
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.IntOffset
+import com.demonlab.lune.ui.utils.triggerLightVibration
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -388,6 +395,51 @@ fun AudioQualityBadges(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun WaveformBarsProgressIndicator(
+    progress: Float,
+    color: Color,
+    trackColor: Color,
+    modifier: Modifier = Modifier,
+    barCount: Int = 40
+) {
+    val barHeights = remember(barCount) {
+        val random = java.util.Random(1337)
+        FloatArray(barCount) { index ->
+            val fraction = index.toFloat() / barCount
+            val wave = kotlin.math.sin(fraction * Math.PI).toFloat().coerceIn(0.2f, 1f)
+            val noise = 0.35f + random.nextFloat() * 0.65f
+            (wave * noise).coerceIn(0.25f, 1f)
+        }
+    }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(24.dp)
+    ) {
+        val totalWidth = size.width
+        val barWidth = 4.dp.toPx()
+        val spacing = (totalWidth - (barWidth * barCount)) / (barCount - 1).coerceAtLeast(1)
+        val maxHeight = size.height
+
+        for (i in 0 until barCount) {
+            val barFraction = (i.toFloat() + 0.5f) / barCount
+            val isFilled = barFraction <= progress.coerceIn(0f, 1f)
+            val barH = (maxHeight * barHeights[i]).coerceAtLeast(barWidth)
+            val x = i * (barWidth + spacing)
+            val y = (maxHeight - barH) / 2f
+
+            drawRoundRect(
+                color = if (isFilled) color else trackColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barH),
+                cornerRadius = CornerRadius(barWidth / 2f, barWidth / 2f)
+            )
         }
     }
 }
@@ -948,15 +1000,41 @@ fun FullPlayer(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    LinearWavyProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
-                        trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
-                        amplitude = { 1f }
-                    )
+                    when (settingsManager.progressIndicatorStyle) {
+                        1 -> {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp)
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
+                                trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
+                        2 -> {
+                            WaveformBarsProgressIndicator(
+                                progress = progress,
+                                color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
+                                trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp)
+                            )
+                        }
+                        else -> {
+                            LinearWavyProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
+                                trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
+                                amplitude = { 1f }
+                            )
+                        }
+                    }
 
                     val infiniteTransition = rememberInfiniteTransition(label = "thumbRotation")
                     val rotation by infiniteTransition.animateFloat(
@@ -1929,6 +2007,132 @@ fun ScallopPlayPauseButtonWithProgress(
     }
 }
 
+fun Modifier.miniPlayerSeekAndSwipeGestures(
+    enabled: Boolean,
+    vibrator: Vibrator?,
+    isHapticEnabled: Boolean,
+    onExpand: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
+    onSeek: ((Float) -> Unit)?,
+    isScrubbing: Boolean,
+    onScrubbingChange: (Boolean) -> Unit,
+    onScrubProgressChange: (Float) -> Unit
+): Modifier = composed {
+    if (!enabled) return@composed this
+
+    val coroutineScope = rememberCoroutineScope()
+    var dragTranslationX by remember { mutableFloatStateOf(0f) }
+    var dragScale by remember { mutableFloatStateOf(1f) }
+    val animOffsetX = remember { Animatable(0f) }
+    val animScale = remember { Animatable(1f) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    this
+        .graphicsLayer {
+            if (!isScrubbing) {
+                translationX = if (isDragging) dragTranslationX else animOffsetX.value
+                scaleX = if (isDragging) dragScale else animScale.value
+                scaleY = if (isDragging) dragScale else animScale.value
+            }
+        }
+        .pointerInput(enabled, onSeek) {
+            val touchSlop = viewConfiguration.touchSlop
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val downTime = System.currentTimeMillis()
+                val startX = down.position.x
+                val totalWidth = size.width.toFloat()
+                var scrubActive = false
+                var swipeConsumed = false
+                var hasMovedPastSlop = false
+                isDragging = false
+                dragTranslationX = 0f
+                dragScale = 1f
+                var latestScrubFraction = 0f
+
+                val longPressJob = coroutineScope.launch {
+                    if (onSeek != null) {
+                        delay(280L)
+                        if (!hasMovedPastSlop) {
+                            scrubActive = true
+                            if (isHapticEnabled) vibrator?.triggerLightVibration()
+                            onScrubbingChange(true)
+                            latestScrubFraction = (startX / totalWidth.coerceAtLeast(1f)).coerceIn(0f, 1f)
+                            onScrubProgressChange(latestScrubFraction)
+                        }
+                    }
+                }
+
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!change.pressed) {
+                        longPressJob.cancel()
+                        if (scrubActive) {
+                            change.consume()
+                            onSeek?.invoke(latestScrubFraction)
+                            onScrubbingChange(false)
+                            if (isHapticEnabled) vibrator?.triggerLightVibration()
+                        } else {
+                            val duration = System.currentTimeMillis() - downTime
+                            val totalDeltaX = change.position.x - startX
+                            if (swipeConsumed) {
+                                // Already consumed skip
+                            } else if (duration < 320 && kotlin.math.abs(totalDeltaX) < touchSlop) {
+                                onExpand()
+                            }
+                            isDragging = false
+                            val currentX = dragTranslationX
+                            val currentS = dragScale
+                            coroutineScope.launch {
+                                animOffsetX.snapTo(currentX)
+                                animScale.snapTo(currentS)
+                                if (swipeConsumed) {
+                                    animScale.animateTo(0.94f, tween(50))
+                                }
+                                launch {
+                                    animOffsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+                                }
+                                launch {
+                                    animScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+                                }
+                            }
+                        }
+                        break
+                    }
+
+                    val currentX = change.position.x
+                    val deltaX = currentX - startX
+
+                    if (kotlin.math.abs(deltaX) > touchSlop) {
+                        hasMovedPastSlop = true
+                        if (!scrubActive) {
+                            longPressJob.cancel()
+                        }
+                    }
+
+                    if (scrubActive) {
+                        change.consume()
+                        latestScrubFraction = (currentX / totalWidth.coerceAtLeast(1f)).coerceIn(0f, 1f)
+                        onScrubProgressChange(latestScrubFraction)
+                    } else {
+                        isDragging = true
+                        dragTranslationX = (deltaX * 0.35f).coerceIn(-75f, 75f)
+                        val absX = kotlin.math.abs(dragTranslationX)
+                        dragScale = (1f - (absX / 1600f)).coerceIn(0.96f, 1f)
+
+                        if (!swipeConsumed && absX > 45) {
+                            change.consume()
+                            swipeConsumed = true
+                            if (dragTranslationX < 0) onNext() else onPrevious()
+                        }
+                    }
+                }
+            }
+        }
+}
+
 @Composable
 fun MiniPlayer(
     song: Song,
@@ -1954,7 +2158,8 @@ fun MiniPlayer(
     onNext: () -> Unit,
     onSearchClick: (() -> Unit)? = null,
     onScrollToCurrent: (() -> Unit)? = null,
-    onMinimize: (() -> Unit)? = null
+    onMinimize: (() -> Unit)? = null,
+    onSeek: ((Float) -> Unit)? = null
 ) {
     val infiniteSpinTransition = rememberInfiniteTransition(label = "MiniPlayerSpin")
     val spinRotation by infiniteSpinTransition.animateFloat(
@@ -1968,8 +2173,19 @@ fun MiniPlayer(
     )
 
     val miniContext = LocalContext.current
+    val vibrator = remember(miniContext) { miniContext.getSystemService(Vibrator::class.java) }
+    val settingsManager = remember { SettingsManager.getInstance(miniContext) }
     val blurContainerColorMini = if (isDarkTheme) Color.Black.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.4f)
     val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+
+    var isScrubbing by remember { mutableStateOf(false) }
+    var liveScrubProgress by remember { mutableFloatStateOf(progress) }
+
+    LaunchedEffect(progress) {
+        if (!isScrubbing) {
+            liveScrubProgress = progress
+        }
+    }
 
     val pillMiniColor = if (useCustomControlsColor) {
         activePrimary.copy(alpha = 0.25f)
@@ -2000,12 +2216,18 @@ fun MiniPlayer(
                 .weight(1f)
                 .fillMaxHeight()
                 .clip(pillShape)
-                .songSwipeGestures(
+                .miniPlayerSeekAndSwipeGestures(
                     enabled = true,
+                    vibrator = vibrator,
+                    isHapticEnabled = settingsManager.isHapticVibrationEnabled,
+                    onExpand = onExpand,
                     onNext = onNext,
-                    onPrevious = onPrevious
-                )
-                .clickable { onExpand() },
+                    onPrevious = onPrevious,
+                    onSeek = onSeek,
+                    isScrubbing = isScrubbing,
+                    onScrubbingChange = { isScrubbing = it },
+                    onScrubProgressChange = { liveScrubProgress = it }
+                ),
             shape = pillShape,
             color = if (hasBlurBackground) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = if (hasBlurBackground) 0.dp else 6.dp
@@ -2057,35 +2279,84 @@ fun MiniPlayer(
                         .padding(start = 18.dp, end = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Título de la canción y debajo icono de dispositivo + artista
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = song.title,
-                            modifier = Modifier.basicMarquee(),
-                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = currentOutputIcon,
-                                contentDescription = null,
-                                tint = if (hasBlurBackground) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = song.artist,
-                                modifier = Modifier.basicMarquee(),
-                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1
-                            )
+                    AnimatedContent(
+                        targetState = isScrubbing,
+                        transitionSpec = {
+                            fadeIn(tween(160)) togetherWith fadeOut(tween(160))
+                        },
+                        label = "MiniPlayerScrubTransition",
+                        modifier = Modifier.weight(1f)
+                    ) { scrubbing ->
+                        if (scrubbing) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = formatDuration((song.duration * liveScrubProgress).toLong()),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.mini_player_scrubbing),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                    Text(
+                                        text = formatDuration(song.duration),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(3.dp))
+                                LinearProgressIndicator(
+                                    progress = { liveScrubProgress },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp)),
+                                    color = if (hasBlurBackground) Color.White else (if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary),
+                                    trackColor = if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.25f)
+                                )
+                            }
+                        } else {
+                            // Título de la canción y debajo icono de dispositivo + artista
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = song.title,
+                                    modifier = Modifier.basicMarquee(),
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = currentOutputIcon,
+                                        contentDescription = null,
+                                        tint = if (hasBlurBackground) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = song.artist,
+                                        modifier = Modifier.basicMarquee(),
+                                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
                         }
                     }
 

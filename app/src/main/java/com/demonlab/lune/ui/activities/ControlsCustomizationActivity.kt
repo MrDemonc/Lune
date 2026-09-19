@@ -35,6 +35,7 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.player.ReusableSkipIcon
+import com.demonlab.lune.ui.player.WaveformBarsProgressIndicator
 import com.demonlab.lune.ui.theme.LuneTheme
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.utils.bounceClick
@@ -85,7 +86,7 @@ class ControlsCustomizationActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ControlsCustomizationScreen(
     onBack: () -> Unit,
@@ -105,6 +106,7 @@ fun ControlsCustomizationScreen(
     var isControlsFilled by remember { mutableStateOf(settingsManager.isControlsFilled) }
     var useCustomControlsColor by remember { mutableStateOf(settingsManager.useCustomControlsColor) }
     var controlsColorPalette by remember { mutableIntStateOf(settingsManager.controlsColorPalette) }
+    var progressIndicatorStyle by remember { mutableIntStateOf(settingsManager.progressIndicatorStyle) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -261,6 +263,64 @@ fun ControlsCustomizationScreen(
                         Color.Black
                     } else {
                         MaterialTheme.colorScheme.onPrimary
+                    }
+
+                    // Mock Seeker
+                    val seekerColor = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                    val seekerTrackColor = if (useCustomControlsColor) activePrimary.copy(alpha = 0.25f) else if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant
+
+                    when (progressIndicatorStyle) {
+                        1 -> {
+                            LinearProgressIndicator(
+                                progress = { 0.45f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                color = seekerColor,
+                                trackColor = seekerTrackColor
+                            )
+                        }
+                        2 -> {
+                            WaveformBarsProgressIndicator(
+                                progress = 0.45f,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                color = seekerColor,
+                                trackColor = seekerTrackColor
+                            )
+                        }
+                        else -> {
+                            LinearWavyProgressIndicator(
+                                progress = { 0.45f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                color = seekerColor,
+                                trackColor = seekerTrackColor,
+                                amplitude = { 1f }
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 6.dp, bottom = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "1:24",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "3:10",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
                     // Mock Player Bar
@@ -424,6 +484,71 @@ fun ControlsCustomizationScreen(
                                             isNext = true,
                                             controlsIconStyle = index,
                                             isControlsFilled = isControlsFilled,
+                                            tint = if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)),
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Progress Indicator Style Selection
+            SettingsSection(title = stringResource(R.string.progress_indicator_style)) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val progressStyles = listOf(
+                            Triple(0, stringResource(R.string.progress_style_wavy), Icons.Default.Waves),
+                            Triple(1, stringResource(R.string.progress_style_slider), Icons.Default.LinearScale),
+                            Triple(2, stringResource(R.string.progress_style_bars), Icons.Default.Equalizer)
+                        )
+
+                        progressStyles.forEach { (index, label, icon) ->
+                            val isSelected = progressIndicatorStyle == index
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .bounceClick()
+                                    .clickable {
+                                        progressIndicatorStyle = index
+                                        settingsManager.progressIndicatorStyle = index
+                                    }
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isSelected) {
+                                        if (hasBlurBackground) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer
+                                    } else {
+                                        if (hasBlurBackground) Color.White.copy(alpha = 0.10f) else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                                    },
+                                    border = BorderStroke(2.dp, if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else Color.Transparent),
+                                    modifier = Modifier.size(72.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = label,
                                             tint = if (isSelected) (if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary) else (if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)),
                                             modifier = Modifier.size(32.dp)
                                         )

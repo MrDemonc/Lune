@@ -12,10 +12,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.SwipeUp
+import androidx.compose.material.icons.filled.SwipeRight
+import androidx.compose.material.icons.filled.SwipeLeft
 import androidx.compose.material3.*
 import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
@@ -82,6 +86,12 @@ fun GestureCustomizationScreen(
     var isGesturesEnabled by remember { mutableStateOf(settingsManager.isGesturesEnabled) }
     var swipeUpAction by remember { mutableIntStateOf(settingsManager.swipeUpAction) }
     var showSwipeUpOptions by remember { mutableStateOf(false) }
+
+    var isTrackSwipeEnabled by remember { mutableStateOf(settingsManager.isTrackSwipeEnabled) }
+    var trackSwipeRightAction by remember { mutableIntStateOf(settingsManager.trackSwipeRightAction) }
+    var trackSwipeLeftAction by remember { mutableIntStateOf(settingsManager.trackSwipeLeftAction) }
+    var showSwipeRightOptions by remember { mutableStateOf(false) }
+    var showSwipeLeftOptions by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -172,6 +182,59 @@ fun GestureCustomizationScreen(
                         onClick = { showSwipeUpOptions = true }
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SettingsSection(title = stringResource(R.string.track_swipe_gestures)) {
+                    val trackActionNames = listOf(
+                        stringResource(R.string.play_next),
+                        stringResource(R.string.add_to_queue),
+                        stringResource(R.string.option_favorite),
+                        stringResource(R.string.add_to_playlist),
+                        stringResource(R.string.disabled)
+                    )
+
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.track_swipe_gestures),
+                        supportingText = stringResource(R.string.track_swipe_gestures_desc),
+                        icon = Icons.AutoMirrored.Filled.QueueMusic,
+                        position = if (isTrackSwipeEnabled) SectionPosition.FIRST else SectionPosition.SINGLE,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = isTrackSwipeEnabled,
+                                onCheckedChange = { 
+                                    isTrackSwipeEnabled = it 
+                                    settingsManager.isTrackSwipeEnabled = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isTrackSwipeEnabled) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    )
+
+                    if (isTrackSwipeEnabled) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.swipe_right_action),
+                            supportingText = trackActionNames.getOrElse(trackSwipeRightAction) { stringResource(R.string.play_next) },
+                            icon = Icons.Default.SwipeRight,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { showSwipeRightOptions = true }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.swipe_left_action),
+                            supportingText = trackActionNames.getOrElse(trackSwipeLeftAction) { stringResource(R.string.add_to_queue) },
+                            icon = Icons.Default.SwipeLeft,
+                            position = SectionPosition.LAST,
+                            onClick = { showSwipeLeftOptions = true }
+                        )
+                    }
+                }
             }
             
             if (showSwipeUpOptions) {
@@ -208,6 +271,120 @@ fun GestureCustomizationScreen(
                                         swipeUpAction = index
                                         settingsManager.swipeUpAction = index
                                         showSwipeUpOptions = false
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                        unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = title,
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showSwipeRightOptions) {
+                val trackSwipeOptions = listOf(
+                    stringResource(R.string.play_next),
+                    stringResource(R.string.add_to_queue),
+                    stringResource(R.string.option_favorite),
+                    stringResource(R.string.add_to_playlist),
+                    stringResource(R.string.disabled)
+                )
+                ModalBottomSheet(
+                    onDismissRequest = { showSwipeRightOptions = false },
+                    containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surface,
+                    dragHandle = {
+                        BottomSheetDefaults.DragHandle(
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(bottom = 32.dp)) {
+                        Text(
+                            text = stringResource(R.string.swipe_right_action),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                        trackSwipeOptions.forEachIndexed { index, title ->
+                            val isSelected = trackSwipeRightAction == index
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        trackSwipeRightAction = index
+                                        settingsManager.trackSwipeRightAction = index
+                                        showSwipeRightOptions = false
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                        unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = title,
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showSwipeLeftOptions) {
+                val trackSwipeOptions = listOf(
+                    stringResource(R.string.play_next),
+                    stringResource(R.string.add_to_queue),
+                    stringResource(R.string.option_favorite),
+                    stringResource(R.string.add_to_playlist),
+                    stringResource(R.string.disabled)
+                )
+                ModalBottomSheet(
+                    onDismissRequest = { showSwipeLeftOptions = false },
+                    containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surface,
+                    dragHandle = {
+                        BottomSheetDefaults.DragHandle(
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                ) {
+                    Column(modifier = Modifier.padding(bottom = 32.dp)) {
+                        Text(
+                            text = stringResource(R.string.swipe_left_action),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                        trackSwipeOptions.forEachIndexed { index, title ->
+                            val isSelected = trackSwipeLeftAction == index
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        trackSwipeLeftAction = index
+                                        settingsManager.trackSwipeLeftAction = index
+                                        showSwipeLeftOptions = false
                                     }
                                     .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically

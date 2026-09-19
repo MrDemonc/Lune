@@ -131,6 +131,7 @@
     <string name="crossfade_time_desc">تنظیم کن چقدر طول بکشه تا آهنگا تو هم محو بشن</string>
     <string name="unknown_artist">خواننده ناشناس</string>
     <string name="unknown_song">آهنگ ناشناس</string>
+    <string name="unknown_album">آلبوم ناشناس</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">برگرد</string>
@@ -156,6 +157,16 @@
     <string name="ok">حله</string>
     <string name="cd_activate_eq">روشن کردن اکولایزر</string>
     <string name="cd_play_pause">پلی / استاپ</string>
+    <string name="play_state_play">پخش</string>
+    <string name="play_state_pause">توقف</string>
+    <string name="audio_quality_details">جزئیات کیفیت صدا</string>
+    <string name="audio_lossless">بدون افت کیفیت (Lossless)</string>
+    <string name="audio_compressed">فشرده‌شده</string>
+    <string name="audio_bitrate">بیت‌ریت</string>
+    <string name="audio_sample_rate">نرخ نمونه‌برداری</string>
+    <string name="audio_bit_depth">عمق بیت</string>
+    <string name="audio_file_format">فرمت فایل</string>
+    <string name="audio_file_path">مسیر فایل</string>
     <string name="cd_change_cover">عوض کردن کاور</string>
     <string name="playlists">پلی‌لیست‌ها</string>
     <string name="add_to_playlist">اضافه به پلی‌لیست</string>
@@ -454,4 +465,19 @@
     <string name="auto_sync_backup">همگام‌سازی خودکار بکاپ</string>
     <string name="auto_sync_backup_desc">با تغییر پلی‌لیست‌ها یا متن‌ها، فایل بکاپ به طور خودکار بروزرسانی میشه</string>
     <string name="auto_sync_requires_export">واسه فعال کردن این بخش، اول باید یه خروجی بگیری</string>
+
+    <!-- Track Swipe Gestures & Seeker Customization -->
+    <string name="track_swipe_gestures">ژست‌های کشیدن آهنگ</string>
+    <string name="track_swipe_gestures_desc">کشیدن آهنگ به چپ یا راست برای افزودن سریع به صف یا سایر اقدامات</string>
+    <string name="swipe_right_action">اقدام کشیدن به راست</string>
+    <string name="swipe_left_action">اقدام کشیدن به چپ</string>
+    <string name="add_to_queue">افزودن به صف</string>
+    <string name="added_to_queue">به صف اضافه شد: %1$s</string>
+    <string name="played_next">پخش بعدی: %1$s</string>
+    <string name="progress_indicator_style">طرح نوار پیشرفت</string>
+    <string name="progress_indicator_style_desc">انتخاب طرح نوار زمان در صفحه پخش‌کننده</string>
+    <string name="progress_style_wavy">موج‌دار</string>
+    <string name="progress_style_slider">خطی ساده</string>
+    <string name="progress_style_bars">میله‌های فرکانس</string>
+    <string name="mini_player_scrubbing">بکشید برای جلو/عقب زدن</string>
 </resources>
