@@ -12,6 +12,7 @@ import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -1046,67 +1047,154 @@ fun FullPlayer(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                val pillBg = if (useBlurControls) {
+                                    if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)
+                                } else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+
+                                val pillBorder = if (useBlurControls) {
+                                    if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+                                } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+
+                                val pillDivider = if (useBlurControls) {
+                                    if (isDarkTheme) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.15f)
+                                } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+                                val itemTint = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+
+                                val hasLyrics = playbackManager.currentLyrics != null
+                                val lyricsTint by animateColorAsState(
+                                    targetValue = if (hasLyrics) {
+                                        if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+                                    } else {
+                                        if (useBlurControls) Color.White.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                                    },
+                                    label = "lyricsTint"
+                                )
+
+                                Surface(
+                                    shape = CircleShape,
+                                    color = pillBg,
+                                    border = BorderStroke(1.dp, pillBorder),
+                                    modifier = Modifier.height(40.dp)
                                 ) {
-                                    val buttonBg = if (useBlurControls) blurContainerColor else MaterialTheme.colorScheme.surfaceContainerHigh
-
-                                    PlayerActionButton(
-                                        icon = playbackManager.currentOutputIcon,
-                                        label = playbackManager.currentOutputName,
-                                        onClick = { showVolumeBar = true },
-                                        useBlurControls = useBlurControls,
-                                        containerColor = buttonBg
-                                    )
-
-                                    PlayerActionButton(
-                                        icon = Icons.AutoMirrored.Filled.QueueMusic,
-                                        label = stringResource(R.string.player_queue),
-                                        onClick = { showQueueSheet = true },
-                                        useBlurControls = useBlurControls,
-                                        containerColor = buttonBg
-                                    )
-
-                                    PlayerActionButton(
-                                        icon = Icons.Default.Speed,
-                                        label = stringResource(R.string.option_speed),
-                                        onClick = { showSpeedBar = true },
-                                        useBlurControls = useBlurControls,
-                                        containerColor = buttonBg
-                                    )
-
-                                    PlayerActionButton(
-                                        icon = Icons.Default.MoreHoriz,
-                                        label = stringResource(R.string.player_options),
-                                        onClick = { showOptionsSheet = true },
-                                        useBlurControls = useBlurControls,
-                                        containerColor = buttonBg
-                                    )
-
-                                    val hasLyrics = playbackManager.currentLyrics != null
-                                    val lyricsTint by animateColorAsState(
-                                        targetValue = if (hasLyrics) {
-                                            if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                                        },
-                                        label = "lyricsTint"
-                                    )
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = buttonBg,
-                                        modifier = Modifier.size(36.dp).bounceClick()
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 6.dp)
                                     ) {
-                                        IconButton(
-                                            onClick = onShowLyrics,
-                                            enabled = true
+                                        // 1. Device / Volume
+                                        Box(
+                                            modifier = Modifier
+                                                .bounceClick(0.92f)
+                                                .clip(CircleShape)
+                                                .clickable { showVolumeBar = true }
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = playbackManager.currentOutputIcon,
+                                                contentDescription = playbackManager.currentOutputName,
+                                                tint = itemTint,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
+
+                                        // Divider
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.dp)
+                                                .height(18.dp)
+                                                .background(pillDivider)
+                                        )
+
+                                        // 2. Queue
+                                        Box(
+                                            modifier = Modifier
+                                                .bounceClick(0.92f)
+                                                .clip(CircleShape)
+                                                .clickable { showQueueSheet = true }
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                                                contentDescription = stringResource(R.string.player_queue),
+                                                tint = itemTint,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
+
+                                        // Divider
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.dp)
+                                                .height(18.dp)
+                                                .background(pillDivider)
+                                        )
+
+                                        // 3. Speed
+                                        Box(
+                                            modifier = Modifier
+                                                .bounceClick(0.92f)
+                                                .clip(CircleShape)
+                                                .clickable { showSpeedBar = true }
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Speed,
+                                                contentDescription = stringResource(R.string.option_speed),
+                                                tint = itemTint,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
+
+                                        // Divider
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.dp)
+                                                .height(18.dp)
+                                                .background(pillDivider)
+                                        )
+
+                                        // 4. Options
+                                        Box(
+                                            modifier = Modifier
+                                                .bounceClick(0.92f)
+                                                .clip(CircleShape)
+                                                .clickable { showOptionsSheet = true }
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreHoriz,
+                                                contentDescription = stringResource(R.string.player_options),
+                                                tint = itemTint,
+                                                modifier = Modifier.size(19.dp)
+                                            )
+                                        }
+
+                                        // Divider
+                                        Box(
+                                            modifier = Modifier
+                                                .width(1.dp)
+                                                .height(18.dp)
+                                                .background(pillDivider)
+                                        )
+
+                                        // 5. Lyrics
+                                        Box(
+                                            modifier = Modifier
+                                                .bounceClick(0.92f)
+                                                .clip(CircleShape)
+                                                .clickable { onShowLyrics() }
+                                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Lyrics,
                                                 contentDescription = stringResource(R.string.option_lyrics),
-                                                modifier = Modifier.size(20.dp),
-                                                tint = lyricsTint
+                                                tint = lyricsTint,
+                                                modifier = Modifier.size(19.dp)
                                             )
                                         }
                                     }
