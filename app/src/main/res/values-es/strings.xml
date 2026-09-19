@@ -160,6 +160,14 @@
     <string name="cd_play_pause">Reproducir/Pausa</string>
     <string name="play_state_play">Play</string>
     <string name="play_state_pause">Pausa</string>
+    <string name="audio_quality_details">Detalles de calidad de audio</string>
+    <string name="audio_lossless">Sin pérdida</string>
+    <string name="audio_compressed">Comprimido</string>
+    <string name="audio_bitrate">Tasa de bits</string>
+    <string name="audio_sample_rate">Frecuencia de muestreo</string>
+    <string name="audio_bit_depth">Profundidad de bits</string>
+    <string name="audio_file_format">Formato de archivo</string>
+    <string name="audio_file_path">Ruta del archivo</string>
     <string name="cd_change_cover">Cambiar portada</string>
     <string name="playlists">Listas</string>
     <string name="add_to_playlist">Lista</string>

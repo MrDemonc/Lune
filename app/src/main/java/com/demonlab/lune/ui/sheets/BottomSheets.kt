@@ -1847,3 +1847,226 @@ fun CustomSleepTimerDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AudioDetailsBottomSheet(
+    song: Song,
+    sampleRate: Int?,
+    bitDepth: Int?,
+    bitrate: Int?,
+    onDismiss: () -> Unit
+) {
+    val blurColors = rememberBlurSheetColors(song)
+    val context = LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+    val format = song.format.uppercase().ifEmpty {
+        song.path.substringAfterLast('.', "").uppercase().ifEmpty { "AUDIO" }
+    }
+    val effectiveSampleRate = sampleRate ?: song.sampleRate
+    val effectiveBitDepth = bitDepth ?: song.bitDepth
+    val effectiveBitrate = bitrate ?: song.bitrate
+
+    val isHiRes = song.isHiRes ||
+        ((effectiveSampleRate ?: 0) >= 48000 && (effectiveBitDepth ?: 0) >= 24) ||
+        (effectiveSampleRate ?: 0) >= 88200 ||
+        format in listOf("DSF", "DFF") ||
+        ((effectiveBitrate ?: 0) >= 2304000)
+
+    val isHiFi = !isHiRes && (song.isHiFi ||
+        format in listOf("FLAC", "WAV", "ALAC", "APE", "AIFF") ||
+        ((effectiveBitrate ?: 0) > 320000))
+
+    val isHq = !isHiRes && !isHiFi && ((effectiveBitrate ?: 0) >= 256000)
+
+    val qualityTitle = when {
+        isHiRes -> "Hi-Res Lossless"
+        isHiFi -> "Hi-Fi Lossless"
+        isHq -> "High Quality"
+        else -> "Standard"
+    }
+
+    val qualityColor = when {
+        isHiRes -> Color(0xFFFFB300)
+        isHiFi -> Color(0xFF00E5FF)
+        else -> if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = blurColors.containerColor,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = null,
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = song,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 28.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = qualityColor.copy(alpha = 0.18f),
+                        border = BorderStroke(1.dp, qualityColor.copy(alpha = 0.45f)),
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isHiRes || isHiFi) Icons.Default.GraphicEq else Icons.Default.MusicNote,
+                                contentDescription = null,
+                                tint = qualityColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text(
+                            text = qualityTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor
+                        )
+                        Text(
+                            text = "$format • ${if (isHiRes || isHiFi) stringResource(R.string.audio_lossless) else stringResource(R.string.audio_compressed)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = blurColors.textSecondaryColor
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                val dividerColor = blurColors.itemBorderColor ?: MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = blurColors.itemContainerColor,
+                    border = BorderStroke(1.dp, blurColors.itemBorderColor ?: MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        effectiveBitrate?.let {
+                            AudioDetailItem(
+                                label = stringResource(R.string.audio_bitrate),
+                                value = "${it / 1000} kbps",
+                                blurColors = blurColors
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = dividerColor)
+                        }
+
+                        effectiveSampleRate?.let {
+                            val hzStr = if (it % 1000 == 0) "${it / 1000} kHz (${it} Hz)" else "${String.format(java.util.Locale.US, "%.1f", it / 1000f)} kHz (${it} Hz)"
+                            AudioDetailItem(
+                                label = stringResource(R.string.audio_sample_rate),
+                                value = hzStr,
+                                blurColors = blurColors
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = dividerColor)
+                        }
+
+                        effectiveBitDepth?.let {
+                            AudioDetailItem(
+                                label = stringResource(R.string.audio_bit_depth),
+                                value = "$it-bit",
+                                blurColors = blurColors
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = dividerColor)
+                        }
+
+                        AudioDetailItem(
+                            label = stringResource(R.string.audio_file_format),
+                            value = format,
+                            blurColors = blurColors
+                        )
+
+                        if (song.path.isNotBlank()) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = dividerColor)
+                            AudioDetailItem(
+                                label = stringResource(R.string.audio_file_path),
+                                value = song.path,
+                                blurColors = blurColors,
+                                isCopyable = true,
+                                onCopy = {
+                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(song.path))
+                                    Toast.makeText(context, context.getString(R.string.copied), Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AudioDetailItem(
+    label: String,
+    value: String,
+    blurColors: com.demonlab.lune.ui.components.BlurSheetColors,
+    isCopyable: Boolean = false,
+    onCopy: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (isCopyable) Modifier.clickable { onCopy?.invoke() } else Modifier),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = blurColors.textSecondaryColor,
+            fontWeight = FontWeight.Medium
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = blurColors.textColor,
+                fontWeight = FontWeight.Bold,
+                maxLines = if (isCopyable) 1 else 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (isCopyable) Modifier.widthIn(max = 200.dp) else Modifier
+            )
+            if (isCopyable) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    tint = blurColors.textSecondaryColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+

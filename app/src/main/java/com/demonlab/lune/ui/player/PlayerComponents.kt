@@ -89,6 +89,7 @@ import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.VinylRecordAsyncCover
 import com.demonlab.lune.ui.components.WaveformVisualizer
 import com.demonlab.lune.ui.sheets.AddToPlaylistDialog
+import com.demonlab.lune.ui.sheets.AudioDetailsBottomSheet
 import com.demonlab.lune.ui.sheets.PlayerOptionsBottomSheet
 import com.demonlab.lune.ui.sheets.QueueBottomSheet
 import com.demonlab.lune.ui.sheets.VisualizerSettingsBottomSheet
@@ -100,8 +101,10 @@ import com.demonlab.lune.ui.utils.songSwipeGestures
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import java.io.File
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -234,6 +237,156 @@ fun AlbumStackedCarousel(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun AudioQualityBadges(
+    song: Song,
+    runtimeSampleRate: Int?,
+    runtimeBitDepth: Int?,
+    runtimeBitrate: Int?,
+    useBlurControls: Boolean,
+    isDarkTheme: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val format = song.format.uppercase().ifEmpty {
+        song.path.substringAfterLast('.', "").uppercase().ifEmpty { "AUDIO" }
+    }
+    val effectiveSampleRate = runtimeSampleRate ?: song.sampleRate
+    val effectiveBitDepth = runtimeBitDepth ?: song.bitDepth
+    val effectiveBitrate = runtimeBitrate ?: song.bitrate
+
+    val isHiRes = song.isHiRes ||
+        ((effectiveSampleRate ?: 0) >= 48000 && (effectiveBitDepth ?: 0) >= 24) ||
+        (effectiveSampleRate ?: 0) >= 88200 ||
+        format in listOf("DSF", "DFF") ||
+        ((effectiveBitrate ?: 0) >= 2304000)
+
+    val isHiFi = !isHiRes && (song.isHiFi ||
+        format in listOf("FLAC", "WAV", "ALAC", "APE", "AIFF") ||
+        ((effectiveBitrate ?: 0) > 320000))
+
+    val isHq = !isHiRes && !isHiFi && ((effectiveBitrate ?: 0) >= 256000)
+
+    val tierName = when {
+        isHiRes -> "HI-RES"
+        isHiFi -> "HI-FI"
+        isHq -> "HQ"
+        else -> null
+    }
+
+    val tierBg = when {
+        isHiRes -> if (useBlurControls) Color(0xFFFFB300).copy(alpha = 0.28f) else Color(0xFFFFB300).copy(alpha = 0.20f)
+        isHiFi -> if (useBlurControls) Color(0xFF00E5FF).copy(alpha = 0.24f) else Color(0xFF00E5FF).copy(alpha = 0.16f)
+        else -> if (useBlurControls) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    }
+
+    val tierBorder = when {
+        isHiRes -> Color(0xFFFFB300).copy(alpha = 0.65f)
+        isHiFi -> Color(0xFF00E5FF).copy(alpha = 0.55f)
+        else -> if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    }
+
+    val tierColor = when {
+        isHiRes -> Color(0xFFFFC107)
+        isHiFi -> Color(0xFF00E5FF)
+        else -> if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary
+    }
+
+    val badgeBg = if (useBlurControls) {
+        if (isDarkTheme) Color.Black.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.35f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+    }
+
+    val badgeBorder = if (useBlurControls) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.12f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
+    }
+
+    val badgeTextColor = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurface
+
+    val sampleRateStr = effectiveSampleRate?.let {
+        if (it % 1000 == 0) "${it / 1000} kHz" else "${String.format(java.util.Locale.US, "%.1f", it / 1000f)} kHz"
+    }
+    val bitDepthStr = effectiveBitDepth?.let { if (it > 0) "${it}-bit" else null }
+    val bitrateStr = effectiveBitrate?.let { if (it > 0) "${it / 1000} kbps" else null }
+
+    val specsText = when {
+        bitDepthStr != null && sampleRateStr != null -> "$bitDepthStr / $sampleRateStr"
+        sampleRateStr != null -> sampleRateStr
+        bitrateStr != null -> bitrateStr
+        else -> null
+    }
+
+    Row(
+        modifier = modifier
+            .bounceClick()
+            .clickable { onClick() },
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (tierName != null) {
+            Surface(
+                shape = RoundedCornerShape(percent = 50),
+                color = tierBg,
+                border = BorderStroke(1.dp, tierBorder)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    if (isHiRes) {
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = null,
+                            tint = tierColor,
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                    }
+                    Text(
+                        text = tierName,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = tierColor
+                    )
+                }
+            }
+        }
+
+        Surface(
+            shape = RoundedCornerShape(percent = 50),
+            color = badgeBg,
+            border = BorderStroke(1.dp, badgeBorder)
+        ) {
+            Text(
+                text = format,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = badgeTextColor,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+        }
+
+        if (specsText != null) {
+            Surface(
+                shape = RoundedCornerShape(percent = 50),
+                color = badgeBg,
+                border = BorderStroke(1.dp, badgeBorder)
+            ) {
+                Text(
+                    text = specsText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (useBlurControls) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
             }
         }
     }
@@ -425,6 +578,46 @@ fun FullPlayer(
         label = "SpinAnimation"
     )
 
+    var showAudioDetailsSheet by remember { mutableStateOf(false) }
+    var runtimeSampleRate by remember(song.id) { mutableStateOf(song.sampleRate) }
+    var runtimeBitDepth by remember(song.id) { mutableStateOf(song.bitDepth) }
+    var runtimeBitrate by remember(song.id) { mutableStateOf(song.bitrate) }
+
+    LaunchedEffect(song.id, song.path) {
+        if ((runtimeSampleRate == null || runtimeBitDepth == null || runtimeBitrate == null) && song.path.isNotBlank()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val file = File(song.path)
+                    if (file.exists()) {
+                        val audioFile = org.jaudiotagger.audio.AudioFileIO.read(file)
+                        val header = audioFile.audioHeader
+                        if (runtimeSampleRate == null) runtimeSampleRate = header.sampleRateAsNumber
+                        if (runtimeBitDepth == null) runtimeBitDepth = header.bitsPerSample
+                        if (runtimeBitrate == null) runtimeBitrate = (header.bitRateAsNumber * 1000).toInt()
+                    }
+                } catch (_: Exception) {
+                    try {
+                        val extractor = android.media.MediaExtractor()
+                        extractor.setDataSource(song.path)
+                        for (i in 0 until extractor.trackCount) {
+                            val format = extractor.getTrackFormat(i)
+                            val mime = format.getString(android.media.MediaFormat.KEY_MIME)
+                            if (mime?.startsWith("audio/") == true) {
+                                if (runtimeSampleRate == null && format.containsKey(android.media.MediaFormat.KEY_SAMPLE_RATE)) {
+                                    runtimeSampleRate = format.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE)
+                                }
+                                if (runtimeBitrate == null && format.containsKey(android.media.MediaFormat.KEY_BIT_RATE)) {
+                                    runtimeBitrate = format.getInteger(android.media.MediaFormat.KEY_BIT_RATE)
+                                }
+                                break
+                            }
+                        }
+                        extractor.release()
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -573,63 +766,78 @@ fun FullPlayer(
         }
 
         val coverSection: @Composable () -> Unit = {
-            if (isCinematic) {
-                Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (settingsManager.isBitrateOnPlayer) {
+                    AudioQualityBadges(
+                        song = song,
+                        runtimeSampleRate = runtimeSampleRate,
+                        runtimeBitDepth = runtimeBitDepth,
+                        runtimeBitrate = runtimeBitrate,
+                        useBlurControls = useBlurControls,
+                        isDarkTheme = isDarkTheme,
+                        onClick = { showAudioDetailsSheet = true },
+                        modifier = Modifier.padding(bottom = if (isLandscape) 4.dp else 12.dp)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 16.dp))
+                }
 
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .fillMaxWidth()
-                        .scale(coverScale)
-                        .songSwipeGestures(
-                            enabled = isGesturesEnabled,
-                            onNext = onNext,
-                            onPrevious = onPrevious
-                        ),
-
-                )
-            } else {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .scale(coverScale)
-                        .songSwipeGestures(
-                            enabled = isGesturesEnabled,
-                            onNext = onNext,
-                            onPrevious = onPrevious
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (coverShape == 2 && coverVinylEffect) {
-                        VinylRecordAsyncCover(
-                            model = song.coverUrl ?: song.uri,
-                            rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        val activeShape = when (coverShape) {
-                            1 -> RoundedCornerShape(0.dp)
-                            2 -> CircleShape
-                            else -> RoundedCornerShape(28.dp)
-                        }
-                        Surface(
-                            shape = activeShape,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            tonalElevation = 8.dp
-                        ) {
-                            SongCoverImage(
-                                coverUrl = song.coverUrl ?: song.uri,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                shape = activeShape,
-                                iconScale = 0.68f
+                if (isCinematic) {
+                    Box(
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .fillMaxWidth()
+                            .scale(coverScale)
+                            .songSwipeGestures(
+                                enabled = isGesturesEnabled,
+                                onNext = onNext,
+                                onPrevious = onPrevious
+                            ),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .scale(coverScale)
+                            .songSwipeGestures(
+                                enabled = isGesturesEnabled,
+                                onNext = onNext,
+                                onPrevious = onPrevious
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (coverShape == 2 && coverVinylEffect) {
+                            VinylRecordAsyncCover(
+                                model = song.coverUrl ?: song.uri,
+                                rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                                modifier = Modifier.fillMaxSize()
                             )
+                        } else {
+                            val activeShape = when (coverShape) {
+                                1 -> RoundedCornerShape(0.dp)
+                                2 -> CircleShape
+                                else -> RoundedCornerShape(28.dp)
+                            }
+                            Surface(
+                                shape = activeShape,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                tonalElevation = 8.dp
+                            ) {
+                                SongCoverImage(
+                                    coverUrl = song.coverUrl ?: song.uri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    shape = activeShape,
+                                    iconScale = 0.68f
+                                )
+                            }
                         }
                     }
                 }
@@ -667,7 +875,6 @@ fun FullPlayer(
                             shape = RoundedCornerShape(percent = 50),
                             modifier = Modifier
                                 .weight(1f, fill = false)
-                                .widthIn(max = 280.dp)
                                 .clickable { onArtistClick?.invoke(song.artist) }
                         ) {
                             Text(
@@ -679,25 +886,6 @@ fun FullPlayer(
                                 textAlign = TextAlign.Start,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).basicMarquee()
                             )
-                        }
-
-                        if (settingsManager.isBitrateOnPlayer && song.format.isNotEmpty()) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                color = if (useBlurControls) blurContainerColor else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(percent = 50),
-                            ) {
-                                Text(
-                                    text = if (song.bitrate != null) "${song.format} | ${song.bitrate / 1000}kbps" else song.format,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Start,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                                )
-                            }
                         }
                     }
                 }
@@ -1546,6 +1734,16 @@ fun FullPlayer(
                 playbackManager = playbackManager,
                 onClose = { showVisualizerSettings = false },
                 onRequestPermission = onRequestAudioPermission
+            )
+        }
+
+        if (showAudioDetailsSheet) {
+            AudioDetailsBottomSheet(
+                song = song,
+                sampleRate = runtimeSampleRate,
+                bitDepth = runtimeBitDepth,
+                bitrate = runtimeBitrate,
+                onDismiss = { showAudioDetailsSheet = false }
             )
         }
     }
