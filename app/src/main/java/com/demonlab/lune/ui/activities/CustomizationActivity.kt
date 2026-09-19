@@ -111,6 +111,7 @@ class CustomizationActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("DEPRECATION")
 @Composable
 fun CustomizationScreen(
     onBack: () -> Unit,
@@ -467,6 +468,30 @@ fun CustomizationScreen(
                             thumbContent = {
                                 Icon(
                                     imageVector = if (useAmoledPitchBlack) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+
+                var showAiSection by remember { mutableStateOf(settingsManager.showAiSection) }
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.show_ai_section),
+                    supportingText = stringResource(R.string.show_ai_section_desc),
+                    icon = Icons.Default.AutoAwesome,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = showAiSection,
+                            onCheckedChange = { enabled ->
+                                showAiSection = enabled
+                                settingsManager.showAiSection = enabled
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (showAiSection) Icons.Default.Check else Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )

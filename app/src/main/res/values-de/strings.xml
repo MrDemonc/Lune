@@ -402,6 +402,8 @@
     <string name="no_songs_folder">Keine Songs in diesem Ordner gefunden</string>
     <string name="show_hero_section">Begrüßungskarte anzeigen</string>
     <string name="show_hero_section_desc">Begrüßungs- und Statistikkarte im Startbildschirm anzeigen</string>
+    <string name="show_ai_section">KI-Bereich anzeigen</string>
+    <string name="show_ai_section_desc">Tab für KI-Mixe und intelligente Empfehlungen anzeigen</string>
     <string name="seamless_looping">Nahtloses Wiederholen</string>
     <string name="seamless_looping_desc">Wiederhole Titel sofort ohne Pausen oder Stille</string>
     <string name="sort_custom">Benutzerdefinierte Reihenfolge</string>
@@ -424,4 +426,33 @@
     <string name="widget_circular_cover_desc">Kreisförmiges Design für das Haupt-Cover verwenden</string>
     <string name="widget_vinyl_cover">Vinyl-Effekt</string>
     <string name="widget_vinyl_cover_desc">Cover als klassische Schallplatte anzeigen</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Schnellwiedergabe</string>
+    <string name="open_in_lune">In Lune öffnen</string>
+    <string name="close">Schließen</string>
+    <string name="cd_open_in_lune">In Lune öffnen</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Songtext bearbeiten</string>
+    <string name="lyrics_editor">Songtext-Editor</string>
+    <string name="tab_text_lrc">Text / LRC</string>
+    <string name="tab_sync">Live-Synchronisation</string>
+    <string name="paste_clipboard">Einfügen</string>
+    <string name="clear_lyrics">Löschen</string>
+    <string name="strip_timestamps">Zeitstempel entfernen</string>
+    <string name="import_lrc_file">.lrc importieren</string>
+    <string name="export_lrc_file">.lrc exportieren</string>
+    <string name="lyrics_saved">Songtext erfolgreich gespeichert</string>
+    <string name="lyrics_deleted">Benutzerdefinierter Songtext entfernt</string>
+    <string name="delete_custom_lyrics">Benutzerdefinierten Songtext löschen</string>
+    <string name="sync_tap_button">Zeitstempel setzen</string>
+    <string name="sync_instruction">Tippe auf die Taste, sobald die Zeile gesungen wird</string>
+    <string name="sync_reset">Synchronisation zurücksetzen</string>
+    <string name="add_lyrics">Songtext hinzufügen</string>
+    <string name="no_lyrics_title">Kein Songtext gefunden</string>
+    <string name="no_lyrics_subtitle">Du kannst einen Songtext für diesen Titel verfassen oder synchronisieren</string>
+    <string name="auto_sync_backup">Automatische Backup-Synchronisation</string>
+    <string name="auto_sync_backup_desc">Aktualisiert das exportierte Backup automatisch bei Änderungen an Playlists oder Songtexten</string>
+    <string name="auto_sync_requires_export">Exportiere zuerst ein Backup, um die Autosynchronisation zu aktivieren</string>
 </resources>

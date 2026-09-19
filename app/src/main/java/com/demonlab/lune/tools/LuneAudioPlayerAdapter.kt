@@ -54,11 +54,15 @@ class LuneAudioPlayerAdapter(
         if (currentSong != null) {
             val artUri = if (currentSong.coverUrl != null) {
                 Uri.parse(currentSong.coverUrl)
-            } else {
+            } else if (currentSong.albumArtUri != null) {
+                currentSong.albumArtUri
+            } else if (currentSong.albumId > 0) {
                 ContentUris.withAppendedId(
                     Uri.parse("content://media/external/audio/albumart"),
                     currentSong.albumId
                 )
+            } else {
+                currentSong.uri
             }
 
             val metadataBuilder = MediaMetadata.Builder()

@@ -401,6 +401,8 @@
     <string name="no_songs_folder">هیچ آهنگی تو این پوشه نیست حاجی</string>
     <string name="show_hero_section">نشون دادن کارت خوش‌آمدگویی</string>
     <string name="show_hero_section_desc">وقتی وارد اپ میشی آمار گوش دادنات رو بهت نشون بده</string>
+    <string name="show_ai_section">نمایش بخش هوش مصنوعی</string>
+    <string name="show_ai_section_desc">نمایش تب میکس‌ها و پیشنهادات هوشمند هوش مصنوعی</string>
     <string name="seamless_looping">تکرار بدون وقفه</string>
     <string name="seamless_looping_desc">پخش مجدد آهنگ‌های تکرار شونده بدون مکث یا سکوت</string>
     <string name="sort_custom">ترتیب دستی</string>
@@ -423,4 +425,33 @@
     <string name="widget_circular_cover_desc">استفاده از طرح دایره‌ای برای کاور اصلی</string>
     <string name="widget_vinyl_cover">افکت صفحه گرامافون (Vinyl)</string>
     <string name="widget_vinyl_cover_desc">نمایش کاور به صورت صفحه گرامافون کلاسیک</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">پخش سریع</string>
+    <string name="open_in_lune">باز کردن در Lune</string>
+    <string name="close">بستن</string>
+    <string name="cd_open_in_lune">باز کردن در Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">ویرایش متن آهنگ</string>
+    <string name="lyrics_editor">ویرایشگر متن آهنگ</string>
+    <string name="tab_text_lrc">متن / LRC</string>
+    <string name="tab_sync">همگام‌سازی زنده</string>
+    <string name="paste_clipboard">جای‌گذاری</string>
+    <string name="clear_lyrics">پاک کردن</string>
+    <string name="strip_timestamps">حذف زمان‌بندی‌ها</string>
+    <string name="import_lrc_file">ورود فایل lrc.</string>
+    <string name="export_lrc_file">خروجی فایل lrc.</string>
+    <string name="lyrics_saved">متن آهنگ با موفقیت ذخیره شد</string>
+    <string name="lyrics_deleted">متن سفارشی حذف شد</string>
+    <string name="delete_custom_lyrics">حذف متن سفارشی</string>
+    <string name="sync_tap_button">ثبت زمان</string>
+    <string name="sync_instruction">هر خط که خوانده شد دکمه رو بزن تا زمانش ثبت بشه</string>
+    <string name="sync_reset">ریست کردن همگام‌سازی</string>
+    <string name="add_lyrics">افزودن متن آهنگ</string>
+    <string name="no_lyrics_title">متن آهنگی پیدا نشد</string>
+    <string name="no_lyrics_subtitle">می‌تونی واسه این آهنگ متن بنویسی یا همگام‌سازیش کنی</string>
+    <string name="auto_sync_backup">همگام‌سازی خودکار بکاپ</string>
+    <string name="auto_sync_backup_desc">با تغییر پلی‌لیست‌ها یا متن‌ها، فایل بکاپ به طور خودکار بروزرسانی میشه</string>
+    <string name="auto_sync_requires_export">واسه فعال کردن این بخش، اول باید یه خروجی بگیری</string>
 </resources>

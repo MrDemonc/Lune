@@ -132,6 +132,7 @@
     <string name="crossfade_time_desc">Establecer la duración de la transición</string>
     <string name="unknown_artist">Artista desconocido</string>
     <string name="unknown_song">Canción desconocida</string>
+    <string name="unknown_album">Álbum desconocido</string>
 
     <!-- Accessibility / Icons -->
     <string name="cd_back">Atrás</string>
@@ -157,6 +158,16 @@
     <string name="ok">Aceptar</string>
     <string name="cd_activate_eq">Activar EQ</string>
     <string name="cd_play_pause">Reproducir/Pausa</string>
+    <string name="play_state_play">Play</string>
+    <string name="play_state_pause">Pausa</string>
+    <string name="audio_quality_details">Detalles de calidad de audio</string>
+    <string name="audio_lossless">Sin pérdida</string>
+    <string name="audio_compressed">Comprimido</string>
+    <string name="audio_bitrate">Tasa de bits</string>
+    <string name="audio_sample_rate">Frecuencia de muestreo</string>
+    <string name="audio_bit_depth">Profundidad de bits</string>
+    <string name="audio_file_format">Formato de archivo</string>
+    <string name="audio_file_path">Ruta del archivo</string>
     <string name="cd_change_cover">Cambiar portada</string>
     <string name="playlists">Listas</string>
     <string name="add_to_playlist">Lista</string>
@@ -405,6 +416,8 @@
     <string name="no_songs_folder">No se encontraron canciones en esta carpeta</string>
     <string name="show_hero_section">Mostrar tarjeta de saludo</string>
     <string name="show_hero_section_desc">Muestra la tarjeta de saludo y estadísticas en la pantalla Inicio</string>
+    <string name="show_ai_section">Mostrar sección de IA</string>
+    <string name="show_ai_section_desc">Muestra la pestaña de mezclas y recomendaciones de IA</string>
     <string name="seamless_looping">Bucle continuo</string>
     <string name="seamless_looping_desc">Reproduce canciones en bucle al instante sin pausas ni silencio</string>
     <string name="sort_custom">Orden manual</string>
@@ -427,4 +440,33 @@
     <string name="widget_circular_cover_desc">Usa un diseño circular para la carátula principal</string>
     <string name="widget_vinyl_cover">Efecto vinilo</string>
     <string name="widget_vinyl_cover_desc">Muestra la carátula como un disco de vinilo clásico</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Reproducción rápida</string>
+    <string name="open_in_lune">Abrir en Lune</string>
+    <string name="close">Cerrar</string>
+    <string name="cd_open_in_lune">Abrir en Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Editar letra</string>
+    <string name="lyrics_editor">Editor de letras</string>
+    <string name="tab_text_lrc">Texto / LRC</string>
+    <string name="tab_sync">Sincronizador</string>
+    <string name="paste_clipboard">Pegar</string>
+    <string name="clear_lyrics">Limpiar</string>
+    <string name="strip_timestamps">Quitar tiempos</string>
+    <string name="import_lrc_file">Importar .lrc</string>
+    <string name="export_lrc_file">Exportar .lrc</string>
+    <string name="lyrics_saved">Letras guardadas correctamente</string>
+    <string name="lyrics_deleted">Letras personalizadas eliminadas</string>
+    <string name="delete_custom_lyrics">Eliminar letra personalizada</string>
+    <string name="sync_tap_button">Marcar tiempo</string>
+    <string name="sync_instruction">Toca el botón cuando suene cada verso para marcar el tiempo</string>
+    <string name="sync_reset">Reiniciar sincronización</string>
+    <string name="add_lyrics">Agregar letra</string>
+    <string name="no_lyrics_title">No se encontraron letras</string>
+    <string name="no_lyrics_subtitle">Puedes escribir o sincronizar letras para esta canción</string>
+    <string name="auto_sync_backup">Sincronización automática de respaldo</string>
+    <string name="auto_sync_backup_desc">Actualiza automáticamente el respaldo cuando cambien tus listas o letras</string>
+    <string name="auto_sync_requires_export">Exporta un respaldo primero para activar la sincronización</string>
 </resources>

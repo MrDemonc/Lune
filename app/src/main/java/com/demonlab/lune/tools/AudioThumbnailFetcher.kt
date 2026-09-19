@@ -23,27 +23,37 @@ class AudioThumbnailFetcher(
     private val context: Context
 ) : Fetcher {
 
-    @RequiresApi(Build.VERSION_CODES.Q)
     override suspend fun fetch(): FetchResult? {
         // 1. Try modern ContentResolver.loadThumbnail (fast, system-cached, per-song correct)
-        val thumbnail = runCatching {
-            val width = options.size.width.pxOrElse { 512 }
-            val height = options.size.height.pxOrElse { 512 }
-            context.contentResolver.loadThumbnail(uri, android.util.Size(width, height), null)
-        }.getOrNull()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && uri.scheme == "content") {
+            val thumbnail = runCatching {
+                val width = options.size.width.pxOrElse { 512 }
+                val height = options.size.height.pxOrElse { 512 }
+                context.contentResolver.loadThumbnail(uri, android.util.Size(width, height), null)
+            }.getOrNull()
 
-        if (thumbnail != null) {
-            return DrawableResult(
-                drawable = thumbnail.toDrawable(context.resources),
-                isSampled = true,
-                dataSource = DataSource.DISK
-            )
+            if (thumbnail != null) {
+                return DrawableResult(
+                    drawable = thumbnail.toDrawable(context.resources),
+                    isSampled = true,
+                    dataSource = DataSource.DISK
+                )
+            }
         }
 
-        // 2. Fallback to embedded picture via MediaMetadataRetriever (slower, higher quality)
+        // 2. Fallback to embedded picture via MediaMetadataRetriever (works for content:// and file://)
         val retriever = MediaMetadataRetriever()
         try {
-            retriever.setDataSource(context, uri)
+            if (uri.scheme == "file") {
+                val path = uri.path
+                if (path != null && java.io.File(path).exists()) {
+                    retriever.setDataSource(path)
+                } else {
+                    retriever.setDataSource(context, uri)
+                }
+            } else {
+                retriever.setDataSource(context, uri)
+            }
             retriever.embeddedPicture?.let { picture ->
                 val bitmap = BitmapFactory.decodeByteArray(picture, 0, picture.size)
                 if (bitmap != null) {
@@ -55,9 +65,9 @@ class AudioThumbnailFetcher(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            // ignore
         } finally {
-            retriever.release()
+            runCatching { retriever.release() }
         }
 
         // Fallback returns null if no embedded thumbnail or picture exists
@@ -66,10 +76,21 @@ class AudioThumbnailFetcher(
 
     class Factory(private val context: Context) : Fetcher.Factory<Uri> {
         override fun create(data: Uri, options: Options, imageLoader: ImageLoader): Fetcher? {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                data.scheme == "content" &&
-                data.toString().contains("audio/media")) {
-                return AudioThumbnailFetcher(data, options, context)
+            val scheme = data.scheme
+            if (scheme == "content" || scheme == "file") {
+                val str = data.toString().lowercase()
+                val isAudio = str.contains("audio") ||
+                        str.endsWith(".mp3") ||
+                        str.endsWith(".flac") ||
+                        str.endsWith(".wav") ||
+                        str.endsWith(".ogg") ||
+                        str.endsWith(".m4a") ||
+                        str.endsWith(".opus") ||
+                        str.endsWith(".aac") ||
+                        runCatching { context.contentResolver.getType(data)?.startsWith("audio/") == true }.getOrDefault(false)
+                if (isAudio) {
+                    return AudioThumbnailFetcher(data, options, context)
+                }
             }
             return null
         }

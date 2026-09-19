@@ -18,21 +18,27 @@ import com.demonlab.lune.ui.activities.Lune
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 
+import android.content.ContentUris
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
 class LuneWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        val serviceIntent = Intent(context, MusicService::class.java).apply {
-            action = MusicService.ACTION_UPDATE_WIDGET
-        }
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
-            }
-        } catch (e: Exception) {
-            for (appWidgetId in appWidgetIds) {
-                updateAppWidget(context, appWidgetManager, appWidgetId)
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                for (appWidgetId in appWidgetIds) {
+                    updateAppWidget(context, appWidgetManager, appWidgetId)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -54,17 +60,15 @@ class LuneWidgetProvider : AppWidgetProvider() {
         newOptions: android.os.Bundle
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        val serviceIntent = Intent(context, MusicService::class.java).apply {
-            action = MusicService.ACTION_UPDATE_WIDGET
-        }
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                updateAppWidget(context, appWidgetManager, appWidgetId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
-        } catch (e: Exception) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
         }
     }
 
@@ -116,14 +120,24 @@ class LuneWidgetProvider : AppWidgetProvider() {
 
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val playbackManager = PlaybackManager.getInstance(context)
+            if (playbackManager.currentSong == null && !playbackManager.stateRestored) {
+                try {
+                    playbackManager.restorePlaybackState()
+                } catch (e: Exception) {
+                    android.util.Log.e("LuneWidget", "Failed to restore playback state: ${e.message}", e)
+                }
+            }
             val currentSong = playbackManager.currentSong
             val isPlaying = playbackManager.isPlaying
+            val settingsManager = SettingsManager.getInstance(context)
 
             val views = RemoteViews(context.packageName, R.layout.lune_widget_layout)
 
             val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
             val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
             val isCompact = minHeight in 1..125
+
+            applyWidgetStyling(context, views, settingsManager)
 
             val openAppIntent = Intent(context, Lune::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
@@ -148,6 +162,39 @@ class LuneWidgetProvider : AppWidgetProvider() {
 
                 views.setImageViewResource(R.id.widget_output_icon, getOutputIconRes(context))
                 views.setTextViewText(R.id.widget_output_text, getOutputName(context))
+
+                val art = runBlocking(Dispatchers.IO) {
+                    fetchAlbumArt(context, currentSong)
+                }
+                if (art != null) {
+                    val coverBitmap = when {
+                        settingsManager.widgetCircularCover && settingsManager.widgetVinylCover ->
+                            getVinylRecordBitmap(art)
+                        settingsManager.widgetCircularCover ->
+                            getCircularBitmap(art)
+                        else ->
+                            getSquareScaledBitmap(art)
+                    }
+                    views.setImageViewBitmap(R.id.widget_cover, coverBitmap)
+
+                    if (!settingsManager.widgetUseSolidBackground) {
+                        val blurRadius = (settingsManager.widgetBackgroundBlur * 0.5f).toInt().coerceIn(3, 50)
+                        val blurBitmap = getBlurredBitmap(
+                            context,
+                            art,
+                            blurRadius,
+                            28,
+                            settingsManager.widgetBackgroundDarkness
+                        )
+                        views.setImageViewBitmap(R.id.widget_blur_bg, blurBitmap)
+                        views.setViewVisibility(R.id.widget_blur_bg, android.view.View.VISIBLE)
+                    }
+                } else {
+                    views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
+                    if (!settingsManager.widgetUseSolidBackground) {
+                        views.setViewVisibility(R.id.widget_blur_bg, android.view.View.GONE)
+                    }
+                }
             } else {
                 views.setTextViewText(R.id.widget_title, context.getString(R.string.no_song_playing))
                 views.setTextViewText(R.id.widget_artist, "")
@@ -159,6 +206,12 @@ class LuneWidgetProvider : AppWidgetProvider() {
                     views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
                     views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
                 }
+
+                views.setImageViewResource(R.id.widget_play_pause, R.drawable.ic_widget_play)
+                views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
+                if (!settingsManager.widgetUseSolidBackground) {
+                    views.setViewVisibility(R.id.widget_blur_bg, android.view.View.GONE)
+                }
             }
 
             views.setOnClickPendingIntent(R.id.widget_play_pause, getServicePendingIntent(context,
@@ -169,11 +222,64 @@ class LuneWidgetProvider : AppWidgetProvider() {
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
 
-        private fun getServicePendingIntent(context: Context, action: String): PendingIntent {
+        fun getServicePendingIntent(context: Context, action: String): PendingIntent {
             val intent = Intent(context, MusicService::class.java).apply {
                 this.action = action
             }
-            return PendingIntent.getService(context, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && action == MusicService.ACTION_PLAY) {
+                PendingIntent.getForegroundService(context, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+            } else {
+                PendingIntent.getService(context, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+            }
+        }
+
+        suspend fun fetchAlbumArt(context: Context, song: Song): Bitmap? {
+            val loader = coil.Coil.imageLoader(context)
+            val artUri = if (song.coverUrl != null) {
+                Uri.parse(song.coverUrl)
+            } else if (song.albumArtUri != null) {
+                song.albumArtUri
+            } else if (song.albumId > 0) {
+                ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), song.albumId)
+            } else {
+                song.uri
+            }
+            val request = coil.request.ImageRequest.Builder(context)
+                .data(artUri)
+                .size(512, 512)
+                .allowHardware(false)
+                .build()
+
+            val result = loader.execute(request)
+            var bitmap = (result as? coil.request.SuccessResult)?.drawable?.let {
+                val bmp = Bitmap.createBitmap(
+                    it.intrinsicWidth.coerceAtLeast(1),
+                    it.intrinsicHeight.coerceAtLeast(1),
+                    Bitmap.Config.ARGB_8888
+                )
+                val canvas = Canvas(bmp)
+                it.setBounds(0, 0, canvas.width, canvas.height)
+                it.draw(canvas)
+                bmp
+            }
+
+            if (bitmap == null) {
+                try {
+                    val retriever = MediaMetadataRetriever()
+                    if (song.uri.scheme == "file" && song.path.isNotBlank() && java.io.File(song.path).exists()) {
+                        retriever.setDataSource(song.path)
+                    } else {
+                        retriever.setDataSource(context, song.uri)
+                    }
+                    val pic = retriever.embeddedPicture
+                    retriever.release()
+                    if (pic != null) {
+                        bitmap = BitmapFactory.decodeByteArray(pic, 0, pic.size)
+                    }
+                } catch (_: Exception) {}
+            }
+
+            return bitmap
         }
 
         private fun getOutputIconRes(context: Context): Int {

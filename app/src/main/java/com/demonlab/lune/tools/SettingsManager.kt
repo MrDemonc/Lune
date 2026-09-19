@@ -390,9 +390,21 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("show_backup_warning", true)
         set(value) = prefs.edit().putBoolean("show_backup_warning", value).apply()
 
+    var isAutoSyncBackupEnabled: Boolean
+        get() = prefs.getBoolean("auto_sync_backup_enabled", false)
+        set(value) = prefs.edit().putBoolean("auto_sync_backup_enabled", value).apply()
+
+    var autoSyncBackupUri: String?
+        get() = prefs.getString("auto_sync_backup_uri", null)
+        set(value) = prefs.edit().putString("auto_sync_backup_uri", value).apply()
+
     var useAmoledPitchBlack: Boolean
         get() = prefs.getBoolean("use_amoled_pitch_black", false)
         set(value) = prefs.edit().putBoolean("use_amoled_pitch_black", value).apply()
+
+    var showAiSection: Boolean
+        get() = prefs.getBoolean("show_ai_section", true)
+        set(value) = prefs.edit().putBoolean("show_ai_section", value).apply()
 
     var showHeroSection: Boolean
         get() = prefs.getBoolean("show_hero_section", true)

@@ -70,6 +70,7 @@ class EqualizerActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("DEPRECATION")
 @Composable
 fun EqualizerScreen(onBack: () -> Unit) {
     val context = LocalContext.current

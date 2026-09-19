@@ -131,6 +131,7 @@
     <string name="crossfade_time_desc">Set the duration of the crossfade transition</string>
     <string name="unknown_artist">Unknown Artist</string>
     <string name="unknown_song">Unknown Song</string>
+    <string name="unknown_album">Unknown Album</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">Back</string>
@@ -156,6 +157,16 @@
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Activate EQ</string>
     <string name="cd_play_pause">Play/Pause</string>
+    <string name="play_state_play">Play</string>
+    <string name="play_state_pause">Pause</string>
+    <string name="audio_quality_details">Audio Quality Details</string>
+    <string name="audio_lossless">Lossless</string>
+    <string name="audio_compressed">Compressed</string>
+    <string name="audio_bitrate">Bitrate</string>
+    <string name="audio_sample_rate">Sample Rate</string>
+    <string name="audio_bit_depth">Bit Depth</string>
+    <string name="audio_file_format">File Format</string>
+    <string name="audio_file_path">File Path</string>
     <string name="cd_change_cover">Change cover</string>
     <string name="playlists">Playlists</string>
     <string name="add_to_playlist">Playlist</string>
@@ -404,6 +415,8 @@
     <string name="no_songs_folder">No songs found in this folder</string>
     <string name="show_hero_section">Show Greeting Card</string>
     <string name="show_hero_section_desc">Display the greeting and statistics card in the Resume screen</string>
+    <string name="show_ai_section">Show AI Section</string>
+    <string name="show_ai_section_desc">Display the AI mixes and smart recommendations tab</string>
     <string name="seamless_looping">Seamless Looping</string>
     <string name="seamless_looping_desc">Replay looped tracks instantly without gaps or silence</string>
     <string name="sort_custom">Custom Order</string>
@@ -426,4 +439,33 @@
     <string name="widget_circular_cover_desc">Use a circular design for the main cover</string>
     <string name="widget_vinyl_cover">Vinyl Effect</string>
     <string name="widget_vinyl_cover_desc">Display cover as a classic vinyl record</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Quick Play</string>
+    <string name="open_in_lune">Open in Lune</string>
+    <string name="close">Close</string>
+    <string name="cd_open_in_lune">Open in Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Edit Lyrics</string>
+    <string name="lyrics_editor">Lyrics Editor</string>
+    <string name="tab_text_lrc">Text / LRC</string>
+    <string name="tab_sync">Live Sync</string>
+    <string name="paste_clipboard">Paste</string>
+    <string name="clear_lyrics">Clear</string>
+    <string name="strip_timestamps">Remove timestamps</string>
+    <string name="import_lrc_file">Import .lrc</string>
+    <string name="export_lrc_file">Export .lrc</string>
+    <string name="lyrics_saved">Lyrics saved successfully</string>
+    <string name="lyrics_deleted">Custom lyrics removed</string>
+    <string name="delete_custom_lyrics">Delete custom lyrics</string>
+    <string name="sync_tap_button">Stamp time</string>
+    <string name="sync_instruction">Tap the button as each line is sung to record timing</string>
+    <string name="sync_reset">Reset sync</string>
+    <string name="add_lyrics">Add Lyrics</string>
+    <string name="no_lyrics_title">No lyrics found</string>
+    <string name="no_lyrics_subtitle">You can write or sync lyrics for this track</string>
+    <string name="auto_sync_backup">Auto-sync backup</string>
+    <string name="auto_sync_backup_desc">Automatically update the exported backup when playlists or lyrics change</string>
+    <string name="auto_sync_requires_export">Export a backup first to enable auto-sync</string>
 </resources>

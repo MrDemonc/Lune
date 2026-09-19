@@ -405,6 +405,8 @@
     <string name="no_songs_folder">Nenhuma música encontrada nesta pasta</string>
     <string name="show_hero_section">Mostrar cartão de boas-vindas</string>
     <string name="show_hero_section_desc">Exibir o cartão de boas-vindas e estatísticas na tela inicial</string>
+    <string name="show_ai_section">Mostrar seção de IA</string>
+    <string name="show_ai_section_desc">Exibir a guia de mixes e recomendações inteligentes de IA</string>
     <string name="seamless_looping">Repetição contínua</string>
     <string name="seamless_looping_desc">Repete faixas em loop instantaneamente sem pausas ou silêncio</string>
     <string name="sort_custom">Ordem personalizada</string>
@@ -427,4 +429,33 @@
     <string name="widget_circular_cover_desc">Usar design circular para a capa principal</string>
     <string name="widget_vinyl_cover">Efeito vinil</string>
     <string name="widget_vinyl_cover_desc">Exibir a capa como um disco de vinil clássico</string>
+
+    <!-- Quick Player -->
+    <string name="quick_player">Reprodução rápida</string>
+    <string name="open_in_lune">Abrir no Lune</string>
+    <string name="close">Fechar</string>
+    <string name="cd_open_in_lune">Abrir no Lune</string>
+
+    <!-- Lyrics Editor & Backup Auto-Sync -->
+    <string name="edit_lyrics">Editar letra</string>
+    <string name="lyrics_editor">Editor de letras</string>
+    <string name="tab_text_lrc">Texto / LRC</string>
+    <string name="tab_sync">Sincronizador</string>
+    <string name="paste_clipboard">Colar</string>
+    <string name="clear_lyrics">Limpar</string>
+    <string name="strip_timestamps">Remover marcas de tempo</string>
+    <string name="import_lrc_file">Importar .lrc</string>
+    <string name="export_lrc_file">Exportar .lrc</string>
+    <string name="lyrics_saved">Letras salvas com sucesso</string>
+    <string name="lyrics_deleted">Letras personalizadas removidas</string>
+    <string name="delete_custom_lyrics">Excluir letra personalizada</string>
+    <string name="sync_tap_button">Marcar tempo</string>
+    <string name="sync_instruction">Toque no botão quando cada verso for cantado</string>
+    <string name="sync_reset">Redefinir sincronização</string>
+    <string name="add_lyrics">Adicionar letra</string>
+    <string name="no_lyrics_title">Nenhuma letra encontrada</string>
+    <string name="no_lyrics_subtitle">Você pode escrever ou sincronizar letras para esta música</string>
+    <string name="auto_sync_backup">Sincronização automática do backup</string>
+    <string name="auto_sync_backup_desc">Atualiza automaticamente o backup exportado quando playlists ou letras mudarem</string>
+    <string name="auto_sync_requires_export">Exporte um backup primeiro para ativar a sincronização automática</string>
 </resources>

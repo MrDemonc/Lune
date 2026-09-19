@@ -1,0 +1,18 @@
+- New mini-player design
+- Full blur mode in the app
+- New layout and design for the lyrics screen
+- New AI Core section – Full Offline
+- Fixed issue where folders were not displaying
+- Option to hide the time card and AI section
+- Redesigned summary section
+- Bounce animations in the interface
+- Improved search handling for special characters
+- In-app "Always-on Display" option
+- Widget customization
+- Widget optimization
+- Wave effect in section headers
+- New label for Hi-Res audio
+- Customizable list sorting
+- Improved music queue section, including a history of played songs
+- Lune can now play audio/music directly from the file explorer
+- Minor bug fixes

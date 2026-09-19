@@ -186,9 +186,11 @@ import coil.request.ImageRequest
 class Lune : AppCompatActivity() {
     companion object {
         const val ACTION_VIEW_PLAYLISTS = "com.demonlab.lune.ACTION_VIEW_PLAYLISTS"
+        const val EXTRA_EXPAND_PLAYER = "com.demonlab.lune.EXTRA_EXPAND_PLAYER"
     }
 
     private var shortcutFolder = mutableStateOf<String?>(null)
+    private var pendingExpandPlayer = mutableStateOf(false)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -198,6 +200,23 @@ class Lune : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         if (intent?.action == ACTION_VIEW_PLAYLISTS) {
             shortcutFolder.value = "PLAYLISTS"
+        }
+        if (intent?.getBooleanExtra(EXTRA_EXPAND_PLAYER, false) == true) {
+            pendingExpandPlayer.value = true
+        }
+        if (intent?.action == Intent.ACTION_VIEW) {
+            val uri = intent.data ?: intent.clipData?.let { if (it.itemCount > 0) it.getItemAt(0).uri else null }
+            if (uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+                val song = SongResolver.resolveSongFromUri(this, uri)
+                if (song != null) {
+                    val siblings = SongResolver.resolveSiblingSongs(this, song)
+                    PlaybackManager.getInstance(this).play(song, siblings, playlistName = song.folderName)
+                    pendingExpandPlayer.value = true
+                }
+            }
         }
     }
 
@@ -248,6 +267,7 @@ class Lune : AppCompatActivity() {
             var useAmoledPitchBlack by remember { mutableStateOf(settingsManager.useAmoledPitchBlack) }
             var isSectionCustomizationEnabled by remember { mutableStateOf(settingsManager.isSectionCustomizationEnabled) }
             var hiddenSectionTabs by remember { mutableStateOf(settingsManager.hiddenSectionTabs) }
+            var showAiSection by remember { mutableStateOf(settingsManager.showAiSection) }
             var keepScreenOn by remember { mutableStateOf(settingsManager.keepScreenOn) }
 
             LaunchedEffect(keepScreenOn) {
@@ -294,8 +314,16 @@ class Lune : AppCompatActivity() {
 
             // Restore playback state once songs are loaded
             LaunchedEffect(musicViewModel.allSongs) {
-                if (musicViewModel.allSongs.isNotEmpty() && !playbackManager.stateRestored) {
-                    playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                if (musicViewModel.allSongs.isNotEmpty()) {
+                    try {
+                        if (!playbackManager.stateRestored) {
+                            playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                        } else if (playbackManager.activePlaylist.size <= 1 && playbackManager.currentSong != null) {
+                            playbackManager.restorePlaybackState(musicViewModel.allSongs)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("Lune", "Failed to restore playback state in LaunchedEffect", e)
+                    }
                 }
             }
 
@@ -308,8 +336,15 @@ class Lune : AppCompatActivity() {
             
             val currentSong = playbackManager.currentSong
             val isPlaying = playbackManager.isPlaying
-            var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
+            var isPlayerExpanded by rememberSaveable { mutableStateOf(pendingExpandPlayer.value) }
             var playbackProgress by remember { mutableStateOf(playbackManager.getProgress()) }
+
+            LaunchedEffect(pendingExpandPlayer.value) {
+                if (pendingExpandPlayer.value) {
+                    isPlayerExpanded = true
+                    pendingExpandPlayer.value = false
+                }
+            }
 
             var coverShape by remember { mutableIntStateOf(settingsManager.coverShape) }
             var coverScale by remember { mutableFloatStateOf(settingsManager.coverScale) }
@@ -389,6 +424,7 @@ class Lune : AppCompatActivity() {
                         controlsColorPalette = settingsManager.controlsColorPalette
                         isSectionCustomizationEnabled = settingsManager.isSectionCustomizationEnabled
                         hiddenSectionTabs = settingsManager.hiddenSectionTabs
+                        showAiSection = settingsManager.showAiSection
                         keepScreenOn = settingsManager.keepScreenOn
                         if (hasPermission) {
                             musicViewModel.loadSongs()
@@ -440,9 +476,12 @@ class Lune : AppCompatActivity() {
             val visibleFolders = remember(allFolders, hiddenFolders.value) {
                 allFolders.filter { !hiddenFolders.value.contains(it) }
             }
-            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs) {
+            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs, showAiSection) {
                 val hasFavorites = rawAllSongs.any { it.isFavorite }
-                val base = mutableListOf("RESUME", "MIXES", "ALL", "PLAYLISTS")
+                val base = mutableListOf("RESUME")
+                if (showAiSection) base.add("MIXES")
+                base.add("ALL")
+                base.add("PLAYLISTS")
                 if (hasFavorites) base.add("FAVORITES")
                 base.add("ALBUMS")
                 base.add("ARTISTS")

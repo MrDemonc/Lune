@@ -4,7 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import kotlinx.coroutines.delay
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -111,7 +114,7 @@ fun ControlsCustomizationScreen(
     } else if (hasBlurBackground) {
         Color.White.copy(alpha = 0.15f)
     } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
     }
 
     val activeIconTint = if (useCustomControlsColor) {
@@ -119,7 +122,7 @@ fun ControlsCustomizationScreen(
     } else if (hasBlurBackground) {
         Color.White
     } else {
-        MaterialTheme.colorScheme.onSurface
+        MaterialTheme.colorScheme.primary
     }
 
     AppBlurBackdrop(
@@ -197,16 +200,80 @@ fun ControlsCustomizationScreen(
                         )
                     Spacer(modifier = Modifier.height(28.dp))
 
+                    var mockIsPlaying by remember { mutableStateOf(false) }
+                    var mockShowLabel by remember { mutableStateOf(false) }
+                    var mockFirstComp by remember { mutableStateOf(true) }
+                    var mockTrigger by remember { mutableIntStateOf(0) }
+
+                    LaunchedEffect(mockIsPlaying, mockTrigger) {
+                        if (mockFirstComp) {
+                            mockFirstComp = false
+                            return@LaunchedEffect
+                        }
+                        mockShowLabel = true
+                        delay(1300L)
+                        mockShowLabel = false
+                    }
+
+                    val mockPlayWidth by animateDpAsState(
+                        targetValue = if (mockShowLabel) 156.dp else 96.dp,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "MockPlayWidth"
+                    )
+
+                    val previewSkipShape = RoundedCornerShape(26.dp)
+                    val previewPlayShape = RoundedCornerShape(30.dp)
+                    val previewSkipBorder = BorderStroke(
+                        width = 1.dp,
+                        color = if (hasBlurBackground) {
+                            if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+                        } else if (useCustomControlsColor) {
+                            activePrimary.copy(alpha = 0.20f)
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        }
+                    )
+                    val previewPlayBorder = BorderStroke(
+                        width = 1.dp,
+                        color = if (hasBlurBackground) {
+                            if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)
+                        } else if (useCustomControlsColor) {
+                            activePrimary.copy(alpha = 0.35f)
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                        }
+                    )
+
+                    val previewPlayBg = if (useCustomControlsColor) {
+                        activePrimary
+                    } else if (hasBlurBackground) {
+                        Color.White
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+
+                    val previewPlayTint = if (useCustomControlsColor) {
+                        Color.White
+                    } else if (hasBlurBackground) {
+                        Color.Black
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    }
+
                     // Mock Player Bar
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            shape = CircleShape,
+                            shape = previewSkipShape,
                             color = activeContainerColor,
-                            modifier = Modifier.size(64.dp)
+                            border = previewSkipBorder,
+                            modifier = Modifier.size(68.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 ReusableSkipIcon(
@@ -214,30 +281,85 @@ fun ControlsCustomizationScreen(
                                     controlsIconStyle = controlsIconStyle,
                                     isControlsFilled = isControlsFilled,
                                     tint = activeIconTint,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(34.dp)
                                 )
                             }
                         }
 
                         Surface(
-                            shape = CircleShape,
-                            color = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(80.dp)
+                            onClick = {
+                                mockTrigger++
+                                mockIsPlaying = !mockIsPlaying
+                            },
+                            shape = previewPlayShape,
+                            color = previewPlayBg,
+                            border = previewPlayBorder,
+                            modifier = Modifier
+                                .height(68.dp)
+                                .width(mockPlayWidth)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    tint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(40.dp)
-                                )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (mockIsPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        contentDescription = null,
+                                        tint = previewPlayTint,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+
+                                    AnimatedVisibility(
+                                        visible = mockShowLabel,
+                                        enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                                expandHorizontally(
+                                                    expandFrom = Alignment.Start,
+                                                    animationSpec = spring(
+                                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                        stiffness = Spring.StiffnessMediumLow
+                                                    )
+                                                ) +
+                                                scaleIn(
+                                                    initialScale = 0.8f,
+                                                    animationSpec = spring(
+                                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                        stiffness = Spring.StiffnessMediumLow
+                                                    )
+                                                ),
+                                        exit = fadeOut(animationSpec = tween(150)) +
+                                               shrinkHorizontally(
+                                                   shrinkTowards = Alignment.Start,
+                                                   animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                                               )
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(start = 6.dp, end = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = stringResource(if (mockIsPlaying) R.string.play_state_play else R.string.play_state_pause),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = previewPlayTint,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Clip
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
 
                         Surface(
-                            shape = CircleShape,
+                            shape = previewSkipShape,
                             color = activeContainerColor,
-                            modifier = Modifier.size(64.dp)
+                            border = previewSkipBorder,
+                            modifier = Modifier.size(68.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 ReusableSkipIcon(
@@ -245,7 +367,7 @@ fun ControlsCustomizationScreen(
                                     controlsIconStyle = controlsIconStyle,
                                     isControlsFilled = isControlsFilled,
                                     tint = activeIconTint,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(34.dp)
                                 )
                             }
                         }

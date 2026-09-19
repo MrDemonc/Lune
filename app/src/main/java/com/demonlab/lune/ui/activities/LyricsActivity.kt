@@ -26,6 +26,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Edit
+import com.demonlab.lune.R
+import com.demonlab.lune.ui.lyrics.LyricsEditorSheet
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Pause
@@ -36,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -112,13 +116,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     val song = playbackManager.currentSong ?: return
     val rawLyrics = playbackManager.currentLyrics
     
-    // Auto-close if lyrics are missing for too long after song change
-    LaunchedEffect(song.id) {
-        delay(2000) // Grace period for extraction
-        if (playbackManager.currentLyrics == null) {
-            onBack()
-        }
-    }
+    var showLyricsEditor by remember { mutableStateOf(false) }
     
     val isPlaying = playbackManager.isPlaying
     
@@ -178,10 +176,10 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     }
 
     val isBlurActive = lyricsSettings.isBlurEnabled && if (isDarkTheme) lyricsSettings.isBlurDarkMode else lyricsSettings.isBlurLightMode
-    val lyricsTextColor = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSurface
-    val lyricsMutedColor = if (isBlurActive) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurfaceVariant
-    val lyricsMuted2Color = if (isBlurActive) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
-    val lyricsMuted08Color = if (isBlurActive) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface
+    val lyricsTextColor = if (isBlurActive) (if (isDarkTheme) Color.White else Color(0xFF1C1C1E)) else MaterialTheme.colorScheme.onSurface
+    val lyricsMutedColor = if (isBlurActive) (if (isDarkTheme) Color.White.copy(alpha = 0.3f) else Color(0xFF1C1C1E).copy(alpha = 0.35f)) else MaterialTheme.colorScheme.onSurfaceVariant
+    val lyricsMuted2Color = if (isBlurActive) (if (isDarkTheme) Color.White.copy(alpha = 0.7f) else Color(0xFF1C1C1E).copy(alpha = 0.65f)) else MaterialTheme.colorScheme.onSurfaceVariant
+    val lyricsMuted08Color = if (isBlurActive) (if (isDarkTheme) Color.White.copy(alpha = 0.8f) else Color(0xFF1C1C1E).copy(alpha = 0.8f)) else MaterialTheme.colorScheme.onSurface
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isBlurActive) {
@@ -201,10 +199,17 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.6f),
-                                    Color.Black.copy(alpha = 0.8f)
-                                )
+                                colors = if (isDarkTheme) {
+                                    listOf(
+                                        Color.Black.copy(alpha = 0.6f),
+                                        Color.Black.copy(alpha = 0.8f)
+                                    )
+                                } else {
+                                    listOf(
+                                        Color.White.copy(alpha = 0.65f),
+                                        Color.White.copy(alpha = 0.85f)
+                                    )
+                                }
                             )
                         )
                 )
@@ -228,20 +233,20 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                 IconButton(onClick = onBack) {
                     Surface(
                         shape = CircleShape,
-                        color = if (isBlurActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        modifier = Modifier.size(40.dp)
+                        color = if (isBlurActive) (if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.1f)) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        modifier = Modifier.size(38.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
+                                tint = if (isBlurActive) (if (isDarkTheme) Color.White else Color(0xFF1C1C1E)) else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         song.title,
@@ -257,75 +262,147 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                     )
                 }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = {
-                            val next = (textAlignIndex + 1) % alignments.size
-                            textAlignIndex = next
-                            lyricsSettings.lyricsTextAlignment = next
-                        }
+                    val pillBg = if (isBlurActive) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)
+                    } else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+
+                    val pillBorder = if (isBlurActive) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+                    } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+
+                    val pillDivider = if (isBlurActive) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.15f)
+                    } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+                    val itemColor = lyricsTextColor
+
+                    // Divided Pill Container (Material 3 Expressive Floating Toolbar)
+                    Surface(
+                        shape = CircleShape,
+                        color = pillBg,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, pillBorder),
+                        modifier = Modifier.height(38.dp)
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isBlurActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(36.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 4.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            // 1. Alignment toggle
+                            Box(
+                                modifier = Modifier
+                                    .bounceClick(0.92f)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        val next = (textAlignIndex + 1) % alignments.size
+                                        textAlignIndex = next
+                                        lyricsSettings.lyricsTextAlignment = next
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Icon(
                                     imageVector = if (alignments[textAlignIndex] == TextAlign.Start) Icons.AutoMirrored.Filled.FormatAlignLeft else Icons.Default.FormatAlignCenter,
                                     contentDescription = "Alineación",
-                                    tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = itemColor,
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
-                        }
-                    }
 
-                    IconButton(
-                        onClick = {
-                            val next = (speedIndex + 1) % speedOptions.size
-                            speedIndex = next
-                            lyricsSettings.lyricsSpeedIndex = next
-                        }
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isBlurActive) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
+                            // Divider
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(16.dp)
+                                    .background(pillDivider)
+                            )
+
+                            // 2. Playback speed toggle
+                            Box(
+                                modifier = Modifier
+                                    .bounceClick(0.92f)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        val next = (speedIndex + 1) % speedOptions.size
+                                        speedIndex = next
+                                        lyricsSettings.lyricsSpeedIndex = next
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
                                     text = "${speedOptions[speedIndex]}x",
-                                    color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                    color = itemColor,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+
+                            // Divider
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(16.dp)
+                                    .background(pillDivider)
+                            )
+
+                            // 3. Timing offset adjustment
+                            val isOffsetActive = showOffsetControl || userOffsetMs != 0L
+                            Box(
+                                modifier = Modifier
+                                    .bounceClick(0.92f)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isOffsetActive) {
+                                            if (isBlurActive) {
+                                                if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)
+                                            } else MaterialTheme.colorScheme.primaryContainer
+                                        } else Color.Transparent
+                                    )
+                                    .clickable { showOffsetControl = !showOffsetControl }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Tune,
+                                    contentDescription = "Ajustar sincronización",
+                                    tint = if (isOffsetActive && !isBlurActive) MaterialTheme.colorScheme.onPrimaryContainer else itemColor,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
                         }
                     }
 
-                    IconButton(onClick = { showOffsetControl = !showOffsetControl }) {
-                        Surface(
-                            shape = CircleShape,
-                            color = if (showOffsetControl || userOffsetMs != 0L) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else if (isBlurActive) {
-                                Color.White.copy(alpha = 0.15f)
-                            } else {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                            },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.Tune,
-                                    contentDescription = "Ajustar sincronización",
-                                    tint = if (showOffsetControl || userOffsetMs != 0L) MaterialTheme.colorScheme.onPrimaryContainer else if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                    // Adjacent Squircle Button: Edit lyrics
+                    val squircleBg = if (showLyricsEditor) {
+                        if (isBlurActive) {
+                            if (isDarkTheme) Color.White.copy(alpha = 0.32f) else Color.Black.copy(alpha = 0.22f)
+                        } else MaterialTheme.colorScheme.primaryContainer
+                    } else if (isBlurActive) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = squircleBg,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, pillBorder),
+                        modifier = Modifier
+                            .size(38.dp)
+                            .bounceClick(0.92f)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { showLyricsEditor = true }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit_lyrics),
+                                tint = if (showLyricsEditor && !isBlurActive) MaterialTheme.colorScheme.onPrimaryContainer else itemColor,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
@@ -511,11 +588,57 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "No lyrics found",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = lyricsMuted2Color
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isBlurActive) Color.White.copy(alpha = 0.12f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            modifier = Modifier.size(72.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Lyrics,
+                                    contentDescription = null,
+                                    tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.no_lyrics_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = lyricsTextColor,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.no_lyrics_subtitle),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = lyricsMuted2Color,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick = { showLyricsEditor = true },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isBlurActive) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.add_lyrics),
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
@@ -745,6 +868,17 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
                     }
                 }
             }
+        }
+
+        if (showLyricsEditor) {
+            LyricsEditorSheet(
+                song = song,
+                initialLyrics = rawLyrics,
+                onDismiss = { showLyricsEditor = false },
+                onLyricsSaved = {
+                    showLyricsEditor = false
+                }
+            )
         }
     }
 }
