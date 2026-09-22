@@ -397,6 +397,7 @@
     <string name="search_play_all">Play</string>
     <string name="search_shuffle">Shuffle</string>
     <string name="playing_from">Playing from: %s</string>
+    <string name="playing_from_header">Playing from</string>
     <string name="playing_from_search">Search result</string>
     <string name="option_speed">Speed</string>
     <string name="preset_name">Preset Name</string>

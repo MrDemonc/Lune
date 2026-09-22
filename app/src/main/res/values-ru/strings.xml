@@ -387,6 +387,7 @@
     <string name="search_play_all">Играть</string>
     <string name="search_shuffle">Перемешать</string>
     <string name="playing_from">Воспроизводится из: %s</string>
+    <string name="playing_from_header">Воспроизводится из</string>
     <string name="playing_from_search">Результаты поиска</string>
     <string name="option_speed">Скорость</string>
     <string name="preset_name">Название пресета</string>

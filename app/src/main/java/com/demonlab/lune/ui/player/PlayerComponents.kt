@@ -17,7 +17,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.MarqueeSpacing
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -251,7 +255,9 @@ fun AudioQualityBadges(
     useBlurControls: Boolean,
     isDarkTheme: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    enableScroll: Boolean = false
 ) {
     val format = song.format.uppercase().ifEmpty {
         song.path.substringAfterLast('.', "").uppercase().ifEmpty { "AUDIO" }
@@ -324,13 +330,7 @@ fun AudioQualityBadges(
         else -> null
     }
 
-    Row(
-        modifier = modifier
-            .bounceClick()
-            .clickable { onClick() },
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    val badgeContent: @Composable () -> Unit = {
         if (tierName != null) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
@@ -388,6 +388,34 @@ fun AudioQualityBadges(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
+        }
+    }
+
+    if (enableScroll) {
+        Box(
+            modifier = modifier,
+            contentAlignment = if (horizontalAlignment == Alignment.CenterHorizontally) Alignment.Center else Alignment.CenterStart
+        ) {
+            Row(
+                modifier = Modifier
+                    .bounceClick()
+                    .clickable { onClick() }
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(5.dp, horizontalAlignment),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                badgeContent()
+            }
+        }
+    } else {
+        Row(
+            modifier = modifier
+                .bounceClick()
+                .clickable { onClick() },
+            horizontalArrangement = Arrangement.spacedBy(5.dp, horizontalAlignment),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            badgeContent()
         }
     }
 }
@@ -583,6 +611,24 @@ fun FullPlayer(
     var runtimeBitDepth by remember(song.id) { mutableStateOf(song.bitDepth) }
     var runtimeBitrate by remember(song.id) { mutableStateOf(song.bitrate) }
 
+    val playingFromContext = remember(song.id, playbackManager.activePlaylistId, playbackManager.activePlaylistName, playbackManager.activeCategory) {
+        when {
+            playbackManager.activePlaylistId == -300L -> context.getString(R.string.playing_from_search)
+            !playbackManager.activePlaylistName.isNullOrBlank() -> playbackManager.activePlaylistName!!
+            playbackManager.activeCategory == "ALL" -> context.getString(R.string.tab_all)
+            playbackManager.activeCategory == "FAVORITES" -> context.getString(R.string.tab_favorites)
+            playbackManager.activeCategory == "RESUME" -> context.getString(R.string.tab_resume)
+            playbackManager.activeCategory == "ALBUMS" -> song.album.ifBlank { context.getString(R.string.tab_albums_real) }
+            playbackManager.activeCategory == "ARTISTS" -> song.artist.ifBlank { context.getString(R.string.tab_artists) }
+            playbackManager.activeCategory == "FOLDERS" -> song.folderName.ifBlank { context.getString(R.string.tab_folders) }
+            playbackManager.activeCategory == "PLAYLISTS" -> context.getString(R.string.playlists)
+            playbackManager.activeCategory == "MIXES" -> context.getString(R.string.tab_mixes)
+            playbackManager.activeCategory == "GENRES" -> song.genre ?: context.getString(R.string.tab_genres)
+            song.album.isNotBlank() -> song.album
+            else -> context.getString(R.string.tab_all)
+        }
+    }
+
     LaunchedEffect(song.id, song.path) {
         if ((runtimeSampleRate == null || runtimeBitDepth == null || runtimeBitrate == null) && song.path.isNotBlank()) {
             withContext(Dispatchers.IO) {
@@ -765,49 +811,93 @@ fun FullPlayer(
             }
         }
 
+        val dynamicPrimaryColor = if (useCustomControlsColor && controlsColorPalette != 0) {
+            when (controlsColorPalette) {
+                1 -> if (isDarkTheme) Color(0xFFFFB4AA) else Color(0xFFB04B38)
+                2 -> if (isDarkTheme) Color(0xFF9FD3B1) else Color(0xFF386B52)
+                3 -> if (isDarkTheme) Color(0xFF99CCEA) else Color(0xFF2E6580)
+                4 -> if (isDarkTheme) Color(0xFFE8B5D9) else Color(0xFF854B75)
+                5 -> if (isDarkTheme) Color(0xFFFCBC43) else Color(0xFF825500)
+                else -> MaterialTheme.colorScheme.primary
+            }
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+
+        val playingFromHeaderColor = if (hasBlurBackground) {
+            Color.White.copy(alpha = 0.70f)
+        } else {
+            dynamicPrimaryColor.copy(alpha = 0.75f)
+        }
+
+        val playingFromTextColor = if (hasBlurBackground) {
+            Color.White
+        } else {
+            dynamicPrimaryColor
+        }
+
         val coverSection: @Composable () -> Unit = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = if (isLandscape) Modifier.fillMaxHeight() else Modifier.fillMaxWidth(),
+                verticalArrangement = if (isLandscape) Arrangement.Center else Arrangement.Top
             ) {
-                if (settingsManager.isBitrateOnPlayer) {
-                    AudioQualityBadges(
-                        song = song,
-                        runtimeSampleRate = runtimeSampleRate,
-                        runtimeBitDepth = runtimeBitDepth,
-                        runtimeBitrate = runtimeBitrate,
-                        useBlurControls = useBlurControls,
-                        isDarkTheme = isDarkTheme,
-                        onClick = { showAudioDetailsSheet = true },
-                        modifier = Modifier.padding(bottom = if (isLandscape) 4.dp else 12.dp)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = if (isLandscape) 8.dp else 12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.playing_from_header),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Normal,
+                        color = playingFromHeaderColor,
+                        textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = playingFromContext,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = playingFromTextColor,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .padding(horizontal = 24.dp)
+                            .basicMarquee()
+                    )
+                }
+
+                val coverModifier = if (isLandscape) {
+                    Modifier
+                        .weight(1f, fill = false)
+                        .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                        .scale(coverScale)
+                        .songSwipeGestures(
+                            enabled = isGesturesEnabled,
+                            onNext = onNext,
+                            onPrevious = onPrevious
+                        )
                 } else {
-                    Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 16.dp))
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .scale(coverScale)
+                        .songSwipeGestures(
+                            enabled = isGesturesEnabled,
+                            onNext = onNext,
+                            onPrevious = onPrevious
+                        )
                 }
 
                 if (isCinematic) {
                     Box(
-                        modifier = Modifier
-                            .aspectRatio(1f)
-                            .fillMaxWidth()
-                            .scale(coverScale)
-                            .songSwipeGestures(
-                                enabled = isGesturesEnabled,
-                                onNext = onNext,
-                                onPrevious = onPrevious
-                            ),
+                        modifier = coverModifier,
                     )
                 } else {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .scale(coverScale)
-                            .songSwipeGestures(
-                                enabled = isGesturesEnabled,
-                                onNext = onNext,
-                                onPrevious = onPrevious
-                            ),
+                        modifier = coverModifier,
                         contentAlignment = Alignment.Center
                     ) {
                         if (coverShape == 2 && coverVinylEffect) {
@@ -845,47 +935,114 @@ fun FullPlayer(
         }
 
         val controlsSection: @Composable () -> Unit = {
+            var titleContentWidth by remember(song.id) { mutableIntStateOf(0) }
+            var artistContentWidth by remember(song.id, runtimeSampleRate, runtimeBitDepth, runtimeBitrate) { mutableIntStateOf(0) }
+            var containerWidth by remember(song.id) { mutableIntStateOf(0) }
+
+            val marqueeDensity = LocalDensity.current
+            val marqueeSpacingDp = 40.dp
+            val marqueeSpacingPx = with(marqueeDensity) { marqueeSpacingDp.roundToPx() }
+            val baseMarqueeVelocityDp = 30.dp
+
+            val isTitleOverflowing = containerWidth > 0 && titleContentWidth > containerWidth
+            val isArtistOverflowing = containerWidth > 0 && artistContentWidth > containerWidth
+
+            val (titleVelocity, artistVelocity) = remember(
+                titleContentWidth,
+                artistContentWidth,
+                containerWidth,
+                marqueeDensity
+            ) {
+                if (isTitleOverflowing && isArtistOverflowing && titleContentWidth > 0 && artistContentWidth > 0) {
+                    val dTitle = (titleContentWidth + marqueeSpacingPx).toFloat()
+                    val dArtist = (artistContentWidth + marqueeSpacingPx).toFloat()
+                    val dMax = maxOf(dTitle, dArtist)
+                    val vTitle = baseMarqueeVelocityDp * (dTitle / dMax)
+                    val vArtist = baseMarqueeVelocityDp * (dArtist / dMax)
+                    vTitle to vArtist
+                } else {
+                    baseMarqueeVelocityDp to baseMarqueeVelocityDp
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp)
+                        .onSizeChanged { containerWidth = it.width },
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Text(
-                        song.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        textAlign = TextAlign.Start,
-                        color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth().basicMarquee()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            color = if (useBlurControls) blurContainerColor else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(percent = 50),
+                    key(song.id) {
+                        Text(
+                            text = song.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            textAlign = TextAlign.Start,
+                            color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
-                                .weight(1f, fill = false)
-                                .clickable { onArtistClick?.invoke(song.artist) }
+                                .fillMaxWidth()
+                                .basicMarquee(
+                                    iterations = Int.MAX_VALUE,
+                                    repeatDelayMillis = 1500,
+                                    initialDelayMillis = 1500,
+                                    spacing = MarqueeSpacing(marqueeSpacingDp),
+                                    velocity = titleVelocity
+                                )
+                                .onSizeChanged { titleContentWidth = it.width }
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .basicMarquee(
+                                    iterations = Int.MAX_VALUE,
+                                    repeatDelayMillis = 1500,
+                                    initialDelayMillis = 1500,
+                                    spacing = MarqueeSpacing(marqueeSpacingDp),
+                                    velocity = artistVelocity
+                                )
+                                .onSizeChanged { artistContentWidth = it.width },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                song.artist,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).basicMarquee()
-                            )
+                            Surface(
+                                color = if (useBlurControls) blurContainerColor else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(percent = 50),
+                                modifier = Modifier
+                                    .clickable { onArtistClick?.invoke(song.artist) }
+                            ) {
+                                Text(
+                                    text = song.artist,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            if (settingsManager.isBitrateOnPlayer) {
+                                AudioQualityBadges(
+                                    song = song,
+                                    runtimeSampleRate = runtimeSampleRate,
+                                    runtimeBitDepth = runtimeBitDepth,
+                                    runtimeBitrate = runtimeBitrate,
+                                    useBlurControls = useBlurControls,
+                                    isDarkTheme = isDarkTheme,
+                                    onClick = { showAudioDetailsSheet = true },
+                                    horizontalAlignment = Alignment.Start,
+                                    enableScroll = false
+                                )
+                            }
                         }
                     }
                 }
@@ -1650,15 +1807,23 @@ fun FullPlayer(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 24.dp, bottom = 24.dp, start = 48.dp, end = 48.dp),
+                        .padding(top = 16.dp, bottom = 16.dp, start = 48.dp, end = 48.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(modifier = Modifier.weight(1f).padding(end = 32.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(end = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         coverSection()
                     }
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.SpaceEvenly
                     ) {
@@ -1669,7 +1834,7 @@ fun FullPlayer(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 48.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
+                        .padding(top = 36.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {

@@ -384,6 +384,7 @@
     <string name="search_play_all">Abspielen</string>
     <string name="search_shuffle">Zufall</string>
     <string name="playing_from">Wiedergabe von: %s</string>
+    <string name="playing_from_header">Wiedergabe von</string>
     <string name="playing_from_search">Suchergebnis</string>
     <string name="option_speed">Geschwindigkeit</string>
     <string name="preset_name">Preset-Name</string>

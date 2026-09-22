@@ -385,6 +385,7 @@
     <string name="search_play_all">تشغيل</string>
     <string name="search_shuffle">عشوائي</string>
     <string name="playing_from">يتم التشغيل من: %s</string>
+    <string name="playing_from_header">يتم التشغيل من</string>
     <string name="playing_from_search">نتيجة البحث</string>
     <string name="option_speed">السرعة</string>
     <string name="preset_name">اسم الإعداد المسبق</string>

@@ -391,6 +391,7 @@
     <string name="search_play_all">Reproducir</string>
     <string name="search_shuffle">Aleatorio</string>
     <string name="playing_from">Sonando desde: %s</string>
+    <string name="playing_from_header">Sonando desde</string>
     <string name="playing_from_search">Resultado de búsqueda</string>
     <string name="search_filter">Filtrar resultados</string>
     <string name="search_filter_all">Todo</string>

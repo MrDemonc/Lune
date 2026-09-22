@@ -386,6 +386,7 @@
     <string name="search_play_all">Reproduzir</string>
     <string name="search_shuffle">Aleatório</string>
     <string name="playing_from">Tocando de: %s</string>
+    <string name="playing_from_header">Tocando de</string>
     <string name="playing_from_search">Resultado da busca</string>
     <string name="option_share">Compartilhar</string>
     <string name="option_speed">Velocidade</string>
