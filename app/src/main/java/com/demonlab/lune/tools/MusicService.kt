@@ -91,6 +91,8 @@ class MusicService : MediaLibraryService() {
     private var lastBlurredBitmap: Bitmap? = null
     private var lastSongForRounded: Song? = null
     private var cachedRoundedArt: Bitmap? = null
+    private var currentNotificationArt: Bitmap? = null
+    private var currentNotificationArtSongId: Long? = null
     private var becomingNoisyReceiver: BroadcastReceiver? = null
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
@@ -152,19 +154,6 @@ class MusicService : MediaLibraryService() {
             )
             getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(channel)
         }
-        val loadingNotif = androidx.core.app.NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Lune Music")
-            .setContentText("Loading...")
-            .setOngoing(true)
-            .build()
-        try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                startForeground(1, loadingNotif, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-            } else {
-                startForeground(1, loadingNotif)
-            }
-        } catch (e: Exception) {}
 
 
         becomingNoisyReceiver = object : BroadcastReceiver() {
@@ -318,6 +307,7 @@ class MusicService : MediaLibraryService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         val action = intent?.action
         val pm = PlaybackManager.getInstance(this)
 
@@ -360,8 +350,10 @@ class MusicService : MediaLibraryService() {
                 updateWidget()
             }
             else -> {
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager.cancel(1)
+                val currentOrPending = currentSong() ?: pm.currentSong ?: pm.pendingPlaySong
+                if (currentOrPending != null && isPlaying()) {
+                    showNotification(currentOrPending, true)
+                }
             }
         }
         return START_STICKY
@@ -709,6 +701,9 @@ class MusicService : MediaLibraryService() {
         requestAudioFocus()
         updateWidget()
 
+        // Promote service to foreground immediately with the active song
+        showNotification(song, true)
+
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
@@ -1018,7 +1013,7 @@ class MusicService : MediaLibraryService() {
         }
         val request = ImageRequest.Builder(this)
             .data(artUri)
-            .size(1024, 1024)
+            .size(512, 512)
             .allowHardware(false)
             .build()
 
@@ -1046,7 +1041,18 @@ class MusicService : MediaLibraryService() {
                 val pic = retriever.embeddedPicture
                 retriever.release()
                 if (pic != null) {
-                    bitmap = android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size)
+                    val boundsOpts = android.graphics.BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size, boundsOpts)
+                    var inSample = 1
+                    while (boundsOpts.outWidth / (inSample * 2) >= 512 && boundsOpts.outHeight / (inSample * 2) >= 512) {
+                        inSample *= 2
+                    }
+                    val decodeOpts = android.graphics.BitmapFactory.Options().apply {
+                        inSampleSize = inSample
+                    }
+                    bitmap = android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size, decodeOpts)
                 }
             } catch (_: Exception) {}
         }
@@ -1465,11 +1471,32 @@ class MusicService : MediaLibraryService() {
         return -1
     }
 
+    private fun bitmapToSafeByteArray(bitmap: Bitmap?): ByteArray? {
+        if (bitmap == null) return null
+        return try {
+            val maxDim = 320
+            val scaled = if (bitmap.width > maxDim || bitmap.height > maxDim) {
+                val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
+                val targetW = if (ratio >= 1f) maxDim else (maxDim * ratio).toInt().coerceAtLeast(1)
+                val targetH = if (ratio >= 1f) (maxDim / ratio).toInt().coerceAtLeast(1) else maxDim
+                Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+            } else {
+                bitmap
+            }
+            val stream = java.io.ByteArrayOutputStream()
+            scaled.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+            if (scaled != bitmap) {
+                scaled.recycle()
+            }
+            stream.toByteArray()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun updateMetadata(song: Song, art: android.graphics.Bitmap? = null) {
         art?.let {
-            val stream = java.io.ByteArrayOutputStream()
-            it.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
-            lunePlayerAdapter?.currentArtworkData = stream.toByteArray()
+            lunePlayerAdapter?.currentArtworkData = bitmapToSafeByteArray(it)
         }
         lunePlayerAdapter?.notifyStateChanged()
         val customLayout = buildCustomLayout()
@@ -1493,10 +1520,27 @@ class MusicService : MediaLibraryService() {
             return
         }
 
-        if (art != null && lunePlayerAdapter?.currentArtworkData == null) {
-            val stream = java.io.ByteArrayOutputStream()
-            art.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
-            lunePlayerAdapter?.currentArtworkData = stream.toByteArray()
+        if (art != null) {
+            val scaled = if (art.width > 512 || art.height > 512) {
+                val ratio = art.width.toFloat() / art.height.toFloat()
+                val targetW = if (ratio >= 1f) 512 else (512 * ratio).toInt().coerceAtLeast(1)
+                val targetH = if (ratio >= 1f) (512 / ratio).toInt().coerceAtLeast(1) else 512
+                try {
+                    Bitmap.createScaledBitmap(art, targetW, targetH, true)
+                } catch (_: Exception) {
+                    art
+                }
+            } else {
+                art
+            }
+            currentNotificationArt = scaled
+            currentNotificationArtSongId = song.id
+        }
+
+        val effectiveArt = if (currentNotificationArtSongId == song.id) currentNotificationArt else art
+
+        if (effectiveArt != null && lunePlayerAdapter?.currentArtworkData == null) {
+            lunePlayerAdapter?.currentArtworkData = bitmapToSafeByteArray(effectiveArt)
             lunePlayerAdapter?.notifyStateChanged()
         }
 
@@ -1545,7 +1589,7 @@ class MusicService : MediaLibraryService() {
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setLargeIcon(art)
+            .setLargeIcon(effectiveArt)
             .setContentTitle(song.title)
             .setContentText(song.artist)
             .setOngoing(isPlaying)
@@ -1561,7 +1605,7 @@ class MusicService : MediaLibraryService() {
         mediaSession?.let { session ->
             builder.setStyle(
                 MediaStyleNotificationHelper.MediaStyle(session)
-                    .setShowActionsInCompactView(0, 1, 2, 3, 4)
+                    .setShowActionsInCompactView(0, 1, 2)
             )
         }
 
@@ -1575,6 +1619,7 @@ class MusicService : MediaLibraryService() {
                     startForeground(1, notification)
                 }
             } catch (e: Exception) {
+                Log.w("MusicService", "startForeground failed: ${e.message}")
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager.notify(1, notification)
             }
@@ -1594,7 +1639,21 @@ class MusicService : MediaLibraryService() {
         val intent = Intent(this, MusicService::class.java).apply {
             this.action = action
         }
-        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PendingIntent.getForegroundService(
+                this,
+                action.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getService(
+                this,
+                action.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
     }
 
     override fun onDestroy() {

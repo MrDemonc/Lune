@@ -33,7 +33,8 @@ class PlaybackManager private constructor(private val context: Context) {
     private val settings = SettingsManager.getInstance(context)
     private var musicService: MusicService? = null
     private var isBound = false
-    private var pendingPlaySong: Song? = null
+    var pendingPlaySong: Song? = null
+        internal set
     private var pendingRestoreSong: Song? = null
     private var pendingRestorePosition: Long = 0L
     private var pendingRestorePlay: Boolean = false
@@ -480,6 +481,7 @@ class PlaybackManager private constructor(private val context: Context) {
 
         // Start service as foreground when playing begins
         Intent(context, MusicService::class.java).also { intent ->
+            intent.action = MusicService.ACTION_PLAY
             intent.data = song.uri
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

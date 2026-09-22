@@ -72,7 +72,7 @@ class LuneAudioPlayerAdapter(
                 .setArtworkUri(artUri)
                 .setIsPlayable(true)
 
-            currentArtworkData?.let {
+            currentArtworkData?.takeIf { it.size <= 256 * 1024 }?.let {
                 metadataBuilder.setArtworkData(it, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
             }
 
@@ -84,12 +84,13 @@ class LuneAudioPlayerAdapter(
                 .setMediaMetadata(mediaMetadata)
                 .build()
 
-            val durationUs = (currentSong.duration * 1000L).coerceAtLeast(0L)
+            val durationMs = if (currentSong.duration > 0) currentSong.duration else service.duration().toLong()
+            val durationUs = (durationMs * 1000L).coerceAtLeast(0L)
             val itemData = MediaItemData.Builder(currentSong.id.toString())
                 .setMediaItem(mediaItem)
                 .setMediaMetadata(mediaMetadata)
                 .setDurationUs(durationUs)
-                .setIsSeekable(true)
+                .setIsSeekable(durationUs > 0)
                 .build()
 
             stateBuilder.setPlaylist(listOf(itemData))
@@ -98,6 +99,7 @@ class LuneAudioPlayerAdapter(
                 service.currentPosition().toLong().coerceAtLeast(0L)
             })
         } else {
+            currentArtworkData = null
             stateBuilder.setPlaylist(emptyList())
             stateBuilder.setContentPositionMs(0L)
         }
