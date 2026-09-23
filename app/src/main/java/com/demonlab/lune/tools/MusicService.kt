@@ -57,6 +57,7 @@ import com.google.common.util.concurrent.SettableFuture
 @Suppress("DEPRECATION")
 class MusicService : MediaLibraryService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        ensureMediaSession()
         return mediaSession
     }
 
@@ -166,26 +167,7 @@ class MusicService : MediaLibraryService() {
         registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
 
         setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
-        lunePlayerAdapter = LuneAudioPlayerAdapter(this)
-        val sessionIntent = Intent(this, Lune::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        val sessionPendingIntent = PendingIntent.getActivity(
-            this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-        val initialLayout = buildCustomLayout()
-        mediaSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
-            .setSessionActivity(sessionPendingIntent)
-            .setCustomLayout(initialLayout)
-            .setMediaButtonPreferences(initialLayout)
-            .build()
-
-        val notificationHints = Bundle().apply {
-            putBoolean("androidx.media3.session.MediaNotificationManager", true)
-        }
-        MediaController.Builder(this, mediaSession!!.token)
-            .setConnectionHints(notificationHints)
-            .buildAsync()
+        ensureMediaSession()
 
         settingsManager = SettingsManager.getInstance(this)
 
@@ -360,6 +342,12 @@ class MusicService : MediaLibraryService() {
     }
 
 
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (!isPlaying() && isNotificationDismissed) {
+            stopSelf()
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? {
         val action = intent?.action
@@ -644,6 +632,34 @@ class MusicService : MediaLibraryService() {
                 .setEnabled(true)
                 .build()
         )
+    }
+
+    private fun ensureMediaSession() {
+        if (lunePlayerAdapter == null) {
+            lunePlayerAdapter = LuneAudioPlayerAdapter(this)
+        }
+        val currentSession = mediaSession
+        if (currentSession == null) {
+            val sessionIntent = Intent(this, Lune::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            val sessionPendingIntent = PendingIntent.getActivity(
+                this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE
+            )
+            val initialLayout = buildCustomLayout()
+            mediaSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
+                .setSessionActivity(sessionPendingIntent)
+                .setCustomLayout(initialLayout)
+                .setMediaButtonPreferences(initialLayout)
+                .build()
+
+            val notificationHints = Bundle().apply {
+                putBoolean("androidx.media3.session.MediaNotificationManager", true)
+            }
+            MediaController.Builder(this, mediaSession!!.token)
+                .setConnectionHints(notificationHints)
+                .buildAsync()
+        }
     }
 
     private fun setPlayerDataSource(player: MediaPlayer, song: Song): Boolean {
@@ -1065,13 +1081,17 @@ class MusicService : MediaLibraryService() {
         pauseTimeoutJob = serviceScope.launch {
             delay(PAUSE_TIMEOUT_MS)
             PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+            isNotificationDismissed = true
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
             } else {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
             }
-            mediaSession?.release()
+            try {
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager?.cancel(1)
+            } catch (_: Exception) {}
             stopSelf()
         }
 
@@ -1495,6 +1515,7 @@ class MusicService : MediaLibraryService() {
     }
 
     private fun updateMetadata(song: Song, art: android.graphics.Bitmap? = null) {
+        ensureMediaSession()
         art?.let {
             lunePlayerAdapter?.currentArtworkData = bitmapToSafeByteArray(it)
         }
@@ -1505,6 +1526,7 @@ class MusicService : MediaLibraryService() {
     }
 
     private fun updatePlaybackState() {
+        ensureMediaSession()
         lunePlayerAdapter?.notifyStateChanged()
         val customLayout = buildCustomLayout()
         mediaSession?.setCustomLayout(customLayout)
@@ -1539,8 +1561,9 @@ class MusicService : MediaLibraryService() {
 
         val effectiveArt = if (currentNotificationArtSongId == song.id) currentNotificationArt else art
 
-        if (effectiveArt != null && lunePlayerAdapter?.currentArtworkData == null) {
-            lunePlayerAdapter?.currentArtworkData = bitmapToSafeByteArray(effectiveArt)
+        val newArtBytes = if (effectiveArt != null) bitmapToSafeByteArray(effectiveArt) else null
+        if (lunePlayerAdapter?.currentArtworkData?.contentEquals(newArtBytes) != true) {
+            lunePlayerAdapter?.currentArtworkData = newArtBytes
             lunePlayerAdapter?.notifyStateChanged()
         }
 
@@ -1596,12 +1619,14 @@ class MusicService : MediaLibraryService() {
             .setContentIntent(pendingIntent)
             .setDeleteIntent(getServicePendingIntent(ACTION_DISMISS))
             .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(android.R.drawable.ic_media_previous, "Previous", getServicePendingIntent(ACTION_PREVIOUS))
             .addAction(playPauseAction)
             .addAction(android.R.drawable.ic_media_next, "Next", getServicePendingIntent(ACTION_NEXT))
             .addAction(shuffleAction)
             .addAction(favoriteAction)
 
+        ensureMediaSession()
         mediaSession?.let { session ->
             builder.setStyle(
                 MediaStyleNotificationHelper.MediaStyle(session)
@@ -1639,7 +1664,8 @@ class MusicService : MediaLibraryService() {
         val intent = Intent(this, MusicService::class.java).apply {
             this.action = action
         }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val useForegroundService = action != ACTION_DISMISS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+        return if (useForegroundService) {
             PendingIntent.getForegroundService(
                 this,
                 action.hashCode(),
@@ -1670,10 +1696,16 @@ class MusicService : MediaLibraryService() {
         mediaPlayer?.release()
         secondaryPlayer?.release()
         mediaSession?.release()
+        mediaSession = null
         lunePlayerAdapter?.release()
+        lunePlayerAdapter = null
         spatialRampJob?.cancel()
         pauseTimeoutJob?.cancel()
         serviceScope.cancel()
+        try {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.cancel(1)
+        } catch (_: Exception) {}
         super.onDestroy()
     }
 

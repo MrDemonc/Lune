@@ -62,7 +62,7 @@ class LuneAudioPlayerAdapter(
                     currentSong.albumId
                 )
             } else {
-                currentSong.uri
+                null
             }
 
             val metadataBuilder = MediaMetadata.Builder()

@@ -1249,12 +1249,11 @@ fun FullPlayer(
             val playShape = RoundedCornerShape(30.dp)
             val skipShape = RoundedCornerShape(26.dp)
 
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
+                    .height(68.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Surface(
                     onClick = onPrevious,
@@ -1262,6 +1261,12 @@ fun FullPlayer(
                     color = activeContainerColor,
                     modifier = Modifier
                         .size(68.dp)
+                        .offset {
+                            val halfPlay = playButtonWidth.toPx() / 2f
+                            val gap = 14.dp.toPx()
+                            val halfSkip = 34.dp.toPx()
+                            IntOffset(x = -(halfPlay + gap + halfSkip).roundToInt(), y = 0)
+                        }
                         .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -1309,7 +1314,7 @@ fun FullPlayer(
                                 visible = showPlayStateLabel,
                                 enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
                                         expandHorizontally(
-                                            expandFrom = Alignment.Start,
+                                            expandFrom = Alignment.CenterHorizontally,
                                             animationSpec = spring(
                                                 dampingRatio = Spring.DampingRatioMediumBouncy,
                                                 stiffness = Spring.StiffnessMediumLow
@@ -1324,7 +1329,7 @@ fun FullPlayer(
                                         ),
                                 exit = fadeOut(animationSpec = tween(150)) +
                                        shrinkHorizontally(
-                                           shrinkTowards = Alignment.Start,
+                                           shrinkTowards = Alignment.CenterHorizontally,
                                            animationSpec = spring(stiffness = Spring.StiffnessMedium)
                                        )
                             ) {
@@ -1352,6 +1357,12 @@ fun FullPlayer(
                     color = activeContainerColor,
                     modifier = Modifier
                         .size(68.dp)
+                        .offset {
+                            val halfPlay = playButtonWidth.toPx() / 2f
+                            val gap = 14.dp.toPx()
+                            val halfSkip = 34.dp.toPx()
+                            IntOffset(x = (halfPlay + gap + halfSkip).roundToInt(), y = 0)
+                        }
                         .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -1742,11 +1753,11 @@ fun FullPlayer(
                                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.MoreHoriz,
-                                            contentDescription = stringResource(R.string.show_options),
+                                        CavaThreeDots(
+                                            isPlaying = isPlaying,
+                                            visualizerData = visualizerData,
                                             tint = itemTint,
-                                            modifier = Modifier.size(20.dp)
+                                            modifier = Modifier.height(18.dp)
                                         )
                                     }
                                 }
@@ -2642,3 +2653,109 @@ fun ReusableSkipIcon(
         }
     }
 }
+
+@Composable
+fun CavaThreeDots(
+    isPlaying: Boolean,
+    visualizerData: FloatArray,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "CavaFallbackAnim")
+
+    val fallbackH1 by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 430, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cavaBar1"
+    )
+    val fallbackH2 by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 310, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cavaBar2"
+    )
+    val fallbackH3 by infiniteTransition.animateFloat(
+        initialValue = 0.10f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 510, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cavaBar3"
+    )
+
+    val hasVisualizerSignal = isPlaying && visualizerData.isNotEmpty() && visualizerData.any { it > 0.15f }
+
+    val rawTarget1 = when {
+        !isPlaying -> 0f
+        hasVisualizerSignal -> ((visualizerData.getOrElse(4) { 0.1f } - 0.1f) / 0.8f).coerceIn(0f, 1f)
+        else -> fallbackH1
+    }
+
+    val rawTarget2 = when {
+        !isPlaying -> 0f
+        hasVisualizerSignal -> ((visualizerData.getOrElse(14) { 0.1f } - 0.1f) / 0.8f).coerceIn(0f, 1f)
+        else -> fallbackH2
+    }
+
+    val rawTarget3 = when {
+        !isPlaying -> 0f
+        hasVisualizerSignal -> ((visualizerData.getOrElse(24) { 0.1f } - 0.1f) / 0.8f).coerceIn(0f, 1f)
+        else -> fallbackH3
+    }
+
+    val animSpec = if (hasVisualizerSignal) {
+        spring<Dp>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
+    } else {
+        spring<Dp>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+    }
+
+    val h1 by animateDpAsState(
+        targetValue = 3.5.dp + (11.5.dp * rawTarget1),
+        animationSpec = animSpec,
+        label = "cavaH1"
+    )
+    val h2 by animateDpAsState(
+        targetValue = 3.5.dp + (15.5.dp * rawTarget2),
+        animationSpec = animSpec,
+        label = "cavaH2"
+    )
+    val h3 by animateDpAsState(
+        targetValue = 3.5.dp + (9.5.dp * rawTarget3),
+        animationSpec = animSpec,
+        label = "cavaH3"
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(3.5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(3.5.dp)
+                .height(h1)
+                .background(tint, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .width(3.5.dp)
+                .height(h2)
+                .background(tint, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .width(3.5.dp)
+                .height(h3)
+                .background(tint, CircleShape)
+        )
+    }
+}
+
