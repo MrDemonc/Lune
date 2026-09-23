@@ -246,6 +246,7 @@
     <string name="player_queue">Очередь</string>
     <string name="player_options">Параметры</string>
     <string name="option_share">Поделиться</string>
+    <string name="option_repeat">Повтор</string>
     <string name="option_repeat_one">Повторить одну</string>
     <string name="option_repeat_all">Повторить все</string>
     <string name="option_repeat_off">Выключить</string>

@@ -245,6 +245,7 @@
     <string name="player_queue">صف پخش</string>
     <string name="player_options">تنظیمات</string>
     <string name="option_share">بفرست واسه بقیه</string>
+    <string name="option_repeat">تکرار</string>
     <string name="option_repeat_one">تکرار همین آهنگ</string>
     <string name="option_repeat_all">تکرار همه</string>
     <string name="option_repeat_off">خاموش</string>

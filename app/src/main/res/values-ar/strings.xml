@@ -246,6 +246,7 @@
     <string name="play_next">تشغيل التالي</string>
     <string name="player_options">الخيارات</string>
     <string name="option_share">مشاركة</string>
+    <string name="option_repeat">تكرار</string>
     <string name="option_repeat_one">تكرار واحدة</string>
     <string name="option_repeat_all">تكرار الكل</string>
     <string name="option_repeat_off">إيقاف التكرار</string>

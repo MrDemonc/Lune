@@ -15,6 +15,7 @@ import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.MarqueeSpacing
@@ -94,6 +95,7 @@ import com.demonlab.lune.ui.components.VinylRecordAsyncCover
 import com.demonlab.lune.ui.components.WaveformVisualizer
 import com.demonlab.lune.ui.sheets.AddToPlaylistDialog
 import com.demonlab.lune.ui.sheets.AudioDetailsBottomSheet
+import com.demonlab.lune.ui.sheets.CustomRepeatDialog
 import com.demonlab.lune.ui.sheets.PlayerOptionsBottomSheet
 import com.demonlab.lune.ui.sheets.QueueBottomSheet
 import com.demonlab.lune.ui.sheets.VisualizerSettingsBottomSheet
@@ -420,7 +422,7 @@ fun AudioQualityBadges(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun FullPlayer(
     song: Song,
@@ -504,6 +506,7 @@ fun FullPlayer(
     var showVolumeBar by remember { mutableStateOf(false) }
     var showSpeedBar by remember { mutableStateOf(false) }
     var showVisualizerSettings by remember { mutableStateOf(false) }
+    var showCustomRepeatDialog by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val pillAnim = remember { Animatable(0f) }
@@ -592,8 +595,8 @@ fun FullPlayer(
         else if (isDarkTheme) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
     val useBlurControls = hasBlurBackground && settingsManager.isBlurControlsEnabled
 
-    val blurContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.4f)
-    val blurPlayContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.5f)
+    val blurContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.35f)
+    val blurPlayContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.50f)
 
     val infiniteSpinTransition = rememberInfiniteTransition(label = "PlayerCoverSpin")
     val spinRotation by infiniteSpinTransition.animateFloat(
@@ -1047,12 +1050,12 @@ fun FullPlayer(
                     }
                 }
 
-                val pillBg = if (useBlurControls) blurContainerColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                val pillBg = if (useBlurControls) blurContainerColor else if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
                 val isShuffling = playbackManager.isShuffle
                 val shuffleIconColor = if (isShuffling) {
                     if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary
                 } else {
-                    if (useBlurControls) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    if (useBlurControls) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 }
 
                 Row(
@@ -1194,7 +1197,7 @@ fun FullPlayer(
             } else if (useCustomControlsColor) {
                 activePrimary.copy(alpha = 0.2f)
             } else {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
             }
             val activeIconTint = if (useBlurControls) {
                 Color.White
@@ -1246,28 +1249,6 @@ fun FullPlayer(
             val playShape = RoundedCornerShape(30.dp)
             val skipShape = RoundedCornerShape(26.dp)
 
-            val playBorder = BorderStroke(
-                width = 1.dp,
-                color = if (useBlurControls) {
-                    if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)
-                } else if (useCustomControlsColor) {
-                    activePrimary.copy(alpha = 0.35f)
-                } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-                }
-            )
-
-            val skipBorder = BorderStroke(
-                width = 1.dp,
-                color = if (useBlurControls) {
-                    if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
-                } else if (useCustomControlsColor) {
-                    activePrimary.copy(alpha = 0.20f)
-                } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                }
-            )
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1279,7 +1260,6 @@ fun FullPlayer(
                     onClick = onPrevious,
                     shape = skipShape,
                     color = activeContainerColor,
-                    border = skipBorder,
                     modifier = Modifier
                         .size(68.dp)
                         .bounceClick()
@@ -1303,7 +1283,6 @@ fun FullPlayer(
                     },
                     shape = playShape,
                     color = playBgColor,
-                    border = playBorder,
                     modifier = Modifier
                         .height(68.dp)
                         .width(playButtonWidth)
@@ -1371,7 +1350,6 @@ fun FullPlayer(
                     onClick = onNext,
                     shape = skipShape,
                     color = activeContainerColor,
-                    border = skipBorder,
                     modifier = Modifier
                         .size(68.dp)
                         .bounceClick()
@@ -1505,12 +1483,10 @@ fun FullPlayer(
                     }
                 } else {
                     val pillBg = if (useBlurControls) {
-                        if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)
-                    } else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-
-                    val pillBorder = if (useBlurControls) {
-                        if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
-                    } else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                        blurContainerColor
+                    } else {
+                        if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+                    }
 
                     val pillDivider = if (useBlurControls) {
                         if (isDarkTheme) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.15f)
@@ -1534,6 +1510,54 @@ fun FullPlayer(
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.Center
                     ) {
+                        // Bottom-Left Corner: Repeat circular button
+                        AnimatedVisibility(
+                            visible = !settingsManager.isOptionsBarVisible,
+                            enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                    scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)),
+                            exit = fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                   scaleOut(targetScale = 0.8f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+                            modifier = Modifier.align(Alignment.CenterStart)
+                        ) {
+                            val isRepeatActive = playbackManager.repeatMode > 0
+                            val repeatIcon = when (playbackManager.repeatMode) {
+                                1 -> Icons.Default.RepeatOne
+                                else -> Icons.Default.Repeat
+                            }
+                            val repeatBg = if (isRepeatActive) {
+                                if (useBlurControls) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                pillBg
+                            }
+                            val repeatTint = if (isRepeatActive) {
+                                if (useBlurControls) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                if (useBlurControls) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+
+                            Surface(
+                                shape = CircleShape,
+                                color = repeatBg,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .bounceClick(0.92f)
+                                    .clip(CircleShape)
+                                    .combinedClickable(
+                                        onClick = { playbackManager.toggleRepeatMode() },
+                                        onLongClick = { showCustomRepeatDialog = true }
+                                    )
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = repeatIcon,
+                                        contentDescription = stringResource(R.string.option_repeat),
+                                        tint = repeatTint,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+
                         AnimatedContent(
                             targetState = settingsManager.isOptionsBarVisible,
                             transitionSpec = {
@@ -1551,7 +1575,6 @@ fun FullPlayer(
                                 Surface(
                                     shape = CircleShape,
                                     color = pillBg,
-                                    border = BorderStroke(1.dp, pillBorder),
                                     modifier = Modifier.height(40.dp)
                                 ) {
                                     Row(
@@ -1706,7 +1729,6 @@ fun FullPlayer(
                                 Surface(
                                     shape = CircleShape,
                                     color = pillBg,
-                                    border = BorderStroke(1.dp, pillBorder),
                                     modifier = Modifier
                                         .height(36.dp)
                                         .bounceClick(0.92f)
@@ -1727,6 +1749,37 @@ fun FullPlayer(
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
+                                }
+                            }
+                        }
+
+                        // Bottom-Right Corner: Add to Playlist circular button
+                        AnimatedVisibility(
+                            visible = !settingsManager.isOptionsBarVisible,
+                            enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                    scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)),
+                            exit = fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) +
+                                   scaleOut(targetScale = 0.8f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            val playlistIconTint = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+
+                            Surface(
+                                shape = CircleShape,
+                                color = pillBg,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .bounceClick(0.92f)
+                                    .clip(CircleShape)
+                                    .clickable { showAddToPlaylistInPlayer = true }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                        contentDescription = stringResource(R.string.add_to_playlist),
+                                        tint = playlistIconTint,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
                         }
@@ -1909,6 +1962,14 @@ fun FullPlayer(
                 bitDepth = runtimeBitDepth,
                 bitrate = runtimeBitrate,
                 onDismiss = { showAudioDetailsSheet = false }
+            )
+        }
+
+        if (showCustomRepeatDialog) {
+            CustomRepeatDialog(
+                playbackManager = playbackManager,
+                currentSong = song,
+                onDismiss = { showCustomRepeatDialog = false }
             )
         }
     }

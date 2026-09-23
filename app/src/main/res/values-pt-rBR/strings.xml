@@ -245,6 +245,7 @@
     <string name="info_restored">Informações restauradas</string>
     <string name="player_queue">Fila</string> 
     <string name="player_options">Opções</string> 
+    <string name="option_repeat">Repetir</string>
     <string name="option_repeat_one">Repetir Uma</string> 
     <string name="option_repeat_all">Repetir Todas</string> 
     <string name="option_repeat_off">Desativado</string> 

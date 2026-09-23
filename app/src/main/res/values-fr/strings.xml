@@ -246,6 +246,7 @@
     <string name="player_queue">File d’attente</string>
     <string name="player_options">Options</string>
     <string name="option_share">Partager</string>
+    <string name="option_repeat">Répéter</string>
     <string name="option_repeat_one">Répéter une fois</string>
     <string name="option_repeat_all">Tout répéter</string>
     <string name="option_repeat_off">Pas de répétition</string>

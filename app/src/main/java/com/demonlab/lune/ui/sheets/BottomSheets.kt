@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.LastPage
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.demonlab.lune.ui.components.BouncySwitch
 import androidx.compose.runtime.*
@@ -1196,14 +1197,24 @@ fun PlayerOptionsBottomSheet(
         ) {
             val isFavorite = playbackManager.currentSong?.isFavorite == true
             var showCustomTimerDialog by remember { mutableStateOf(false) }
+            var showCustomRepeatDialogInSheet by remember { mutableStateOf(false) }
 
             if (showCustomTimerDialog) {
                 CustomSleepTimerDialog(
                     currentMinutes = playbackManager.sleepTimerMinutes,
+                    currentSong = currentSong,
                     onDismiss = { showCustomTimerDialog = false },
                     onSetTimer = { minutes ->
                         playbackManager.setCustomSleepTimer(minutes)
                     }
+                )
+            }
+
+            if (showCustomRepeatDialogInSheet) {
+                CustomRepeatDialog(
+                    playbackManager = playbackManager,
+                    currentSong = currentSong,
+                    onDismiss = { showCustomRepeatDialogInSheet = false }
                 )
             }
 
@@ -1266,7 +1277,8 @@ fun PlayerOptionsBottomSheet(
                             icon = repeatIcon,
                             label = repeatLabel,
                             active = playbackManager.repeatMode > 0,
-                            onClick = { playbackManager.toggleRepeatMode() }
+                            onClick = { playbackManager.toggleRepeatMode() },
+                            onLongClick = { showCustomRepeatDialogInSheet = true }
                         )
                     }
 
@@ -1664,187 +1676,372 @@ fun EditSongBottomSheet(
 @Composable
 fun CustomSleepTimerDialog(
     currentMinutes: Int,
+    currentSong: Song? = null,
     onDismiss: () -> Unit,
     onSetTimer: (Int) -> Unit
 ) {
-    val blurColors = rememberBlurSheetColors()
+    val blurColors = rememberBlurSheetColors(currentSong)
     var selectedMinutes by remember {
         mutableStateOf(if (currentMinutes > 0) currentMinutes else 30)
     }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .widthIn(max = 380.dp),
-        shape = RoundedCornerShape(28.dp),
-        containerColor = blurColors.containerColor,
-        icon = {
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = currentSong,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 380.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
             Surface(
-                shape = CircleShape,
-                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(52.dp)
+                color = Color.Transparent,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Bedtime,
-                        contentDescription = null,
-                        tint = blurColors.primaryTint,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-            }
-        },
-        title = {
-            Text(
-                text = stringResource(R.string.option_timer),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = blurColors.textColor,
-                textAlign = TextAlign.Center
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Expressive duration badge
-                val offLabel = stringResource(R.string.option_repeat_off)
-                val minUnit = stringResource(R.string.timer_minutes_unit)
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (selectedMinutes > 0) (if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                    else blurColors.itemContainerColor,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = when {
-                            selectedMinutes == 0 -> offLabel
-                            selectedMinutes >= 60 -> {
-                                val h = selectedMinutes / 60
-                                val m = selectedMinutes % 60
-                                if (m == 0) "${h}h" else "${h}h ${m}${minUnit}"
-                            }
-                            else -> "$selectedMinutes $minUnit"
-                        },
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (selectedMinutes > 0) blurColors.primaryTint
-                        else blurColors.textSecondaryColor,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
-                    )
-                }
+                    Surface(
+                        shape = CircleShape,
+                        color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Bedtime,
+                                contentDescription = null,
+                                tint = blurColors.primaryTint,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
 
-                // Quick preset chips row
-                val presets = listOf(0, 15, 30, 45, 60, 90, 120)
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(presets) { preset ->
-                        val isSelected = selectedMinutes == preset
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedMinutes = preset },
-                            label = {
-                                Text(
-                                    text = if (preset == 0) offLabel else "${preset}m",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = stringResource(R.string.option_timer),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Expressive duration badge
+                    val offLabel = stringResource(R.string.option_repeat_off)
+                    val minUnit = stringResource(R.string.timer_minutes_unit)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (selectedMinutes > 0) (if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                        else blurColors.itemContainerColor,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Text(
+                            text = when {
+                                selectedMinutes == 0 -> offLabel
+                                selectedMinutes >= 60 -> {
+                                    val h = selectedMinutes / 60
+                                    val m = selectedMinutes % 60
+                                    if (m == 0) "${h}h" else "${h}h ${m}${minUnit}"
+                                }
+                                else -> "$selectedMinutes $minUnit"
                             },
-                            shape = RoundedCornerShape(12.dp),
-                            border = null,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimary,
-                                containerColor = blurColors.itemContainerColor,
-                                labelColor = blurColors.textSecondaryColor
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedMinutes > 0) blurColors.primaryTint
+                            else blurColors.textSecondaryColor,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                        )
+                    }
+
+                    // Quick preset chips row
+                    val presets = listOf(0, 15, 30, 45, 60, 90, 120)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(presets) { preset ->
+                            val isSelected = selectedMinutes == preset
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedMinutes = preset },
+                                label = {
+                                    Text(
+                                        text = if (preset == 0) offLabel else "${preset}m",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = blurColors.itemContainerColor,
+                                    labelColor = blurColors.textSecondaryColor
+                                ),
+                                modifier = Modifier.bounceClick()
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Stepper + Slider
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FilledTonalIconButton(
+                            onClick = { selectedMinutes = (selectedMinutes - 5).coerceAtLeast(0) },
+                            enabled = selectedMinutes > 0,
+                            modifier = Modifier.size(44.dp).bounceClick(),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_timer_decrease))
+                        }
+
+                        Slider(
+                            value = selectedMinutes.toFloat(),
+                            onValueChange = { selectedMinutes = ((it / 5).roundToInt() * 5) },
+                            valueRange = 0f..180f,
+                            steps = 35,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = blurColors.primaryTint,
+                                activeTrackColor = blurColors.primaryTint,
+                                inactiveTrackColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHighest
+                            )
+                        )
+
+                        FilledTonalIconButton(
+                            onClick = { selectedMinutes = (selectedMinutes + 5).coerceAtMost(180) },
+                            enabled = selectedMinutes < 180,
+                            modifier = Modifier.size(44.dp).bounceClick(),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_timer_increase))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Button(
+                            onClick = {
+                                onSetTimer(selectedMinutes)
+                                onDismiss()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = blurColors.primaryTint,
+                                contentColor = if (blurColors.hasBlur) Color.Black else Color.White
                             ),
                             modifier = Modifier.bounceClick()
-                        )
+                        ) {
+                            Text(
+                                text = if (selectedMinutes == 0) stringResource(R.string.timer_turn_off) else stringResource(R.string.timer_set),
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (blurColors.hasBlur) Color.Black else Color.White
+                            )
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Stepper + Slider
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    FilledTonalIconButton(
-                        onClick = { selectedMinutes = (selectedMinutes - 5).coerceAtLeast(0) },
-                        enabled = selectedMinutes > 0,
-                        modifier = Modifier.size(44.dp).bounceClick(),
-                        shape = CircleShape
-                    ) {
-                        Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_timer_decrease))
-                    }
-
-                    Slider(
-                        value = selectedMinutes.toFloat(),
-                        onValueChange = { selectedMinutes = ((it / 5).roundToInt() * 5) },
-                        valueRange = 0f..180f,
-                        steps = 35,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp),
-                        colors = SliderDefaults.colors(
-                            thumbColor = blurColors.primaryTint,
-                            activeTrackColor = blurColors.primaryTint,
-                            inactiveTrackColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHighest
-                        )
-                    )
-
-                    FilledTonalIconButton(
-                        onClick = { selectedMinutes = (selectedMinutes + 5).coerceAtMost(180) },
-                        enabled = selectedMinutes < 180,
-                        modifier = Modifier.size(44.dp).bounceClick(),
-                        shape = CircleShape
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_timer_increase))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onSetTimer(selectedMinutes)
-                    onDismiss()
-                },
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = blurColors.primaryTint,
-                    contentColor = if (blurColors.hasBlur) Color.Black else Color.White
-                ),
-                modifier = Modifier.bounceClick()
-            ) {
-                Text(
-                    text = if (selectedMinutes == 0) stringResource(R.string.timer_turn_off) else stringResource(R.string.timer_set),
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (blurColors.hasBlur) Color.Black else Color.White
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.bounceClick()
-            ) {
-                Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
             }
         }
-    )
+    }
+}
+
+@Composable
+fun CustomRepeatDialog(
+    playbackManager: PlaybackManager,
+    currentSong: Song? = null,
+    onDismiss: () -> Unit
+) {
+    val blurColors = rememberBlurSheetColors(currentSong)
+    var selectedMode by remember { mutableStateOf(playbackManager.repeatMode) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = currentSong,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 380.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Surface(
+                color = Color.Transparent,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = when (selectedMode) {
+                                    1 -> Icons.Default.RepeatOne
+                                    else -> Icons.Default.Repeat
+                                },
+                                contentDescription = null,
+                                tint = blurColors.primaryTint,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = stringResource(R.string.option_repeat),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    val options = listOf(
+                        Triple(0, stringResource(R.string.option_repeat_off), Icons.Default.Repeat),
+                        Triple(1, stringResource(R.string.option_repeat_one), Icons.Default.RepeatOne),
+                        Triple(2, stringResource(R.string.option_repeat_all), Icons.Default.Repeat)
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        options.forEach { (mode, label, icon) ->
+                            val isSelected = selectedMode == mode
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = if (isSelected) {
+                                    if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f)
+                                    else MaterialTheme.colorScheme.primaryContainer
+                                } else blurColors.itemContainerColor,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .bounceClick()
+                                    .clickable {
+                                        selectedMode = mode
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = if (isSelected) blurColors.primaryTint else blurColors.textSecondaryColor,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) blurColors.textColor else blurColors.textSecondaryColor,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = { selectedMode = mode },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = blurColors.primaryTint,
+                                            unselectedColor = blurColors.textSecondaryColor
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Button(
+                            onClick = {
+                                playbackManager.applyRepeatMode(selectedMode)
+                                onDismiss()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = blurColors.primaryTint,
+                                contentColor = if (blurColors.hasBlur) Color.Black else Color.White
+                            ),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ok),
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (blurColors.hasBlur) Color.Black else Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

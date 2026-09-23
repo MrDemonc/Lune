@@ -246,6 +246,7 @@
     <string name="player_queue">Warteschlange</string>
     <string name="player_options">Optionen</string>
     <string name="option_share">Teilen</string>
+    <string name="option_repeat">Wiederholen</string>
     <string name="option_repeat_one">Einmal wiederholen</string>
     <string name="option_repeat_all">Alle wiederholen</string>
     <string name="option_repeat_off">Aus</string>

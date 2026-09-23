@@ -246,6 +246,7 @@
     <string name="player_queue">队列</string>
     <string name="player_options">选项</string>
     <string name="option_share">分享</string>
+    <string name="option_repeat">重复</string>
     <string name="option_repeat_one">单曲循环</string>
     <string name="option_repeat_all">全部循环</string>
     <string name="option_repeat_off">关闭</string>

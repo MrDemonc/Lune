@@ -999,6 +999,12 @@ class PlaybackManager private constructor(private val context: Context) {
         updateLoopingState()
     }
 
+    fun applyRepeatMode(mode: Int) {
+        repeatMode = mode.coerceIn(0, 2)
+        settings.repeatMode = repeatMode
+        updateLoopingState()
+    }
+
     fun getEqNumberOfBands(): Short = musicService?.equalizer?.numberOfBands ?: 0
     fun getEqBandLevelRange(): ShortArray? = musicService?.equalizer?.bandLevelRange
     fun getEqCenterFreq(band: Short): Int = musicService?.equalizer?.getCenterFreq(band) ?: 0
