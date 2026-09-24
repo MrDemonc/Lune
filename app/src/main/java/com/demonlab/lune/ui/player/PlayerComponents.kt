@@ -2531,21 +2531,22 @@ fun MiniPlayerMinimized(
 
     // Visual double-bounce hint animation when miniplayer is minimized to indicate swipe up
     LaunchedEffect(Unit) {
+        delay(200L)
         offsetY.animateTo(
-            targetValue = -36f,
-            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+            targetValue = -24f,
+            animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
         )
         offsetY.animateTo(
-            targetValue = -8f,
-            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
+            targetValue = -6f,
+            animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing)
         )
         offsetY.animateTo(
-            targetValue = -36f,
-            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+            targetValue = -20f,
+            animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)
         )
         offsetY.animateTo(
             targetValue = 0f,
-            animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f)
+            animationSpec = spring(dampingRatio = 0.55f, stiffness = 320f)
         )
     }
 
@@ -2616,18 +2617,22 @@ fun MiniPlayerMinimized(
         label = "SpinAnim"
     )
 
-    Surface(
-        onClick = onRestore,
-        shape = CircleShape,
-        color = if (hasBlurBackground) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
-        tonalElevation = if (hasBlurBackground) 0.dp else 8.dp,
-        modifier = modifier
-            .offset { IntOffset(0, offsetY.value.roundToInt()) }
-            .then(dragModifier)
-            .size(52.dp)
-            .scale(coverScale)
-            .shadow(6.dp, CircleShape)
+    Box(
+        modifier = modifier.padding(top = 10.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
+        Surface(
+            onClick = onRestore,
+            shape = CircleShape,
+            color = if (hasBlurBackground) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = if (hasBlurBackground) 0.dp else 8.dp,
+            modifier = Modifier
+                .offset { IntOffset(0, offsetY.value.roundToInt()) }
+                .then(dragModifier)
+                .size(52.dp)
+                .scale(coverScale)
+                .shadow(6.dp, CircleShape)
+        ) {
         Box(contentAlignment = Alignment.Center) {
             if (hasBlurBackground) {
                 Box(
@@ -2687,6 +2692,7 @@ fun MiniPlayerMinimized(
                 }
             }
         }
+    }
     }
 }
 

@@ -2252,23 +2252,14 @@ fun MainScreen(
                     AnimatedContent(
                         targetState = settingsManager.isMiniPlayerMinimized,
                         transitionSpec = {
-                            (fadeIn(tween(250)) + slideInVertically(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                ),
-                                initialOffsetY = { it / 3 }
-                            ) + scaleIn(
+                            (fadeIn(tween(250)) + scaleIn(
                                 initialScale = 0.88f,
                                 animationSpec = spring(
                                     dampingRatio = Spring.DampingRatioMediumBouncy,
                                     stiffness = Spring.StiffnessMediumLow
                                 )
                             )) togetherWith (
-                                fadeOut(tween(180)) + slideOutVertically(
-                                    animationSpec = tween(200),
-                                    targetOffsetY = { it / 3 }
-                                ) + scaleOut(
+                                fadeOut(tween(180)) + scaleOut(
                                     targetScale = 0.88f,
                                     animationSpec = tween(200)
                                 )
@@ -3000,7 +2991,7 @@ fun UnifiedHeaderPill(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                    .padding(end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // LEFT SIDE: Active Section Pill
@@ -3021,9 +3012,10 @@ fun UnifiedHeaderPill(
 
                 Surface(
                     onClick = { showSectionMenuSheet() },
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(30.dp),
                     color = selectedBg,
                     modifier = Modifier
+                        .fillMaxHeight()
                         .graphicsLayer {
                             translationX = entranceNudge.value
                             scaleX = sectionPillScale.value
@@ -3032,7 +3024,9 @@ fun UnifiedHeaderPill(
                         .bounceClick()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 18.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
