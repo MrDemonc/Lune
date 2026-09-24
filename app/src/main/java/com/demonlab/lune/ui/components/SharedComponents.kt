@@ -16,6 +16,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -1290,17 +1291,24 @@ fun WaveformVisualizer(
     magnitudes: FloatArray,
     color: Color = MaterialTheme.colorScheme.primary
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        magnitudes.forEach { magnitude ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(magnitude)
-                    .background(color, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+    Canvas(modifier = modifier.fillMaxWidth()) {
+        if (magnitudes.isEmpty()) return@Canvas
+        val count = magnitudes.size
+        val spacingPx = 2.dp.toPx()
+        val totalSpacing = spacingPx * (count - 1)
+        val barWidth = ((size.width - totalSpacing) / count).coerceAtLeast(1f)
+        val cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+
+        for (i in 0 until count) {
+            val magnitude = magnitudes[i].coerceIn(0.05f, 1f)
+            val barHeight = (size.height * magnitude).coerceAtLeast(2.dp.toPx())
+            val left = i * (barWidth + spacingPx)
+            val top = size.height - barHeight
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(left, top),
+                size = Size(barWidth, barHeight),
+                cornerRadius = cornerRadius
             )
         }
     }

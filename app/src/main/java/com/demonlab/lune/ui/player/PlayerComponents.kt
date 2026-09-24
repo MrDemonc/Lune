@@ -1,11 +1,15 @@
 package com.demonlab.lune.ui.player
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
@@ -437,7 +441,7 @@ fun FullPlayer(
     onSyncFavorite: ((Long, Boolean) -> Unit)? = null,
     showWaveform: Boolean,
     onToggleWaveform: () -> Unit,
-    visualizerData: FloatArray,
+    visualizerData: FloatArray = remember { FloatArray(0) },
     coverShape: Int,
     coverScale: Float,
     coverSpin: Boolean,
@@ -499,6 +503,21 @@ fun FullPlayer(
     }
 
     val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val liveVisualizerData by playbackManager.visualizerData.collectAsState()
+    val effectiveVisualizerData = if (visualizerData.isNotEmpty()) visualizerData else liveVisualizerData
+
+    DisposableEffect(isPlaying, showWaveform) {
+        val hasAudioPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (hasAudioPermission && isPlaying) {
+            playbackManager.startVisualizer()
+        }
+        onDispose {
+            if (!playbackManager.isMiniPlayerVisualizerEnabled) {
+                playbackManager.stopVisualizer()
+            }
+        }
+    }
+
     val sheetPeekHeight = 0.dp
     val sheetFullHeight = 0.dp
 
@@ -1806,7 +1825,7 @@ fun FullPlayer(
                                     ) {
                                         CavaThreeDots(
                                             isPlaying = isPlaying,
-                                            visualizerData = visualizerData,
+                                            visualizerData = effectiveVisualizerData,
                                             tint = itemTint,
                                             modifier = Modifier.height(18.dp)
                                         )
@@ -1947,7 +1966,7 @@ fun FullPlayer(
                         .height(80.dp)
                         .fillMaxWidth()
                         .alpha(0.6f),
-                    magnitudes = visualizerData,
+                    magnitudes = effectiveVisualizerData,
                     color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary
                 )
             }
@@ -2257,7 +2276,7 @@ fun MiniPlayer(
     isPlaying: Boolean,
     progress: Float = 0f,
     showWaveform: Boolean,
-    visualizerData: FloatArray,
+    visualizerData: FloatArray = remember { FloatArray(0) },
     currentOutputIcon: ImageVector,
     coverShape: Int,
     coverScale: Float,
@@ -2363,12 +2382,9 @@ fun MiniPlayer(
                 }
 
                 if (showWaveform) {
-                    WaveformVisualizer(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .alpha(0.3f)
-                            .blur(16.dp),
-                        magnitudes = visualizerData,
+                    MiniPlayerWaveform(
+                        context = miniContext,
+                        passedMagnitudes = visualizerData,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -2694,6 +2710,29 @@ fun MiniPlayerMinimized(
         }
     }
     }
+}
+
+@Composable
+private fun MiniPlayerWaveform(
+    context: Context,
+    passedMagnitudes: FloatArray,
+    color: Color
+) {
+    val activeMagnitudes = if (passedMagnitudes.isNotEmpty()) {
+        passedMagnitudes
+    } else {
+        val pm = remember(context) { PlaybackManager.getInstance(context) }
+        val pmData by pm.visualizerData.collectAsState()
+        pmData
+    }
+    WaveformVisualizer(
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(0.3f)
+            .blur(16.dp),
+        magnitudes = activeMagnitudes,
+        color = color
+    )
 }
 
 @Composable

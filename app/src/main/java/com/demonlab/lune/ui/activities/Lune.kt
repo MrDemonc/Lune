@@ -457,12 +457,13 @@ class Lune : AppCompatActivity() {
                 }
             }
             // Sync Visualizer when permission or playback state changes
-            LaunchedEffect(isPlaying) {
+            LaunchedEffect(isPlaying, isPlayerExpanded) {
                 val hasAudioPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                if (hasAudioPermission && isPlaying) {
+                val visualizerNeeded = playbackManager.isMiniPlayerVisualizerEnabled || (isPlayerExpanded && playbackManager.isFullPlayerVisualizerEnabled)
+                if (hasAudioPermission && isPlaying && visualizerNeeded) {
                     playbackManager.startVisualizer()
-                } else if (!isPlaying) {
-                     playbackManager.stopVisualizer()
+                } else if (!isPlaying || !visualizerNeeded) {
+                    playbackManager.stopVisualizer()
                 }
             }
 
@@ -659,8 +660,6 @@ fun MainScreen(
     val hasBlurBackgroundMini = settingsManager.isBlurEnabled &&
         (if (isDarkThemeMini) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
 
-    val visualizerData by playbackManager.visualizerData.collectAsState()
-    
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         rememberTopAppBarState(initialHeightOffset = -Float.MAX_VALUE)
     )
@@ -2364,7 +2363,6 @@ fun MainScreen(
                                         isPlaying = isPlaying,
                                         progress = playbackProgress,
                                         showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
-                                        visualizerData = visualizerData,
                                         currentOutputIcon = playbackManager.currentOutputIcon,
                                         coverShape = coverShape,
                                         coverScale = coverScale,
@@ -2458,7 +2456,6 @@ fun MainScreen(
                     onSyncFavorite = { songId, isFav -> musicViewModel.syncFavoriteStatusInMemory(songId, isFav) },
                     showWaveform = playbackManager.isFullPlayerVisualizerEnabled,
                     onToggleWaveform = {}, // Not used anymore as we have settings sheet
-                    visualizerData = visualizerData,
                     coverShape = coverShape,
                     coverScale = coverScale,
                     coverSpin = coverSpin,
