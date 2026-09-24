@@ -2055,7 +2055,6 @@ fun AudioDetailsBottomSheet(
 ) {
     val blurColors = rememberBlurSheetColors(song)
     val context = LocalContext.current
-    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
     val format = song.format.uppercase().ifEmpty {
         song.path.substringAfterLast('.', "").uppercase().ifEmpty { "AUDIO" }
@@ -2211,7 +2210,9 @@ fun AudioDetailsBottomSheet(
                                 blurColors = blurColors,
                                 isCopyable = true,
                                 onCopy = {
-                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(song.path))
+                                    val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("Path", song.path)
+                                    cm?.setPrimaryClip(clip)
                                     Toast.makeText(context, context.getString(R.string.copied), Toast.LENGTH_SHORT).show()
                                 }
                             )

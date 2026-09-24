@@ -77,6 +77,9 @@ android {
             excludes.add("**/baseline.prof")
             excludes.add("**/baseline.profm")
         }
+        jniLibs {
+            keepDebugSymbols.add("**/libandroidx.graphics.path.so")
+        }
     }
 }
 
