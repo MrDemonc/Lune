@@ -477,9 +477,9 @@ fun PlaylistDetailView(
             items = sortedSongs,
             headerItemCount = 1,
             itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
-            thumbColor = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
-            bubbleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primaryContainer,
-            bubbleTextColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+            hasBlurBackground = hasBlurBackground,
+            useCustomControlsColor = useCustomControlsColor,
+            controlsColorPalette = controlsColorPalette,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(bottom = bottomPadding)
@@ -830,9 +830,9 @@ fun AlbumDetailView(
             items = sortedSongs,
             headerItemCount = 1,
             itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
-            thumbColor = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
-            bubbleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primaryContainer,
-            bubbleTextColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+            hasBlurBackground = hasBlurBackground,
+            useCustomControlsColor = useCustomControlsColor,
+            controlsColorPalette = controlsColorPalette,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(bottom = bottomPadding)
@@ -1250,9 +1250,9 @@ fun FolderDetailView(
             items = sortedSongs,
             headerItemCount = 1,
             itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
-            thumbColor = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
-            bubbleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primaryContainer,
-            bubbleTextColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+            hasBlurBackground = hasBlurBackground,
+            useCustomControlsColor = useCustomControlsColor,
+            controlsColorPalette = controlsColorPalette,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(bottom = bottomPadding)

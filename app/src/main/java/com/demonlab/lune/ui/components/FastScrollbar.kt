@@ -2,7 +2,9 @@ package com.demonlab.lune.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
@@ -23,6 +25,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -34,9 +37,30 @@ fun <T> FastScrollbar(
     modifier: Modifier = Modifier,
     headerItemCount: Int = 0,
     itemKeyOrLetter: (T) -> String,
-    thumbColor: Color = MaterialTheme.colorScheme.primary,
-    bubbleColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    bubbleTextColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+    hasBlurBackground: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
+    thumbColor: Color = if (useCustomControlsColor) {
+        getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette).copy(alpha = 0.85f)
+    } else if (hasBlurBackground) {
+        Color.White.copy(alpha = 0.75f)
+    } else {
+        MaterialTheme.colorScheme.primary
+    },
+    bubbleColor: Color = if (useCustomControlsColor) {
+        getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    } else if (hasBlurBackground) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    },
+    bubbleTextColor: Color = if (useCustomControlsColor) {
+        Color.White
+    } else if (hasBlurBackground) {
+        Color.Black
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
 ) {
     if (items.size <= 15) return
 
@@ -177,6 +201,17 @@ fun <T> FastScrollbar(
                 .height(thumbHeightDp)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(thumbColor.copy(alpha = thumbAlpha))
+                .then(
+                    if (hasBlurBackground && isDragging) {
+                        Modifier.border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.35f),
+                            RoundedCornerShape(percent = 50)
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
         )
 
         // Bubble Indicator (Vertical Pill)
@@ -196,7 +231,8 @@ fun <T> FastScrollbar(
             Surface(
                 shape = RoundedCornerShape(percent = 50),
                 color = bubbleColor,
-                shadowElevation = 8.dp,
+                shadowElevation = if (hasBlurBackground) 4.dp else 8.dp,
+                border = if (hasBlurBackground) BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)) else null,
                 modifier = Modifier.width(48.dp).height(72.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {

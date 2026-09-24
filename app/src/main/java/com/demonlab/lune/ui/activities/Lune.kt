@@ -1989,6 +1989,9 @@ fun MainScreen(
                                         items = pageSortedSongs,
                                         headerItemCount = if (showSimplifiedHeader) 1 else 0,
                                         itemKeyOrLetter = { if (activeSortOption == "ALPHABETICAL") it.title else "" },
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
                                         modifier = Modifier
                                             .align(Alignment.CenterEnd)
                                             .padding(bottom = bottomPadding)
