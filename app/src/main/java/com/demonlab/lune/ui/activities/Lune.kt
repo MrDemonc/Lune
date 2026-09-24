@@ -92,6 +92,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -294,7 +295,12 @@ class Lune : AppCompatActivity() {
             }
 
             val rawAllSongs = musicViewModel.filteredSongs
-            var selectedFolder by rememberSaveable { mutableStateOf(TAB_RESUME) }
+            val initialFolder = remember {
+                val savedDefault = settingsManager.defaultSectionTab
+                if (savedDefault.isNotEmpty()) savedDefault else TAB_RESUME
+            }
+            var selectedFolder by rememberSaveable { mutableStateOf(initialFolder) }
+            var defaultSectionTab by remember { mutableStateOf(settingsManager.defaultSectionTab) }
             
             // Handle Shortcut Navigation
             LaunchedEffect(shortcutFolder.value) {
@@ -477,7 +483,7 @@ class Lune : AppCompatActivity() {
             val visibleFolders = remember(allFolders, hiddenFolders.value) {
                 allFolders.filter { !hiddenFolders.value.contains(it) }
             }
-            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs, showAiSection) {
+            val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs, showAiSection, defaultSectionTab) {
                 val hasFavorites = rawAllSongs.any { it.isFavorite }
                 val base = mutableListOf("RESUME")
                 if (showAiSection) base.add("MIXES")
@@ -490,13 +496,17 @@ class Lune : AppCompatActivity() {
                 if (visibleFolders.isNotEmpty()) base.add("FOLDERS")
                 if (isSectionCustomizationEnabled) {
                     base.removeAll(hiddenSectionTabs)
-                    if ("RESUME" !in base) base.add(0, "RESUME")
+                    if ("RESUME" !in base && defaultSectionTab != "RESUME") base.add(0, "RESUME")
+                }
+                if (defaultSectionTab.isNotEmpty() && defaultSectionTab in base) {
+                    base.remove(defaultSectionTab)
+                    base.add(0, defaultSectionTab)
                 }
                 base
             }
             LaunchedEffect(folders) {
                 if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
-                    selectedFolder = TAB_RESUME
+                    selectedFolder = folders.firstOrNull() ?: TAB_RESUME
                 }
             }
             val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
@@ -540,6 +550,11 @@ class Lune : AppCompatActivity() {
                     allAlbums = allAlbumsList,
                     selectedFolder = selectedFolder,
                     onSelectedFolderChange = { selectedFolder = it },
+                    defaultSectionTab = defaultSectionTab,
+                    onDefaultSectionTabChange = { newTab ->
+                        defaultSectionTab = newTab
+                        settingsManager.defaultSectionTab = newTab
+                    },
                     showFolderSheet = showFolderSheet,
                     onShowFolderSheetChange = { showFolderSheet = it },
                     hiddenFolders = hiddenFolders,
@@ -585,6 +600,8 @@ fun MainScreen(
     allAlbums: List<String>,
     selectedFolder: String,
     onSelectedFolderChange: (String) -> Unit,
+    defaultSectionTab: String = "",
+    onDefaultSectionTabChange: (String) -> Unit = {},
     showFolderSheet: Boolean,
     onShowFolderSheetChange: (Boolean) -> Unit,
     hiddenFolders: MutableState<Set<String>>,
@@ -679,7 +696,7 @@ fun MainScreen(
     val currentActiveFolder = folders.getOrNull(pagerState.currentPage) ?: selectedFolder
     var isPagerProgrammaticScroll by remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedFolder) {
+    LaunchedEffect(selectedFolder, folders) {
         val target = folders.indexOf(selectedFolder)
         if (target >= 0 && pagerState.currentPage != target) {
             isPagerProgrammaticScroll = true
@@ -2762,6 +2779,7 @@ fun MainScreen(
 
                     folders.forEach { folder ->
                         val isSelected = selectedFolder == folder
+                        val isDefaultSection = defaultSectionTab == folder
                         val label = when (folder) {
                             "RESUME" -> sTabResume
                             "MIXES" -> sTabMixes
@@ -2791,7 +2809,7 @@ fun MainScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Surface(
@@ -2823,7 +2841,29 @@ fun MainScreen(
                                     color = if (isSelected) (if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer) else blurColors.textColor,
                                     modifier = Modifier.weight(1f)
                                 )
+                                IconButton(
+                                    onClick = {
+                                        if (settingsManager.isHapticVibrationEnabled) {
+                                            vibrator.triggerLightVibration()
+                                        }
+                                        if (isDefaultSection) {
+                                            onDefaultSectionTabChange("")
+                                        } else {
+                                            onDefaultSectionTabChange(folder)
+                                            onSelectedFolderChange(folder)
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isDefaultSection) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
+                                        contentDescription = if (isDefaultSection) "Restaurar estado predeterminado" else "Definir como sección favorita al abrir",
+                                        tint = if (isDefaultSection) blurColors.primaryTint else (if (blurColors.hasBlur) Color.White.copy(alpha = 0.55f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                                 if (isSelected) {
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,

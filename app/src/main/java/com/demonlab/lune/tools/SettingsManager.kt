@@ -127,6 +127,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getStringSet("hidden_section_tabs", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("hidden_section_tabs", value).apply()
 
+    var defaultSectionTab: String
+        get() = prefs.getString("default_section_tab", "") ?: ""
+        set(value) = prefs.edit().putString("default_section_tab", value).apply()
+
     var isSortAscending: Boolean
         get() = prefs.getBoolean("is_sort_ascending", true)
         set(value) = prefs.edit().putBoolean("is_sort_ascending", value).apply()
