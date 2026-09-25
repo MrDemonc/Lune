@@ -418,10 +418,20 @@ class LuneAiEngine private constructor(private val context: Context) {
             }
 
             // 3. Energy Boost (Ritmo y Cardio)
-            val energySongs = allSongs.filter { song ->
+            val filteredEnergy = allSongs.filter { song ->
                 val profile = profileSong(song)
                 profile.energyScore > 0.62f || (song.duration < 230_000L && getSongAffinity(song.id) > 8f)
             }.sortedByDescending { getSongAffinity(it.id) }.take(25)
+
+            val energySongs = if (filteredEnergy.size < 15 && allSongs.size >= 4) {
+                val existingIds = filteredEnergy.map { it.id }.toSet()
+                val additional = allSongs.filter { it.id !in existingIds }
+                    .sortedByDescending { profileSong(it).energyScore }
+                    .take(25 - filteredEnergy.size)
+                filteredEnergy + additional
+            } else {
+                filteredEnergy
+            }
 
             if (energySongs.size >= 4) {
                 generated.add(
@@ -439,10 +449,20 @@ class LuneAiEngine private constructor(private val context: Context) {
             }
 
             // 4. Chill & Focus / Relajación
-            val chillSongs = allSongs.filter { song ->
+            val filteredChill = allSongs.filter { song ->
                 val profile = profileSong(song)
                 profile.energyScore < 0.45f || profile.isFocusFriendly
             }.sortedByDescending { getSongAffinity(it.id) }.take(25)
+
+            val chillSongs = if (filteredChill.size < 15 && allSongs.size >= 4) {
+                val existingIds = filteredChill.map { it.id }.toSet()
+                val additional = allSongs.filter { it.id !in existingIds }
+                    .sortedBy { profileSong(it).energyScore }
+                    .take(25 - filteredChill.size)
+                filteredChill + additional
+            } else {
+                filteredChill
+            }
 
             if (chillSongs.size >= 4) {
                 generated.add(

@@ -1123,11 +1123,14 @@ class MusicService : MediaLibraryService() {
     }
 
     fun resume() {
+        val pm = PlaybackManager.getInstance(applicationContext)
+        if (pm.isQueueFinished) {
+            pm.resume()
+            return
+        }
         isNotificationDismissed = false
         pauseTimeoutJob?.cancel()
         requestAudioFocus()
-
-        val pm = PlaybackManager.getInstance(applicationContext)
         if (mediaPlayer == null) {
             if (pm.currentSong == null && !pm.stateRestored) {
                 pm.restorePlaybackState()
@@ -1209,11 +1212,43 @@ class MusicService : MediaLibraryService() {
 
     /** Seeks to position 0 without resuming playback. Called when queue ends naturally. */
     fun resetPlayerProgress() {
+        isCrossfading = false
+        PlaybackManager.getInstance(applicationContext).isTransitioning = false
+        monitorJob?.cancel()
+
+        try {
+            mediaPlayer?.seekTo(0)
+        } catch (_: Exception) {}
         try {
             mediaPlayer?.pause()
-            mediaPlayer?.seekTo(0)
-        } catch (e: Exception) { /* ignore invalid state */ }
+        } catch (_: Exception) {}
+        try {
+            secondaryPlayer?.pause()
+        } catch (_: Exception) {}
+
+        PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         updatePlaybackState()
+        stopWidgetUpdateTimer()
+        updateWidget()
+
+        isNotificationDismissed = false
+        pauseTimeoutJob?.cancel()
+        pauseTimeoutJob = serviceScope.launch {
+            delay(PAUSE_TIMEOUT_MS)
+            isNotificationDismissed = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            try {
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager?.cancel(1)
+            } catch (_: Exception) {}
+            stopSelf()
+        }
+
         serviceScope.launch {
             val song = currentSong() ?: return@launch
             val art = fetchAlbumArt(song)

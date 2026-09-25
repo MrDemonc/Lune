@@ -441,11 +441,7 @@ class PlaybackManager private constructor(private val context: Context) {
             }
             
             if (isShuffle) {
-                if (shuffleMode != null) {
-                    updateShuffledQueue(keepCurrentFirst = false)
-                } else {
-                    updateShuffledQueue()
-                }
+                updateShuffledQueue()
             }
         } else if (!fromQueue && playlist.isNotEmpty() && isShuffle) {
             // Clicked from a playlist that is already active
@@ -639,7 +635,7 @@ class PlaybackManager private constructor(private val context: Context) {
             return
         }
 
-        val advance = if (isTransitioning) 2 else 1
+        val advance = if (isTransitioning && !isNaturalEnd) 2 else 1
 
         val nextSong = if (isShuffle) {
             if (shuffledIndices.size != activePlaylist.size) {
@@ -647,15 +643,18 @@ class PlaybackManager private constructor(private val context: Context) {
             }
             val nextPos = (currentShufflePosition + advance)
             if (nextPos >= shuffledIndices.size) {
-                if (repeatMode == 2) { // Repeat All
+                if (repeatMode == 2 || activeCategory == "MIXES") { // Repeat All or AI Mix continuous session
+                    currentShufflePosition = 0
+                    activePlaylist[shuffledIndices[0]]
+                } else if (!isNaturalEnd) {
+                    // User explicitly pressed Next at end of queue: wrap around to start
                     currentShufflePosition = 0
                     activePlaylist[shuffledIndices[0]]
                 } else {
-                    if (!isNaturalEnd) return
                     // Natural end of queue: show Play icon and reset progress
                     isPlaying = false
                     isQueueFinished = true
-                    playbackStateSaver.clear()
+                    savePlaybackState(wasPlaying = false)
                     musicService?.resetPlayerProgress()
                     return
                 }
@@ -668,14 +667,16 @@ class PlaybackManager private constructor(private val context: Context) {
             val targetIndex = if (currentIndex != -1) currentIndex + advance else -1
             if (targetIndex != -1 && targetIndex < activePlaylist.size) {
                 activePlaylist[targetIndex]
-            } else if (repeatMode == 2) { // Repeat All
+            } else if (repeatMode == 2 || activeCategory == "MIXES") { // Repeat All or AI Mix continuous session
+                activePlaylist[0]
+            } else if (!isNaturalEnd) {
+                // User explicitly pressed Next at end of queue: wrap around to start
                 activePlaylist[0]
             } else {
-                if (!isNaturalEnd) return
                 // Natural end of queue: show Play icon and reset progress
                 isPlaying = false
                 isQueueFinished = true
-                playbackStateSaver.clear()
+                savePlaybackState(wasPlaying = false)
                 musicService?.resetPlayerProgress()
                 return
             }
@@ -711,7 +712,10 @@ class PlaybackManager private constructor(private val context: Context) {
             val currentIndex = activePlaylist.indexOfFirst { it.id == currentSong?.id }
             if (currentIndex > 0) {
                 activePlaylist[currentIndex - 1]
+            } else if (repeatMode == 2 || activeCategory == "MIXES") {
+                activePlaylist.last()
             } else {
+                musicService?.seekTo(0)
                 return
             }
         }
@@ -728,7 +732,7 @@ class PlaybackManager private constructor(private val context: Context) {
             }
             val nextPos = (currentShufflePosition + 1)
             if (nextPos >= shuffledIndices.size) {
-                if (repeatMode == 2) activePlaylist[shuffledIndices[0]] else null
+                if (repeatMode == 2 || activeCategory == "MIXES") activePlaylist[shuffledIndices[0]] else null
             } else {
                 activePlaylist[shuffledIndices[nextPos]]
             }
@@ -736,7 +740,7 @@ class PlaybackManager private constructor(private val context: Context) {
             val currentIndex = activePlaylist.indexOfFirst { it.id == currentSong?.id }
             if (currentIndex != -1 && currentIndex < activePlaylist.size - 1) {
                 activePlaylist[currentIndex + 1]
-            } else if (repeatMode == 2) {
+            } else if (repeatMode == 2 || activeCategory == "MIXES") {
                 activePlaylist[0]
             } else {
                 null
@@ -801,6 +805,7 @@ class PlaybackManager private constructor(private val context: Context) {
         savePlaybackState(wasPlaying = false)
         flushPendingStats()
         isPlaying = false
+        isTransitioning = false
         musicService?.pause()
         stopStatsTracking()
     }
@@ -825,6 +830,7 @@ class PlaybackManager private constructor(private val context: Context) {
     fun stop() {
         flushPendingStats()
         isPlaying = false
+        isTransitioning = false
         musicService?.stopSelf()
         stopStatsTracking()
     }
