@@ -64,7 +64,7 @@ data class SongInteraction(
     var isFavorite: Boolean = false,
     var playlistAddCount: Int = 0,
     var consecutiveSkips: Int = 0,
-    var nextSongTransitions: MutableMap<Long, Int> = mutableMapOf()
+    var nextSongTransitions: MutableMap<String, Int>? = mutableMapOf()
 ) {
     fun calculateAffinityScore(): Float {
         var score = 10f // Base baseline
@@ -129,14 +129,18 @@ data class SongInteraction(
     }
 
     fun recordTransitionTo(nextSongId: Long) {
-        val count = nextSongTransitions[nextSongId] ?: 0
-        nextSongTransitions[nextSongId] = count + 1
+        val map = nextSongTransitions ?: mutableMapOf<String, Int>().also { nextSongTransitions = it }
+        val key = nextSongId.toString()
+        val count = (map[key] as? Number)?.toInt() ?: 0
+        map[key] = count + 1
     }
 
     fun getTransitionProbabilityTo(nextSongId: Long): Float {
-        if (nextSongTransitions.isEmpty()) return 0f
-        val count = nextSongTransitions[nextSongId] ?: 0
-        val total = nextSongTransitions.values.sum().coerceAtLeast(1)
+        val map = nextSongTransitions ?: return 0f
+        if (map.isEmpty()) return 0f
+        val key = nextSongId.toString()
+        val count = (map[key] as? Number)?.toInt() ?: 0
+        val total = map.values.sumOf { (it as? Number)?.toInt() ?: 0 }.coerceAtLeast(1)
         return count.toFloat() / total.toFloat()
     }
 }

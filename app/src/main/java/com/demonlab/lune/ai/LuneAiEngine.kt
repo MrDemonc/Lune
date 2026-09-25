@@ -9,6 +9,8 @@ import com.demonlab.lune.ai.model.MixCategory
 import com.demonlab.lune.ai.model.TimeOfDay
 import com.demonlab.lune.ai.storage.AiTelemetryStorage
 import com.demonlab.lune.tools.Song
+import android.util.Log
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,7 +25,10 @@ import kotlin.random.Random
 
 class LuneAiEngine private constructor(private val context: Context) {
     private val storage = AiTelemetryStorage(context)
-    private val engineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.e("LuneAiEngine", "Unhandled exception in AI engine coroutine", throwable)
+    }
+    private val engineScope = CoroutineScope(Dispatchers.Default + SupervisorJob() + exceptionHandler)
 
     private val _aiMixes = MutableStateFlow<List<AiMix>>(emptyList())
     val aiMixes: StateFlow<List<AiMix>> = _aiMixes.asStateFlow()
@@ -48,83 +53,108 @@ class LuneAiEngine private constructor(private val context: Context) {
     // ─────────────────────────────────────────────────────────────
 
     fun onSongStarted(song: Song) {
-        val now = System.currentTimeMillis()
-        val timeOfDay = TimeOfDay.current()
-        val isWeekend = DayType.current() == DayType.WEEKEND
+        try {
+            val now = System.currentTimeMillis()
+            val timeOfDay = TimeOfDay.current()
+            val isWeekend = DayType.current() == DayType.WEEKEND
 
-        // Record Markov transition from previous track if applicable
-        previousPlayedSongId?.let { prevId ->
-            if (prevId != song.id && (now - lastStartedTimeMs > 40_000L)) {
-                storage.recordInteraction(prevId) { prevInteraction ->
-                    prevInteraction.recordTransitionTo(song.id)
+            // Record Markov transition from previous track if applicable
+            previousPlayedSongId?.let { prevId ->
+                if (prevId != song.id && (now - lastStartedTimeMs > 40_000L)) {
+                    storage.recordInteraction(prevId) { prevInteraction ->
+                        prevInteraction.recordTransitionTo(song.id)
+                    }
                 }
             }
-        }
 
-        // Check for immediate repeat loop
-        val isReplay = lastStartedSongId == song.id && (now - lastStartedTimeMs < 35_000L)
-        previousPlayedSongId = lastStartedSongId
-        lastStartedSongId = song.id
-        lastStartedTimeMs = now
+            // Check for immediate repeat loop
+            val isReplay = lastStartedSongId == song.id && (now - lastStartedTimeMs < 35_000L)
+            previousPlayedSongId = lastStartedSongId
+            lastStartedSongId = song.id
+            lastStartedTimeMs = now
 
-        storage.recordInteraction(song.id) { interaction ->
-            interaction.playCount++
-            interaction.lastPlayedTimestamp = now
-            if (isReplay) {
-                interaction.repeatCount++
+            storage.recordInteraction(song.id) { interaction ->
+                interaction.playCount++
+                interaction.lastPlayedTimestamp = now
+                if (isReplay) {
+                    interaction.repeatCount++
+                }
+                if (isWeekend) {
+                    interaction.weekendPlays++
+                } else {
+                    interaction.weekdayPlays++
+                }
+                when (timeOfDay) {
+                    TimeOfDay.MORNING -> interaction.morningPlays++
+                    TimeOfDay.AFTERNOON -> interaction.afternoonPlays++
+                    TimeOfDay.EVENING -> interaction.eveningPlays++
+                    TimeOfDay.NIGHT -> interaction.nightPlays++
+                }
+                // Reset consecutive skips on clean start
+                if (interaction.consecutiveSkips > 0) {
+                    interaction.consecutiveSkips = 0
+                }
             }
-            if (isWeekend) {
-                interaction.weekendPlays++
-            } else {
-                interaction.weekdayPlays++
-            }
-            when (timeOfDay) {
-                TimeOfDay.MORNING -> interaction.morningPlays++
-                TimeOfDay.AFTERNOON -> interaction.afternoonPlays++
-                TimeOfDay.EVENING -> interaction.eveningPlays++
-                TimeOfDay.NIGHT -> interaction.nightPlays++
-            }
-            // Reset consecutive skips on clean start
-            if (interaction.consecutiveSkips > 0) {
-                interaction.consecutiveSkips = 0
-            }
+        } catch (e: Exception) {
+            android.util.Log.e("LuneAiEngine", "Error onSongStarted: ${e.message}", e)
         }
     }
 
     fun onSongCompleted(song: Song) {
-        storage.recordInteraction(song.id) { interaction ->
-            interaction.fullCompletions++
-            interaction.consecutiveSkips = 0
+        try {
+            storage.recordInteraction(song.id) { interaction ->
+                interaction.fullCompletions++
+                interaction.consecutiveSkips = 0
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("LuneAiEngine", "Error onSongCompleted: ${e.message}", e)
         }
     }
 
     fun onSongSkipped(song: Song, playedSeconds: Long, totalDurationSeconds: Long) {
-        val isFastSkip = playedSeconds < 20 || (totalDurationSeconds > 0 && (playedSeconds.toFloat() / totalDurationSeconds.toFloat()) < 0.15f)
-        if (isFastSkip) {
-            storage.recordInteraction(song.id) { interaction ->
-                interaction.fastSkips++
-                interaction.consecutiveSkips++
+        try {
+            val isFastSkip = playedSeconds < 20 || (totalDurationSeconds > 0 && (playedSeconds.toFloat() / totalDurationSeconds.toFloat()) < 0.15f)
+            if (isFastSkip) {
+                storage.recordInteraction(song.id) { interaction ->
+                    interaction.fastSkips++
+                    interaction.consecutiveSkips++
+                }
             }
+        } catch (e: Exception) {
+            android.util.Log.e("LuneAiEngine", "Error onSongSkipped: ${e.message}", e)
         }
     }
 
     fun onSongFavoriteToggled(song: Song, isFavorite: Boolean) {
-        storage.recordInteraction(song.id) { interaction ->
-            interaction.isFavorite = isFavorite
+        try {
+            storage.recordInteraction(song.id) { interaction ->
+                interaction.isFavorite = isFavorite
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("LuneAiEngine", "Error onSongFavoriteToggled: ${e.message}", e)
         }
     }
 
     fun onSongAddedToPlaylist(songId: Long) {
-        storage.recordInteraction(songId) { interaction ->
-            interaction.playlistAddCount++
+        try {
+            storage.recordInteraction(songId) { interaction ->
+                interaction.playlistAddCount++
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("LuneAiEngine", "Error onSongAddedToPlaylist: ${e.message}", e)
         }
     }
 
     fun getSongAffinity(songId: Long): Float {
-        val now = System.currentTimeMillis()
-        val currentTime = TimeOfDay.current()
-        val isWeekend = DayType.current() == DayType.WEEKEND
-        return storage.getInteraction(songId).calculateDynamicScore(now, currentTime, isWeekend)
+        return try {
+            val now = System.currentTimeMillis()
+            val currentTime = TimeOfDay.current()
+            val isWeekend = DayType.current() == DayType.WEEKEND
+            storage.getInteraction(songId).calculateDynamicScore(now, currentTime, isWeekend)
+        } catch (e: Exception) {
+            android.util.Log.e("LuneAiEngine", "Error calculating song affinity: ${e.message}", e)
+            1.0f
+        }
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -376,13 +406,14 @@ class LuneAiEngine private constructor(private val context: Context) {
         if (allSongs.isEmpty()) return
 
         engineScope.launch {
-            val generated = mutableListOf<AiMix>()
-            val currentTime = TimeOfDay.current()
-            val dayType = DayType.current()
-            val isWeekend = dayType == DayType.WEEKEND
+            try {
+                val generated = mutableListOf<AiMix>()
+                val currentTime = TimeOfDay.current()
+                val dayType = DayType.current()
+                val isWeekend = dayType == DayType.WEEKEND
 
-            // 1. Daily AI Flow (Mix del Día)
-            val dailySongs = allSongs
+                // 1. Daily AI Flow (Mix del Día)
+                val dailySongs = allSongs
                 .sortedByDescending { getSongAffinity(it.id) }
                 .take(32)
             if (dailySongs.size >= 4) {
@@ -592,6 +623,9 @@ class LuneAiEngine private constructor(private val context: Context) {
             }
 
             _aiMixes.value = generated
+            } catch (e: Exception) {
+                Log.e("LuneAiEngine", "Error refreshing AI mixes: ${e.message}", e)
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ import kotlinx.coroutines.runBlocking
 class LuneWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        val pendingResult = goAsync()
+        val pendingResult = try { goAsync() } catch (e: Exception) { null }
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 for (appWidgetId in appWidgetIds) {
@@ -38,18 +38,24 @@ class LuneWidgetProvider : AppWidgetProvider() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult?.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == "com.demonlab.lune.WIDGET_UPDATE" || intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
+        if (intent.action == "com.demonlab.lune.WIDGET_UPDATE") {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val componentName = ComponentName(context, LuneWidgetProvider::class.java)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-            onUpdate(context, appWidgetManager, appWidgetIds)
+            if (appWidgetIds != null && appWidgetIds.isNotEmpty()) {
+                onUpdate(context, appWidgetManager, appWidgetIds)
+            }
         }
     }
 
@@ -60,14 +66,18 @@ class LuneWidgetProvider : AppWidgetProvider() {
         newOptions: android.os.Bundle
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        val pendingResult = goAsync()
+        val pendingResult = try { goAsync() } catch (e: Exception) { null }
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 updateAppWidget(context, appWidgetManager, appWidgetId)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult?.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
