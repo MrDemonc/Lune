@@ -28,7 +28,7 @@ class PlaybackStateSaver(private val prefs: SharedPreferences) {
         .create()
 
     fun save(state: SavedPlaybackState) {
-        prefs.edit().putString(KEY_SAVED_STATE, gson.toJson(state)).apply()
+        prefs.edit().putString(KEY_SAVED_STATE, gson.toJson(state)).commit()
     }
 
     fun restore(): SavedPlaybackState? {

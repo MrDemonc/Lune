@@ -85,6 +85,8 @@ class MusicService : MediaLibraryService() {
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
     private var wasPlayingBeforeLoss = false
+    private var isDucked = false
+    private var effectTransitionJob: Job? = null
     private var widgetUpdateJob: Job? = null
     private var spatialRampJob: Job? = null
     private var currentSpatialStrength: Short = 0
@@ -95,6 +97,13 @@ class MusicService : MediaLibraryService() {
     private var currentNotificationArt: Bitmap? = null
     private var currentNotificationArtSongId: Long? = null
     private var becomingNoisyReceiver: BroadcastReceiver? = null
+
+    internal fun getCurrentTargetVolumes(): Pair<Float, Float> {
+        val balance = PlaybackManager.getInstance(applicationContext).balance
+        val (left, right) = BalanceEffect.volumesForBalance(balance)
+        val duckFactor = if (isDucked) 0.2f else 1.0f
+        return (left * duckFactor) to (right * duckFactor)
+    }
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -110,13 +119,17 @@ class MusicService : MediaLibraryService() {
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 // Notification/brief sound: lower volume
-                mediaPlayer?.setVolume(0.2f, 0.2f)
-                secondaryPlayer?.setVolume(0.2f, 0.2f)
+                isDucked = true
+                val (left, right) = getCurrentTargetVolumes()
+                mediaPlayer?.setVolume(left, right)
+                secondaryPlayer?.setVolume(left, right)
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
                 // Regained focus: restore volume and resume if we were playing
-                mediaPlayer?.setVolume(1f, 1f)
-                secondaryPlayer?.setVolume(1f, 1f)
+                isDucked = false
+                val (left, right) = getCurrentTargetVolumes()
+                mediaPlayer?.setVolume(left, right)
+                secondaryPlayer?.setVolume(left, right)
                 if (wasPlayingBeforeLoss) {
                     resume()
                     wasPlayingBeforeLoss = false
@@ -160,7 +173,7 @@ class MusicService : MediaLibraryService() {
         becomingNoisyReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY && isPlaying()) {
-                    pause()
+                    PlaybackManager.getInstance(applicationContext).pause()
                 }
             }
         }
@@ -234,7 +247,6 @@ class MusicService : MediaLibraryService() {
 
         try {
             val eq = Equalizer(0, sessionId).apply {
-                enabled = settingsManager.isEqEnabled
                 val storedBands = settingsManager.eqBandLevels.split(",").filter { it.isNotEmpty() }
                 if (storedBands.size == numberOfBands.toInt()) {
                     for (i in 0 until numberOfBands) {
@@ -243,14 +255,15 @@ class MusicService : MediaLibraryService() {
                         } catch (e: Exception) { e.printStackTrace() }
                     }
                 }
+                enabled = settingsManager.isEqEnabled
             }
             if (isSecondary) secondaryEqualizer = eq else equalizer = eq
         } catch (e: Exception) { e.printStackTrace() }
 
         try {
             val bb = BassBoost(0, sessionId).apply {
+                if (strengthSupported) setStrength(settingsManager.bassBoostLevel.toShort())
                 enabled = settingsManager.isBassBoostEnabled
-                if (enabled && strengthSupported) setStrength(settingsManager.bassBoostLevel.toShort())
             }
             if (isSecondary) secondaryBassBoost = bb else bassBoost = bb
         } catch (e: Exception) { e.printStackTrace() }
@@ -746,11 +759,10 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
-                        start()
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
-                        setVolume(1f, 1f)
                         applyBalance(PlaybackManager.getInstance(applicationContext).balance)
+                        start()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             try {
                                 val speed = pm.playbackSpeed
@@ -1078,9 +1090,11 @@ class MusicService : MediaLibraryService() {
 
     fun pause() {
         pauseTimeoutJob?.cancel()
+        // Persist playback state immediately when paused (do NOT wait for timeout)
+        PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+
         pauseTimeoutJob = serviceScope.launch {
             delay(PAUSE_TIMEOUT_MS)
-            PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
             isNotificationDismissed = true
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
@@ -1240,6 +1254,9 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
+                        val sessionId = audioSessionId
+                        setupAudioFx(sessionId, false)
+                        applyBalance(pm.balance)
                         seekTo(positionMs.toInt())
                         start()
                         if (!andPlay) pause()
@@ -1249,10 +1266,6 @@ class MusicService : MediaLibraryService() {
                         } else {
                             stopWidgetUpdateTimer()
                         }
-                        val sessionId = audioSessionId
-                        setupAudioFx(sessionId, false)
-                        setVolume(1f, 1f)
-                        applyBalance(pm.balance)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             try {
                                 val speed = pm.playbackSpeed
@@ -1684,6 +1697,16 @@ class MusicService : MediaLibraryService() {
 
     override fun onDestroy() {
         becomingNoisyReceiver?.let { unregisterReceiver(it) }
+        effectTransitionJob?.cancel()
+        spatialRampJob?.cancel()
+        pauseTimeoutJob?.cancel()
+        try {
+            PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+            mediaPlayer?.setVolume(0f, 0f)
+            secondaryPlayer?.setVolume(0f, 0f)
+            mediaPlayer?.stop()
+            secondaryPlayer?.stop()
+        } catch (_: Exception) {}
         equalizer?.release()
         bassBoost?.release()
         virtualizer?.release()
@@ -1699,8 +1722,6 @@ class MusicService : MediaLibraryService() {
         mediaSession = null
         lunePlayerAdapter?.release()
         lunePlayerAdapter = null
-        spatialRampJob?.cancel()
-        pauseTimeoutJob?.cancel()
         serviceScope.cancel()
         try {
             val notificationManager = getSystemService(NotificationManager::class.java)
@@ -1709,20 +1730,110 @@ class MusicService : MediaLibraryService() {
         super.onDestroy()
     }
 
+    /**
+     * Safely executes an effect modification (such as disabling an effect)
+     * with a micro-fade (ramp-down -> action -> buffer settle -> ramp-up).
+     * This eliminates DC offset bursts, filter transient pops, and residual buffer clicks
+     * that occur when detaching or disabling DSP effects in direct hardware / AAudio exclusive mode.
+     */
+    internal fun executeEffectTransition(isDisabling: Boolean, action: () -> Unit) {
+        if (!isPlaying() || isCrossfading) {
+            // If not actively playing audio to the DAC or already in a crossfade volume ramp,
+            // execute immediately without interfering with volume.
+            action()
+            return
+        }
+
+        if (!isDisabling) {
+            // Enabling an effect is smooth as internal filter states start from zero
+            action()
+            return
+        }
+
+        effectTransitionJob?.cancel()
+        effectTransitionJob = serviceScope.launch {
+            val (baseLeft, baseRight) = getCurrentTargetVolumes()
+            try {
+                // Micro fade-out: smoothly attenuate to 0 over ~18ms (3 steps x 6ms)
+                val steps = 3
+                val stepDelay = 6L
+                for (step in (steps - 1) downTo 0) {
+                    val scale = step.toFloat() / steps
+                    mediaPlayer?.setVolume(baseLeft * scale, baseRight * scale)
+                    secondaryPlayer?.setVolume(baseLeft * scale, baseRight * scale)
+                    delay(stepDelay)
+                }
+                mediaPlayer?.setVolume(0f, 0f)
+                secondaryPlayer?.setVolume(0f, 0f)
+
+                // Perform the DSP teardown / disable while DAC output is completely muted
+                action()
+
+                // Settle window (15ms) to allow hardware DMA / AAudio ringbuffers to clear
+                delay(15L)
+
+                // Micro fade-in: smoothly ramp back up to target volume over ~18ms
+                for (step in 1..steps) {
+                    val scale = step.toFloat() / steps
+                    val (curLeft, curRight) = getCurrentTargetVolumes()
+                    mediaPlayer?.setVolume(curLeft * scale, curRight * scale)
+                    secondaryPlayer?.setVolume(curLeft * scale, curRight * scale)
+                    delay(stepDelay)
+                }
+            } finally {
+                if (!isCrossfading) {
+                    val (curLeft, curRight) = getCurrentTargetVolumes()
+                    mediaPlayer?.setVolume(curLeft, curRight)
+                    secondaryPlayer?.setVolume(curLeft, curRight)
+                }
+            }
+        }
+    }
+
     fun setEqEnabled(enabled: Boolean) {
-        equalizer?.enabled = enabled
+        if (!enabled) {
+            executeEffectTransition(true) {
+                equalizer?.enabled = false
+                secondaryEqualizer?.enabled = false
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            equalizer?.enabled = true
+            secondaryEqualizer?.enabled = true
+        }
     }
 
     fun setEqBandLevel(band: Short, level: Short) {
         try {
             equalizer?.setBandLevel(band, level)
+            secondaryEqualizer?.setBandLevel(band, level)
         } catch (e: Exception) { e.printStackTrace() }
     }
 
-    fun setBassBoostEnabled(enabled: Boolean) {
-        bassBoost?.enabled = enabled
-        if (enabled && bassBoost?.strengthSupported == true) {
-            bassBoost?.setStrength(settingsManager.bassBoostLevel.toShort())
+    fun useEqPreset(presetIndex: Short) {
+        try {
+            equalizer?.usePreset(presetIndex)
+            secondaryEqualizer?.usePreset(presetIndex)
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    fun setBassBoostEnabled(enabled: Boolean, onBeforeDisable: (() -> Unit)? = null) {
+        if (!enabled) {
+            executeEffectTransition(true) {
+                onBeforeDisable?.invoke()
+                bassBoost?.enabled = false
+                secondaryBassBoost?.enabled = false
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            bassBoost?.enabled = true
+            secondaryBassBoost?.enabled = true
+            if (bassBoost?.strengthSupported == true) {
+                bassBoost?.setStrength(settingsManager.bassBoostLevel.toShort())
+            }
+            if (secondaryBassBoost?.strengthSupported == true) {
+                secondaryBassBoost?.setStrength(settingsManager.bassBoostLevel.toShort())
+            }
         }
     }
 
@@ -1730,24 +1841,49 @@ class MusicService : MediaLibraryService() {
         if (bassBoost?.strengthSupported == true) {
             bassBoost?.setStrength(strength)
         }
+        if (secondaryBassBoost?.strengthSupported == true) {
+            secondaryBassBoost?.setStrength(strength)
+        }
     }
 
     fun setReverbPreset(preset: Int) {
-        reverbEffect?.setPreset(preset)
+        if (preset == 0) {
+            executeEffectTransition(true) {
+                reverbEffect?.setPreset(0)
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            reverbEffect?.setPreset(preset)
+        }
     }
 
     fun setDynamicsPreset(preset: Int) {
-        dynamicsEffect?.setPreset(preset)
+        if (preset == 0) {
+            executeEffectTransition(true) {
+                dynamicsEffect?.setPreset(0)
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            dynamicsEffect?.setPreset(preset)
+        }
     }
 
     fun applyBalance(balance: Float) {
-        val (left, right) = BalanceEffect.volumesForBalance(balance)
+        val (left, right) = getCurrentTargetVolumes()
         mediaPlayer?.setVolume(left, right)
         secondaryPlayer?.setVolume(left, right)
     }
 
-    fun setLoudnessEnabled(enabled: Boolean) {
-        loudnessEffect?.setEnabled(enabled)
+    fun setLoudnessEnabled(enabled: Boolean, onBeforeDisable: (() -> Unit)? = null) {
+        if (!enabled) {
+            executeEffectTransition(true) {
+                onBeforeDisable?.invoke()
+                loudnessEffect?.setEnabled(false)
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            loudnessEffect?.setEnabled(true)
+        }
     }
 
     fun setLoudnessGain(gain: Int) {
@@ -1784,8 +1920,10 @@ class MusicService : MediaLibraryService() {
             currentSpatialStrength = target
 
             if (!enabled) {
-                virtualizer?.enabled = false
-                secondaryVirtualizer?.enabled = false
+                executeEffectTransition(true) {
+                    virtualizer?.enabled = false
+                    secondaryVirtualizer?.enabled = false
+                }
             }
         }
     }

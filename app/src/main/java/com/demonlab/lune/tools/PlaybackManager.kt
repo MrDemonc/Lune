@@ -793,6 +793,8 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play (Automatic/Crossfade)
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        settings.lastPlayedSongId = song.id
+        savePlaybackState(wasPlaying = true)
     }
 
     fun pause() {
@@ -1098,7 +1100,7 @@ class PlaybackManager private constructor(private val context: Context) {
     fun applyEqPreset(presetIndex: Short) {
         if (!isEqEnabled) return
         try {
-            musicService?.equalizer?.usePreset(presetIndex)
+            musicService?.useEqPreset(presetIndex)
             val numBands = getEqNumberOfBands().toInt()
             val currentBands = mutableListOf<Short>()
             for (i in 0 until numBands) {
@@ -1224,12 +1226,13 @@ class PlaybackManager private constructor(private val context: Context) {
             musicService?.setBassBoostStrength(200)
         } else {
             bassBoostOffset = 0
-            for (i in 0..1) {
-                if (i < eqBandLevels.size) {
-                    musicService?.setEqBandLevel(i.toShort(), eqBandLevels[i])
+            musicService?.setBassBoostEnabled(false) {
+                for (i in 0..1) {
+                    if (i < eqBandLevels.size) {
+                        musicService?.setEqBandLevel(i.toShort(), eqBandLevels[i])
+                    }
                 }
             }
-            musicService?.setBassBoostEnabled(false)
         }
     }
 
@@ -1263,9 +1266,13 @@ class PlaybackManager private constructor(private val context: Context) {
         if (!isLoudnessEnabled) {
             loudnessGain = 0
             settings.loudnessGain = 0
+            musicService?.setLoudnessEnabled(false) {
+                musicService?.setLoudnessGain(0)
+            }
+        } else {
+            musicService?.setLoudnessEnabled(true)
+            musicService?.setLoudnessGain(loudnessGain)
         }
-        musicService?.setLoudnessEnabled(isLoudnessEnabled)
-        musicService?.setLoudnessGain(loudnessGain)
     }
 
     fun updateLoudnessGain(gain: Int) {
