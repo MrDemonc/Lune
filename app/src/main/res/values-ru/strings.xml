@@ -5,6 +5,7 @@
     <string name="version">Версия</string>
     <string name="license">Лицензия</string>
     <string name="author">Автор</string>
+    <string name="website">Сайт</string>
     <string name="hifi_audio">Hi-Fi Аудио</string>
     <string name="hifi_desc">Включает обнаружение Hi-Fi и значков</string>
 

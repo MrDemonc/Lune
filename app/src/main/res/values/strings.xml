@@ -5,6 +5,7 @@
     <string name="version">Version</string>
     <string name="license">License</string>
     <string name="author">Author</string>
+    <string name="website">Website</string>
     <string name="hifi_audio">Hi-Fi Audio</string>
     <string name="hifi_desc">Enable Hi-Fi detection and badges</string>
     <string name="keep_screen_on">Keep Screen On</string>

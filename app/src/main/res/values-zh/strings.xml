@@ -5,6 +5,7 @@
     <string name="version">版本</string>
     <string name="license">许可证</string>
     <string name="author">作者</string>
+    <string name="website">官网</string>
     <string name="hifi_audio">Hi-Fi 音频</string>
     <string name="hifi_desc">启用 Hi-Fi 检测和标签</string>
 

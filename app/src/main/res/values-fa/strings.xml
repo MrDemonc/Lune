@@ -5,6 +5,7 @@
     <string name="version">ورژن</string>
     <string name="license">لایسنس</string>
     <string name="author">کدنویس</string>
+    <string name="website">وب‌سایت</string>
     <string name="hifi_audio">کیفیت خفن (Hi-Fi)</string>
     <string name="hifi_desc">نمایش تیک کیفیت بالا و فعال کردن صدای شفاف</string>
     <string name="keep_screen_on">روشن موندن صفحه</string>

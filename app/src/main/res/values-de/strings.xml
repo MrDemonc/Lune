@@ -5,6 +5,7 @@
     <string name="version">Version</string>
     <string name="license">Lizenz</string>
     <string name="author">Autor</string>
+    <string name="website">Webseite</string>
     <string name="hifi_audio">Hi-Fi Audio</string>
     <string name="hifi_desc">Hi-Fi Erkennung und Abzeichen aktivieren</string>
 

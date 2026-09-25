@@ -5,6 +5,7 @@
     <string name="version">الإصدار</string>
     <string name="license">الترخيص</string>
     <string name="author">المطور</string>
+    <string name="website">الموقع</string>
     <string name="hifi_audio">صوت Hi-Fi</string>
     <string name="hifi_desc">تفعيل اكتشاف وشارات Hi-Fi</string>
     <string name="keep_screen_on">إبقاء الشاشة قيد التشغيل</string>
