@@ -2467,8 +2467,12 @@ fun MiniPlayer(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Botón Sonando Ahora (se mantiene)
-                        if (onScrollToCurrent != null) {
+                        // Botón Sonando Ahora (solo visible cuando se está dentro de la lista que está sonando)
+                        AnimatedVisibility(
+                            visible = onScrollToCurrent != null,
+                            enter = fadeIn(tween(200)) + expandHorizontally(tween(200)) + scaleIn(tween(200), initialScale = 0.8f),
+                            exit = fadeOut(tween(150)) + shrinkHorizontally(tween(150)) + scaleOut(tween(150), targetScale = 0.8f)
+                        ) {
                             val infiniteTransition = rememberInfiniteTransition(label = "ScrollPulse")
                             val pulseScale by infiniteTransition.animateFloat(
                                 initialValue = 1f,
@@ -2480,7 +2484,7 @@ fun MiniPlayer(
                                 label = "PulseAnim"
                             )
                             Surface(
-                                onClick = onScrollToCurrent,
+                                onClick = { onScrollToCurrent?.invoke() },
                                 shape = CircleShape,
                                 color = pillMiniColor,
                                 modifier = Modifier
@@ -2519,39 +2523,48 @@ fun MiniPlayer(
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .bounceClick()
-                .clickable { onMinimize?.invoke() },
+                .bounceClick(),
             contentAlignment = Alignment.Center
         ) {
             val isVinylActive = coverShape == 2 && coverVinylEffect
             val isSpinActive = coverShape == 2 && coverSpin && isPlaying
 
-            if (isVinylActive) {
-                VinylRecordAsyncCover(
-                    model = song.coverUrl ?: song.uri,
-                    rotation = if (isSpinActive) spinRotation else 0f,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(coverScale)
-                )
-            } else {
-                Surface(
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .scale(coverScale)
-                        .rotate(if (isSpinActive) spinRotation else 0f),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    tonalElevation = 4.dp,
-                    shadowElevation = 2.dp
-                ) {
-                    SongCoverImage(
-                        coverUrl = song.coverUrl ?: song.uri,
-                        contentDescription = "Minimize player",
-                        modifier = Modifier.fillMaxSize(),
-                        shape = CircleShape,
-                        iconScale = 0.68f
-                    )
+            Surface(
+                onClick = { onMinimize?.invoke() },
+                shape = CircleShape,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .scale(coverScale),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                tonalElevation = 4.dp,
+                shadowElevation = 2.dp
+            ) {
+                Crossfade(
+                    targetState = song,
+                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                    label = "MiniCoverRightCrossfade"
+                ) { targetSong ->
+                    if (isVinylActive) {
+                        VinylRecordAsyncCover(
+                            model = targetSong.coverUrl ?: targetSong.uri,
+                            rotation = if (isSpinActive) spinRotation else 0f,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .rotate(if (isSpinActive) spinRotation else 0f)
+                        ) {
+                            SongCoverImage(
+                                coverUrl = targetSong.coverUrl ?: targetSong.uri,
+                                contentDescription = "Minimize player",
+                                modifier = Modifier.fillMaxSize(),
+                                shape = CircleShape,
+                                iconScale = 0.68f
+                            )
+                        }
+                    }
                 }
             }
         }

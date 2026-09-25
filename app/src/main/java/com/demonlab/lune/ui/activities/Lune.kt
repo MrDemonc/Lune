@@ -2418,6 +2418,39 @@ fun MainScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
+                                val isCurrentPlaybackListViewed = remember(
+                                    selectedPlaylist,
+                                    selectedAlbum,
+                                    selectedFolderItem,
+                                    currentActiveFolder,
+                                    playbackManager.activeCategory,
+                                    playbackManager.activePlaylistId,
+                                    playbackManager.currentSong
+                                ) {
+                                    if (playbackManager.currentSong == null) return@remember false
+                                    val activeCat = playbackManager.activeCategory
+                                    val activeId = playbackManager.activePlaylistId
+
+                                    when {
+                                        selectedPlaylist != null -> {
+                                            activeCat == "PLAYLISTS" && activeId == selectedPlaylist?.id
+                                        }
+                                        selectedAlbum != null -> {
+                                            (activeCat == "ALBUMS" || activeCat == "ARTISTS" || activeCat == "GENRES") && activeId == selectedAlbum?.id
+                                        }
+                                        selectedFolderItem != null -> {
+                                            activeCat == "FOLDERS" && activeId == selectedFolderItem?.hashCode()?.toLong()
+                                        }
+                                        else -> {
+                                            when (currentActiveFolder) {
+                                                "ALL" -> activeCat == "ALL" && activeId == -100L
+                                                "FAVORITES" -> activeCat == "FAVORITES" && activeId == -200L
+                                                "RESUME", "MIXES", "ALBUMS", "ARTISTS", "GENRES", "FOLDERS", "PLAYLISTS" -> false
+                                                else -> activeCat == currentActiveFolder && activeId == currentActiveFolder.hashCode().toLong()
+                                            }
+                                        }
+                                    }
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -2451,7 +2484,7 @@ fun MainScreen(
                                         onPrevious = playPrevious,
                                         onNext = playNext,
                                         onSearchClick = { showSearchScreen = true },
-                                        onScrollToCurrent = { scrollToCurrentTrigger.value++ },
+                                        onScrollToCurrent = if (isCurrentPlaybackListViewed) { { scrollToCurrentTrigger.value++ } } else null,
 
                                         onMinimize = { settingsManager.isMiniPlayerMinimized = true }
                                     )
