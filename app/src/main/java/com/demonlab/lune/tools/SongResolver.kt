@@ -242,4 +242,40 @@ object SongResolver {
         }
         return listOf(currentSong)
     }
+
+    data class ResolvedPlayback(
+        val song: Song,
+        val queue: List<Song>,
+        val playlistName: String,
+        val playlistId: Long
+    )
+
+    fun resolvePlaybackQueue(context: Context, currentSong: Song): ResolvedPlayback {
+        val provider = MusicProvider(context)
+        val cachedSongs = runCatching { provider.getCachedSongs() }.getOrDefault(emptyList())
+
+        val inLibrarySong = cachedSongs.find {
+            it.id == currentSong.id ||
+            it.uri == currentSong.uri ||
+            (currentSong.path.isNotBlank() && it.path == currentSong.path) ||
+            (it.title.equals(currentSong.title, ignoreCase = true) && it.artist.equals(currentSong.artist, ignoreCase = true))
+        }
+
+        if (inLibrarySong != null && cachedSongs.isNotEmpty()) {
+            return ResolvedPlayback(
+                song = inLibrarySong,
+                queue = cachedSongs,
+                playlistName = "ALL",
+                playlistId = -100L
+            )
+        }
+
+        val siblings = resolveSiblingSongs(context, currentSong)
+        return ResolvedPlayback(
+            song = currentSong,
+            queue = siblings,
+            playlistName = currentSong.folderName.ifBlank { "External" },
+            playlistId = currentSong.folderName.hashCode().toLong()
+        )
+    }
 }

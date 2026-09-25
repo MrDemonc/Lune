@@ -426,6 +426,8 @@
     <string name="recently_played">Reproducido recientemente</string>
     <string name="header_wave_effect">Efecto ola en encabezados</string>
     <string name="header_wave_effect_desc">Muestra un efecto de olas animadas en el fondo de los encabezados</string>
+    <string name="scroll_to_top_button">Desplazamiento rápido al inicio</string>
+    <string name="scroll_to_top_button_desc">Muestra una píldora flotante al hacer scroll hacia arriba para volver al inicio rápidamente</string>
     <string name="widget_customization">Widget</string>
     <string name="widget_customization_desc">Personaliza el aspecto del widget en la pantalla de inicio</string>
     <string name="widget_background_section">Fondo del widget</string>

@@ -95,6 +95,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("header_wave_effect_enabled", true)
         set(value) = prefs.edit().putBoolean("header_wave_effect_enabled", value).apply()
 
+    var isScrollToTopEnabled: Boolean
+        get() = prefs.getBoolean("scroll_to_top_enabled", true)
+        set(value) = prefs.edit().putBoolean("scroll_to_top_enabled", value).apply()
+
     var widgetUseSolidBackground: Boolean
         get() = prefs.getBoolean("widget_use_solid_background", false)
         set(value) = prefs.edit().putBoolean("widget_use_solid_background", value).apply()

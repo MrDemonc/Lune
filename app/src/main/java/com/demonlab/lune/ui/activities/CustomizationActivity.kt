@@ -148,6 +148,7 @@ fun CustomizationScreen(
     var crossfadeDurationSeconds by remember { mutableStateOf(settingsManager.crossfadeDurationSeconds) }
     var seamlessLooping by remember { mutableStateOf(settingsManager.seamlessLooping) }
     var isHeaderWaveEffectEnabled by remember { mutableStateOf(settingsManager.isHeaderWaveEffectEnabled) }
+    var isScrollToTopEnabled by remember { mutableStateOf(settingsManager.isScrollToTopEnabled) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -764,7 +765,7 @@ fun CustomizationScreen(
                     headlineText = stringResource(R.string.header_wave_effect),
                     supportingText = stringResource(R.string.header_wave_effect_desc),
                     icon = Icons.Default.Waves,
-                    position = SectionPosition.LAST,
+                    position = SectionPosition.MIDDLE,
                     trailingContent = {
                         BouncySwitch(
                             checked = isHeaderWaveEffectEnabled,
@@ -775,6 +776,28 @@ fun CustomizationScreen(
                             thumbContent = {
                                 Icon(
                                     imageVector = if (isHeaderWaveEffectEnabled) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.scroll_to_top_button),
+                    supportingText = stringResource(R.string.scroll_to_top_button_desc),
+                    icon = Icons.Default.KeyboardArrowUp,
+                    position = SectionPosition.LAST,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = isScrollToTopEnabled,
+                            onCheckedChange = {
+                                isScrollToTopEnabled = it
+                                settingsManager.isScrollToTopEnabled = it
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (isScrollToTopEnabled) Icons.Default.Check else Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )

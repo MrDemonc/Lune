@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -37,6 +38,8 @@ import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.components.FastScrollbar
+import com.demonlab.lune.ui.components.ScrollToTopPill
+import com.demonlab.lune.ui.components.rememberScrollToTopVisibility
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.data.Album
@@ -76,6 +79,7 @@ fun PlaylistDetailView(
     val settingsManager = SettingsManager.getInstance(LocalContext.current)
     val vibrator = LocalContext.current.getSystemService(Vibrator::class.java)!!
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     var showPlaylistOptions by remember { mutableStateOf(false) }
     var showAddSongsDialog by remember { mutableStateOf(false) }
     val isPlaying = playbackManager.isPlaying
@@ -484,6 +488,22 @@ fun PlaylistDetailView(
                 .align(Alignment.CenterEnd)
                 .padding(bottom = bottomPadding)
         )
+
+        val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
+        ScrollToTopPill(
+            visible = isScrollToTopVisible.value,
+            onClick = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = bottomPadding + 14.dp),
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
+        )
     }
 }
 
@@ -511,6 +531,7 @@ fun AlbumDetailView(
     val settingsManager = SettingsManager.getInstance(context)
     val vibrator = context.getSystemService(Vibrator::class.java)!!
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val isPlaying = playbackManager.isPlaying
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
@@ -837,6 +858,22 @@ fun AlbumDetailView(
                 .align(Alignment.CenterEnd)
                 .padding(bottom = bottomPadding)
         )
+
+        val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
+        ScrollToTopPill(
+            visible = isScrollToTopVisible.value,
+            onClick = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = bottomPadding + 14.dp),
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
+        )
     }
 }
 
@@ -863,6 +900,7 @@ fun FolderDetailView(
     val settingsManager = SettingsManager.getInstance(LocalContext.current)
     val vibrator = LocalContext.current.getSystemService(Vibrator::class.java)!!
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val isPlaying = playbackManager.isPlaying
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
@@ -1256,6 +1294,22 @@ fun FolderDetailView(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(bottom = bottomPadding)
+        )
+
+        val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
+        ScrollToTopPill(
+            visible = isScrollToTopVisible.value,
+            onClick = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = bottomPadding + 14.dp),
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
         )
     }
 }

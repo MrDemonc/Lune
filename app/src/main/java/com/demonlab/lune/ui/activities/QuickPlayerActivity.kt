@@ -104,13 +104,13 @@ class QuickPlayerActivity : ComponentActivity() {
                 if (targetUri != null) {
                     val s = SongResolver.resolveSongFromUri(context, targetUri)
                     if (s != null) {
-                        resolvedSong = s
-                        val siblings = SongResolver.resolveSiblingSongs(context, s)
-                        playlist = siblings
+                        val resolved = SongResolver.resolvePlaybackQueue(context, s)
+                        resolvedSong = resolved.song
+                        playlist = resolved.queue
 
                         // If not already playing this song, start playback immediately
-                        if (playbackManager.currentSong?.uri != s.uri || !playbackManager.isPlaying) {
-                            playbackManager.play(s, playlist, playlistName = s.folderName)
+                        if (playbackManager.currentSong?.uri != resolved.song.uri || !playbackManager.isPlaying) {
+                            playbackManager.play(resolved.song, resolved.queue, playlistName = resolved.playlistName)
                         }
                     }
                 }

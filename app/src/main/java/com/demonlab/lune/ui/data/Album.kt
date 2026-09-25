@@ -26,9 +26,13 @@ import androidx.compose.ui.draw.clip
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.components.SongCoverImage
-
+import com.demonlab.lune.ui.components.ScrollToTopPill
+import com.demonlab.lune.ui.components.rememberScrollToTopVisibility
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 
 data class Album(
     val id: Long,
@@ -45,6 +49,8 @@ fun AlbumGrid(
     onAlbumClick: (Album) -> Unit,
     bottomPadding: Dp,
     hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    customActiveColor: Color? = null,
     activePlaylistId: Long? = null
 ) {
     val initialIndex = remember(activePlaylistId, albums) {
@@ -54,6 +60,10 @@ fun AlbumGrid(
         } else 0
     }
     val gridState = rememberLazyGridState()
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val scope = rememberCoroutineScope()
+    val isScrollToTopVisible = rememberScrollToTopVisibility(gridState, settingsManager.isScrollToTopEnabled)
 
     LaunchedEffect(activePlaylistId) {
         if (initialIndex > 0) {
@@ -61,25 +71,42 @@ fun AlbumGrid(
         }
     }
 
-    LazyVerticalGrid(
-        state = gridState,
-        columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomPadding + 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        itemsIndexed(albums) { index, album ->
-            val isFirst = index == 0
-            val isLast = index == albums.lastIndex
-            val isPlaying = album.id == activePlaylistId
-            AlbumCard(
-                album = album,
-                onClick = { onAlbumClick(album) },
-                hasBlurBackground = hasBlurBackground,
-                isPlaying = isPlaying
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomPadding + 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            itemsIndexed(albums) { index, album ->
+                val isFirst = index == 0
+                val isLast = index == albums.lastIndex
+                val isPlaying = album.id == activePlaylistId
+                AlbumCard(
+                    album = album,
+                    onClick = { onAlbumClick(album) },
+                    hasBlurBackground = hasBlurBackground,
+                    isPlaying = isPlaying
+                )
+            }
         }
+
+        ScrollToTopPill(
+            visible = isScrollToTopVisible.value,
+            onClick = {
+                scope.launch {
+                    gridState.animateScrollToItem(0)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = bottomPadding + 14.dp),
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            customActiveColor = customActiveColor
+        )
     }
 }
 

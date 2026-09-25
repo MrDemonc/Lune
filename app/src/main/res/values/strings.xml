@@ -425,6 +425,8 @@
     <string name="recently_played">Recently Played</string>
     <string name="header_wave_effect">Header Wave Effect</string>
     <string name="header_wave_effect_desc">Display animated liquid waves in section headers</string>
+    <string name="scroll_to_top_button">Quick scroll to top</string>
+    <string name="scroll_to_top_button_desc">Show a floating button when scrolling up to return to the top quickly</string>
     <string name="widget_customization">Widget</string>
     <string name="widget_customization_desc">Customize the home screen widget appearance</string>
     <string name="widget_background_section">Widget Background</string>

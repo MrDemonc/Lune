@@ -213,8 +213,13 @@ class Lune : AppCompatActivity() {
                 } catch (_: Exception) {}
                 val song = SongResolver.resolveSongFromUri(this, uri)
                 if (song != null) {
-                    val siblings = SongResolver.resolveSiblingSongs(this, song)
-                    PlaybackManager.getInstance(this).play(song, siblings, playlistName = song.folderName)
+                    val resolved = SongResolver.resolvePlaybackQueue(this, song)
+                    PlaybackManager.getInstance(this).play(
+                        resolved.song,
+                        resolved.queue,
+                        resolved.playlistId,
+                        category = resolved.playlistName
+                    )
                     pendingExpandPlayer.value = true
                 }
             }
@@ -630,12 +635,11 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val isButtonNavigation = bottomInset > 24.dp
     val bottomPadding = if (!isPlayerExpanded) {
         if (currentSong != null && !settingsManager.isMiniPlayerMinimized) {
-            if (isButtonNavigation) bottomInset + 140.dp else 130.dp
+            bottomInset + 146.dp
         } else {
-            if (isButtonNavigation) bottomInset + 80.dp else 76.dp
+            bottomInset + 76.dp
         }
     } else {
         0.dp
@@ -676,6 +680,7 @@ fun MainScreen(
     }
     val hasBlurBackgroundMini = settingsManager.isBlurEnabled &&
         (if (isDarkThemeMini) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
+    val listActiveControlsColor = if (useCustomControlsColor) getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette) else null
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
         rememberTopAppBarState(initialHeightOffset = -Float.MAX_VALUE)
@@ -1348,7 +1353,7 @@ fun MainScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini
+                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = albumsList.size,
@@ -1359,7 +1364,7 @@ fun MainScreen(
                                             settingsManager.albumViewStyle = newStyle
                                         },
                                         isAlbumView = true,
-                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                         onToggleAlbumView = null
                                     )
                                 }
@@ -1370,7 +1375,9 @@ fun MainScreen(
                                             albums = albumsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            hasBlurBackground = hasBlurBackgroundMini,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            isDarkTheme = isDarkThemeMini,
+                                            customActiveColor = listActiveControlsColor,
                                             activePlaylistId = currentSong?.album?.hashCode()?.toLong()
                                         )
                                     } else {
@@ -1378,7 +1385,7 @@ fun MainScreen(
                                             albums = albumsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            hasBlurBackground = hasBlurBackgroundMini,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = currentSong?.album?.hashCode()?.toLong()
                                         )
                                     }
@@ -1393,7 +1400,7 @@ fun MainScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini
+                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = artistsList.size,
@@ -1404,7 +1411,7 @@ fun MainScreen(
                                             settingsManager.albumViewStyle = newStyle
                                         },
                                         isAlbumView = false,
-                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                         onToggleAlbumView = null
                                     )
                                 }
@@ -1415,7 +1422,9 @@ fun MainScreen(
                                             albums = artistsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            hasBlurBackground = hasBlurBackgroundMini,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            isDarkTheme = isDarkThemeMini,
+                                            customActiveColor = listActiveControlsColor,
                                             activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     } else {
@@ -1423,7 +1432,7 @@ fun MainScreen(
                                             albums = artistsList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            hasBlurBackground = hasBlurBackgroundMini,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
                                         )
                                     }
@@ -1438,7 +1447,7 @@ fun MainScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini
+                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null
                                 ) {
                                     AlbumsListHeader(
                                         albumCount = genresList.size,
@@ -1449,7 +1458,7 @@ fun MainScreen(
                                             settingsManager.albumViewStyle = newStyle
                                         },
                                         isAlbumView = false,
-                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                         onToggleAlbumView = null,
                                         title = sTabGenres,
                                         icon = Icons.Default.Category
@@ -1462,7 +1471,9 @@ fun MainScreen(
                                             albums = genresList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            hasBlurBackground = hasBlurBackgroundMini,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            isDarkTheme = isDarkThemeMini,
+                                            customActiveColor = listActiveControlsColor,
                                             activePlaylistId = null
                                         )
                                     } else {
@@ -1470,7 +1481,7 @@ fun MainScreen(
                                             albums = genresList,
                                             onAlbumClick = { selectedAlbum = it },
                                             bottomPadding = bottomPadding,
-                                            hasBlurBackground = hasBlurBackgroundMini,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = null
                                         )
                                     }
@@ -2014,6 +2025,32 @@ fun MainScreen(
                                             .padding(bottom = bottomPadding)
                                     )
                                 }
+
+                                val isScrollToTopVisible = if (isGridMode) {
+                                    rememberScrollToTopVisibility(pageMainGridState, settingsManager.isScrollToTopEnabled)
+                                } else {
+                                    rememberScrollToTopVisibility(pageMainListState, settingsManager.isScrollToTopEnabled)
+                                }
+
+                                ScrollToTopPill(
+                                    visible = isScrollToTopVisible.value,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            if (isGridMode) {
+                                                pageMainGridState.animateScrollToItem(0)
+                                            } else {
+                                                pageMainListState.animateScrollToItem(0)
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = bottomPadding + 14.dp),
+                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                    isDarkTheme = isDarkThemeMini,
+                                    customActiveColor = listActiveControlsColor
+                                )
+
                             }
                         }
                     }
@@ -2407,6 +2444,7 @@ fun MainScreen(
                                         onNext = playNext,
                                         onSearchClick = { showSearchScreen = true },
                                         onScrollToCurrent = { scrollToCurrentTrigger.value++ },
+
                                         onMinimize = { settingsManager.isMiniPlayerMinimized = true }
                                     )
                                 }
