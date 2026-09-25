@@ -1620,10 +1620,22 @@ fun SongCoverImage(
     onError: (() -> Unit)? = null
 ) {
     var isError by remember(coverUrl) { mutableStateOf(coverUrl == null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(coverUrl) {
         if (coverUrl == null) {
             onError?.invoke()
+        }
+    }
+
+    val imageRequest = remember(coverUrl, context) {
+        if (coverUrl is coil.request.ImageRequest) {
+            coverUrl
+        } else {
+            coil.request.ImageRequest.Builder(context)
+                .data(coverUrl)
+                .crossfade(300)
+                .build()
         }
     }
 
@@ -1634,7 +1646,7 @@ fun SongCoverImage(
     ) {
         if (coverUrl != null && !isError) {
             AsyncImage(
-                model = coverUrl,
+                model = imageRequest,
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = contentScale,

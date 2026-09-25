@@ -215,6 +215,7 @@ class PlaybackManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             Log.e("PlaybackManager", "Error restoring playback state: ${e.message}", e)
         }
+        preloadSurroundingArtwork()
     }
 
     var playbackSpeed by mutableStateOf(settings.playbackSpeed)
@@ -502,6 +503,7 @@ class PlaybackManager private constructor(private val context: Context) {
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
 
         savePlaybackState(wasPlaying = true)
+        preloadSurroundingArtwork()
     }
 
     fun startVisualizer() {
@@ -686,6 +688,7 @@ class PlaybackManager private constructor(private val context: Context) {
             play(nextSong)
         } else {
             currentSong = nextSong
+            preloadSurroundingArtwork()
         }
     }
 
@@ -748,6 +751,47 @@ class PlaybackManager private constructor(private val context: Context) {
         }
     }
 
+    fun getPreviousSong(): Song? {
+        if (activePlaylist.isEmpty() || currentSong == null) return null
+        if (repeatMode == 1) return currentSong
+
+        return if (isShuffle) {
+            if (shuffledIndices.size != activePlaylist.size) {
+                updateShuffledQueue()
+            }
+            val prevPos = if (currentShufflePosition > 0) currentShufflePosition - 1 else shuffledIndices.size - 1
+            if (prevPos in shuffledIndices.indices) activePlaylist.getOrNull(shuffledIndices[prevPos]) else null
+        } else {
+            val currentIndex = activePlaylist.indexOfFirst { it.id == currentSong?.id }
+            if (currentIndex > 0) {
+                activePlaylist[currentIndex - 1]
+            } else if (repeatMode == 2 || activeCategory == "MIXES") {
+                activePlaylist.lastOrNull()
+            } else {
+                null
+            }
+        }
+    }
+
+    /** Preloads the next and previous album artwork into Coil memory cache for instantaneous transitions */
+    fun preloadSurroundingArtwork() {
+        val next = getNextSong()
+        val prev = getPreviousSong()
+        managerScope.launch(Dispatchers.IO) {
+            try {
+                val imageLoader = coil.Coil.imageLoader(context)
+                listOfNotNull(next, prev).distinctBy { it.id }.forEach { s ->
+                    val model = s.coverUrl ?: s.uri
+                    val request = coil.request.ImageRequest.Builder(context)
+                        .data(model)
+                        .size(512)
+                        .build()
+                    imageLoader.enqueue(request)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     /** Called after a metadata edit — updates currentSong and queue without changing isPlaying */
     fun updateSongMetadata(song: Song) {
         if (currentSong?.id == song.id) {
@@ -799,6 +843,7 @@ class PlaybackManager private constructor(private val context: Context) {
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
         settings.lastPlayedSongId = song.id
         savePlaybackState(wasPlaying = true)
+        preloadSurroundingArtwork()
     }
 
     fun pause() {

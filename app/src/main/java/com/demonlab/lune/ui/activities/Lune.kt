@@ -984,36 +984,44 @@ fun MainScreen(
         val scrollToCurrentTrigger = remember { mutableStateOf(0) }
 
         if (hasBlurBackgroundMini && currentSong != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(80.dp)
-                    .alpha(if (isDarkThemeMini) 0.35f else 0.45f)
-            ) {
-                val sharedBlurReq = remember(currentSong.id, currentSong.coverUrl) {
-                    ImageRequest.Builder(context)
-                        .data(currentSong.coverUrl ?: currentSong.uri)
-                        .crossfade(true)
-                        .build()
-                }
-                AsyncImage(
-                    model = sharedBlurReq,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (isDarkThemeMini) {
-                            Color.Black.copy(alpha = 0.52f)
-                        } else {
-                            Color.Black.copy(alpha = 0.28f)
+            Crossfade(
+                targetState = currentSong,
+                animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+                label = "GlobalBlurCrossfade"
+            ) { targetSong ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(80.dp)
+                            .alpha(if (isDarkThemeMini) 0.35f else 0.45f)
+                    ) {
+                        val sharedBlurReq = remember(targetSong.id, targetSong.coverUrl) {
+                            ImageRequest.Builder(context)
+                                .data(targetSong.coverUrl ?: targetSong.uri)
+                                .crossfade(true)
+                                .build()
                         }
+                        AsyncImage(
+                            model = sharedBlurReq,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                if (isDarkThemeMini) {
+                                    Color.Black.copy(alpha = 0.52f)
+                                } else {
+                                    Color.Black.copy(alpha = 0.28f)
+                                }
+                            )
                     )
-            )
+                }
+            }
         }
 
         Scaffold(

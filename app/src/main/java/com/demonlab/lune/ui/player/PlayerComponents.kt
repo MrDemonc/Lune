@@ -503,6 +503,9 @@ fun FullPlayer(
     }
 
     val playbackManager = remember { PlaybackManager.getInstance(context) }
+    LaunchedEffect(song.id) {
+        playbackManager.preloadSurroundingArtwork()
+    }
     val liveVisualizerData by playbackManager.visualizerData.collectAsState()
     val effectiveVisualizerData = if (visualizerData.isNotEmpty()) visualizerData else liveVisualizerData
 
@@ -696,29 +699,37 @@ fun FullPlayer(
             .background(MaterialTheme.colorScheme.surface)
     ) {
         if (!isCinematic && hasBlurBackground) {
-            val blurRequest = remember(song.id) {
-                ImageRequest.Builder(context)
-                            .data(song.coverUrl ?: song.uri)
-                    .crossfade(true)
-                    .fallback(R.drawable.ic_artwork_fallback)
-                    .error(R.drawable.ic_artwork_fallback)
-                    .build()
-            }
-            AsyncImage(
-                model = blurRequest,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(80.dp)
-                    .alpha(if (isDarkTheme) 0.2f else 0.35f),
-                contentScale = ContentScale.Crop
-            )
-            if (!isDarkTheme) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.28f))
-                )
+            Crossfade(
+                targetState = song,
+                animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+                label = "FullPlayerBlurCrossfade"
+            ) { targetSong ->
+                val blurRequest = remember(targetSong.id, targetSong.coverUrl) {
+                    ImageRequest.Builder(context)
+                        .data(targetSong.coverUrl ?: targetSong.uri)
+                        .crossfade(true)
+                        .fallback(R.drawable.ic_artwork_fallback)
+                        .error(R.drawable.ic_artwork_fallback)
+                        .build()
+                }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AsyncImage(
+                        model = blurRequest,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .blur(80.dp)
+                            .alpha(if (isDarkTheme) 0.2f else 0.35f),
+                        contentScale = ContentScale.Crop
+                    )
+                    if (!isDarkTheme) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.28f))
+                        )
+                    }
+                }
             }
         }
 
@@ -733,10 +744,14 @@ fun FullPlayer(
                 }
             }
 
-            Crossfade(targetState = song.id, animationSpec = tween(400)) { _ ->
-                val request = remember(song.id) {
+            Crossfade(
+                targetState = song,
+                animationSpec = tween(400, easing = FastOutSlowInEasing),
+                label = "CinematicArtCrossfade"
+            ) { targetSong ->
+                val request = remember(targetSong.id, targetSong.coverUrl) {
                     ImageRequest.Builder(context)
-                        .data(song.coverUrl ?: song.uri)
+                        .data(targetSong.coverUrl ?: targetSong.uri)
                         .crossfade(true)
                         .fallback(R.drawable.ic_artwork_fallback)
                         .error(R.drawable.ic_artwork_fallback)
@@ -780,10 +795,14 @@ fun FullPlayer(
                             drawRect(brush = blurGradientBrush, blendMode = BlendMode.DstIn)
                         }
                 ) {
-                    Crossfade(targetState = song.id, animationSpec = tween(400)) { _ ->
-                        val request = remember(song.id) {
+                    Crossfade(
+                        targetState = song,
+                        animationSpec = tween(400, easing = LinearOutSlowInEasing),
+                        label = "CinematicBlurCrossfade"
+                    ) { targetSong ->
+                        val request = remember(targetSong.id, targetSong.coverUrl) {
                             ImageRequest.Builder(context)
-                                .data(song.coverUrl ?: song.uri)
+                                .data(targetSong.coverUrl ?: targetSong.uri)
                                 .crossfade(true)
                                 .fallback(R.drawable.ic_artwork_fallback)
                                 .error(R.drawable.ic_artwork_fallback)
@@ -925,33 +944,39 @@ fun FullPlayer(
                         modifier = coverModifier,
                         contentAlignment = Alignment.Center
                     ) {
-                        if (coverShape == 2 && coverVinylEffect) {
-                            VinylRecordAsyncCover(
-                                model = song.coverUrl ?: song.uri,
-                                rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            val activeShape = when (coverShape) {
-                                1 -> RoundedCornerShape(0.dp)
-                                2 -> CircleShape
-                                else -> RoundedCornerShape(28.dp)
-                            }
-                            Surface(
-                                shape = activeShape,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                tonalElevation = 8.dp
-                            ) {
-                                SongCoverImage(
-                                    coverUrl = song.coverUrl ?: song.uri,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    shape = activeShape,
-                                    iconScale = 0.68f
+                        Crossfade(
+                            targetState = song,
+                            animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+                            label = "FullPlayerCoverCrossfade"
+                        ) { targetSong ->
+                            if (coverShape == 2 && coverVinylEffect) {
+                                VinylRecordAsyncCover(
+                                    model = targetSong.coverUrl ?: targetSong.uri,
+                                    rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                                    modifier = Modifier.fillMaxSize()
                                 )
+                            } else {
+                                val activeShape = when (coverShape) {
+                                    1 -> RoundedCornerShape(0.dp)
+                                    2 -> CircleShape
+                                    else -> RoundedCornerShape(28.dp)
+                                }
+                                Surface(
+                                    shape = activeShape,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    tonalElevation = 8.dp
+                                ) {
+                                    SongCoverImage(
+                                        coverUrl = targetSong.coverUrl ?: targetSong.uri,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        shape = activeShape,
+                                        iconScale = 0.68f
+                                    )
+                                }
                             }
                         }
                     }
@@ -2353,31 +2378,39 @@ fun MiniPlayer(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (hasBlurBackground) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .blur(80.dp)
-                            .alpha(if (isDarkTheme) 0.2f else 0.35f)
-                    ) {
-                        val miniBlurRequest = remember(song.id, song.coverUrl) {
-                            ImageRequest.Builder(miniContext)
-                                .data(song.coverUrl ?: song.uri)
-                                .crossfade(true)
-                                .build()
+                    Crossfade(
+                        targetState = song,
+                        animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
+                        label = "MiniPlayerBlurCrossfade"
+                    ) { targetSong ->
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .blur(80.dp)
+                                    .alpha(if (isDarkTheme) 0.2f else 0.35f)
+                            ) {
+                                val miniBlurRequest = remember(targetSong.id, targetSong.coverUrl) {
+                                    ImageRequest.Builder(miniContext)
+                                        .data(targetSong.coverUrl ?: targetSong.uri)
+                                        .crossfade(true)
+                                        .build()
+                                }
+                                AsyncImage(
+                                    model = miniBlurRequest,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            if (!isDarkTheme) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.28f))
+                                )
+                            }
                         }
-                        AsyncImage(
-                            model = miniBlurRequest,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    if (!isDarkTheme) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.28f))
-                        )
                     }
                 }
 
@@ -2651,60 +2684,74 @@ fun MiniPlayerMinimized(
         ) {
         Box(contentAlignment = Alignment.Center) {
             if (hasBlurBackground) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(40.dp)
-                        .alpha(if (isDarkTheme) 0.2f else 0.35f)
-                ) {
-                    val miniCtx = LocalContext.current
-                    val blurRequest = remember(song.id, miniCtx) {
-                        ImageRequest.Builder(miniCtx)
-                            .data(song.coverUrl ?: song.uri)
-                            .crossfade(true)
-                            .build()
+                Crossfade(
+                    targetState = song,
+                    animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
+                    label = "MiniCoverBlurCrossfade"
+                ) { targetSong ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(40.dp)
+                                .alpha(if (isDarkTheme) 0.2f else 0.35f)
+                        ) {
+                            val miniCtx = LocalContext.current
+                            val blurRequest = remember(targetSong.id, miniCtx) {
+                                ImageRequest.Builder(miniCtx)
+                                    .data(targetSong.coverUrl ?: targetSong.uri)
+                                    .crossfade(true)
+                                    .build()
+                            }
+                            AsyncImage(
+                                model = blurRequest,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        if (!isDarkTheme) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.28f))
+                            )
+                        }
                     }
-                    AsyncImage(
-                        model = blurRequest,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                if (!isDarkTheme) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.28f))
-                    )
                 }
             }
-            if (coverShape == 2 && coverVinylEffect) {
-                VinylRecordAsyncCover(
-                    model = song.coverUrl ?: song.uri,
-                    rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                val activeShape = when (coverShape) {
-                    1 -> RoundedCornerShape(0.dp)
-                    2 -> CircleShape
-                    else -> RoundedCornerShape(8.dp)
-                }
-                Surface(
-                    shape = activeShape,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                ) {
-                    SongCoverImage(
-                        coverUrl = song.coverUrl ?: song.uri,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        shape = activeShape,
-                        iconScale = 0.68f
+            Crossfade(
+                targetState = song,
+                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+                label = "MiniPlayerCoverCrossfade"
+            ) { targetSong ->
+                if (coverShape == 2 && coverVinylEffect) {
+                    VinylRecordAsyncCover(
+                        model = targetSong.coverUrl ?: targetSong.uri,
+                        rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                        modifier = Modifier.fillMaxSize()
                     )
+                } else {
+                    val activeShape = when (coverShape) {
+                        1 -> RoundedCornerShape(0.dp)
+                        2 -> CircleShape
+                        else -> RoundedCornerShape(8.dp)
+                    }
+                    Surface(
+                        shape = activeShape,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                        color = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        SongCoverImage(
+                            coverUrl = targetSong.coverUrl ?: targetSong.uri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            shape = activeShape,
+                            iconScale = 0.68f
+                        )
+                    }
                 }
             }
         }
