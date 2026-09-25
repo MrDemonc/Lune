@@ -1634,7 +1634,7 @@ fun SongCoverImage(
         } else {
             coil.request.ImageRequest.Builder(context)
                 .data(coverUrl)
-                .crossfade(300)
+                .precision(coil.size.Precision.INEXACT)
                 .build()
         }
     }

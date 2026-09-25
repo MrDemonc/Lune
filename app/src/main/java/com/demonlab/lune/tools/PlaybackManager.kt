@@ -780,11 +780,13 @@ class PlaybackManager private constructor(private val context: Context) {
         managerScope.launch(Dispatchers.IO) {
             try {
                 val imageLoader = coil.Coil.imageLoader(context)
+                val displayWidth = context.resources.displayMetrics.widthPixels
                 listOfNotNull(next, prev).distinctBy { it.id }.forEach { s ->
                     val model = s.coverUrl ?: s.uri
                     val request = coil.request.ImageRequest.Builder(context)
                         .data(model)
-                        .size(512)
+                        .size(displayWidth)
+                        .precision(coil.size.Precision.INEXACT)
                         .build()
                     imageLoader.enqueue(request)
                 }

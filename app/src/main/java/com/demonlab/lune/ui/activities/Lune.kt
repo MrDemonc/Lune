@@ -983,23 +983,23 @@ fun MainScreen(
     ) {
         val scrollToCurrentTrigger = remember { mutableStateOf(0) }
 
-        if (hasBlurBackgroundMini && currentSong != null) {
+        if (hasBlurBackgroundMini && currentSong != null && !isPlayerExpanded) {
             Crossfade(
                 targetState = currentSong,
-                animationSpec = tween(durationMillis = 400, easing = LinearOutSlowInEasing),
+                animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
                 label = "GlobalBlurCrossfade"
             ) { targetSong ->
                 Box(modifier = Modifier.fillMaxSize()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .blur(80.dp)
+                            .blur(40.dp)
                             .alpha(if (isDarkThemeMini) 0.35f else 0.45f)
                     ) {
                         val sharedBlurReq = remember(targetSong.id, targetSong.coverUrl) {
                             ImageRequest.Builder(context)
                                 .data(targetSong.coverUrl ?: targetSong.uri)
-                                .crossfade(true)
+                                .size(200, 200)
                                 .build()
                         }
                         AsyncImage(
