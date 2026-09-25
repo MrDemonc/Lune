@@ -328,6 +328,12 @@
     <string name="sort_artist">Artist</string>
     <string name="sort_duration">Duration</string>
     <string name="sort_date_added">Date Added</string>
+    <string name="sort_album">Album</string>
+    <string name="sort_track_count">Number of Tracks</string>
+    <string name="sort_album_count">Number of Albums</string>
+    <string name="filter_scope_folders">Folders</string>
+    <string name="filter_scope_albums">Albums</string>
+    <string name="filter_all_albums">All Albums</string>
     <string name="backup_warning_title">Important Notice</string>
     <string name="backup_warning_desc">Lune only imports playlists pre-exported by this application. Ensure you have the corresponding music files stored on this device for proper playback.</string>
     <string name="export_playlists">Export Playlists</string>

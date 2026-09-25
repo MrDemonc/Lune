@@ -723,11 +723,57 @@ fun MainScreen(
         rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
     }
 
+    val contextId = remember(selectedFolder) {
+        when (selectedFolder) {
+            "RESUME", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
+            "FAVORITES" -> -200L
+            else -> selectedFolder.hashCode().toLong()
+        }
+    }
+    val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum, selectedFolderItem) {
+        when {
+            selectedPlaylist != null -> "playlist_${selectedPlaylist?.id}"
+            selectedAlbum != null -> "album_${selectedAlbum?.name}"
+            selectedFolderItem != null -> "folder_item_$selectedFolderItem"
+            else -> "folder_$selectedFolder"
+        }
+    }
+    val activeContextId = remember(selectedFolder, selectedPlaylist, selectedAlbum, selectedFolderItem) {
+        when {
+            selectedPlaylist != null -> selectedPlaylist?.id ?: -1L
+            selectedAlbum != null -> selectedAlbum?.id ?: -1L
+            selectedFolderItem != null -> selectedFolderItem?.hashCode()?.toLong() ?: -1L
+            else -> contextId
+        }
+    }
+    var activeSortOption by remember(currentSortKey) {
+        mutableStateOf(settingsManager.getSortOption(currentSortKey))
+    }
+    var activeIsSortAscending by remember(currentSortKey) {
+        mutableStateOf(settingsManager.getIsSortAscending(currentSortKey))
+    }
+    var activeIsCaseSensitive by remember(currentSortKey) {
+        mutableStateOf(settingsManager.getIsCaseSensitiveSort(currentSortKey))
+    }
+    val sortedSongs = remember(filteredSongs, activeSortOption, activeIsSortAscending, activeIsCaseSensitive) {
+        playbackManager.getSortedList(filteredSongs, activeSortOption, activeIsSortAscending, activeIsCaseSensitive)
+    }
+
     data class FolderEntry(val name: String, val depth: Int, val isVirtual: Boolean)
 
-    val hierarchyEntries = remember(visibleFolders, rawAllSongs, folderHierarchyMode) {
+    val folderSortOption = if (selectedFolder == "FOLDERS") activeSortOption else settingsManager.getSortOption("folder_FOLDERS")
+    val folderSortAscending = if (selectedFolder == "FOLDERS") activeIsSortAscending else settingsManager.getIsSortAscending("folder_FOLDERS")
+    val folderCaseSensitive = if (selectedFolder == "FOLDERS") activeIsCaseSensitive else settingsManager.getIsCaseSensitiveSort("folder_FOLDERS")
+
+    val hierarchyEntries = remember(visibleFolders, rawAllSongs, folderHierarchyMode, folderSortOption, folderSortAscending, folderCaseSensitive) {
+        val folderComparator: Comparator<String> = when (folderSortOption) {
+            "TRACK_COUNT" -> compareBy { folder -> rawAllSongs.count { it.folderName == folder } }
+            else -> if (folderCaseSensitive) compareBy { it } else compareBy { it.lowercase(java.util.Locale.getDefault()) }
+        }
+        val comparator = if (folderSortAscending) folderComparator else folderComparator.reversed()
+
         if (!folderHierarchyMode) {
-            visibleFolders.sorted().map { FolderEntry(it, 0, false) }
+            visibleFolders.sortedWith(comparator).map { FolderEntry(it, 0, false) }
         } else {
             val dirMap = visibleFolders.mapNotNull { folder ->
                 rawAllSongs.firstOrNull { it.folderName == folder }
@@ -776,53 +822,22 @@ fun MainScreen(
             fun addEntry(name: String, depth: Int) {
                 val isVirtual = name !in visibleFolders
                 entries.add(FolderEntry(name, depth, isVirtual))
-                childrenMap[name]?.sorted()?.forEach { addEntry(it, depth + 1) }
+                childrenMap[name]?.sortedWith(comparator)?.forEach { addEntry(it, depth + 1) }
             }
-            roots.sorted().forEach { addEntry(it, 0) }
-            visibleFolders.filter { it !in dirMap }.sorted().forEach {
+            roots.sortedWith(comparator).forEach { addEntry(it, 0) }
+            visibleFolders.filter { it !in dirMap }.sortedWith(comparator).forEach {
                 entries.add(FolderEntry(it, 0, false))
             }
             entries
         }
     }
 
-    val contextId = remember(selectedFolder) {
-        when (selectedFolder) {
-            "RESUME", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
-            "FAVORITES" -> -200L
-            else -> selectedFolder.hashCode().toLong()
-        }
-    }
-    val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum) {
-        when {
-            selectedPlaylist != null -> "playlist_${selectedPlaylist?.id}"
-            selectedAlbum != null -> "album_${selectedAlbum?.name}"
-            else -> "folder_$selectedFolder"
-        }
-    }
-    val activeContextId = remember(selectedFolder, selectedPlaylist, selectedAlbum) {
-        when {
-            selectedPlaylist != null -> selectedPlaylist?.id ?: -1L
-            selectedAlbum != null -> selectedAlbum?.id ?: -1L
-            else -> contextId
-        }
-    }
-    var activeSortOption by remember(currentSortKey) {
-        mutableStateOf(settingsManager.getSortOption(currentSortKey))
-    }
-    var activeIsSortAscending by remember(currentSortKey) {
-        mutableStateOf(settingsManager.getIsSortAscending(currentSortKey))
-    }
-    var activeIsCaseSensitive by remember(currentSortKey) {
-        mutableStateOf(settingsManager.getIsCaseSensitiveSort(currentSortKey))
-    }
-    val sortedSongs = remember(filteredSongs, activeSortOption, activeIsSortAscending, activeIsCaseSensitive) {
-        playbackManager.getSortedList(filteredSongs, activeSortOption, activeIsSortAscending, activeIsCaseSensitive)
-    }
+    val albumSortOption = if (selectedFolder == "ALBUMS") activeSortOption else settingsManager.getSortOption("folder_ALBUMS")
+    val albumSortAscending = if (selectedFolder == "ALBUMS") activeIsSortAscending else settingsManager.getIsSortAscending("folder_ALBUMS")
+    val albumCaseSensitive = if (selectedFolder == "ALBUMS") activeIsCaseSensitive else settingsManager.getIsCaseSensitiveSort("folder_ALBUMS")
 
-    
-    val albumsList = remember(rawAllSongs, hiddenFolders.value) {
-        rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+    val albumsList = remember(rawAllSongs, hiddenFolders.value, albumSortOption, albumSortAscending, albumCaseSensitive) {
+        val base = rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
             .groupBy { it.album }
             .map { (albumName, songs) ->
                 Album(
@@ -834,11 +849,22 @@ fun MainScreen(
                     songs = songs.sortedBy { it.title }
                 )
             }
-            .sortedBy { it.name }
+        val comparator: Comparator<Album> = when (albumSortOption) {
+            "ARTIST" -> if (albumCaseSensitive) compareBy { it.artist } else compareBy { it.artist.lowercase(java.util.Locale.getDefault()) }
+            "TRACK_COUNT" -> compareBy { it.songs.size }
+            "DATE_ADDED" -> compareBy { it.songs.maxOfOrNull { s -> s.dateAdded } ?: 0L }
+            "DURATION" -> compareBy { it.songs.sumOf { s -> s.duration } }
+            else -> if (albumCaseSensitive) compareBy { it.name } else compareBy { it.name.lowercase(java.util.Locale.getDefault()) }
+        }
+        if (albumSortAscending) base.sortedWith(comparator) else base.sortedWith(comparator.reversed())
     }
 
-    val artistsList = remember(rawAllSongs, hiddenFolders.value) {
-        rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+    val artistSortOption = if (selectedFolder == "ARTISTS") activeSortOption else settingsManager.getSortOption("folder_ARTISTS")
+    val artistSortAscending = if (selectedFolder == "ARTISTS") activeIsSortAscending else settingsManager.getIsSortAscending("folder_ARTISTS")
+    val artistCaseSensitive = if (selectedFolder == "ARTISTS") activeIsCaseSensitive else settingsManager.getIsCaseSensitiveSort("folder_ARTISTS")
+
+    val artistsList = remember(rawAllSongs, hiddenFolders.value, artistSortOption, artistSortAscending, artistCaseSensitive) {
+        val base = rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
             .groupBy { it.artist }
             .map { (artistName, songs) -> 
                 Album(
@@ -850,11 +876,20 @@ fun MainScreen(
                     songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
                 ) 
             }
-            .sortedBy { it.name }
+        val comparator: Comparator<Album> = when (artistSortOption) {
+            "TRACK_COUNT" -> compareBy { it.songs.size }
+            "ALBUM_COUNT" -> compareBy { it.songs.map { s -> s.album }.distinct().size }
+            else -> if (artistCaseSensitive) compareBy { it.name } else compareBy { it.name.lowercase(java.util.Locale.getDefault()) }
+        }
+        if (artistSortAscending) base.sortedWith(comparator) else base.sortedWith(comparator.reversed())
     }
 
-    val genresList = remember(rawAllSongs, hiddenFolders.value) {
-        rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
+    val genreSortOption = if (selectedFolder == "GENRES") activeSortOption else settingsManager.getSortOption("folder_GENRES")
+    val genreSortAscending = if (selectedFolder == "GENRES") activeIsSortAscending else settingsManager.getIsSortAscending("folder_GENRES")
+    val genreCaseSensitive = if (selectedFolder == "GENRES") activeIsCaseSensitive else settingsManager.getIsCaseSensitiveSort("folder_GENRES")
+
+    val genresList = remember(rawAllSongs, hiddenFolders.value, genreSortOption, genreSortAscending, genreCaseSensitive) {
+        val base = rawAllSongs.filter { !hiddenFolders.value.contains(it.folderName) }
             .groupBy {
                 val g = it.genre?.trim()
                 if (g.isNullOrEmpty() || g.equals("<unknown>", ignoreCase = true) || g.equals("unknown", ignoreCase = true)) {
@@ -873,7 +908,15 @@ fun MainScreen(
                     songs = songs.sortedWith(compareBy({ it.album }, { it.title }))
                 )
             }
-            .sortedBy { if (it.name == "Desconocido") "zzzz" else it.name.lowercase() }
+        val comparator: Comparator<Album> = when (genreSortOption) {
+            "TRACK_COUNT" -> compareBy { it.songs.size }
+            else -> if (genreCaseSensitive) {
+                compareBy { if (it.name == "Desconocido") "\uffff" else it.name }
+            } else {
+                compareBy { if (it.name == "Desconocido") "\uffff" else it.name.lowercase(java.util.Locale.getDefault()) }
+            }
+        }
+        if (genreSortAscending) base.sortedWith(comparator) else base.sortedWith(comparator.reversed())
     }
 
     LaunchedEffect(selectedFolder) {
@@ -1208,28 +1251,6 @@ fun MainScreen(
                 )
             }
         ) { innerPadding ->
-            val contextId = remember(selectedFolder) {
-                when (selectedFolder) {
-                    "RESUME", "MIXES", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
-                    "FAVORITES" -> -200L
-                    else -> selectedFolder.hashCode().toLong()
-                }
-            }
-            val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum) {
-                when {
-                    selectedPlaylist != null -> "playlist_${selectedPlaylist?.id}"
-                    selectedAlbum != null -> "album_${selectedAlbum?.name}"
-                    else -> "folder_$selectedFolder"
-                }
-            }
-
-            val activeSortOption: String = remember(currentSortKey, playbackManager.sortOption) {
-                settingsManager.getSortOption(currentSortKey)
-            }
-            val activeIsSortAscending: Boolean = remember(currentSortKey, playbackManager.isSortAscending) {
-                settingsManager.getIsSortAscending(currentSortKey)
-            }
-
             Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
 
                 HorizontalPager(
@@ -1373,6 +1394,10 @@ fun MainScreen(
                                         },
                                         isAlbumView = true,
                                         hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                        onSortClick = { showSortSheet = true },
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
                                         onToggleAlbumView = null
                                     )
                                 }
@@ -1420,6 +1445,10 @@ fun MainScreen(
                                         },
                                         isAlbumView = false,
                                         hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                        onSortClick = { showSortSheet = true },
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
                                         onToggleAlbumView = null
                                     )
                                 }
@@ -1467,6 +1496,10 @@ fun MainScreen(
                                         },
                                         isAlbumView = false,
                                         hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                        onSortClick = { showSortSheet = true },
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
                                         onToggleAlbumView = null,
                                         title = sTabGenres,
                                         icon = Icons.Default.Category
@@ -1521,7 +1554,11 @@ fun MainScreen(
                                     }
                                 },
                                 bottomPadding = bottomPadding,
-                                hasBlurBackground = hasBlurBackgroundMini
+                                hasBlurBackground = hasBlurBackgroundMini,
+                                isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                onSortClick = { showSortSheet = true },
+                                useCustomControlsColor = useCustomControlsColor,
+                                controlsColorPalette = controlsColorPalette
                             )
                         }
                         "FOLDER_GRID" -> {
@@ -1578,7 +1615,23 @@ fun MainScreen(
                                                 )
                                             }
                                         }
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            val isFolderSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending
+                                            Surface(
+                                                onClick = { showSortSheet = true },
+                                                shape = CircleShape,
+                                                color = if (isFolderSortActive) folderActionActiveBg else folderActionInactiveBg,
+                                                modifier = Modifier.size(36.dp).bounceClick()
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = if (isFolderSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                                                        contentDescription = stringResource(R.string.sort_options_title),
+                                                        tint = if (isFolderSortActive) Color.White else folderActionInactiveTint,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
                                             Surface(
                                                 onClick = {
                                                     folderHierarchyMode = !folderHierarchyMode
@@ -1586,7 +1639,7 @@ fun MainScreen(
                                                 },
                                                 shape = CircleShape,
                                                 color = if (folderHierarchyMode) folderActionActiveBg else folderActionInactiveBg,
-                                                modifier = Modifier.size(36.dp)
+                                                modifier = Modifier.size(36.dp).bounceClick()
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
@@ -1601,7 +1654,7 @@ fun MainScreen(
                                                 onClick = { onShowFolderSheetChange(true) },
                                                 shape = CircleShape,
                                                 color = folderActionInactiveBg,
-                                                modifier = Modifier.size(36.dp)
+                                                modifier = Modifier.size(36.dp).bounceClick()
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
@@ -2708,11 +2761,42 @@ fun MainScreen(
     }
 
     if (showSortSheet) {
+        val sectionOptions = when {
+            selectedPlaylist != null || selectedAlbum != null || selectedFolderItem != null -> null
+            selectedFolder == "ALBUMS" -> listOf(
+                "ALPHABETICAL" to R.string.sort_alphabetical,
+                "ARTIST" to R.string.sort_artist,
+                "TRACK_COUNT" to R.string.sort_track_count,
+                "DATE_ADDED" to R.string.sort_date_added,
+                "DURATION" to R.string.sort_duration
+            )
+            selectedFolder == "ARTISTS" -> listOf(
+                "ALPHABETICAL" to R.string.sort_alphabetical,
+                "TRACK_COUNT" to R.string.sort_track_count,
+                "ALBUM_COUNT" to R.string.sort_album_count
+            )
+            selectedFolder == "GENRES" -> listOf(
+                "ALPHABETICAL" to R.string.sort_alphabetical,
+                "TRACK_COUNT" to R.string.sort_track_count
+            )
+            selectedFolder == "PLAYLISTS" -> listOf(
+                "ALPHABETICAL" to R.string.sort_alphabetical,
+                "DATE_ADDED" to R.string.sort_date_added,
+                "TRACK_COUNT" to R.string.sort_track_count
+            )
+            selectedFolder == "FOLDERS" -> listOf(
+                "ALPHABETICAL" to R.string.sort_alphabetical,
+                "TRACK_COUNT" to R.string.sort_track_count
+            )
+            else -> null
+        }
+
         SortBottomSheet(
             sortOption = activeSortOption,
             isSortAscending = activeIsSortAscending,
             isCaseSensitive = activeIsCaseSensitive,
             allowCustomOrder = selectedPlaylist != null,
+            availableOptions = sectionOptions,
             onSortSettingsChange = { option, ascending, caseSensitive ->
                 activeSortOption = option
                 activeIsSortAscending = ascending

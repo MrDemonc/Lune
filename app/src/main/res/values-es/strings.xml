@@ -322,6 +322,12 @@
     <string name="sort_artist">Artista</string>
     <string name="sort_duration">Duración</string>
     <string name="sort_date_added">Fecha de agregado</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_track_count">Número de canciones</string>
+    <string name="sort_album_count">Número de álbumes</string>
+    <string name="filter_scope_folders">Carpetas</string>
+    <string name="filter_scope_albums">Álbumes</string>
+    <string name="filter_all_albums">Todos los álbumes</string>
     <string name="backup_warning_title">Aviso Importante</string>
     <string name="backup_warning_desc">Lune solo importa listas pre-exportadas por esta aplicación. Asegúrate de tener los archivos de música correspondientes en este dispositivo para una correcta reproducción.</string>
     <string name="export_playlists">Exportar Listas</string>

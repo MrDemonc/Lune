@@ -57,22 +57,37 @@ fun AddSongsToPlaylistDialog(
     val availableFolders = remember(visibleSongs) {
         visibleSongs.map { it.folderName }.filter { it.isNotBlank() }.distinct().sorted()
     }
+    val availableAlbums = remember(visibleSongs) {
+        visibleSongs.map { it.album }.filter { it.isNotBlank() }.distinct().sorted()
+    }
+    val folderCounts = remember(visibleSongs) {
+        visibleSongs.groupingBy { it.folderName }.eachCount()
+    }
+    val albumCounts = remember(visibleSongs) {
+        visibleSongs.groupingBy { it.album }.eachCount()
+    }
 
+    var scopeMode by remember { mutableStateOf(0) } // 0 = Folders, 1 = Albums
     var searchQuery by remember { mutableStateOf("") }
     var selectedFolder by remember { mutableStateOf<String?>(null) }
+    var selectedAlbums by remember { mutableStateOf<Set<String>>(emptySet()) }
     var sortOption by remember { mutableStateOf("ALPHABETICAL") }
     var isSortAscending by remember { mutableStateOf(true) }
     val selectedIds = remember { mutableStateOf(initialSelectedIds.toMutableSet()) }
 
-    val songsInScope = remember(selectedFolder, visibleSongs) {
-        if (selectedFolder == null) visibleSongs
-        else visibleSongs.filter { it.folderName == selectedFolder }
+    val songsInScope = remember(scopeMode, selectedFolder, selectedAlbums, visibleSongs) {
+        when {
+            scopeMode == 0 && selectedFolder != null -> visibleSongs.filter { it.folderName == selectedFolder }
+            scopeMode == 1 && selectedAlbums.isNotEmpty() -> visibleSongs.filter { it.album in selectedAlbums }
+            else -> visibleSongs
+        }
     }
 
     val sortedSongs = remember(songsInScope, sortOption, isSortAscending) {
         val comparator = when (sortOption) {
             "ALPHABETICAL" -> compareBy<Song> { it.title.lowercase(java.util.Locale.getDefault()) }
             "ARTIST" -> compareBy<Song> { it.artist.lowercase(java.util.Locale.getDefault()) }
+            "ALBUM" -> compareBy<Song> { it.album.lowercase(java.util.Locale.getDefault()) }.thenBy { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             "DATE_ADDED" -> compareBy<Song> { it.dateAdded }
             "DURATION" -> compareBy<Song> { it.duration }
             "TRACK_NUMBER" -> compareBy<Song> { it.trackNumber }
@@ -92,7 +107,7 @@ fun AddSongsToPlaylistDialog(
             val queryTerms = normalizedQuery.split(Regex("\\s+")).filter { it.isNotBlank() }
             if (queryTerms.isEmpty()) sortedSongs
             else sortedSongs.filter { song ->
-                val searchTarget = "${song.title} ${song.artist}".normalizeForSearch()
+                val searchTarget = "${song.title} ${song.artist} ${song.album}".normalizeForSearch()
                 queryTerms.all { term -> searchTarget.contains(term) }
             }
         }
@@ -107,6 +122,7 @@ fun AddSongsToPlaylistDialog(
         listOf(
             "ALPHABETICAL" to R.string.sort_alphabetical,
             "ARTIST" to R.string.sort_artist,
+            "ALBUM" to R.string.sort_album,
             "DATE_ADDED" to R.string.sort_date_added,
             "DURATION" to R.string.sort_duration,
             "TRACK_NUMBER" to R.string.sort_track_number
@@ -216,47 +232,21 @@ fun AddSongsToPlaylistDialog(
                         } else null
                     )
 
-                    // 2. Folder chips (above sort chips and select all)
-                    if (availableFolders.isNotEmpty()) {
+                    // 2. Scope filter chips (Folders / Albums)
+                    if (availableFolders.isNotEmpty() || availableAlbums.isNotEmpty()) {
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Mode switches: Carpetas vs Álbumes
                             item {
-                                val isSelected = selectedFolder == null
                                 FilterChip(
-                                    selected = isSelected,
-                                    onClick = { selectedFolder = null },
-                                    label = { Text(stringResource(R.string.filter_all_songs)) },
-                                    shape = RoundedCornerShape(10.dp),
-                                    border = null,
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.primaryContainer,
-                                        selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
-                                        selectedLeadingIconColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
-                                        containerColor = blurColors.itemContainerColor,
-                                        labelColor = blurColors.textSecondaryColor,
-                                        iconColor = if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                    ),
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.LibraryMusic,
-                                            contentDescription = null,
-                                            tint = if (blurColors.hasBlur) blurColors.textColor else Color.Unspecified,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    },
-                                    modifier = Modifier.bounceClick()
-                                )
-                            }
-                            items(availableFolders) { folder ->
-                                val isSelected = selectedFolder == folder
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { selectedFolder = folder },
-                                    label = { Text(folder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    selected = scopeMode == 0,
+                                    onClick = { scopeMode = 0 },
+                                    label = { Text(stringResource(R.string.filter_scope_folders)) },
                                     shape = RoundedCornerShape(10.dp),
                                     border = null,
                                     colors = FilterChipDefaults.filterChipColors(
@@ -277,6 +267,159 @@ fun AddSongsToPlaylistDialog(
                                     },
                                     modifier = Modifier.bounceClick()
                                 )
+                            }
+                            item {
+                                val albumBadge = if (selectedAlbums.isNotEmpty()) " (${selectedAlbums.size})" else ""
+                                FilterChip(
+                                    selected = scopeMode == 1,
+                                    onClick = { scopeMode = 1 },
+                                    label = { Text("${stringResource(R.string.filter_scope_albums)}$albumBadge") },
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = null,
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedLeadingIconColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        containerColor = blurColors.itemContainerColor,
+                                        labelColor = blurColors.textSecondaryColor,
+                                        iconColor = if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Album,
+                                            contentDescription = null,
+                                            tint = if (blurColors.hasBlur) blurColors.textColor else Color.Unspecified,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    },
+                                    modifier = Modifier.bounceClick()
+                                )
+                            }
+
+                            // Divider
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .height(24.dp)
+                                        .width(1.dp)
+                                        .background(if (blurColors.hasBlur) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.outlineVariant)
+                                )
+                            }
+
+                            if (scopeMode == 0) {
+                                item {
+                                    val isSelected = selectedFolder == null
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { selectedFolder = null },
+                                        label = { Text(stringResource(R.string.filter_all_songs)) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = null,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.primaryContainer,
+                                            selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            selectedLeadingIconColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            containerColor = blurColors.itemContainerColor,
+                                            labelColor = blurColors.textSecondaryColor,
+                                            iconColor = if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.LibraryMusic,
+                                                contentDescription = null,
+                                                tint = if (blurColors.hasBlur) blurColors.textColor else Color.Unspecified,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        },
+                                        modifier = Modifier.bounceClick()
+                                    )
+                                }
+                                items(availableFolders) { folder ->
+                                    val isSelected = selectedFolder == folder
+                                    val count = folderCounts[folder] ?: 0
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { selectedFolder = if (isSelected) null else folder },
+                                        label = { Text("$folder ($count)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = null,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.primaryContainer,
+                                            selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            selectedLeadingIconColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            containerColor = blurColors.itemContainerColor,
+                                            labelColor = blurColors.textSecondaryColor,
+                                            iconColor = if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Folder,
+                                                contentDescription = null,
+                                                tint = if (blurColors.hasBlur) blurColors.textColor else Color.Unspecified,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        },
+                                        modifier = Modifier.bounceClick()
+                                    )
+                                }
+                            } else {
+                                item {
+                                    val isSelected = selectedAlbums.isEmpty()
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { selectedAlbums = emptySet() },
+                                        label = { Text(stringResource(R.string.filter_all_albums)) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = null,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.primaryContainer,
+                                            selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            selectedLeadingIconColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            containerColor = blurColors.itemContainerColor,
+                                            labelColor = blurColors.textSecondaryColor,
+                                            iconColor = if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.LibraryMusic,
+                                                contentDescription = null,
+                                                tint = if (blurColors.hasBlur) blurColors.textColor else Color.Unspecified,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        },
+                                        modifier = Modifier.bounceClick()
+                                    )
+                                }
+                                items(availableAlbums) { album ->
+                                    val isSelected = selectedAlbums.contains(album)
+                                    val count = albumCounts[album] ?: 0
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            selectedAlbums = if (isSelected) selectedAlbums - album else selectedAlbums + album
+                                        },
+                                        label = { Text("$album ($count)", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = null,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.primaryContainer,
+                                            selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            selectedLeadingIconColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            containerColor = blurColors.itemContainerColor,
+                                            labelColor = blurColors.textSecondaryColor,
+                                            iconColor = if (blurColors.hasBlur) blurColors.textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.Album,
+                                                contentDescription = null,
+                                                tint = if (blurColors.hasBlur) blurColors.textColor else Color.Unspecified,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        },
+                                        modifier = Modifier.bounceClick()
+                                    )
+                                }
                             }
                         }
                     }

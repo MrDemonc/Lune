@@ -898,17 +898,24 @@ fun AlbumsListHeader(
     title: String? = null,
     icon: ImageVector? = null,
     hasBlurBackground: Boolean = false,
+    isSortActive: Boolean = false,
+    onSortClick: (() -> Unit)? = null,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val displayTitle = title ?: if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists)
     val displayIcon = icon ?: if (isAlbumView) Icons.Default.Album else Icons.Default.Person
 
+    val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val iconContainerBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
     val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
     val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
     val countColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
     val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
     val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+    val actionBtnActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimary
 
     Row(
         modifier = modifier
@@ -951,6 +958,24 @@ fun AlbumsListHeader(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (onSortClick != null) {
+                Surface(
+                    onClick = onSortClick,
+                    shape = CircleShape,
+                    color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
+                    modifier = Modifier.size(36.dp).bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                            contentDescription = stringResource(R.string.sort_options_title),
+                            tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
             if (onToggleAlbumView != null) {
                 Surface(
                     onClick = onToggleAlbumView,

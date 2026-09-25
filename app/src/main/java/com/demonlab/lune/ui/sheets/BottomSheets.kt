@@ -310,6 +310,7 @@ fun SortBottomSheet(
     isSortAscending: Boolean,
     isCaseSensitive: Boolean,
     allowCustomOrder: Boolean = false,
+    availableOptions: List<Pair<String, Int>>? = null,
     onSortSettingsChange: (String, Boolean, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -318,6 +319,19 @@ fun SortBottomSheet(
     val currentSong = playbackManager.currentSong
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val blurColors = rememberBlurSheetColors(currentSong)
+
+    val options = availableOptions ?: buildList {
+        if (allowCustomOrder) {
+            add("CUSTOM" to R.string.sort_custom)
+        }
+        add("TRACK_NUMBER" to R.string.sort_track_number)
+        add("ALPHABETICAL" to R.string.sort_alphabetical)
+        add("ARTIST" to R.string.sort_artist)
+        add("ALBUM" to R.string.sort_album)
+        add("DURATION" to R.string.sort_duration)
+        add("DATE_ADDED" to R.string.sort_date_added)
+    }
+    val effectiveSortOption = if (options.any { it.first == sortOption }) sortOption else (options.firstOrNull()?.first ?: "ALPHABETICAL")
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -367,7 +381,8 @@ fun SortBottomSheet(
                 // Restore defaults circular button
                 IconButton(
                     onClick = {
-                        onSortSettingsChange("ALPHABETICAL", true, false)
+                        val defaultOption = if (options.any { it.first == "ALPHABETICAL" }) "ALPHABETICAL" else (options.firstOrNull()?.first ?: "ALPHABETICAL")
+                        onSortSettingsChange(defaultOption, true, false)
                     },
                     modifier = Modifier
                         .size(40.dp)
@@ -390,7 +405,7 @@ fun SortBottomSheet(
                     color = blurColors.itemContainerColor,
                     border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) },
                     onClick = {
-                        onSortSettingsChange(sortOption, !isSortAscending, isCaseSensitive)
+                        onSortSettingsChange(effectiveSortOption, !isSortAscending, isCaseSensitive)
                     },
                     modifier = Modifier.bounceClick()
                 ) {
@@ -407,7 +422,7 @@ fun SortBottomSheet(
                         BouncySwitch(
                             checked = isSortAscending,
                             onCheckedChange = {
-                                onSortSettingsChange(sortOption, it, isCaseSensitive)
+                                onSortSettingsChange(effectiveSortOption, it, isCaseSensitive)
                             },
                             thumbContent = {
                                 Icon(
@@ -428,7 +443,7 @@ fun SortBottomSheet(
                     color = blurColors.itemContainerColor,
                     border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) },
                     onClick = {
-                        onSortSettingsChange(sortOption, isSortAscending, !isCaseSensitive)
+                        onSortSettingsChange(effectiveSortOption, isSortAscending, !isCaseSensitive)
                     },
                     modifier = Modifier.bounceClick()
                 ) {
@@ -446,7 +461,7 @@ fun SortBottomSheet(
                         BouncySwitch(
                             checked = isCaseSensitive,
                             onCheckedChange = {
-                                onSortSettingsChange(sortOption, isSortAscending, it)
+                                onSortSettingsChange(effectiveSortOption, isSortAscending, it)
                             },
                             thumbContent = {
                                 Icon(
@@ -461,19 +476,8 @@ fun SortBottomSheet(
             }
 
             // Options cards
-            val options = buildList {
-                if (allowCustomOrder) {
-                    add("CUSTOM" to R.string.sort_custom)
-                }
-                add("TRACK_NUMBER" to R.string.sort_track_number)
-                add("ALPHABETICAL" to R.string.sort_alphabetical)
-                add("ARTIST" to R.string.sort_artist)
-                add("DURATION" to R.string.sort_duration)
-                add("DATE_ADDED" to R.string.sort_date_added)
-            }
-            
             options.forEachIndexed { index, (option, stringResId) ->
-                val isSelected = sortOption == option
+                val isSelected = effectiveSortOption == option
                 val shape = when (index) {
                     0 -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
                     options.lastIndex -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp)

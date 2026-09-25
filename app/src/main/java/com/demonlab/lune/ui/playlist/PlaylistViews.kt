@@ -20,6 +20,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SortByAlpha
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -125,6 +128,10 @@ fun PlaylistListScreen(
     onDeletePlaylist: (Playlist) -> Unit,
     bottomPadding: Dp,
     hasBlurBackground: Boolean = false,
+    isSortActive: Boolean = false,
+    onSortClick: (() -> Unit)? = null,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0
 ) {
     val playlists = viewModel.playlists
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -133,6 +140,18 @@ fun PlaylistListScreen(
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
     val settingsManager = remember { SettingsManager.getInstance(context) }
+    val playlistSortOption = settingsManager.getSortOption("folder_PLAYLISTS")
+    val playlistSortAscending = settingsManager.getIsSortAscending("folder_PLAYLISTS")
+    val playlistCaseSensitive = settingsManager.getIsCaseSensitiveSort("folder_PLAYLISTS")
+
+    val sortedPlaylists = remember(playlists, viewModel.playlistMappings, playlistSortOption, playlistSortAscending, playlistCaseSensitive) {
+        val comparator: Comparator<Playlist> = when (playlistSortOption) {
+            "DATE_ADDED" -> compareBy { it.createdAt }
+            "TRACK_COUNT" -> compareBy { pl -> viewModel.playlistMappings.count { it.playlistId == pl.id } }
+            else -> if (playlistCaseSensitive) compareBy { it.name } else compareBy { it.name.lowercase(java.util.Locale.getDefault()) }
+        }
+        if (playlistSortAscending) playlists.sortedWith(comparator) else playlists.sortedWith(comparator.reversed())
+    }
     val themeMode = settingsManager.themeMode
     val isSystemDark = isSystemInDarkTheme()
     val isDarkTheme = when (themeMode) {
@@ -218,26 +237,51 @@ fun PlaylistListScreen(
                             )
                         }
                     }
-                    Surface(
-                        onClick = { showCreateDialog = true },
-                        shape = CircleShape,
-                        color = plAddBg,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (onSortClick != null) {
+                            val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+                            val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+                            val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+                            val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+                            val actionBtnActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimary
+                            Surface(
+                                onClick = onSortClick,
+                                shape = CircleShape,
+                                color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
+                                modifier = Modifier.size(36.dp).bounceClick()
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                                        contentDescription = stringResource(R.string.sort_options_title),
+                                        tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Surface(
+                            onClick = { showCreateDialog = true },
+                            shape = CircleShape,
+                            color = plAddBg,
+                            modifier = Modifier.size(36.dp).bounceClick()
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
         
-        itemsIndexed(playlists, key = { _, it -> it.id }) { index, playlist ->
+        itemsIndexed(sortedPlaylists, key = { _, it -> it.id }) { index, playlist ->
             var songCount by remember { mutableIntStateOf(0) }
             var totalDuration by remember { mutableLongStateOf(0L) }
             
