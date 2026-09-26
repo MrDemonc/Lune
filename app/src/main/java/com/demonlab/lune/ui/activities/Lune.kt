@@ -1323,7 +1323,7 @@ fun MainScreen(
                                     selectedPlaylist = playlist
                                 },
                                 onArtistClick = { artistName ->
-                                    val artistSongs = visibleSongs.filter { it.artist == artistName }
+                                    val artistSongs = visibleSongs.filter { it.artist.trim().equals(artistName.trim(), ignoreCase = true) }
                                     val artistAlbum = Album(
                                         id = artistName.hashCode().toLong(),
                                         name = artistName,
@@ -2231,20 +2231,27 @@ fun MainScreen(
                                     g.isNullOrEmpty() || g.equals("<unknown>", ignoreCase = true) || g.equals("unknown", ignoreCase = true)
                                 }
                             } else {
-                                visibleSongs.filter { it.genre?.trim() == albumRender.name }
+                                visibleSongs.filter { it.genre?.trim().equals(albumRender.name.trim(), ignoreCase = true) }
                             }
                         }
-                        "ARTISTS" -> visibleSongs.filter { it.artist == albumRender.name }
-                        "ALBUMS" -> visibleSongs.filter { it.album == albumRender.name }
+                        "ARTISTS" -> visibleSongs.filter { it.artist.trim().equals(albumRender.name.trim(), ignoreCase = true) }
+                        "ALBUMS" -> {
+                            if (!isAlbumView && albumRender.artist.isEmpty()) {
+                                visibleSongs.filter { it.artist.trim().equals(albumRender.name.trim(), ignoreCase = true) }
+                            } else {
+                                visibleSongs.filter { it.album == albumRender.name }
+                            }
+                        }
                         else -> {
                             if (isAlbumView) visibleSongs.filter { it.album == albumRender.name }
-                            else visibleSongs.filter { it.artist == albumRender.name }
+                            else visibleSongs.filter { it.artist.trim().equals(albumRender.name.trim(), ignoreCase = true) }
                         }
                     }
                 }
+                val songsToDisplay = if (albumSongs.isNotEmpty()) albumSongs else albumRender.songs
                 AlbumDetailView(
                     album = albumRender,
-                    songs = albumSongs,
+                    songs = songsToDisplay,
                     sortOption = activeSortOption,
                     isSortAscending = activeIsSortAscending,
                     onBack = { selectedAlbum = null },
@@ -2622,18 +2629,19 @@ fun MainScreen(
                     },
                     onRequestAudioPermission = onRequestAudioPermission,
                     onArtistClick = { artistName ->
+                        val artistSongs = visibleSongs.filter { it.artist.trim().equals(artistName.trim(), ignoreCase = true) }
                         val artistAlbum = Album(
                             id = artistName.hashCode().toLong(),
                             name = artistName,
                             artist = "",
-                            albumArtUri = visibleSongs.firstOrNull { it.artist == artistName }?.albumArtUri,
-                            coverUrl = visibleSongs.firstOrNull { it.artist == artistName }?.coverUrl,
-                            songs = visibleSongs.filter { it.artist == artistName }.sortedBy { it.title }
+                            albumArtUri = artistSongs.firstOrNull()?.albumArtUri,
+                            coverUrl = artistSongs.firstOrNull()?.coverUrl,
+                            songs = artistSongs.sortedBy { it.title }
                         )
                         selectedAlbum = artistAlbum
                         isAlbumView = false
                         onIsPlayerExpandedChange(false)
-                        onSelectedFolderChange("ALBUMS")
+                        onSelectedFolderChange("ARTISTS")
                     }
                 )
             }
