@@ -27,8 +27,8 @@ android {
         applicationId = "com.demonlab.lune"
         minSdk = 24
         targetSdk = 37
-        versionCode = 12
-        versionName = "1.5.4"
+        versionCode = 1
+        versionName = "0.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -84,7 +84,7 @@ android {
 }
 
 base {
-    archivesName = "Lune"
+    archivesName = "SonAudioPlayer"
 }
 
 dependencies {
