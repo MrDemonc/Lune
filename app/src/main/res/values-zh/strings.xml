@@ -5,6 +5,7 @@
     <string name="version">版本</string>
     <string name="license">许可证</string>
     <string name="author">作者</string>
+    <string name="website">官网</string>
     <string name="hifi_audio">Hi-Fi 音频</string>
     <string name="hifi_desc">启用 Hi-Fi 检测和标签</string>
 
@@ -106,6 +107,8 @@
     <string name="audio_32bit_float_desc">使用 32 位浮点精度处理音频，提供最大动态范围且无失真</string>
     <string name="audio_exclusive_mode">独占输出模式</string>
     <string name="audio_exclusive_mode_desc">通过 AAudio 硬件直通绕过 Android 系统混音器</string>
+    <string name="stop_on_task_removed">关闭应用时停止播放</string>
+    <string name="stop_on_task_removed_desc">从最近任务划掉应用时停止音乐并关闭媒体控制通知</string>
     <string name="resume_recently_added">最近添加</string>
     <string name="tab_all">全部</string>
     <string name="tab_favorites">收藏</string>
@@ -246,6 +249,7 @@
     <string name="player_queue">队列</string>
     <string name="player_options">选项</string>
     <string name="option_share">分享</string>
+    <string name="option_repeat">重复</string>
     <string name="option_repeat_one">单曲循环</string>
     <string name="option_repeat_all">全部循环</string>
     <string name="option_repeat_off">关闭</string>
@@ -384,6 +388,7 @@
     <string name="search_play_all">播放</string>
     <string name="search_shuffle">随机播放</string>
     <string name="playing_from">正在播放：%s</string>
+    <string name="playing_from_header">正在播放</string>
     <string name="playing_from_search">搜索结果</string>
     <string name="option_speed">速度</string>
     <string name="preset_name">预设名称</string>

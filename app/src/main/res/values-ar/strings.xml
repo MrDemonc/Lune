@@ -5,6 +5,7 @@
     <string name="version">الإصدار</string>
     <string name="license">الترخيص</string>
     <string name="author">المطور</string>
+    <string name="website">الموقع</string>
     <string name="hifi_audio">صوت Hi-Fi</string>
     <string name="hifi_desc">تفعيل اكتشاف وشارات Hi-Fi</string>
     <string name="keep_screen_on">إبقاء الشاشة قيد التشغيل</string>
@@ -105,6 +106,8 @@
     <string name="audio_32bit_float_desc">معالجة الصوت بدقة النقطة العائمة 32 بت للحصول على أقصى مساحة للرأس (Headroom) وبدون تقطيع</string>
     <string name="audio_exclusive_mode">وضع الإخراج الحصري</string>
     <string name="audio_exclusive_mode_desc">تجاوز مازج نظام أندرويد عبر توجيه الأجهزة المباشر AAudio</string>
+    <string name="stop_on_task_removed">إيقاف التشغيل عند الإغلاق</string>
+    <string name="stop_on_task_removed_desc">إيقاف تشغيل الموسيقى وإزالة عناصر التحكم في الوسائط عند التمرير السريع لإغلاق التطبيق من التطبيقات الأخيرة</string>
     <string name="resume_recently_added">أضيف مؤخراً</string>
     <string name="tab_all">الكل</string>
     <string name="tab_favorites">المفضلة</string>
@@ -246,6 +249,7 @@
     <string name="play_next">تشغيل التالي</string>
     <string name="player_options">الخيارات</string>
     <string name="option_share">مشاركة</string>
+    <string name="option_repeat">تكرار</string>
     <string name="option_repeat_one">تكرار واحدة</string>
     <string name="option_repeat_all">تكرار الكل</string>
     <string name="option_repeat_off">إيقاف التكرار</string>
@@ -385,6 +389,7 @@
     <string name="search_play_all">تشغيل</string>
     <string name="search_shuffle">عشوائي</string>
     <string name="playing_from">يتم التشغيل من: %s</string>
+    <string name="playing_from_header">يتم التشغيل من</string>
     <string name="playing_from_search">نتيجة البحث</string>
     <string name="option_speed">السرعة</string>
     <string name="preset_name">اسم الإعداد المسبق</string>

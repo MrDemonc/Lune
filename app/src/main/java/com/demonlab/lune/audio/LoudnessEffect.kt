@@ -11,8 +11,8 @@ class LoudnessEffect {
         release(isSecondary)
         try {
             val e = LoudnessEnhancer(sessionId).apply {
-                this.enabled = enabled
                 setTargetGain(gain)
+                this.enabled = enabled
             }
             targetGain = gain
             if (isSecondary) {

@@ -5,6 +5,7 @@
     <string name="version">Version</string>
     <string name="license">Licence</string>
     <string name="author">Auteur</string>
+    <string name="website">Site web</string>
     <string name="hifi_audio">Audio Hi-Fi</string>
     <string name="hifi_desc">Activer la détection et les badges Hi-Fi</string>
 
@@ -106,6 +107,8 @@
     <string name="audio_32bit_float_desc">Traiter l\'audio en virgule flottante 32 bits pour une dynamique maximale sans saturation</string>
     <string name="audio_exclusive_mode">Mode de sortie exclusif</string>
     <string name="audio_exclusive_mode_desc">Contourner le mélangeur Android via le routage matériel direct AAudio</string>
+    <string name="stop_on_task_removed">Arrêter la lecture à la fermeture</string>
+    <string name="stop_on_task_removed_desc">Arrête la musique et ferme les commandes multimédias lorsque l\'application est fermée depuis les applications récentes</string>
     <string name="resume_recently_added">Ajoutées récemment</string>
     <string name="tab_all">Tout</string>
     <string name="tab_favorites">Favoris</string>
@@ -246,6 +249,7 @@
     <string name="player_queue">File d’attente</string>
     <string name="player_options">Options</string>
     <string name="option_share">Partager</string>
+    <string name="option_repeat">Répéter</string>
     <string name="option_repeat_one">Répéter une fois</string>
     <string name="option_repeat_all">Tout répéter</string>
     <string name="option_repeat_off">Pas de répétition</string>
@@ -387,6 +391,7 @@
     <string name="search_play_all">Lire</string>
     <string name="search_shuffle">Aléatoire</string>
     <string name="playing_from">Lecture depuis: %s</string>
+    <string name="playing_from_header">Lecture depuis</string>
     <string name="playing_from_search">Résultat de recherche</string>
     <string name="option_speed">Vitesse</string>
     <string name="preset_name">Nom du preset</string>

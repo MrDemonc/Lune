@@ -5,6 +5,7 @@
     <string name="version">ورژن</string>
     <string name="license">لایسنس</string>
     <string name="author">کدنویس</string>
+    <string name="website">وب‌سایت</string>
     <string name="hifi_audio">کیفیت خفن (Hi-Fi)</string>
     <string name="hifi_desc">نمایش تیک کیفیت بالا و فعال کردن صدای شفاف</string>
     <string name="keep_screen_on">روشن موندن صفحه</string>
@@ -105,6 +106,8 @@
     <string name="audio_32bit_float_desc">بالاترین کیفیت پردازش صدا بدون اینکه نویز بیفته</string>
     <string name="audio_exclusive_mode">خروجی مستقیم</string>
     <string name="audio_exclusive_mode_desc">میکسر اندروید رو دور می‌زنه و صدا رو مستقیم می‌فرسته سخت‌افزار</string>
+    <string name="stop_on_task_removed">توقف پخش هنگام بستن</string>
+    <string name="stop_on_task_removed_desc">توقف پخش موسیقی و بستن کنترل‌های رسانه‌ای هنگام بستن برنامه از برنامه‌های اخیر</string>
     <string name="resume_recently_added">تازه‌ها</string>
     <string name="tab_all">همه</string>
     <string name="tab_favorites">مورد علاقه‌ها</string>
@@ -245,6 +248,7 @@
     <string name="player_queue">صف پخش</string>
     <string name="player_options">تنظیمات</string>
     <string name="option_share">بفرست واسه بقیه</string>
+    <string name="option_repeat">تکرار</string>
     <string name="option_repeat_one">تکرار همین آهنگ</string>
     <string name="option_repeat_all">تکرار همه</string>
     <string name="option_repeat_off">خاموش</string>
@@ -383,6 +387,7 @@
     <string name="search_play_all">پلی کن</string>
     <string name="search_shuffle">بربُر کن (Shuffle)</string>
     <string name="playing_from">داره از اینجا پخش میشه: %s</string>
+    <string name="playing_from_header">داره از اینجا پخش میشه</string>
     <string name="playing_from_search">نتایج جستجو</string>
     <string name="option_speed">سرعت پخش</string>
     <string name="preset_name">اسم تنظیمات</string>

@@ -33,7 +33,8 @@ class PlaybackManager private constructor(private val context: Context) {
     private val settings = SettingsManager.getInstance(context)
     private var musicService: MusicService? = null
     private var isBound = false
-    private var pendingPlaySong: Song? = null
+    var pendingPlaySong: Song? = null
+        internal set
     private var pendingRestoreSong: Song? = null
     private var pendingRestorePosition: Long = 0L
     private var pendingRestorePlay: Boolean = false
@@ -214,6 +215,7 @@ class PlaybackManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             Log.e("PlaybackManager", "Error restoring playback state: ${e.message}", e)
         }
+        preloadSurroundingArtwork()
     }
 
     var playbackSpeed by mutableStateOf(settings.playbackSpeed)
@@ -415,7 +417,11 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         currentSong = song
         isPlaying = true
-        com.demonlab.lune.ai.LuneAiEngine.getInstance(context).onSongStarted(song)
+        try {
+            com.demonlab.lune.ai.LuneAiEngine.getInstance(context).onSongStarted(song)
+        } catch (e: Exception) {
+            Log.e("PlaybackManager", "Error reporting AI onSongStarted: ${e.message}", e)
+        }
         if (playlist.isNotEmpty() && (playlist != activePlaylist || activePlaylist.isEmpty() || playlistId != activePlaylistId)) {
             queueSections = sections
             activePlaylist = playlist
@@ -440,11 +446,7 @@ class PlaybackManager private constructor(private val context: Context) {
             }
             
             if (isShuffle) {
-                if (shuffleMode != null) {
-                    updateShuffledQueue(keepCurrentFirst = false)
-                } else {
-                    updateShuffledQueue()
-                }
+                updateShuffledQueue()
             }
         } else if (!fromQueue && playlist.isNotEmpty() && isShuffle) {
             // Clicked from a playlist that is already active
@@ -480,6 +482,7 @@ class PlaybackManager private constructor(private val context: Context) {
 
         // Start service as foreground when playing begins
         Intent(context, MusicService::class.java).also { intent ->
+            intent.action = MusicService.ACTION_PLAY
             intent.data = song.uri
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -504,6 +507,7 @@ class PlaybackManager private constructor(private val context: Context) {
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
 
         savePlaybackState(wasPlaying = true)
+        preloadSurroundingArtwork()
     }
 
     fun startVisualizer() {
@@ -637,7 +641,7 @@ class PlaybackManager private constructor(private val context: Context) {
             return
         }
 
-        val advance = if (isTransitioning) 2 else 1
+        val advance = if (isTransitioning && !isNaturalEnd) 2 else 1
 
         val nextSong = if (isShuffle) {
             if (shuffledIndices.size != activePlaylist.size) {
@@ -645,15 +649,18 @@ class PlaybackManager private constructor(private val context: Context) {
             }
             val nextPos = (currentShufflePosition + advance)
             if (nextPos >= shuffledIndices.size) {
-                if (repeatMode == 2) { // Repeat All
+                if (repeatMode == 2 || activeCategory == "MIXES") { // Repeat All or AI Mix continuous session
+                    currentShufflePosition = 0
+                    activePlaylist[shuffledIndices[0]]
+                } else if (!isNaturalEnd) {
+                    // User explicitly pressed Next at end of queue: wrap around to start
                     currentShufflePosition = 0
                     activePlaylist[shuffledIndices[0]]
                 } else {
-                    if (!isNaturalEnd) return
                     // Natural end of queue: show Play icon and reset progress
                     isPlaying = false
                     isQueueFinished = true
-                    playbackStateSaver.clear()
+                    savePlaybackState(wasPlaying = false)
                     musicService?.resetPlayerProgress()
                     return
                 }
@@ -666,14 +673,16 @@ class PlaybackManager private constructor(private val context: Context) {
             val targetIndex = if (currentIndex != -1) currentIndex + advance else -1
             if (targetIndex != -1 && targetIndex < activePlaylist.size) {
                 activePlaylist[targetIndex]
-            } else if (repeatMode == 2) { // Repeat All
+            } else if (repeatMode == 2 || activeCategory == "MIXES") { // Repeat All or AI Mix continuous session
+                activePlaylist[0]
+            } else if (!isNaturalEnd) {
+                // User explicitly pressed Next at end of queue: wrap around to start
                 activePlaylist[0]
             } else {
-                if (!isNaturalEnd) return
                 // Natural end of queue: show Play icon and reset progress
                 isPlaying = false
                 isQueueFinished = true
-                playbackStateSaver.clear()
+                savePlaybackState(wasPlaying = false)
                 musicService?.resetPlayerProgress()
                 return
             }
@@ -683,6 +692,7 @@ class PlaybackManager private constructor(private val context: Context) {
             play(nextSong)
         } else {
             currentSong = nextSong
+            preloadSurroundingArtwork()
         }
     }
 
@@ -709,7 +719,10 @@ class PlaybackManager private constructor(private val context: Context) {
             val currentIndex = activePlaylist.indexOfFirst { it.id == currentSong?.id }
             if (currentIndex > 0) {
                 activePlaylist[currentIndex - 1]
+            } else if (repeatMode == 2 || activeCategory == "MIXES") {
+                activePlaylist.last()
             } else {
+                musicService?.seekTo(0)
                 return
             }
         }
@@ -726,7 +739,7 @@ class PlaybackManager private constructor(private val context: Context) {
             }
             val nextPos = (currentShufflePosition + 1)
             if (nextPos >= shuffledIndices.size) {
-                if (repeatMode == 2) activePlaylist[shuffledIndices[0]] else null
+                if (repeatMode == 2 || activeCategory == "MIXES") activePlaylist[shuffledIndices[0]] else null
             } else {
                 activePlaylist[shuffledIndices[nextPos]]
             }
@@ -734,11 +747,54 @@ class PlaybackManager private constructor(private val context: Context) {
             val currentIndex = activePlaylist.indexOfFirst { it.id == currentSong?.id }
             if (currentIndex != -1 && currentIndex < activePlaylist.size - 1) {
                 activePlaylist[currentIndex + 1]
-            } else if (repeatMode == 2) {
+            } else if (repeatMode == 2 || activeCategory == "MIXES") {
                 activePlaylist[0]
             } else {
                 null
             }
+        }
+    }
+
+    fun getPreviousSong(): Song? {
+        if (activePlaylist.isEmpty() || currentSong == null) return null
+        if (repeatMode == 1) return currentSong
+
+        return if (isShuffle) {
+            if (shuffledIndices.size != activePlaylist.size) {
+                updateShuffledQueue()
+            }
+            val prevPos = if (currentShufflePosition > 0) currentShufflePosition - 1 else shuffledIndices.size - 1
+            if (prevPos in shuffledIndices.indices) activePlaylist.getOrNull(shuffledIndices[prevPos]) else null
+        } else {
+            val currentIndex = activePlaylist.indexOfFirst { it.id == currentSong?.id }
+            if (currentIndex > 0) {
+                activePlaylist[currentIndex - 1]
+            } else if (repeatMode == 2 || activeCategory == "MIXES") {
+                activePlaylist.lastOrNull()
+            } else {
+                null
+            }
+        }
+    }
+
+    /** Preloads the next and previous album artwork into Coil memory cache for instantaneous transitions */
+    fun preloadSurroundingArtwork() {
+        val next = getNextSong()
+        val prev = getPreviousSong()
+        managerScope.launch(Dispatchers.IO) {
+            try {
+                val imageLoader = coil.Coil.imageLoader(context)
+                val displayWidth = context.resources.displayMetrics.widthPixels
+                listOfNotNull(next, prev).distinctBy { it.id }.forEach { s ->
+                    val model = s.coverUrl ?: s.uri
+                    val request = coil.request.ImageRequest.Builder(context)
+                        .data(model)
+                        .size(displayWidth)
+                        .precision(coil.size.Precision.INEXACT)
+                        .build()
+                    imageLoader.enqueue(request)
+                }
+            } catch (_: Exception) {}
         }
     }
 
@@ -791,12 +847,16 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play (Automatic/Crossfade)
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        settings.lastPlayedSongId = song.id
+        savePlaybackState(wasPlaying = true)
+        preloadSurroundingArtwork()
     }
 
     fun pause() {
         savePlaybackState(wasPlaying = false)
         flushPendingStats()
         isPlaying = false
+        isTransitioning = false
         musicService?.pause()
         stopStatsTracking()
     }
@@ -821,6 +881,7 @@ class PlaybackManager private constructor(private val context: Context) {
     fun stop() {
         flushPendingStats()
         isPlaying = false
+        isTransitioning = false
         musicService?.stopSelf()
         stopStatsTracking()
     }
@@ -859,11 +920,15 @@ class PlaybackManager private constructor(private val context: Context) {
         if (pendingStatsTimeMs == 0L) return
         val song = currentSong
         if (song != null) {
-            val aiEngine = com.demonlab.lune.ai.LuneAiEngine.getInstance(context)
-            if (pendingStatsTimeMs >= (song.duration * 0.75f) || pendingStatsTimeMs >= 60_000L) {
-                aiEngine.onSongCompleted(song)
-            } else if (pendingStatsTimeMs < 20_000L) {
-                aiEngine.onSongSkipped(song, pendingStatsTimeMs / 1000L, song.duration / 1000L)
+            try {
+                val aiEngine = com.demonlab.lune.ai.LuneAiEngine.getInstance(context)
+                if (pendingStatsTimeMs >= (song.duration * 0.75f) || pendingStatsTimeMs >= 60_000L) {
+                    aiEngine.onSongCompleted(song)
+                } else if (pendingStatsTimeMs < 20_000L) {
+                    aiEngine.onSongSkipped(song, pendingStatsTimeMs / 1000L, song.duration / 1000L)
+                }
+            } catch (e: Exception) {
+                Log.e("PlaybackManager", "Error reporting AI stats: ${e.message}", e)
             }
             updatePlaybackStats("SONG", "SONG_${song.id}", timeMs = pendingStatsTimeMs)
             if (song.artist.isNotBlank() && song.artist != "<unknown>") {
@@ -940,6 +1005,7 @@ class PlaybackManager private constructor(private val context: Context) {
         val comparator = when (option) {
             "ALPHABETICAL" -> if (caseSensitive) compareBy<Song> { it.title } else compareBy<Song> { it.title.lowercase(java.util.Locale.getDefault()) }
             "ARTIST" -> if (caseSensitive) compareBy<Song> { it.artist } else compareBy<Song> { it.artist.lowercase(java.util.Locale.getDefault()) }
+            "ALBUM" -> if (caseSensitive) compareBy<Song> { it.album }.thenBy { it.trackNumber }.thenBy { it.title } else compareBy<Song> { it.album.lowercase(java.util.Locale.getDefault()) }.thenBy { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             "DURATION" -> compareBy<Song> { it.duration }
             "DATE_ADDED" -> compareBy<Song> { it.dateAdded }
             "TRACK_NUMBER" -> compareBy<Song> { it.trackNumber }
@@ -993,6 +1059,12 @@ class PlaybackManager private constructor(private val context: Context) {
 
     fun toggleRepeatMode() {
         repeatMode = (repeatMode + 1) % 3
+        settings.repeatMode = repeatMode
+        updateLoopingState()
+    }
+
+    fun applyRepeatMode(mode: Int) {
+        repeatMode = mode.coerceIn(0, 2)
         settings.repeatMode = repeatMode
         updateLoopingState()
     }
@@ -1090,7 +1162,7 @@ class PlaybackManager private constructor(private val context: Context) {
     fun applyEqPreset(presetIndex: Short) {
         if (!isEqEnabled) return
         try {
-            musicService?.equalizer?.usePreset(presetIndex)
+            musicService?.useEqPreset(presetIndex)
             val numBands = getEqNumberOfBands().toInt()
             val currentBands = mutableListOf<Short>()
             for (i in 0 until numBands) {
@@ -1216,12 +1288,13 @@ class PlaybackManager private constructor(private val context: Context) {
             musicService?.setBassBoostStrength(200)
         } else {
             bassBoostOffset = 0
-            for (i in 0..1) {
-                if (i < eqBandLevels.size) {
-                    musicService?.setEqBandLevel(i.toShort(), eqBandLevels[i])
+            musicService?.setBassBoostEnabled(false) {
+                for (i in 0..1) {
+                    if (i < eqBandLevels.size) {
+                        musicService?.setEqBandLevel(i.toShort(), eqBandLevels[i])
+                    }
                 }
             }
-            musicService?.setBassBoostEnabled(false)
         }
     }
 
@@ -1255,9 +1328,13 @@ class PlaybackManager private constructor(private val context: Context) {
         if (!isLoudnessEnabled) {
             loudnessGain = 0
             settings.loudnessGain = 0
+            musicService?.setLoudnessEnabled(false) {
+                musicService?.setLoudnessGain(0)
+            }
+        } else {
+            musicService?.setLoudnessEnabled(true)
+            musicService?.setLoudnessGain(loudnessGain)
         }
-        musicService?.setLoudnessEnabled(isLoudnessEnabled)
-        musicService?.setLoudnessGain(loudnessGain)
     }
 
     fun updateLoudnessGain(gain: Int) {
@@ -1363,7 +1440,11 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         
         // Persist to DB
-        com.demonlab.lune.ai.LuneAiEngine.getInstance(context).onSongFavoriteToggled(targetSong, newFavoriteStatus)
+        try {
+            com.demonlab.lune.ai.LuneAiEngine.getInstance(context).onSongFavoriteToggled(targetSong, newFavoriteStatus)
+        } catch (e: Exception) {
+            Log.e("PlaybackManager", "Error reporting AI favorite: ${e.message}", e)
+        }
         val metadataManager = MetadataManager(context)
         kotlinx.coroutines.MainScope().launch {
             metadataManager.updateFavoriteStatus(targetSong.id, newFavoriteStatus)

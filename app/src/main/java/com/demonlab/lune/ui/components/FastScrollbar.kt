@@ -2,7 +2,9 @@ package com.demonlab.lune.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
@@ -17,12 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -33,20 +37,38 @@ fun <T> FastScrollbar(
     modifier: Modifier = Modifier,
     headerItemCount: Int = 0,
     itemKeyOrLetter: (T) -> String,
-    thumbColor: Color = MaterialTheme.colorScheme.primary,
-    bubbleColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    bubbleTextColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+    hasBlurBackground: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
+    thumbColor: Color = if (useCustomControlsColor) {
+        getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette).copy(alpha = 0.85f)
+    } else if (hasBlurBackground) {
+        Color.White.copy(alpha = 0.75f)
+    } else {
+        MaterialTheme.colorScheme.primary
+    },
+    bubbleColor: Color = if (useCustomControlsColor) {
+        getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    } else if (hasBlurBackground) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    },
+    bubbleTextColor: Color = if (useCustomControlsColor) {
+        Color.White
+    } else if (hasBlurBackground) {
+        Color.Black
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
 ) {
     if (items.size <= 15) return
 
-    val totalItems = listState.layoutInfo.totalItemsCount
-    val songItemsCount = (totalItems - headerItemCount).coerceAtLeast(0)
-    if (songItemsCount <= 1) return
-
     val coroutineScope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
+
     var isDragging by remember { mutableStateOf(false) }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var dragThumbY by remember { mutableFloatStateOf(0f) }
     var containerHeight by remember { mutableFloatStateOf(0f) }
     var currentLetter by remember { mutableStateOf("") }
     var frozenTopPx by remember { mutableFloatStateOf(0f) }
@@ -55,27 +77,9 @@ fun <T> FastScrollbar(
     val density = LocalDensity.current
     val thumbHeightPx = with(density) { thumbHeightDp.toPx() }
 
-    val dynamicTopPx = remember(listState.layoutInfo, headerItemCount) {
-        if (headerItemCount > 0) {
-            val headerInfo = listState.layoutInfo.visibleItemsInfo.find { it.index == headerItemCount - 1 }
-            if (headerInfo != null) {
-                (headerInfo.offset + headerInfo.size).toFloat().coerceAtLeast(0f)
-            } else 0f
-        } else 0f
-    }
-
-    val topPx = if (isDragging) frozenTopPx else dynamicTopPx
-    val topPaddingDp = with(density) { topPx.toDp() }
-
-    val firstSongVisible = (listState.firstVisibleItemIndex - headerItemCount).coerceAtLeast(0)
-    val progress = remember(firstSongVisible, songItemsCount) {
-        if (songItemsCount > 1) {
-            (firstSongVisible.toFloat() / (songItemsCount - 1)).coerceIn(0f, 1f)
-        } else 0f
-    }
-
-    val maxTrack = (containerHeight - thumbHeightPx).coerceAtLeast(0f)
-    val currentThumbY = if (isDragging) dragOffset.coerceIn(0f, maxTrack) else (progress * maxTrack)
+    val currentItems by rememberUpdatedState(items)
+    val currentHeaderCount by rememberUpdatedState(headerItemCount)
+    val currentItemKeyOrLetter by rememberUpdatedState(itemKeyOrLetter)
 
     val thumbWidth by animateDpAsState(
         targetValue = if (isDragging) 10.dp else 4.dp,
@@ -91,28 +95,40 @@ fun <T> FastScrollbar(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .padding(top = topPaddingDp)
             .width(24.dp)
-            .onGloballyPositioned { containerHeight = it.size.height.toFloat() }
-            .pointerInput(containerHeight, totalItems, items.size, headerItemCount) {
+            .onSizeChanged { size -> containerHeight = size.height.toFloat() }
+            .pointerInput(listState) {
+                var scrollJob: Job? = null
+                var lastTargetIndex = -1
+
                 awaitEachGesture {
                     val down = awaitFirstDown()
-                    frozenTopPx = dynamicTopPx
+                    down.consume()
+
+                    val currentHeaderOffset = if (currentHeaderCount > 0) {
+                        val headerInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentHeaderCount - 1 }
+                        if (headerInfo != null) {
+                            (headerInfo.offset + headerInfo.size).toFloat().coerceAtLeast(0f)
+                        } else 0f
+                    } else 0f
+                    frozenTopPx = currentHeaderOffset
                     isDragging = true
 
                     fun updatePosition(y: Float) {
-                        val maxTrk = containerHeight - thumbHeightPx
-                        val newY = (y - thumbHeightPx / 2f).coerceIn(0f, maxTrk.coerceAtLeast(0f))
-                        dragOffset = newY
-                        val targetProgress = if (maxTrk > 0f) (newY / maxTrk).coerceIn(0f, 1f) else 0f
-                        
-                        val targetSongIndex = (targetProgress * (songItemsCount - 1)).roundToInt().coerceIn(0, (songItemsCount - 1).coerceAtLeast(0))
-                        
-                        val targetIndex = if (targetProgress == 0f && headerItemCount > 0) 0 else headerItemCount + targetSongIndex
-                        
-                        val actualItemIndex = targetIndex - headerItemCount
-                        val newLetter = if (actualItemIndex in items.indices) {
-                            val str = itemKeyOrLetter(items[actualItemIndex]).trim()
+                        val totalSongs = currentItems.size
+                        if (totalSongs <= 1) return
+                        val availableHeight = (containerHeight - frozenTopPx - thumbHeightPx).coerceAtLeast(0f)
+                        val targetThumbY = (y - thumbHeightPx / 2f).coerceIn(frozenTopPx, frozenTopPx + availableHeight)
+                        dragThumbY = targetThumbY
+                        val dragProgress = if (availableHeight > 0f) {
+                            ((targetThumbY - frozenTopPx) / availableHeight).coerceIn(0f, 1f)
+                        } else 0f
+                        val targetSongIndex = (dragProgress * (totalSongs - 1)).roundToInt().coerceIn(0, totalSongs - 1)
+                        val targetIndex = if (dragProgress == 0f && currentHeaderCount > 0) 0 else currentHeaderCount + targetSongIndex
+
+                        val actualItemIndex = targetIndex - currentHeaderCount
+                        val newLetter = if (actualItemIndex in currentItems.indices) {
+                            val str = currentItemKeyOrLetter(currentItems[actualItemIndex]).trim()
                             if (str.isNotEmpty()) str.take(1).uppercase() else ""
                         } else ""
 
@@ -123,23 +139,31 @@ fun <T> FastScrollbar(
                             }
                         }
 
-                        coroutineScope.launch {
-                            listState.scrollToItem(targetIndex)
+                        if (targetIndex != lastTargetIndex) {
+                            lastTargetIndex = targetIndex
+                            scrollJob?.cancel()
+                            scrollJob = coroutineScope.launch {
+                                listState.scrollToItem(targetIndex)
+                            }
                         }
                     }
 
                     updatePosition(down.position.y)
 
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull() ?: break
-                        if (change.pressed) {
-                            change.consume()
-                            updatePosition(change.position.y)
-                        } else {
-                            isDragging = false
-                            break
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull() ?: break
+                            if (change.pressed) {
+                                change.consume()
+                                updatePosition(change.position.y)
+                            } else {
+                                break
+                            }
                         }
+                    } finally {
+                        isDragging = false
+                        lastTargetIndex = -1
                     }
                 }
             }
@@ -148,11 +172,46 @@ fun <T> FastScrollbar(
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset { IntOffset(-with(density) { 4.dp.roundToPx() }, currentThumbY.roundToInt()) }
+                .offset {
+                    val thumbY = if (isDragging) {
+                        dragThumbY
+                    } else {
+                        val currentHeaderOffset = if (headerItemCount > 0) {
+                            val headerInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == headerItemCount - 1 }
+                            if (headerInfo != null) {
+                                (headerInfo.offset + headerInfo.size).toFloat().coerceAtLeast(0f)
+                            } else 0f
+                        } else 0f
+
+                        val availableHeight = (containerHeight - currentHeaderOffset - thumbHeightPx).coerceAtLeast(0f)
+                        val firstSongVisible = (listState.firstVisibleItemIndex - headerItemCount).coerceAtLeast(0)
+                        val songItemsCount = items.size
+                        val progress = if (songItemsCount > 1) {
+                            val firstItem = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index >= headerItemCount }
+                            val offsetFraction = if (firstItem != null && firstItem.size > 0) {
+                                (-firstItem.offset.toFloat() / firstItem.size.toFloat()).coerceIn(0f, 1f)
+                            } else 0f
+                            ((firstSongVisible + offsetFraction) / (songItemsCount - 1).toFloat()).coerceIn(0f, 1f)
+                        } else 0f
+                        currentHeaderOffset + (progress * availableHeight)
+                    }
+                    IntOffset(-4.dp.roundToPx(), thumbY.roundToInt())
+                }
                 .width(thumbWidth)
                 .height(thumbHeightDp)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(thumbColor.copy(alpha = thumbAlpha))
+                .then(
+                    if (hasBlurBackground && isDragging) {
+                        Modifier.border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.35f),
+                            RoundedCornerShape(percent = 50)
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
         )
 
         // Bubble Indicator (Vertical Pill)
@@ -162,17 +221,18 @@ fun <T> FastScrollbar(
             exit = fadeOut() + scaleOut(transformOrigin = TransformOrigin(1f, 0.5f)),
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset { 
+                .offset {
                     IntOffset(
-                        -with(density) { 56.dp.roundToPx() }, 
-                        (currentThumbY - with(density) { 12.dp.toPx() }).roundToInt()
-                    ) 
+                        -56.dp.roundToPx(),
+                        (dragThumbY - 12.dp.toPx()).roundToInt()
+                    )
                 }
         ) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
                 color = bubbleColor,
-                shadowElevation = 8.dp,
+                shadowElevation = if (hasBlurBackground) 4.dp else 8.dp,
+                border = if (hasBlurBackground) BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)) else null,
                 modifier = Modifier.width(48.dp).height(72.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {

@@ -12,6 +12,11 @@ class LuneApplication : Application(), ImageLoaderFactory {
             .components {
                 add(AudioThumbnailFetcher.Factory(this@LuneApplication))
             }
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(this)
+                    .maxSizePercent(0.25)
+                    .build()
+            }
             .crossfade(true)
             .diskCache {
                 DiskCache.Builder()

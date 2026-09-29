@@ -5,6 +5,7 @@
     <string name="version">Version</string>
     <string name="license">Lizenz</string>
     <string name="author">Autor</string>
+    <string name="website">Webseite</string>
     <string name="hifi_audio">Hi-Fi Audio</string>
     <string name="hifi_desc">Hi-Fi Erkennung und Abzeichen aktivieren</string>
 
@@ -106,6 +107,8 @@
     <string name="audio_32bit_float_desc">Audio mit 32-Bit-Gleitkomma-Präzision verarbeiten für maximale Dynamik ohne Verzerrung</string>
     <string name="audio_exclusive_mode">Exklusiver Ausgabemodus</string>
     <string name="audio_exclusive_mode_desc">Android-System-Mixer über direkte AAudio-Hardware-Ausgabe umgehen</string>
+    <string name="stop_on_task_removed">Wiedergabe beim Schließen stoppen</string>
+    <string name="stop_on_task_removed_desc">Stoppt die Musik und schließt die Mediensteuerung, wenn die App aus den letzten Apps weggewischt wird</string>
     <string name="resume_recently_added">Kürzlich hinzugefügt</string>
     <string name="tab_all">Alle</string>
     <string name="tab_favorites">Favoriten</string>
@@ -246,6 +249,7 @@
     <string name="player_queue">Warteschlange</string>
     <string name="player_options">Optionen</string>
     <string name="option_share">Teilen</string>
+    <string name="option_repeat">Wiederholen</string>
     <string name="option_repeat_one">Einmal wiederholen</string>
     <string name="option_repeat_all">Alle wiederholen</string>
     <string name="option_repeat_off">Aus</string>
@@ -384,6 +388,7 @@
     <string name="search_play_all">Abspielen</string>
     <string name="search_shuffle">Zufall</string>
     <string name="playing_from">Wiedergabe von: %s</string>
+    <string name="playing_from_header">Wiedergabe von</string>
     <string name="playing_from_search">Suchergebnis</string>
     <string name="option_speed">Geschwindigkeit</string>
     <string name="preset_name">Preset-Name</string>

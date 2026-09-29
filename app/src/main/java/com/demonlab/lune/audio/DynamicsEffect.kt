@@ -48,8 +48,10 @@ class DynamicsEffect {
     }
 
     private fun setPresetOnEffect(d: DynamicsProcessing, preset: Int) {
-        d.enabled = preset != 0
-        if (preset == 0) return
+        if (preset == 0) {
+            d.enabled = false
+            return
+        }
         try {
             val getChannel = DynamicsProcessing::class.java.getMethod("getChannel", Int::class.java)
             val channel = getChannel.invoke(d, 0)
@@ -116,7 +118,7 @@ class DynamicsEffect {
 
             setInputGain.invoke(channel, inputGain)
             setOutputGain.invoke(channel, makeUpGain)
-
+            d.enabled = true
         } catch (e: Exception) {
             e.printStackTrace()
         }

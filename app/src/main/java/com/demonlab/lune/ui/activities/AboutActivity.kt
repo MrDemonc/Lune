@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import com.demonlab.lune.BuildConfig
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
@@ -208,16 +209,17 @@ fun AboutScreen() {
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = { 
-                            uriHandler.openUri("https://github.com/MrDemonc/Lune/tree/main")
+                            runCatching { uriHandler.openUri("https://github.com/MrDemonc/Lune/tree/main") }
                         },
                         modifier = Modifier
                             .weight(1f)
                             .bounceClick(),
                         shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -226,11 +228,39 @@ fun AboutScreen() {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_github),
                             contentDescription = "GitHub",
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text="Github"
+                            text = "Github",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Button(
+                        onClick = { 
+                            runCatching { uriHandler.openUri("https://mrdemonc.github.io/Lune/") }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .bounceClick(),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_web),
+                            contentDescription = stringResource(R.string.website),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.website),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     Button(
@@ -239,6 +269,7 @@ fun AboutScreen() {
                             .weight(1f)
                             .bounceClick(),
                         shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                             contentColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
@@ -247,12 +278,14 @@ fun AboutScreen() {
                         Icon(
                             imageVector = Icons.Filled.LocalCafe,
                             contentDescription = "Donation",
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Donate",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

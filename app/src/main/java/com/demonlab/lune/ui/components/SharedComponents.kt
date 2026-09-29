@@ -10,12 +10,19 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import com.demonlab.lune.ui.utils.triggerLightVibration
+import android.os.Vibrator
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -891,17 +898,24 @@ fun AlbumsListHeader(
     title: String? = null,
     icon: ImageVector? = null,
     hasBlurBackground: Boolean = false,
+    isSortActive: Boolean = false,
+    onSortClick: (() -> Unit)? = null,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val displayTitle = title ?: if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists)
     val displayIcon = icon ?: if (isAlbumView) Icons.Default.Album else Icons.Default.Person
 
+    val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val iconContainerBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
     val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
     val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
     val countColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
     val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
     val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+    val actionBtnActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimary
 
     Row(
         modifier = modifier
@@ -944,6 +958,24 @@ fun AlbumsListHeader(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (onSortClick != null) {
+                Surface(
+                    onClick = onSortClick,
+                    shape = CircleShape,
+                    color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
+                    modifier = Modifier.size(36.dp).bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                            contentDescription = stringResource(R.string.sort_options_title),
+                            tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
             if (onToggleAlbumView != null) {
                 Surface(
                     onClick = onToggleAlbumView,
@@ -1290,17 +1322,24 @@ fun WaveformVisualizer(
     magnitudes: FloatArray,
     color: Color = MaterialTheme.colorScheme.primary
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        magnitudes.forEach { magnitude ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(magnitude)
-                    .background(color, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+    Canvas(modifier = modifier.fillMaxWidth()) {
+        if (magnitudes.isEmpty()) return@Canvas
+        val count = magnitudes.size
+        val spacingPx = 2.dp.toPx()
+        val totalSpacing = spacingPx * (count - 1)
+        val barWidth = ((size.width - totalSpacing) / count).coerceAtLeast(1f)
+        val cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+
+        for (i in 0 until count) {
+            val magnitude = magnitudes[i].coerceIn(0.05f, 1f)
+            val barHeight = (size.height * magnitude).coerceAtLeast(2.dp.toPx())
+            val left = i * (barWidth + spacingPx)
+            val top = size.height - barHeight
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(left, top),
+                size = Size(barWidth, barHeight),
+                cornerRadius = cornerRadius
             )
         }
     }
@@ -1606,10 +1645,22 @@ fun SongCoverImage(
     onError: (() -> Unit)? = null
 ) {
     var isError by remember(coverUrl) { mutableStateOf(coverUrl == null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(coverUrl) {
         if (coverUrl == null) {
             onError?.invoke()
+        }
+    }
+
+    val imageRequest = remember(coverUrl, context) {
+        if (coverUrl is coil.request.ImageRequest) {
+            coverUrl
+        } else {
+            coil.request.ImageRequest.Builder(context)
+                .data(coverUrl)
+                .precision(coil.size.Precision.INEXACT)
+                .build()
         }
     }
 
@@ -1620,7 +1671,7 @@ fun SongCoverImage(
     ) {
         if (coverUrl != null && !isError) {
             AsyncImage(
-                model = coverUrl,
+                model = imageRequest,
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = contentScale,
@@ -1640,6 +1691,203 @@ fun SongCoverImage(
                     tint = iconColor,
                     modifier = Modifier.fillMaxSize(iconScale)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun rememberScrollToTopVisibility(
+    listState: LazyListState,
+    enabled: Boolean = true
+): State<Boolean> {
+    val isVisible = remember { mutableStateOf(false) }
+    if (!enabled) {
+        isVisible.value = false
+        return isVisible
+    }
+
+    var lastIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
+    var lastOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
+
+    LaunchedEffect(listState, enabled) {
+        snapshotFlow {
+            Triple(
+                listState.firstVisibleItemIndex,
+                listState.firstVisibleItemScrollOffset,
+                listState.isScrollInProgress
+            )
+        }.collect { (currentIndex, currentOffset, isScrollInProgress) ->
+            if (currentIndex <= 2) {
+                isVisible.value = false
+            } else if (isScrollInProgress) {
+                val isScrollingUp = if (currentIndex != lastIndex) {
+                    currentIndex < lastIndex
+                } else {
+                    currentOffset < lastOffset
+                }
+                if (isScrollingUp) {
+                    isVisible.value = true
+                } else if (currentIndex > lastIndex || currentOffset > lastOffset) {
+                    isVisible.value = false
+                }
+            }
+            lastIndex = currentIndex
+            lastOffset = currentOffset
+        }
+    }
+    return isVisible
+}
+
+@Composable
+fun rememberScrollToTopVisibility(
+    gridState: LazyGridState,
+    enabled: Boolean = true
+): State<Boolean> {
+    val isVisible = remember { mutableStateOf(false) }
+    if (!enabled) {
+        isVisible.value = false
+        return isVisible
+    }
+
+    var lastIndex by remember { mutableIntStateOf(gridState.firstVisibleItemIndex) }
+    var lastOffset by remember { mutableIntStateOf(gridState.firstVisibleItemScrollOffset) }
+
+    LaunchedEffect(gridState, enabled) {
+        snapshotFlow {
+            Triple(
+                gridState.firstVisibleItemIndex,
+                gridState.firstVisibleItemScrollOffset,
+                gridState.isScrollInProgress
+            )
+        }.collect { (currentIndex, currentOffset, isScrollInProgress) ->
+            if (currentIndex <= 3) {
+                isVisible.value = false
+            } else if (isScrollInProgress) {
+                val isScrollingUp = if (currentIndex != lastIndex) {
+                    currentIndex < lastIndex
+                } else {
+                    currentOffset < lastOffset
+                }
+                if (isScrollingUp) {
+                    isVisible.value = true
+                } else if (currentIndex > lastIndex || currentOffset > lastOffset) {
+                    isVisible.value = false
+                }
+            }
+            lastIndex = currentIndex
+            lastOffset = currentOffset
+        }
+    }
+    return isVisible
+}
+
+@Composable
+fun ScrollToTopPill(
+    visible: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    customActiveColor: Color? = null
+) {
+    val context = LocalContext.current
+    val vibrator = remember { context.getSystemService(Vibrator::class.java) }
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+
+    val shadowElevation by animateDpAsState(
+        targetValue = if (visible) 6.dp else 0.dp,
+        animationSpec = tween(durationMillis = 200, delayMillis = 60),
+        label = "ScrollToTopShadow"
+    )
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(
+            initialOffsetY = { 40 },
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            )
+        ) + fadeIn(animationSpec = tween(200)) + scaleIn(
+            initialScale = 0.85f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMediumLow
+            )
+        ),
+        exit = slideOutVertically(
+            targetOffsetY = { 40 },
+            animationSpec = tween(180)
+        ) + fadeOut(animationSpec = tween(150)) + scaleOut(
+            targetScale = 0.85f,
+            animationSpec = tween(150)
+        ),
+        modifier = modifier
+    ) {
+        val surfaceColor = MaterialTheme.colorScheme.surface
+        val luma = surfaceColor.red * 0.299f + surfaceColor.green * 0.587f + surfaceColor.blue * 0.114f
+        val effectiveIsDark = if (hasBlurBackground) isDarkTheme else (isDarkTheme || luma < 0.5f)
+
+        val containerColor = if (hasBlurBackground) {
+            if (effectiveIsDark) Color(0xFF222226).copy(alpha = 0.88f) else Color(0xFFF0F0F3).copy(alpha = 0.92f)
+        } else if (customActiveColor != null) {
+            customActiveColor
+        } else if (effectiveIsDark) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+
+        val contentColor = if (hasBlurBackground) {
+            if (effectiveIsDark) Color.White else Color(0xFF1C1B1F)
+        } else if (customActiveColor != null) {
+            Color.White
+        } else if (effectiveIsDark) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onPrimary
+        }
+
+        val borderStroke = if (hasBlurBackground) {
+            BorderStroke(1.dp, if (effectiveIsDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.12f))
+        } else {
+            null
+        }
+
+        Box(
+            modifier = Modifier.padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                onClick = {
+                    if (settingsManager.isHapticVibrationEnabled) {
+                        vibrator?.triggerLightVibration()
+                    }
+                    onClick()
+                },
+                shape = CircleShape,
+                color = containerColor,
+                border = borderStroke,
+                shadowElevation = shadowElevation,
+                tonalElevation = 0.dp,
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(52.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .bounceClick()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = stringResource(R.string.scroll_to_top_button),
+                        tint = contentColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
         }
     }

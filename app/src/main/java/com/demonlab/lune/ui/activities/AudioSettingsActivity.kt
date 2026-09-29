@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Equalizer
@@ -81,6 +82,7 @@ fun AudioSettingsScreen(onBack: () -> Unit) {
     var enableHiFi by remember { mutableStateOf(settingsManager.enableHiFi) }
     var is32BitFloatEnabled by remember { mutableStateOf(settingsManager.is32BitFloatEnabled) }
     var isExclusiveModeEnabled by remember { mutableStateOf(settingsManager.isExclusiveModeEnabled) }
+    var stopOnTaskRemoved by remember { mutableStateOf(settingsManager.stopOnTaskRemoved) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -190,7 +192,7 @@ fun AudioSettingsScreen(onBack: () -> Unit) {
                     headlineText = stringResource(R.string.audio_exclusive_mode),
                     supportingText = stringResource(R.string.audio_exclusive_mode_desc),
                     icon = Icons.Default.HighQuality,
-                    position = SectionPosition.LAST,
+                    position = SectionPosition.MIDDLE,
                     trailingContent = {
                         BouncySwitch(
                             checked = isExclusiveModeEnabled,
@@ -201,6 +203,29 @@ fun AudioSettingsScreen(onBack: () -> Unit) {
                             thumbContent = {
                                 Icon(
                                     imageVector = if (isExclusiveModeEnabled) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.stop_on_task_removed),
+                    supportingText = stringResource(R.string.stop_on_task_removed_desc),
+                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    position = SectionPosition.LAST,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = stopOnTaskRemoved,
+                            onCheckedChange = {
+                                stopOnTaskRemoved = it
+                                settingsManager.stopOnTaskRemoved = it
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (stopOnTaskRemoved) Icons.Default.Check else Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )

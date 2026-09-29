@@ -5,6 +5,7 @@
     <string name="version">Version</string>
     <string name="license">License</string>
     <string name="author">Author</string>
+    <string name="website">Website</string>
     <string name="hifi_audio">Hi-Fi Audio</string>
     <string name="hifi_desc">Enable Hi-Fi detection and badges</string>
     <string name="keep_screen_on">Keep Screen On</string>
@@ -105,6 +106,8 @@
     <string name="audio_32bit_float_desc">Process audio using 32-bit floating point precision for maximum headroom and zero clipping</string>
     <string name="audio_exclusive_mode">Exclusive Output Mode</string>
     <string name="audio_exclusive_mode_desc">Bypass Android system mixer via AAudio direct hardware routing</string>
+    <string name="stop_on_task_removed">Stop playback when closed</string>
+    <string name="stop_on_task_removed_desc">Stops playback and dismisses media controls when the app is swiped away from recent apps</string>
     <string name="resume_recently_added">Recently Added</string>
     <string name="tab_all">All</string>
     <string name="tab_favorites">Favorites</string>
@@ -257,6 +260,7 @@
     <string name="play_next">Play next</string>
     <string name="player_options">Options</string>
     <string name="option_share">Share</string>
+    <string name="option_repeat">Repeat</string>
     <string name="option_repeat_one">Repeat One</string>
     <string name="option_repeat_all">Repeat All</string>
     <string name="option_repeat_off">Off</string>
@@ -327,6 +331,12 @@
     <string name="sort_artist">Artist</string>
     <string name="sort_duration">Duration</string>
     <string name="sort_date_added">Date Added</string>
+    <string name="sort_album">Album</string>
+    <string name="sort_track_count">Number of Tracks</string>
+    <string name="sort_album_count">Number of Albums</string>
+    <string name="filter_scope_folders">Folders</string>
+    <string name="filter_scope_albums">Albums</string>
+    <string name="filter_all_albums">All Albums</string>
     <string name="backup_warning_title">Important Notice</string>
     <string name="backup_warning_desc">Lune only imports playlists pre-exported by this application. Ensure you have the corresponding music files stored on this device for proper playback.</string>
     <string name="export_playlists">Export Playlists</string>
@@ -397,6 +407,7 @@
     <string name="search_play_all">Play</string>
     <string name="search_shuffle">Shuffle</string>
     <string name="playing_from">Playing from: %s</string>
+    <string name="playing_from_header">Playing from</string>
     <string name="playing_from_search">Search result</string>
     <string name="option_speed">Speed</string>
     <string name="preset_name">Preset Name</string>
@@ -423,6 +434,8 @@
     <string name="recently_played">Recently Played</string>
     <string name="header_wave_effect">Header Wave Effect</string>
     <string name="header_wave_effect_desc">Display animated liquid waves in section headers</string>
+    <string name="scroll_to_top_button">Quick scroll to top</string>
+    <string name="scroll_to_top_button_desc">Show a floating button when scrolling up to return to the top quickly</string>
     <string name="widget_customization">Widget</string>
     <string name="widget_customization_desc">Customize the home screen widget appearance</string>
     <string name="widget_background_section">Widget Background</string>

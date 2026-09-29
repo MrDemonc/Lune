@@ -780,23 +780,14 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
             AnimatedContent(
                 targetState = isLyricsMiniPlayerMinimized,
                 transitionSpec = {
-                    (fadeIn(tween(250)) + slideInVertically(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        ),
-                        initialOffsetY = { it / 2 }
-                    ) + scaleIn(
+                    (fadeIn(tween(250)) + scaleIn(
                         initialScale = 0.88f,
                         animationSpec = spring(
                             dampingRatio = Spring.DampingRatioMediumBouncy,
                             stiffness = Spring.StiffnessMediumLow
                         )
                     )) togetherWith (
-                        fadeOut(tween(180)) + slideOutVertically(
-                            animationSpec = tween(200),
-                            targetOffsetY = { it / 2 }
-                        ) + scaleOut(
+                        fadeOut(tween(180)) + scaleOut(
                             targetScale = 0.88f,
                             animationSpec = tween(200)
                         )

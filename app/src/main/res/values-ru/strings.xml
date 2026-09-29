@@ -5,6 +5,7 @@
     <string name="version">Версия</string>
     <string name="license">Лицензия</string>
     <string name="author">Автор</string>
+    <string name="website">Сайт</string>
     <string name="hifi_audio">Hi-Fi Аудио</string>
     <string name="hifi_desc">Включает обнаружение Hi-Fi и значков</string>
 
@@ -106,6 +107,8 @@
     <string name="audio_32bit_float_desc">Обработка звука с точностью 32-битной плавающей запятой для максимального запаса громкости без искажений</string>
     <string name="audio_exclusive_mode">Эксклюзивный режим вывода</string>
     <string name="audio_exclusive_mode_desc">Обход системного микшера Android через прямое аппаратное подключение AAudio</string>
+    <string name="stop_on_task_removed">Останавливать воспроизведение при закрытии</string>
+    <string name="stop_on_task_removed_desc">Останавливает музыку и убирает панель управления при смахивании приложения из недавних</string>
     <string name="resume_recently_added">Недавно добавленные</string>
     <string name="tab_all">Все</string>
     <string name="tab_favorites">Избранное</string>
@@ -246,6 +249,7 @@
     <string name="player_queue">Очередь</string>
     <string name="player_options">Параметры</string>
     <string name="option_share">Поделиться</string>
+    <string name="option_repeat">Повтор</string>
     <string name="option_repeat_one">Повторить одну</string>
     <string name="option_repeat_all">Повторить все</string>
     <string name="option_repeat_off">Выключить</string>
@@ -387,6 +391,7 @@
     <string name="search_play_all">Играть</string>
     <string name="search_shuffle">Перемешать</string>
     <string name="playing_from">Воспроизводится из: %s</string>
+    <string name="playing_from_header">Воспроизводится из</string>
     <string name="playing_from_search">Результаты поиска</string>
     <string name="option_speed">Скорость</string>
     <string name="preset_name">Название пресета</string>

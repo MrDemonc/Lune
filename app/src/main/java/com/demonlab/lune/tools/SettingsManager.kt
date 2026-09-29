@@ -47,6 +47,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("is_exclusive_mode_enabled", false)
         set(value) = prefs.edit().putBoolean("is_exclusive_mode_enabled", value).apply()
 
+    var stopOnTaskRemoved: Boolean
+        get() = prefs.getBoolean("stop_on_task_removed", false)
+        set(value) = prefs.edit().putBoolean("stop_on_task_removed", value).apply()
+
     var keepScreenOn: Boolean
         get() = prefs.getBoolean("keep_screen_on", false)
         set(value) = prefs.edit().putBoolean("keep_screen_on", value).apply()
@@ -95,6 +99,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("header_wave_effect_enabled", true)
         set(value) = prefs.edit().putBoolean("header_wave_effect_enabled", value).apply()
 
+    var isScrollToTopEnabled: Boolean
+        get() = prefs.getBoolean("scroll_to_top_enabled", true)
+        set(value) = prefs.edit().putBoolean("scroll_to_top_enabled", value).apply()
+
     var widgetUseSolidBackground: Boolean
         get() = prefs.getBoolean("widget_use_solid_background", false)
         set(value) = prefs.edit().putBoolean("widget_use_solid_background", value).apply()
@@ -126,6 +134,10 @@ class SettingsManager(context: Context) {
     var hiddenSectionTabs: Set<String>
         get() = prefs.getStringSet("hidden_section_tabs", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("hidden_section_tabs", value).apply()
+
+    var defaultSectionTab: String
+        get() = prefs.getString("default_section_tab", "") ?: ""
+        set(value) = prefs.edit().putString("default_section_tab", value).apply()
 
     var isSortAscending: Boolean
         get() = prefs.getBoolean("is_sort_ascending", true)
@@ -278,7 +290,7 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_bitrate_on_player", value).apply()
         }
 
-    private val _isOptionsBarVisible = mutableStateOf(prefs.getBoolean("is_options_bar_visible", true))
+    private val _isOptionsBarVisible = mutableStateOf(prefs.getBoolean("is_options_bar_visible", false))
     var isOptionsBarVisible: Boolean
         get() = _isOptionsBarVisible.value
         set(value) {

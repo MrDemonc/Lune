@@ -70,6 +70,40 @@ class AudioThumbnailFetcher(
             runCatching { retriever.release() }
         }
 
+        // 3. Fallback to Jaudiotagger (works for WAV with ID3 chunks, DSF, FLAC, etc. where MediaMetadataRetriever fails)
+        try {
+            var filePath: String? = if (uri.scheme == "file") uri.path else null
+            if (filePath == null && uri.scheme == "content") {
+                context.contentResolver.query(uri, arrayOf(MediaStore.Audio.Media.DATA), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+                        if (idx != -1) filePath = cursor.getString(idx)
+                    }
+                }
+            }
+            if (!filePath.isNullOrBlank()) {
+                val file = java.io.File(filePath)
+                if (file.exists() && file.canRead()) {
+                    val audioFile = org.jaudiotagger.audio.AudioFileIO.read(file)
+                    val artwork = audioFile.tag?.firstArtwork?.binaryData
+                    if (artwork != null && artwork.isNotEmpty()) {
+                        val bitmap = runCatching {
+                            BitmapFactory.decodeByteArray(artwork, 0, artwork.size)
+                        }.getOrNull()
+                        if (bitmap != null) {
+                            return DrawableResult(
+                                drawable = bitmap.toDrawable(context.resources),
+                                isSampled = false,
+                                dataSource = DataSource.DISK
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // ignore
+        }
+
         // Fallback returns null if no embedded thumbnail or picture exists
         return null
     }

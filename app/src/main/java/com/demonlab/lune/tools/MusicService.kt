@@ -57,6 +57,7 @@ import com.google.common.util.concurrent.SettableFuture
 @Suppress("DEPRECATION")
 class MusicService : MediaLibraryService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        ensureMediaSession()
         return mediaSession
     }
 
@@ -84,6 +85,8 @@ class MusicService : MediaLibraryService() {
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
     private var wasPlayingBeforeLoss = false
+    private var isDucked = false
+    private var effectTransitionJob: Job? = null
     private var widgetUpdateJob: Job? = null
     private var spatialRampJob: Job? = null
     private var currentSpatialStrength: Short = 0
@@ -91,7 +94,16 @@ class MusicService : MediaLibraryService() {
     private var lastBlurredBitmap: Bitmap? = null
     private var lastSongForRounded: Song? = null
     private var cachedRoundedArt: Bitmap? = null
+    private var currentNotificationArt: Bitmap? = null
+    private var currentNotificationArtSongId: Long? = null
     private var becomingNoisyReceiver: BroadcastReceiver? = null
+
+    internal fun getCurrentTargetVolumes(): Pair<Float, Float> {
+        val balance = PlaybackManager.getInstance(applicationContext).balance
+        val (left, right) = BalanceEffect.volumesForBalance(balance)
+        val duckFactor = if (isDucked) 0.2f else 1.0f
+        return (left * duckFactor) to (right * duckFactor)
+    }
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -107,13 +119,17 @@ class MusicService : MediaLibraryService() {
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 // Notification/brief sound: lower volume
-                mediaPlayer?.setVolume(0.2f, 0.2f)
-                secondaryPlayer?.setVolume(0.2f, 0.2f)
+                isDucked = true
+                val (left, right) = getCurrentTargetVolumes()
+                mediaPlayer?.setVolume(left, right)
+                secondaryPlayer?.setVolume(left, right)
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
                 // Regained focus: restore volume and resume if we were playing
-                mediaPlayer?.setVolume(1f, 1f)
-                secondaryPlayer?.setVolume(1f, 1f)
+                isDucked = false
+                val (left, right) = getCurrentTargetVolumes()
+                mediaPlayer?.setVolume(left, right)
+                secondaryPlayer?.setVolume(left, right)
                 if (wasPlayingBeforeLoss) {
                     resume()
                     wasPlayingBeforeLoss = false
@@ -152,51 +168,19 @@ class MusicService : MediaLibraryService() {
             )
             getSystemService(android.app.NotificationManager::class.java).createNotificationChannel(channel)
         }
-        val loadingNotif = androidx.core.app.NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Lune Music")
-            .setContentText("Loading...")
-            .setOngoing(true)
-            .build()
-        try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                startForeground(1, loadingNotif, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-            } else {
-                startForeground(1, loadingNotif)
-            }
-        } catch (e: Exception) {}
 
 
         becomingNoisyReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY && isPlaying()) {
-                    pause()
+                    PlaybackManager.getInstance(applicationContext).pause()
                 }
             }
         }
         registerReceiver(becomingNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
 
         setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
-        lunePlayerAdapter = LuneAudioPlayerAdapter(this)
-        val sessionIntent = Intent(this, Lune::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        val sessionPendingIntent = PendingIntent.getActivity(
-            this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-        val initialLayout = buildCustomLayout()
-        mediaSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
-            .setSessionActivity(sessionPendingIntent)
-            .setCustomLayout(initialLayout)
-            .setMediaButtonPreferences(initialLayout)
-            .build()
-
-        val notificationHints = Bundle().apply {
-            putBoolean("androidx.media3.session.MediaNotificationManager", true)
-        }
-        MediaController.Builder(this, mediaSession!!.token)
-            .setConnectionHints(notificationHints)
-            .buildAsync()
+        ensureMediaSession()
 
         settingsManager = SettingsManager.getInstance(this)
 
@@ -263,7 +247,6 @@ class MusicService : MediaLibraryService() {
 
         try {
             val eq = Equalizer(0, sessionId).apply {
-                enabled = settingsManager.isEqEnabled
                 val storedBands = settingsManager.eqBandLevels.split(",").filter { it.isNotEmpty() }
                 if (storedBands.size == numberOfBands.toInt()) {
                     for (i in 0 until numberOfBands) {
@@ -272,14 +255,15 @@ class MusicService : MediaLibraryService() {
                         } catch (e: Exception) { e.printStackTrace() }
                     }
                 }
+                enabled = settingsManager.isEqEnabled
             }
             if (isSecondary) secondaryEqualizer = eq else equalizer = eq
         } catch (e: Exception) { e.printStackTrace() }
 
         try {
             val bb = BassBoost(0, sessionId).apply {
+                if (strengthSupported) setStrength(settingsManager.bassBoostLevel.toShort())
                 enabled = settingsManager.isBassBoostEnabled
-                if (enabled && strengthSupported) setStrength(settingsManager.bassBoostLevel.toShort())
             }
             if (isSecondary) secondaryBassBoost = bb else bassBoost = bb
         } catch (e: Exception) { e.printStackTrace() }
@@ -318,6 +302,7 @@ class MusicService : MediaLibraryService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         val action = intent?.action
         val pm = PlaybackManager.getInstance(this)
 
@@ -360,14 +345,46 @@ class MusicService : MediaLibraryService() {
                 updateWidget()
             }
             else -> {
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager.cancel(1)
+                val currentOrPending = currentSong() ?: pm.currentSong ?: pm.pendingPlaySong
+                if (currentOrPending != null && isPlaying()) {
+                    showNotification(currentOrPending, true)
+                }
             }
         }
         return START_STICKY
     }
 
 
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val shouldStopOnClose = settingsManager.stopOnTaskRemoved
+        Log.i("MusicService", "onTaskRemoved triggered: shouldStopOnClose=$shouldStopOnClose, isPlaying=${isPlaying()}")
+        if (shouldStopOnClose || !isPlaying()) {
+            isNotificationDismissed = true
+            pauseTimeoutJob?.cancel()
+            try {
+                mediaPlayer?.pause()
+                secondaryPlayer?.pause()
+            } catch (_: Exception) {}
+            val pm = PlaybackManager.getInstance(applicationContext)
+            pm.updatePlayingState(false)
+            pm.savePlaybackState(wasPlaying = false)
+            updatePlaybackState()
+            stopWidgetUpdateTimer()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            try {
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager?.cancel(1)
+            } catch (_: Exception) {}
+            stopSelf()
+        }
+        super.onTaskRemoved(rootIntent)
+    }
 
     override fun onBind(intent: Intent?): IBinder? {
         val action = intent?.action
@@ -654,6 +671,34 @@ class MusicService : MediaLibraryService() {
         )
     }
 
+    private fun ensureMediaSession() {
+        if (lunePlayerAdapter == null) {
+            lunePlayerAdapter = LuneAudioPlayerAdapter(this)
+        }
+        val currentSession = mediaSession
+        if (currentSession == null) {
+            val sessionIntent = Intent(this, Lune::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            val sessionPendingIntent = PendingIntent.getActivity(
+                this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE
+            )
+            val initialLayout = buildCustomLayout()
+            mediaSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
+                .setSessionActivity(sessionPendingIntent)
+                .setCustomLayout(initialLayout)
+                .setMediaButtonPreferences(initialLayout)
+                .build()
+
+            val notificationHints = Bundle().apply {
+                putBoolean("androidx.media3.session.MediaNotificationManager", true)
+            }
+            MediaController.Builder(this, mediaSession!!.token)
+                .setConnectionHints(notificationHints)
+                .buildAsync()
+        }
+    }
+
     private fun setPlayerDataSource(player: MediaPlayer, song: Song): Boolean {
         try {
             player.setDataSource(applicationContext, song.uri)
@@ -709,6 +754,9 @@ class MusicService : MediaLibraryService() {
         requestAudioFocus()
         updateWidget()
 
+        // Promote service to foreground immediately with the active song
+        showNotification(song, true)
+
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
@@ -735,11 +783,10 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
-                        start()
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
-                        setVolume(1f, 1f)
                         applyBalance(PlaybackManager.getInstance(applicationContext).balance)
+                        start()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             try {
                                 val speed = pm.playbackSpeed
@@ -1018,7 +1065,7 @@ class MusicService : MediaLibraryService() {
         }
         val request = ImageRequest.Builder(this)
             .data(artUri)
-            .size(1024, 1024)
+            .size(512, 512)
             .allowHardware(false)
             .build()
 
@@ -1046,7 +1093,18 @@ class MusicService : MediaLibraryService() {
                 val pic = retriever.embeddedPicture
                 retriever.release()
                 if (pic != null) {
-                    bitmap = android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size)
+                    val boundsOpts = android.graphics.BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size, boundsOpts)
+                    var inSample = 1
+                    while (boundsOpts.outWidth / (inSample * 2) >= 512 && boundsOpts.outHeight / (inSample * 2) >= 512) {
+                        inSample *= 2
+                    }
+                    val decodeOpts = android.graphics.BitmapFactory.Options().apply {
+                        inSampleSize = inSample
+                    }
+                    bitmap = android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size, decodeOpts)
                 }
             } catch (_: Exception) {}
         }
@@ -1056,16 +1114,22 @@ class MusicService : MediaLibraryService() {
 
     fun pause() {
         pauseTimeoutJob?.cancel()
+        // Persist playback state immediately when paused (do NOT wait for timeout)
+        PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+
         pauseTimeoutJob = serviceScope.launch {
             delay(PAUSE_TIMEOUT_MS)
-            PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+            isNotificationDismissed = true
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
             } else {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
             }
-            mediaSession?.release()
+            try {
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager?.cancel(1)
+            } catch (_: Exception) {}
             stopSelf()
         }
 
@@ -1083,11 +1147,14 @@ class MusicService : MediaLibraryService() {
     }
 
     fun resume() {
+        val pm = PlaybackManager.getInstance(applicationContext)
+        if (pm.isQueueFinished) {
+            pm.resume()
+            return
+        }
         isNotificationDismissed = false
         pauseTimeoutJob?.cancel()
         requestAudioFocus()
-
-        val pm = PlaybackManager.getInstance(applicationContext)
         if (mediaPlayer == null) {
             if (pm.currentSong == null && !pm.stateRestored) {
                 pm.restorePlaybackState()
@@ -1169,11 +1236,43 @@ class MusicService : MediaLibraryService() {
 
     /** Seeks to position 0 without resuming playback. Called when queue ends naturally. */
     fun resetPlayerProgress() {
+        isCrossfading = false
+        PlaybackManager.getInstance(applicationContext).isTransitioning = false
+        monitorJob?.cancel()
+
+        try {
+            mediaPlayer?.seekTo(0)
+        } catch (_: Exception) {}
         try {
             mediaPlayer?.pause()
-            mediaPlayer?.seekTo(0)
-        } catch (e: Exception) { /* ignore invalid state */ }
+        } catch (_: Exception) {}
+        try {
+            secondaryPlayer?.pause()
+        } catch (_: Exception) {}
+
+        PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         updatePlaybackState()
+        stopWidgetUpdateTimer()
+        updateWidget()
+
+        isNotificationDismissed = false
+        pauseTimeoutJob?.cancel()
+        pauseTimeoutJob = serviceScope.launch {
+            delay(PAUSE_TIMEOUT_MS)
+            isNotificationDismissed = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            try {
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager?.cancel(1)
+            } catch (_: Exception) {}
+            stopSelf()
+        }
+
         serviceScope.launch {
             val song = currentSong() ?: return@launch
             val art = fetchAlbumArt(song)
@@ -1214,6 +1313,9 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
+                        val sessionId = audioSessionId
+                        setupAudioFx(sessionId, false)
+                        applyBalance(pm.balance)
                         seekTo(positionMs.toInt())
                         start()
                         if (!andPlay) pause()
@@ -1223,10 +1325,6 @@ class MusicService : MediaLibraryService() {
                         } else {
                             stopWidgetUpdateTimer()
                         }
-                        val sessionId = audioSessionId
-                        setupAudioFx(sessionId, false)
-                        setVolume(1f, 1f)
-                        applyBalance(pm.balance)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             try {
                                 val speed = pm.playbackSpeed
@@ -1465,11 +1563,33 @@ class MusicService : MediaLibraryService() {
         return -1
     }
 
-    private fun updateMetadata(song: Song, art: android.graphics.Bitmap? = null) {
-        art?.let {
+    private fun bitmapToSafeByteArray(bitmap: Bitmap?): ByteArray? {
+        if (bitmap == null) return null
+        return try {
+            val maxDim = 320
+            val scaled = if (bitmap.width > maxDim || bitmap.height > maxDim) {
+                val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
+                val targetW = if (ratio >= 1f) maxDim else (maxDim * ratio).toInt().coerceAtLeast(1)
+                val targetH = if (ratio >= 1f) (maxDim / ratio).toInt().coerceAtLeast(1) else maxDim
+                Bitmap.createScaledBitmap(bitmap, targetW, targetH, true)
+            } else {
+                bitmap
+            }
             val stream = java.io.ByteArrayOutputStream()
-            it.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
-            lunePlayerAdapter?.currentArtworkData = stream.toByteArray()
+            scaled.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+            if (scaled != bitmap) {
+                scaled.recycle()
+            }
+            stream.toByteArray()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun updateMetadata(song: Song, art: android.graphics.Bitmap? = null) {
+        ensureMediaSession()
+        art?.let {
+            lunePlayerAdapter?.currentArtworkData = bitmapToSafeByteArray(it)
         }
         lunePlayerAdapter?.notifyStateChanged()
         val customLayout = buildCustomLayout()
@@ -1478,6 +1598,7 @@ class MusicService : MediaLibraryService() {
     }
 
     private fun updatePlaybackState() {
+        ensureMediaSession()
         lunePlayerAdapter?.notifyStateChanged()
         val customLayout = buildCustomLayout()
         mediaSession?.setCustomLayout(customLayout)
@@ -1493,10 +1614,28 @@ class MusicService : MediaLibraryService() {
             return
         }
 
-        if (art != null && lunePlayerAdapter?.currentArtworkData == null) {
-            val stream = java.io.ByteArrayOutputStream()
-            art.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
-            lunePlayerAdapter?.currentArtworkData = stream.toByteArray()
+        if (art != null) {
+            val scaled = if (art.width > 512 || art.height > 512) {
+                val ratio = art.width.toFloat() / art.height.toFloat()
+                val targetW = if (ratio >= 1f) 512 else (512 * ratio).toInt().coerceAtLeast(1)
+                val targetH = if (ratio >= 1f) (512 / ratio).toInt().coerceAtLeast(1) else 512
+                try {
+                    Bitmap.createScaledBitmap(art, targetW, targetH, true)
+                } catch (_: Exception) {
+                    art
+                }
+            } else {
+                art
+            }
+            currentNotificationArt = scaled
+            currentNotificationArtSongId = song.id
+        }
+
+        val effectiveArt = if (currentNotificationArtSongId == song.id) currentNotificationArt else art
+
+        val newArtBytes = if (effectiveArt != null) bitmapToSafeByteArray(effectiveArt) else null
+        if (lunePlayerAdapter?.currentArtworkData?.contentEquals(newArtBytes) != true) {
+            lunePlayerAdapter?.currentArtworkData = newArtBytes
             lunePlayerAdapter?.notifyStateChanged()
         }
 
@@ -1545,23 +1684,25 @@ class MusicService : MediaLibraryService() {
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setLargeIcon(art)
+            .setLargeIcon(effectiveArt)
             .setContentTitle(song.title)
             .setContentText(song.artist)
             .setOngoing(isPlaying)
             .setContentIntent(pendingIntent)
             .setDeleteIntent(getServicePendingIntent(ACTION_DISMISS))
             .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(android.R.drawable.ic_media_previous, "Previous", getServicePendingIntent(ACTION_PREVIOUS))
             .addAction(playPauseAction)
             .addAction(android.R.drawable.ic_media_next, "Next", getServicePendingIntent(ACTION_NEXT))
             .addAction(shuffleAction)
             .addAction(favoriteAction)
 
+        ensureMediaSession()
         mediaSession?.let { session ->
             builder.setStyle(
                 MediaStyleNotificationHelper.MediaStyle(session)
-                    .setShowActionsInCompactView(0, 1, 2, 3, 4)
+                    .setShowActionsInCompactView(0, 1, 2)
             )
         }
 
@@ -1575,6 +1716,7 @@ class MusicService : MediaLibraryService() {
                     startForeground(1, notification)
                 }
             } catch (e: Exception) {
+                Log.w("MusicService", "startForeground failed: ${e.message}")
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager.notify(1, notification)
             }
@@ -1594,11 +1736,36 @@ class MusicService : MediaLibraryService() {
         val intent = Intent(this, MusicService::class.java).apply {
             this.action = action
         }
-        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val useForegroundService = action != ACTION_DISMISS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+        return if (useForegroundService) {
+            PendingIntent.getForegroundService(
+                this,
+                action.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getService(
+                this,
+                action.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
     }
 
     override fun onDestroy() {
         becomingNoisyReceiver?.let { unregisterReceiver(it) }
+        effectTransitionJob?.cancel()
+        spatialRampJob?.cancel()
+        pauseTimeoutJob?.cancel()
+        try {
+            PlaybackManager.getInstance(applicationContext).savePlaybackState(wasPlaying = false)
+            mediaPlayer?.setVolume(0f, 0f)
+            secondaryPlayer?.setVolume(0f, 0f)
+            mediaPlayer?.stop()
+            secondaryPlayer?.stop()
+        } catch (_: Exception) {}
         equalizer?.release()
         bassBoost?.release()
         virtualizer?.release()
@@ -1611,27 +1778,121 @@ class MusicService : MediaLibraryService() {
         mediaPlayer?.release()
         secondaryPlayer?.release()
         mediaSession?.release()
+        mediaSession = null
         lunePlayerAdapter?.release()
-        spatialRampJob?.cancel()
-        pauseTimeoutJob?.cancel()
+        lunePlayerAdapter = null
         serviceScope.cancel()
+        try {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.cancel(1)
+        } catch (_: Exception) {}
         super.onDestroy()
     }
 
+    /**
+     * Safely executes an effect modification (such as disabling an effect)
+     * with a micro-fade (ramp-down -> action -> buffer settle -> ramp-up).
+     * This eliminates DC offset bursts, filter transient pops, and residual buffer clicks
+     * that occur when detaching or disabling DSP effects in direct hardware / AAudio exclusive mode.
+     */
+    internal fun executeEffectTransition(isDisabling: Boolean, action: () -> Unit) {
+        if (!isPlaying() || isCrossfading) {
+            // If not actively playing audio to the DAC or already in a crossfade volume ramp,
+            // execute immediately without interfering with volume.
+            action()
+            return
+        }
+
+        if (!isDisabling) {
+            // Enabling an effect is smooth as internal filter states start from zero
+            action()
+            return
+        }
+
+        effectTransitionJob?.cancel()
+        effectTransitionJob = serviceScope.launch {
+            val (baseLeft, baseRight) = getCurrentTargetVolumes()
+            try {
+                // Micro fade-out: smoothly attenuate to 0 over ~18ms (3 steps x 6ms)
+                val steps = 3
+                val stepDelay = 6L
+                for (step in (steps - 1) downTo 0) {
+                    val scale = step.toFloat() / steps
+                    mediaPlayer?.setVolume(baseLeft * scale, baseRight * scale)
+                    secondaryPlayer?.setVolume(baseLeft * scale, baseRight * scale)
+                    delay(stepDelay)
+                }
+                mediaPlayer?.setVolume(0f, 0f)
+                secondaryPlayer?.setVolume(0f, 0f)
+
+                // Perform the DSP teardown / disable while DAC output is completely muted
+                action()
+
+                // Settle window (15ms) to allow hardware DMA / AAudio ringbuffers to clear
+                delay(15L)
+
+                // Micro fade-in: smoothly ramp back up to target volume over ~18ms
+                for (step in 1..steps) {
+                    val scale = step.toFloat() / steps
+                    val (curLeft, curRight) = getCurrentTargetVolumes()
+                    mediaPlayer?.setVolume(curLeft * scale, curRight * scale)
+                    secondaryPlayer?.setVolume(curLeft * scale, curRight * scale)
+                    delay(stepDelay)
+                }
+            } finally {
+                if (!isCrossfading) {
+                    val (curLeft, curRight) = getCurrentTargetVolumes()
+                    mediaPlayer?.setVolume(curLeft, curRight)
+                    secondaryPlayer?.setVolume(curLeft, curRight)
+                }
+            }
+        }
+    }
+
     fun setEqEnabled(enabled: Boolean) {
-        equalizer?.enabled = enabled
+        if (!enabled) {
+            executeEffectTransition(true) {
+                equalizer?.enabled = false
+                secondaryEqualizer?.enabled = false
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            equalizer?.enabled = true
+            secondaryEqualizer?.enabled = true
+        }
     }
 
     fun setEqBandLevel(band: Short, level: Short) {
         try {
             equalizer?.setBandLevel(band, level)
+            secondaryEqualizer?.setBandLevel(band, level)
         } catch (e: Exception) { e.printStackTrace() }
     }
 
-    fun setBassBoostEnabled(enabled: Boolean) {
-        bassBoost?.enabled = enabled
-        if (enabled && bassBoost?.strengthSupported == true) {
-            bassBoost?.setStrength(settingsManager.bassBoostLevel.toShort())
+    fun useEqPreset(presetIndex: Short) {
+        try {
+            equalizer?.usePreset(presetIndex)
+            secondaryEqualizer?.usePreset(presetIndex)
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    fun setBassBoostEnabled(enabled: Boolean, onBeforeDisable: (() -> Unit)? = null) {
+        if (!enabled) {
+            executeEffectTransition(true) {
+                onBeforeDisable?.invoke()
+                bassBoost?.enabled = false
+                secondaryBassBoost?.enabled = false
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            bassBoost?.enabled = true
+            secondaryBassBoost?.enabled = true
+            if (bassBoost?.strengthSupported == true) {
+                bassBoost?.setStrength(settingsManager.bassBoostLevel.toShort())
+            }
+            if (secondaryBassBoost?.strengthSupported == true) {
+                secondaryBassBoost?.setStrength(settingsManager.bassBoostLevel.toShort())
+            }
         }
     }
 
@@ -1639,24 +1900,49 @@ class MusicService : MediaLibraryService() {
         if (bassBoost?.strengthSupported == true) {
             bassBoost?.setStrength(strength)
         }
+        if (secondaryBassBoost?.strengthSupported == true) {
+            secondaryBassBoost?.setStrength(strength)
+        }
     }
 
     fun setReverbPreset(preset: Int) {
-        reverbEffect?.setPreset(preset)
+        if (preset == 0) {
+            executeEffectTransition(true) {
+                reverbEffect?.setPreset(0)
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            reverbEffect?.setPreset(preset)
+        }
     }
 
     fun setDynamicsPreset(preset: Int) {
-        dynamicsEffect?.setPreset(preset)
+        if (preset == 0) {
+            executeEffectTransition(true) {
+                dynamicsEffect?.setPreset(0)
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            dynamicsEffect?.setPreset(preset)
+        }
     }
 
     fun applyBalance(balance: Float) {
-        val (left, right) = BalanceEffect.volumesForBalance(balance)
+        val (left, right) = getCurrentTargetVolumes()
         mediaPlayer?.setVolume(left, right)
         secondaryPlayer?.setVolume(left, right)
     }
 
-    fun setLoudnessEnabled(enabled: Boolean) {
-        loudnessEffect?.setEnabled(enabled)
+    fun setLoudnessEnabled(enabled: Boolean, onBeforeDisable: (() -> Unit)? = null) {
+        if (!enabled) {
+            executeEffectTransition(true) {
+                onBeforeDisable?.invoke()
+                loudnessEffect?.setEnabled(false)
+            }
+        } else {
+            effectTransitionJob?.cancel()
+            loudnessEffect?.setEnabled(true)
+        }
     }
 
     fun setLoudnessGain(gain: Int) {
@@ -1693,8 +1979,10 @@ class MusicService : MediaLibraryService() {
             currentSpatialStrength = target
 
             if (!enabled) {
-                virtualizer?.enabled = false
-                secondaryVirtualizer?.enabled = false
+                executeEffectTransition(true) {
+                    virtualizer?.enabled = false
+                    secondaryVirtualizer?.enabled = false
+                }
             }
         }
     }
@@ -1769,24 +2057,15 @@ class MusicService : MediaLibraryService() {
             }
 
             for (appWidgetId in appWidgetIds) {
-                val views = RemoteViews(packageName, R.layout.lune_widget_layout)
-                LuneWidgetProvider.applyWidgetStyling(applicationContext, views, settingsManager)
-
                 val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-                val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
-                val isCompact = minHeight in 1..125
+                val layoutResId = LuneWidgetProvider.getWidgetLayoutResId(options)
+                val views = RemoteViews(packageName, layoutResId)
+                LuneWidgetProvider.applyWidgetStyling(applicationContext, views, settingsManager)
+                LuneWidgetProvider.applyWidgetResponsiveLayout(views, options)
 
                 if (song != null) {
                     views.setTextViewText(R.id.widget_title, song.title)
                     views.setTextViewText(R.id.widget_artist, song.artist)
-
-                    if (isCompact) {
-                        views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
-                        views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
-                    } else {
-                        views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
-                        views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
-                    }
 
                     views.setImageViewResource(R.id.widget_play_pause,
                         if (isPlaying) R.drawable.ic_widget_pause else R.drawable.ic_widget_play)
@@ -1815,14 +2094,6 @@ class MusicService : MediaLibraryService() {
                 } else {
                     views.setTextViewText(R.id.widget_title, getString(R.string.no_song_playing))
                     views.setTextViewText(R.id.widget_artist, "")
-
-                    if (isCompact) {
-                        views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
-                        views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
-                    } else {
-                        views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
-                        views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
-                    }
 
                     views.setImageViewResource(R.id.widget_cover, R.drawable.ic_lune_placeholder)
                     if (settingsManager.widgetUseSolidBackground) {

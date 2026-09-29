@@ -34,13 +34,17 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.tools.normalizeForSearch
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.demonlab.lune.ui.components.AppBlurBackdrop
+import com.demonlab.lune.ui.components.ScrollToTopPill
+import com.demonlab.lune.ui.components.rememberScrollToTopVisibility
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
+import kotlinx.coroutines.launch
 
 data class SearchResults(
     val songs: List<Song>,
@@ -311,11 +315,19 @@ fun SearchScreen(
                 )
             }
         ) { padding ->
-            LazyColumn(
+            val listState = rememberLazyListState()
+            val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settings.isScrollToTopEnabled)
+            val scope = rememberCoroutineScope()
+
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 if (filterSongs && searchResults.songs.isNotEmpty()) {
                     item {
                         Text(
@@ -763,8 +775,23 @@ fun SearchScreen(
                     }
                 }
             }
+
+            ScrollToTopPill(
+                visible = isScrollToTopVisible.value,
+                onClick = {
+                    scope.launch {
+                        listState.animateScrollToItem(0)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 20.dp),
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark
+            )
         }
     }
+}
 
     if (showFilterDialog) {
         val sectionCustomizationEnabled = settings.isSectionCustomizationEnabled

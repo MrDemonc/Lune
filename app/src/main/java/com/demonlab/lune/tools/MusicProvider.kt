@@ -163,7 +163,7 @@ class MusicProvider(private val context: Context) {
                 val albumId = cursor.getLong(albumIdColumn)
                 val data = cursor.getString(dataColumn)
                 val dateAdded = cursor.getLong(dateAddedColumn)
-                val trackNumber = if (trackColumn != -1) cursor.getInt(trackColumn) else 0
+                var trackNumber = if (trackColumn != -1) cursor.getInt(trackColumn) else 0
                 var genre = if (genreColumn != -1) cursor.getString(genreColumn) else null
 
                 val override = overrides[id]
@@ -223,6 +223,38 @@ class MusicProvider(private val context: Context) {
                         bitDepth = header.bitsPerSample
                         if ((sampleRate >= 48000 && bitDepth >= 24) || sampleRate >= 88200 || extension == "dsf" || extension == "dff") {
                             isHiRes = true
+                        }
+
+                        // Extract tags for formats where Android MediaStore does not parse metadata (e.g. WAV, DSF, DFF)
+                        // or where MediaStore tags were missing/fallback unknown values
+                        if (override == null) {
+                            val tag = audioFile.tag
+                            if (tag != null) {
+                                val tagTitle = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.TITLE) }.getOrNull()?.trim()
+                                val tagArtist = runCatching {
+                                    val a = tag.getFirst(org.jaudiotagger.tag.FieldKey.ARTIST)?.trim()
+                                    if (!a.isNullOrBlank()) a else tag.getFirst(org.jaudiotagger.tag.FieldKey.ALBUM_ARTIST)?.trim()
+                                }.getOrNull()
+                                val tagAlbum = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.ALBUM) }.getOrNull()?.trim()
+                                val tagGenre = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.GENRE) }.getOrNull()?.trim()
+                                val tagTrack = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.TRACK) }.getOrNull()?.trim()
+
+                                if (!tagTitle.isNullOrBlank()) {
+                                    title = CharsetUtils.sanitizeText(tagTitle)
+                                }
+                                if (!tagArtist.isNullOrBlank() && (artist.isBlank() || artist.equals("<unknown>", ignoreCase = true) || extension == "wav")) {
+                                    artist = CharsetUtils.sanitizeText(tagArtist)
+                                }
+                                if (!tagAlbum.isNullOrBlank() && (album.isBlank() || album.equals("<unknown>", ignoreCase = true) || extension == "wav")) {
+                                    album = CharsetUtils.sanitizeText(tagAlbum)
+                                }
+                                if (!tagGenre.isNullOrBlank() && (genre.isNullOrBlank() || extension == "wav")) {
+                                    genre = CharsetUtils.sanitizeText(tagGenre)
+                                }
+                                if (!tagTrack.isNullOrBlank() && (trackNumber == 0 || extension == "wav")) {
+                                    trackNumber = tagTrack.substringBefore("/").toIntOrNull() ?: trackNumber
+                                }
+                            }
                         }
                     } catch (_: Exception) {
                         if (bitrate != null && bitrate >= 2304000) {
