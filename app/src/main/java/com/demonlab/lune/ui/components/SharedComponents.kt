@@ -696,24 +696,59 @@ fun AlbumsListHeader(
     title: String? = null,
     icon: ImageVector? = null,
     hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
     isSortActive: Boolean = false,
     onSortClick: (() -> Unit)? = null,
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val isSystemDark = isSystemInDarkTheme()
+    val effectiveDarkTheme = isDarkTheme || when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+
     val displayTitle = title ?: if (isAlbumView) stringResource(R.string.tab_albums_real) else stringResource(R.string.tab_artists)
     val displayIcon = icon ?: if (isAlbumView) Icons.Default.Album else Icons.Default.Person
 
     val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
-    val iconContainerBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-    val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-    val countColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
-    val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
-    val actionBtnActiveTint = if (actionBtnActiveBg.luminance() > 0.45f) {
+    val iconContainerBg = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+
+    val iconTint = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.primary
+
+    val titleColor = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.onSurface
+
+    val countColor = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.80f) else Color(0xFF141316).copy(alpha = 0.75f)
+    } else MaterialTheme.colorScheme.onSurfaceVariant
+
+    val actionBtnBg = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+
+    val actionBtnTint = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.onSecondaryContainer
+
+    val actionBtnActiveBg = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f)
+    } else MaterialTheme.colorScheme.primary
+
+    val actionBtnActiveTint = if (hasBlurBackground && !useCustomControlsColor) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else if (actionBtnActiveBg.luminance() > 0.45f) {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
     } else {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
@@ -820,12 +855,21 @@ fun SongsListHeader(
     folderName: String = "",
     isGridLayout: Boolean = false,
     hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0,
     onToggleLayout: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val isSystemDark = isSystemInDarkTheme()
+    val effectiveDarkTheme = isDarkTheme || when (settingsManager.themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+
     val isPlaying = playbackManager.isPlaying
     val isPillPlaying = isCurrentListPlaying && isPlaying
 
@@ -836,9 +880,18 @@ fun SongsListHeader(
     val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val dynamicPrimary = if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary
 
-    // Fondo dinámico de la píldora (claro, oscuro y modo blur)
-    val pillBg = if (hasBlurBackground) dynamicPrimary.copy(alpha = 0.85f) else dynamicPrimary
-    val pillContentColor = if (pillBg.luminance() > 0.45f) {
+    // Fondo dinámico de la píldora (adaptado a claro, oscuro y modo blur)
+    val pillBg = if (hasBlurBackground && !useCustomControlsColor) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.10f)
+    } else if (hasBlurBackground) {
+        dynamicPrimary.copy(alpha = 0.85f)
+    } else {
+        dynamicPrimary
+    }
+
+    val pillContentColor = if (hasBlurBackground && !useCustomControlsColor) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else if (pillBg.luminance() > 0.45f) {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
     } else {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
@@ -859,10 +912,23 @@ fun SongsListHeader(
     )
 
     // Botones secundarios de opciones (cuadrados con esquinas redondeadas 14.dp)
-    val actionBtnInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val actionBtnInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
-    val actionBtnActiveTint = if (actionBtnActiveBg.luminance() > 0.45f) {
+    val actionBtnInactiveBg = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+
+    val actionBtnInactiveTint = if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.onSecondaryContainer
+
+    val actionBtnActiveBg = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        if (effectiveDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f)
+    } else MaterialTheme.colorScheme.primary
+
+    val actionBtnActiveTint = if (hasBlurBackground && !useCustomControlsColor) {
+        if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+    } else if (actionBtnActiveBg.luminance() > 0.45f) {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
     } else {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White

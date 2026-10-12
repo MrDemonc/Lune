@@ -193,16 +193,40 @@ fun PlaylistListScreen(
         }
     )
 
-    val plIconBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val plIconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-    val plTitleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-    val plCountColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val plIconBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+
+    val plIconTint = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.primary
+
+    val plTitleColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.onSurface
+
+    val plCountColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.80f) else Color(0xFF141316).copy(alpha = 0.75f)
+    } else MaterialTheme.colorScheme.onSurfaceVariant
 
     val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
-    val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
-    val actionBtnActiveTint = if (actionBtnActiveBg.luminance() > 0.45f) {
+    val actionBtnBg = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+
+    val actionBtnTint = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White else Color(0xFF141316)
+    } else MaterialTheme.colorScheme.onSecondaryContainer
+
+    val actionBtnActiveBg = if (useCustomControlsColor) {
+        activePrimary
+    } else if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f)
+    } else MaterialTheme.colorScheme.primary
+
+    val actionBtnActiveTint = if (hasBlurBackground && !useCustomControlsColor) {
+        if (isDarkTheme) Color.White else Color(0xFF141316)
+    } else if (actionBtnActiveBg.luminance() > 0.45f) {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
     } else {
         MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
