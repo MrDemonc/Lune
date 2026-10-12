@@ -37,9 +37,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import androidx.compose.foundation.pager.VerticalPager
@@ -56,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
@@ -122,6 +129,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -882,6 +890,8 @@ fun FullPlayer(
     val coverBounceScale = remember { Animatable(1f) }
     var lastSongId by remember { mutableStateOf<Long?>(null) }
     var lastBounceTime by remember { mutableLongStateOf(0L) }
+    val favoriteGlowAnim = remember { Animatable(0f) }
+    var glowJob by remember { mutableStateOf<Job?>(null) }
 
     val triggerCoverBounce: () -> Unit = remember(coroutineScope) {
         {
@@ -1166,6 +1176,23 @@ fun FullPlayer(
             MaterialTheme.colorScheme.primary
         }
 
+        val favoriteGlowColor = remember(dynamicPrimaryColor, isDarkTheme) {
+            val hsl = FloatArray(3)
+            ColorUtils.colorToHSL(dynamicPrimaryColor.toArgb(), hsl)
+            if (isDarkTheme) {
+                // En modo oscuro: evitar que sea muy claro o deslavado (Tone 80)
+                // Reducimos la luminosidad a un tono medio y potenciamos la saturación para un resplandor rico y saturado
+                hsl[1] = hsl[1].coerceAtLeast(0.85f)
+                hsl[2] = 0.55f
+            } else {
+                // En modo claro: evitar que sea muy oscuro o parezca una sombra sucia (Tone 40)
+                // Elevamos la luminosidad para que se perciba como luz brillante y colorida
+                hsl[1] = hsl[1].coerceAtLeast(0.75f)
+                hsl[2] = 0.62f
+            }
+            Color(ColorUtils.HSLToColor(hsl))
+        }
+
         val playingFromHeaderColor = if (hasBlurBackground) {
             Color.White.copy(alpha = 0.70f)
         } else {
@@ -1370,6 +1397,13 @@ fun FullPlayer(
                         modifier = coverModifier,
                     )
                 } else {
+                    val activeShape = when (coverShape) {
+                        1 -> RoundedCornerShape(0.dp)
+                        2 -> CircleShape
+                        else -> RoundedCornerShape(28.dp)
+                    }
+                    val glowProgress = favoriteGlowAnim.value
+
                     Box(
                         modifier = coverModifier,
                         contentAlignment = Alignment.Center
@@ -1383,6 +1417,56 @@ fun FullPlayer(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
+                            // Resplandor difuminado con degradé adaptado al Dynamic Color y forma de la carátula
+                            if (glowProgress > 0.001f) {
+                                Canvas(
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    val maxSpreadPx = 18.dp.toPx()
+                                    val spreadPx = maxSpreadPx * glowProgress
+                                    if (spreadPx <= 0.5f) return@Canvas
+
+                                    val baseRadius = when (coverShape) {
+                                        1 -> 0f
+                                        2 -> size.minDimension / 2f
+                                        else -> 28.dp.toPx()
+                                    }
+
+                                    val maxAlpha = 0.85f * glowProgress
+
+                                    // Base sólida justo detrás del borde de la carátula para evitar fisuras subpíxel
+                                    drawRoundRect(
+                                        color = favoriteGlowColor.copy(alpha = maxAlpha),
+                                        topLeft = Offset.Zero,
+                                        size = size,
+                                        cornerRadius = CornerRadius(baseRadius, baseRadius)
+                                    )
+
+                                    // Trazos concéntricos con decaimiento cuadrático para un degradé y difuminado continuo
+                                    val steps = 24
+                                    val stepPx = spreadPx / steps
+                                    val strokeWidth = stepPx * 1.75f
+
+                                    for (i in 0 until steps) {
+                                        val t = i.toFloat() / steps
+                                        val d = t * spreadPx
+                                        val falloff = (1.0f - t).toDouble().pow(2.0).toFloat()
+                                        val alpha = (maxAlpha * falloff).coerceIn(0f, 1f)
+
+                                        if (alpha > 0.002f) {
+                                            val cornerRadius = if (baseRadius > 0f) baseRadius + d else 0f
+                                            drawRoundRect(
+                                                color = favoriteGlowColor.copy(alpha = alpha),
+                                                topLeft = Offset(-d, -d),
+                                                size = Size(size.width + 2 * d, size.height + 2 * d),
+                                                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                                                style = Stroke(width = strokeWidth)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             Crossfade(
                                 targetState = song.toArtwork(),
                                 animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
@@ -1395,11 +1479,6 @@ fun FullPlayer(
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
-                                    val activeShape = when (coverShape) {
-                                        1 -> RoundedCornerShape(0.dp)
-                                        2 -> CircleShape
-                                        else -> RoundedCornerShape(28.dp)
-                                    }
                                     Surface(
                                         shape = activeShape,
                                         modifier = Modifier
@@ -1480,6 +1559,18 @@ fun FullPlayer(
                         onClick = {
                             playbackManager.toggleFavorite { updatedSong ->
                                 onSyncFavorite?.invoke(updatedSong.id, updatedSong.isFavorite)
+                            }
+                            glowJob?.cancel()
+                            glowJob = coroutineScope.launch {
+                                favoriteGlowAnim.snapTo(0f)
+                                favoriteGlowAnim.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+                                )
+                                favoriteGlowAnim.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = tween(durationMillis = 1400, easing = LinearOutSlowInEasing)
+                                )
                             }
                         },
                         shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 24.dp, bottomEnd = 24.dp),
