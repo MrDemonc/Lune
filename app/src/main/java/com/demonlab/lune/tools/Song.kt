@@ -26,3 +26,12 @@ data class Song(
     val sampleRate: Int? = null,
     val bitDepth: Int? = null
 )
+
+data class SongArtwork(
+    val id: Long,
+    val coverUrl: String?,
+    val uri: Uri
+)
+
+fun Song.toArtwork(): SongArtwork = SongArtwork(id, coverUrl, uri)
+

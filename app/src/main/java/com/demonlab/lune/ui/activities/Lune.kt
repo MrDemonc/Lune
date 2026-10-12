@@ -1041,7 +1041,7 @@ fun MainScreen(
 
         if (hasBlurBackgroundMini && currentSong != null && !isPlayerExpanded) {
             Crossfade(
-                targetState = currentSong,
+                targetState = currentSong.toArtwork(),
                 animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
                 label = "GlobalBlurCrossfade"
             ) { targetSong ->

@@ -98,6 +98,7 @@ import com.demonlab.lune.R
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.tools.toArtwork
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.VinylRecordAsyncCover
@@ -997,7 +998,7 @@ fun FullPlayer(
     ) {
         if (!isCinematic && hasBlurBackground) {
             Crossfade(
-                targetState = song,
+                targetState = song.toArtwork(),
                 animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
                 label = "FullPlayerBlurCrossfade"
             ) { targetSong ->
@@ -1042,7 +1043,7 @@ fun FullPlayer(
             }
 
             Crossfade(
-                targetState = song,
+                targetState = song.toArtwork(),
                 animationSpec = tween(400, easing = FastOutSlowInEasing),
                 label = "CinematicArtCrossfade"
             ) { targetSong ->
@@ -1093,7 +1094,7 @@ fun FullPlayer(
                         }
                 ) {
                     Crossfade(
-                        targetState = song,
+                        targetState = song.toArtwork(),
                         animationSpec = tween(400, easing = LinearOutSlowInEasing),
                         label = "CinematicBlurCrossfade"
                     ) { targetSong ->
@@ -1383,7 +1384,7 @@ fun FullPlayer(
                             contentAlignment = Alignment.Center
                         ) {
                             Crossfade(
-                                targetState = song,
+                                targetState = song.toArtwork(),
                                 animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
                                 label = "FullPlayerCoverCrossfade"
                             ) { targetSong ->
@@ -2307,7 +2308,7 @@ fun MiniPlayer(
             Box(modifier = Modifier.fillMaxSize()) {
                 if (hasBlurBackground) {
                     Crossfade(
-                        targetState = song,
+                        targetState = song.toArtwork(),
                         animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
                         label = "MiniPlayerBlurCrossfade"
                     ) { targetSong ->
@@ -2468,7 +2469,7 @@ fun MiniPlayer(
                 shadowElevation = 2.dp
             ) {
                 Crossfade(
-                    targetState = song,
+                    targetState = song.toArtwork(),
                     animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
                     label = "MiniCoverRightCrossfade"
                 ) { targetSong ->
@@ -2626,7 +2627,7 @@ fun MiniPlayerMinimized(
         Box(contentAlignment = Alignment.Center) {
             if (hasBlurBackground) {
                 Crossfade(
-                    targetState = song,
+                    targetState = song.toArtwork(),
                     animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
                     label = "MiniCoverBlurCrossfade"
                 ) { targetSong ->
@@ -2662,7 +2663,7 @@ fun MiniPlayerMinimized(
                 }
             }
             Crossfade(
-                targetState = song,
+                targetState = song.toArtwork(),
                 animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
                 label = "MiniPlayerCoverCrossfade"
             ) { targetSong ->
