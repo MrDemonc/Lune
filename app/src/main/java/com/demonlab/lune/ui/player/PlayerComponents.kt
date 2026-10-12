@@ -21,6 +21,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.MarqueeSpacing
 import androidx.compose.ui.layout.onSizeChanged
@@ -1781,8 +1782,8 @@ fun FullPlayer(
 
             Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 12.dp))
 
-            // Options Row (Shuffle, Repeat, Speed, Queue, Add to Playlist)
-            val activeAccent = if (useBlurControls) {
+            // Options Row (Shuffle, Repeat, Queue) - Material 3 Expressive Morphing Pills
+            val activeAccent = if (useBlurControls || hasBlurBackground) {
                 Color.White
             } else if (useCustomControlsColor) {
                 activePrimary
@@ -1790,84 +1791,68 @@ fun FullPlayer(
                 MaterialTheme.colorScheme.primary
             }
 
-            val defaultIconTint = if (useBlurControls) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-
             val isShuffling = playbackManager.isShuffle
-            val shuffleTint by animateColorAsState(
-                targetValue = if (isShuffling) activeAccent else defaultIconTint,
-                label = "shuffleTint"
-            )
-
             val isRepeatActive = playbackManager.repeatMode > 0
             val repeatIcon = when (playbackManager.repeatMode) {
                 1 -> Icons.Default.RepeatOne
                 else -> Icons.Default.Repeat
             }
-            val repeatTint by animateColorAsState(
-                targetValue = if (isRepeatActive) activeAccent else defaultIconTint,
-                label = "repeatTint"
-            )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 1. Shuffle
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .bounceClick(0.92f)
-                        .clip(CircleShape)
-                        .clickable { playbackManager.toggleShuffle() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Shuffle,
-                        contentDescription = stringResource(R.string.option_shuffle),
-                        tint = shuffleTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                PlayerOptionPill(
+                    icon = Icons.Default.Shuffle,
+                    label = stringResource(R.string.option_shuffle),
+                    isActive = isShuffling,
+                    onClick = { playbackManager.toggleShuffle() },
+                    useBlurControls = useBlurControls,
+                    hasBlurBackground = hasBlurBackground,
+                    blurContainerColor = blurContainerColor,
+                    isAmoled = isAmoled,
+                    isDarkTheme = isDarkTheme,
+                    activeAccent = activeAccent,
+                    isLandscape = isLandscape,
+                    modifier = Modifier.weight(1f)
+                )
 
                 // 2. Repeat
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .bounceClick(0.92f)
-                        .clip(CircleShape)
-                        .combinedClickable(
-                            onClick = { playbackManager.toggleRepeatMode() },
-                            onLongClick = { showCustomRepeatDialog = true }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = repeatIcon,
-                        contentDescription = stringResource(R.string.option_repeat),
-                        tint = repeatTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                PlayerOptionPill(
+                    icon = repeatIcon,
+                    label = stringResource(R.string.option_repeat),
+                    isActive = isRepeatActive,
+                    onClick = { playbackManager.toggleRepeatMode() },
+                    onLongClick = { showCustomRepeatDialog = true },
+                    useBlurControls = useBlurControls,
+                    hasBlurBackground = hasBlurBackground,
+                    blurContainerColor = blurContainerColor,
+                    isAmoled = isAmoled,
+                    isDarkTheme = isDarkTheme,
+                    activeAccent = activeAccent,
+                    isLandscape = isLandscape,
+                    modifier = Modifier.weight(1f)
+                )
 
                 // 3. Queue
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .bounceClick(0.92f)
-                        .clip(CircleShape)
-                        .clickable { showQueueSheet = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                        contentDescription = stringResource(R.string.player_queue),
-                        tint = defaultIconTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                PlayerOptionPill(
+                    icon = Icons.AutoMirrored.Filled.QueueMusic,
+                    label = stringResource(R.string.player_queue),
+                    isActive = showQueueSheet,
+                    onClick = { showQueueSheet = true },
+                    useBlurControls = useBlurControls,
+                    hasBlurBackground = hasBlurBackground,
+                    blurContainerColor = blurContainerColor,
+                    isAmoled = isAmoled,
+                    isDarkTheme = isDarkTheme,
+                    activeAccent = activeAccent,
+                    isLandscape = isLandscape,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.height(if (isLandscape) 10.dp else 16.dp))
@@ -2891,4 +2876,148 @@ fun CavaThreeDots(
         )
     }
 }
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PlayerOptionPill(
+    icon: ImageVector,
+    label: String,
+    isActive: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    useBlurControls: Boolean = false,
+    hasBlurBackground: Boolean = false,
+    blurContainerColor: Color = Color.Black.copy(alpha = 0.5f),
+    isAmoled: Boolean = false,
+    isDarkTheme: Boolean = true,
+    activeAccent: Color = MaterialTheme.colorScheme.primary,
+    isLandscape: Boolean = false
+) {
+    val isBlur = useBlurControls || hasBlurBackground
+
+    // Animated shape morphing for the inner icon badge:
+    // Inactive: Circle (percent = 50), Active: Material 3 Expressive squircle/rounded square (percent = 28)
+    val cornerPercent by animateIntAsState(
+        targetValue = if (isActive) 28 else 50,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "pillIconCornerMorph"
+    )
+    val iconBadgeShape = RoundedCornerShape(percent = cornerPercent)
+
+    // Animated shape morphing for the outer pill container:
+    // Inactive: Capsule / Pill (percent = 50), Active: Material 3 Expressive rounded container (percent = 30)
+    val pillCornerPercent by animateIntAsState(
+        targetValue = if (isActive) 30 else 50,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "pillOuterCornerMorph"
+    )
+    val pillShape = RoundedCornerShape(percent = pillCornerPercent)
+
+    // Pill container colors
+    val targetPillBg = if (isBlur) {
+        if (isActive) Color.White.copy(alpha = 0.22f) else blurContainerColor
+    } else {
+        if (isActive) {
+            activeAccent.copy(alpha = 0.16f)
+        } else if (isAmoled) {
+            Color(0xFF222222)
+        } else if (isDarkTheme) {
+            Color.Black.copy(alpha = 0.40f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.70f)
+        }
+    }
+    val pillBg by animateColorAsState(targetValue = targetPillBg, animationSpec = tween(220), label = "pillBg")
+
+    // Inner icon badge colors
+    val targetIconBadgeBg = if (isBlur) {
+        if (isActive) Color.White else Color.White.copy(alpha = 0.12f)
+    } else {
+        if (isActive) activeAccent else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
+    val iconBadgeBg by animateColorAsState(targetValue = targetIconBadgeBg, animationSpec = tween(220), label = "iconBadgeBg")
+
+    val targetIconTint = if (isBlur) {
+        if (isActive) Color.Black else Color.White.copy(alpha = 0.85f)
+    } else {
+        if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val iconTint by animateColorAsState(targetValue = targetIconTint, animationSpec = tween(220), label = "iconTint")
+
+    // Label text color
+    val targetTextColor = if (isBlur) {
+        if (isActive) Color.White else Color.White.copy(alpha = 0.80f)
+    } else {
+        if (isActive) activeAccent else MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val textColor by animateColorAsState(targetValue = targetTextColor, animationSpec = tween(220), label = "textColor")
+
+    val pillHeight = if (isLandscape) 36.dp else 40.dp
+    val badgeSize = if (isLandscape) 26.dp else 28.dp
+    val iconSize = if (isLandscape) 15.dp else 16.dp
+    val textSize = if (isLandscape) 11.sp else 11.5.sp
+
+    val clickModifier = if (onLongClick != null) {
+        Modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+    } else {
+        Modifier.clickable(onClick = onClick)
+    }
+
+    Box(
+        modifier = modifier
+            .height(pillHeight)
+            .bounceClick(0.95f)
+            .clip(pillShape)
+            .background(pillBg, pillShape)
+            .then(clickModifier),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = if (isLandscape) 5.dp else 6.dp, end = if (isLandscape) 6.dp else 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(badgeSize)
+                    .background(color = iconBadgeBg, shape = iconBadgeShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconTint,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(if (isLandscape) 5.dp else 6.dp))
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = textSize,
+                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium
+                ),
+                color = textColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+        }
+    }
+}
+
 
