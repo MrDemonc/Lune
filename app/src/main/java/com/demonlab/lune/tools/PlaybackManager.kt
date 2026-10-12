@@ -480,9 +480,8 @@ class PlaybackManager private constructor(private val context: Context) {
             }
         }
 
-        // Start service as foreground when playing begins
+        // Ensure service is started as a foreground service
         Intent(context, MusicService::class.java).also { intent ->
-            intent.action = MusicService.ACTION_PLAY
             intent.data = song.uri
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -491,7 +490,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 context.startService(intent)
             }
         }
-        
+
         if (musicService != null) {
             try {
                 musicService?.playSong(song)

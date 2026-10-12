@@ -11,6 +11,7 @@ import android.net.Uri
 import android.content.ContentUris
 import android.os.Bundle
 import android.os.Environment
+import android.os.PowerManager
 import com.demonlab.lune.data.MusicDatabase
 import androidx.core.app.NotificationCompat
 import coil.ImageLoader
@@ -84,8 +85,62 @@ class MusicService : MediaLibraryService() {
     private lateinit var settingsManager: SettingsManager
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
+    private var hasAudioFocus = false
+    private var resumeOnFocusGain = false
     private var wasPlayingBeforeLoss = false
     private var isDucked = false
+    private var wakeLock: PowerManager.WakeLock? = null
+
+    private val playbackAudioAttributes: AudioAttributes by lazy {
+        AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+    }
+
+    private fun acquireWakeLock(timeoutMs: Long = 0L) {
+        try {
+            if (wakeLock == null) {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+                wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Lune:MusicPlaybackWakeLock")?.apply {
+                    setReferenceCounted(false)
+                }
+            }
+            wakeLock?.let { wl ->
+                if (!wl.isHeld) {
+                    if (timeoutMs > 0) {
+                        wl.acquire(timeoutMs)
+                    } else {
+                        wl.acquire()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("MusicService", "Error acquiring wake lock: ${e.message}")
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let { wl ->
+                if (wl.isHeld) {
+                    wl.release()
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("MusicService", "Error releasing wake lock: ${e.message}")
+        }
+    }
+
+    private fun configurePlayer(player: MediaPlayer) {
+        player.setAudioAttributes(playbackAudioAttributes)
+        try {
+            player.setWakeMode(applicationContext, PowerManager.PARTIAL_WAKE_LOCK)
+        } catch (e: Exception) {
+            Log.w("MusicService", "Failed to setWakeMode on MediaPlayer: ${e.message}")
+        }
+    }
+
     private var effectTransitionJob: Job? = null
     private var widgetUpdateJob: Job? = null
     private var spatialRampJob: Job? = null
@@ -109,11 +164,14 @@ class MusicService : MediaLibraryService() {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
                 // Permanent focus loss (another app claimed audio): pause
+                hasAudioFocus = false
+                resumeOnFocusGain = false
                 wasPlayingBeforeLoss = false
                 pause()
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 // Transient loss (incoming call, etc): pause, try to resume later
+                hasAudioFocus = false
                 wasPlayingBeforeLoss = isPlaying()
                 pause()
             }
@@ -125,14 +183,16 @@ class MusicService : MediaLibraryService() {
                 secondaryPlayer?.setVolume(left, right)
             }
             AudioManager.AUDIOFOCUS_GAIN -> {
-                // Regained focus: restore volume and resume if we were playing
+                // Regained focus: restore volume and resume if we were playing or waiting for delayed focus
+                hasAudioFocus = true
                 isDucked = false
                 val (left, right) = getCurrentTargetVolumes()
                 mediaPlayer?.setVolume(left, right)
                 secondaryPlayer?.setVolume(left, right)
-                if (wasPlayingBeforeLoss) {
-                    resume()
+                if (resumeOnFocusGain || wasPlayingBeforeLoss) {
+                    resumeOnFocusGain = false
                     wasPlayingBeforeLoss = false
+                    resumeInternal()
                 }
             }
         }
@@ -197,29 +257,47 @@ class MusicService : MediaLibraryService() {
     }
 
     private fun requestAudioFocus(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val attrs = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-            val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(attrs)
+        if (hasAudioFocus) return true
+
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val request = audioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(playbackAudioAttributes)
                 .setOnAudioFocusChangeListener(audioFocusListener)
+                .setAcceptsDelayedFocusGain(true)
                 .setWillPauseWhenDucked(false)
-                .build()
-            audioFocusRequest = request
-            audioManager.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+                .build().also { audioFocusRequest = it }
+            audioManager.requestAudioFocus(request)
         } else {
             @Suppress("DEPRECATION")
             audioManager.requestAudioFocus(
                 audioFocusListener,
                 AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN
-            ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+            )
+        }
+
+        return when (result) {
+            AudioManager.AUDIOFOCUS_REQUEST_GRANTED -> {
+                hasAudioFocus = true
+                resumeOnFocusGain = false
+                true
+            }
+            AudioManager.AUDIOFOCUS_REQUEST_DELAYED -> {
+                hasAudioFocus = false
+                resumeOnFocusGain = true
+                false
+            }
+            else -> {
+                hasAudioFocus = false
+                resumeOnFocusGain = false
+                false
+            }
         }
     }
 
     private fun abandonAudioFocus() {
+        hasAudioFocus = false
+        resumeOnFocusGain = false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
         } else {
@@ -752,6 +830,7 @@ class MusicService : MediaLibraryService() {
         PlaybackManager.getInstance(applicationContext).isTransitioning = false
         monitorJob?.cancel()
         requestAudioFocus()
+        acquireWakeLock()
         updateWidget()
 
         // Promote service to foreground immediately with the active song
@@ -766,6 +845,7 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer = null
 
         val player = MediaPlayer()
+        configurePlayer(player)
         val loaded = setPlayerDataSource(player, song)
         if (!loaded) {
             Log.e("MusicService", "Failed to load data source for song: ${song.title} (${song.uri})")
@@ -773,6 +853,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            releaseWakeLock()
             PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
             return
         }
@@ -783,8 +864,10 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
+                        acquireWakeLock()
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
+                        isDucked = false
                         applyBalance(PlaybackManager.getInstance(applicationContext).balance)
                         start()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -814,8 +897,25 @@ class MusicService : MediaLibraryService() {
                         Log.e("MusicService", "Error during onPrepared in playSong", e)
                     }
                 }
-                setOnErrorListener { _, _, _ ->
-                    true // returning true prevents onCompletionListener from firing on broken tracks
+                setOnErrorListener { _, what, extra ->
+                    Log.e("MusicService", "MediaPlayer error in playSong: what=$what, extra=$extra")
+                    if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                        try {
+                            player.release()
+                        } catch (_: Exception) {}
+                        mediaPlayer = null
+                        val current = PlaybackManager.getInstance(applicationContext).currentSong
+                        if (current != null) {
+                            serviceScope.launch {
+                                delay(300)
+                                playSong(current)
+                            }
+                        }
+                        true
+                    } else {
+                        // Returning false triggers onCompletionListener to automatically advance to next song
+                        false
+                    }
                 }
                 prepareAsync()
                 setOnCompletionListener {
@@ -833,6 +933,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            releaseWakeLock()
             PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         }
     }
@@ -910,7 +1011,10 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
 
-        secondaryPlayer = MediaPlayer()
+        val sec = MediaPlayer()
+        configurePlayer(sec)
+        secondaryPlayer = sec
+        acquireWakeLock()
 
         playbackManager.clearLyrics()
         serviceScope.launch {
@@ -1120,6 +1224,8 @@ class MusicService : MediaLibraryService() {
         pauseTimeoutJob = serviceScope.launch {
             delay(PAUSE_TIMEOUT_MS)
             isNotificationDismissed = true
+            abandonAudioFocus()
+            releaseWakeLock()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
             } else {
@@ -1133,8 +1239,13 @@ class MusicService : MediaLibraryService() {
             stopSelf()
         }
 
-        mediaPlayer?.pause()
-        secondaryPlayer?.pause()
+        try {
+            mediaPlayer?.pause()
+            secondaryPlayer?.pause()
+        } catch (e: Exception) {
+            Log.e("MusicService", "Error pausing player", e)
+        }
+        releaseWakeLock()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         updatePlaybackState()
         stopWidgetUpdateTimer()
@@ -1147,6 +1258,19 @@ class MusicService : MediaLibraryService() {
     }
 
     fun resume() {
+        if (!requestAudioFocus()) {
+            if (resumeOnFocusGain) {
+                Log.d("MusicService", "Audio focus delayed; playback will resume when granted")
+            } else {
+                Log.w("MusicService", "Audio focus request failed, cannot resume")
+            }
+            PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+            return
+        }
+        resumeInternal()
+    }
+
+    private fun resumeInternal() {
         val pm = PlaybackManager.getInstance(applicationContext)
         if (pm.isQueueFinished) {
             pm.resume()
@@ -1154,7 +1278,8 @@ class MusicService : MediaLibraryService() {
         }
         isNotificationDismissed = false
         pauseTimeoutJob?.cancel()
-        requestAudioFocus()
+        acquireWakeLock()
+
         if (mediaPlayer == null) {
             if (pm.currentSong == null && !pm.stateRestored) {
                 pm.restorePlaybackState()
@@ -1172,6 +1297,11 @@ class MusicService : MediaLibraryService() {
         }
 
         try {
+            isDucked = false
+            val (left, right) = getCurrentTargetVolumes()
+            mediaPlayer?.setVolume(left, right)
+            secondaryPlayer?.setVolume(left, right)
+
             mediaPlayer?.start()
             secondaryPlayer?.start()
         } catch (e: Exception) {
@@ -1284,7 +1414,10 @@ class MusicService : MediaLibraryService() {
         isCrossfading = false
         PlaybackManager.getInstance(applicationContext).isTransitioning = false
         monitorJob?.cancel()
-        requestAudioFocus()
+        if (andPlay) {
+            requestAudioFocus()
+            acquireWakeLock()
+        }
 
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
@@ -1295,6 +1428,7 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer = null
 
         val player = MediaPlayer()
+        configurePlayer(player)
         val loaded = setPlayerDataSource(player, song)
         if (!loaded) {
             Log.w("MusicService", "Failed to set data source for restorePlayback: ${song.title} (${song.uri})")
@@ -1302,6 +1436,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            if (andPlay) releaseWakeLock()
             val pm = PlaybackManager.getInstance(applicationContext)
             pm.updatePlayingState(false)
             return
@@ -1315,10 +1450,13 @@ class MusicService : MediaLibraryService() {
                     try {
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
+                        isDucked = false
                         applyBalance(pm.balance)
                         seekTo(positionMs.toInt())
-                        start()
-                        if (!andPlay) pause()
+                        if (andPlay) {
+                            acquireWakeLock()
+                            start()
+                        }
                         pm.updatePlayingState(andPlay)
                         if (andPlay) {
                             startWidgetUpdateTimer()
@@ -1350,7 +1488,25 @@ class MusicService : MediaLibraryService() {
                         Log.e("MusicService", "Error during onPrepared in restorePlayback", e)
                     }
                 }
-                setOnErrorListener { _, _, _ -> true }
+                setOnErrorListener { _, what, extra ->
+                    Log.e("MusicService", "MediaPlayer error in restorePlayback: what=$what, extra=$extra")
+                    if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                        try {
+                            player.release()
+                        } catch (_: Exception) {}
+                        mediaPlayer = null
+                        val current = PlaybackManager.getInstance(applicationContext).currentSong
+                        if (current != null) {
+                            serviceScope.launch {
+                                delay(300)
+                                playSong(current)
+                            }
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                }
                 prepareAsync()
                 setOnCompletionListener {
                     if (!isCrossfading) {
@@ -1364,6 +1520,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            if (andPlay) releaseWakeLock()
             PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         }
     }
@@ -1708,25 +1865,14 @@ class MusicService : MediaLibraryService() {
 
         val notification = builder.build()
 
-        if (isPlaying) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-                } else {
-                    startForeground(1, notification)
-                }
-            } catch (e: Exception) {
-                Log.w("MusicService", "startForeground failed: ${e.message}")
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager.notify(1, notification)
-            }
-        } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(STOP_FOREGROUND_DETACH)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
             } else {
-                @Suppress("DEPRECATION")
-                stopForeground(false)
+                startForeground(1, notification)
             }
+        } catch (e: Exception) {
+            Log.w("MusicService", "startForeground failed: ${e.message}")
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.notify(1, notification)
         }
@@ -1782,6 +1928,9 @@ class MusicService : MediaLibraryService() {
         lunePlayerAdapter?.release()
         lunePlayerAdapter = null
         serviceScope.cancel()
+        abandonAudioFocus()
+        releaseWakeLock()
+        wakeLock = null
         try {
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager?.cancel(1)
