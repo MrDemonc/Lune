@@ -482,4 +482,6 @@
     <string name="auto_sync_backup">Auto-sync backup</string>
     <string name="auto_sync_backup_desc">Automatically update the exported backup when playlists or lyrics change</string>
     <string name="auto_sync_requires_export">Export a backup first to enable auto-sync</string>
+    <string name="show_headers">Show section headers</string>
+    <string name="hide_headers">Hide section headers</string>
 </resources>

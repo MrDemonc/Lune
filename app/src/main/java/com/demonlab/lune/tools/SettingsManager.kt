@@ -55,6 +55,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("keep_screen_on", false)
         set(value) = prefs.edit().putBoolean("keep_screen_on", value).apply()
 
+    var showSectionHeaders: Boolean
+        get() = prefs.getBoolean("show_section_headers", true)
+        set(value) = prefs.edit().putBoolean("show_section_headers", value).apply()
+
     private val _themeMode = mutableStateOf(prefs.getInt("theme_mode", 0))
     var themeMode: Int
         get() = _themeMode.value
@@ -94,10 +98,6 @@ class SettingsManager(context: Context) {
     var isSectionCustomizationEnabled: Boolean
         get() = prefs.getBoolean("section_customization_enabled", false)
         set(value) = prefs.edit().putBoolean("section_customization_enabled", value).apply()
-
-    var isHeaderWaveEffectEnabled: Boolean
-        get() = prefs.getBoolean("header_wave_effect_enabled", true)
-        set(value) = prefs.edit().putBoolean("header_wave_effect_enabled", value).apply()
 
     var isScrollToTopEnabled: Boolean
         get() = prefs.getBoolean("scroll_to_top_enabled", true)

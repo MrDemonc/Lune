@@ -483,4 +483,6 @@
     <string name="auto_sync_backup">Sincronización automática de respaldo</string>
     <string name="auto_sync_backup_desc">Actualiza automáticamente el respaldo cuando cambien tus listas o letras</string>
     <string name="auto_sync_requires_export">Exporta un respaldo primero para activar la sincronización</string>
+    <string name="show_headers">Mostrar encabezados de sección</string>
+    <string name="hide_headers">Ocultar encabezados de sección</string>
 </resources>

@@ -72,7 +72,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import com.demonlab.lune.ui.components.SongGridItem
 import com.demonlab.lune.ui.components.HeaderSurface
-import com.demonlab.lune.ui.components.headerWaveBorder
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
@@ -139,6 +138,7 @@ import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -705,6 +705,7 @@ fun MainScreen(
     var isAlbumView by remember { mutableStateOf(settingsManager.albumBrowseMode) }
     var folderHierarchyMode by remember { mutableStateOf(settingsManager.folderHierarchyMode) }
     var tracksViewStyle by remember { mutableIntStateOf(settingsManager.tracksViewStyle) }
+    var showSectionHeaders by remember { mutableStateOf(settingsManager.showSectionHeaders) }
 
     val pagerState = rememberPagerState(
         pageCount = { folders.size },
@@ -1183,7 +1184,7 @@ fun MainScreen(
                 LargeTopAppBar(
                     title = { 
                         val customTitle by settingsManager.customTitleFlow.collectAsState()
-                        val titleText = if (customTitle.isEmpty()) "Lune" else customTitle
+                        val appDefaultTitle = if (customTitle.isEmpty()) "Lune" else customTitle
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1192,19 +1193,51 @@ fun MainScreen(
                             AnimatedLogo(
                                 isPlaying = isPlaying,
                                 tintColor = titleColor,
-                                modifier = Modifier.padding(end = 0.5.dp)
+                                modifier = Modifier.padding(end = 4.dp)
                             )
                             ResponsiveText(
-                                text = titleText,
-                                modifier = Modifier.weight(1f).fillMaxWidth(),
-                                targetTextSize = 32.sp,
+                                text = appDefaultTitle,
+                                modifier = Modifier.fillMaxWidth(),
+                                targetTextSize = 26.sp,
                                 color = titleColor,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
                             )
                         }
                     },
                     scrollBehavior = scrollBehavior,
                     actions = {
+                        val chevronRotation by animateFloatAsState(
+                            targetValue = if (showSectionHeaders) 0f else 180f,
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                            label = "headerChevronRotation"
+                        )
+                        IconButton(
+                            onClick = {
+                                val newState = !showSectionHeaders
+                                showSectionHeaders = newState
+                                settingsManager.showSectionHeaders = newState
+                            }
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = actionBtnBg,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .bounceClick()
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowUp,
+                                        contentDescription = if (showSectionHeaders) stringResource(R.string.hide_headers) else stringResource(R.string.show_headers),
+                                        tint = actionBtnTint,
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .graphicsLayer { rotationZ = chevronRotation }
+                                    )
+                                }
+                            }
+                        }
                         IconButton(
                             onClick = onThemeModeChange
                         ) {
@@ -1391,28 +1424,34 @@ fun MainScreen(
                             var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
                             
                             Column(modifier = Modifier.fillMaxSize()) {
-                                HeaderSurface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null
+                                AnimatedVisibility(
+                                    visible = showSectionHeaders,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
                                 ) {
-                                    AlbumsListHeader(
-                                        albumCount = albumsList.size,
-                                        viewStyle = viewStyle,
-                                        onToggleViewStyle = {
-                                            val newStyle = if (viewStyle == 0) 1 else 0
-                                            viewStyle = newStyle
-                                            settingsManager.albumViewStyle = newStyle
-                                        },
-                                        isAlbumView = true,
-                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
-                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
-                                        onSortClick = { showSortSheet = true },
-                                        useCustomControlsColor = useCustomControlsColor,
-                                        controlsColorPalette = controlsColorPalette,
-                                        onToggleAlbumView = null
-                                    )
+                                    HeaderSurface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null
+                                    ) {
+                                        AlbumsListHeader(
+                                            albumCount = albumsList.size,
+                                            viewStyle = viewStyle,
+                                            onToggleViewStyle = {
+                                                val newStyle = if (viewStyle == 0) 1 else 0
+                                                viewStyle = newStyle
+                                                settingsManager.albumViewStyle = newStyle
+                                            },
+                                            isAlbumView = true,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                            onSortClick = { showSortSheet = true },
+                                            useCustomControlsColor = useCustomControlsColor,
+                                            controlsColorPalette = controlsColorPalette,
+                                            onToggleAlbumView = null
+                                        )
+                                    }
                                 }
                                 
                                 Box(modifier = Modifier.weight(1f)) {
@@ -1442,28 +1481,34 @@ fun MainScreen(
                             var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
                             
                             Column(modifier = Modifier.fillMaxSize()) {
-                                HeaderSurface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null
+                                AnimatedVisibility(
+                                    visible = showSectionHeaders,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
                                 ) {
-                                    AlbumsListHeader(
-                                        albumCount = artistsList.size,
-                                        viewStyle = viewStyle,
-                                        onToggleViewStyle = {
-                                            val newStyle = if (viewStyle == 0) 1 else 0
-                                            viewStyle = newStyle
-                                            settingsManager.albumViewStyle = newStyle
-                                        },
-                                        isAlbumView = false,
-                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
-                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
-                                        onSortClick = { showSortSheet = true },
-                                        useCustomControlsColor = useCustomControlsColor,
-                                        controlsColorPalette = controlsColorPalette,
-                                        onToggleAlbumView = null
-                                    )
+                                    HeaderSurface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null
+                                    ) {
+                                        AlbumsListHeader(
+                                            albumCount = artistsList.size,
+                                            viewStyle = viewStyle,
+                                            onToggleViewStyle = {
+                                                val newStyle = if (viewStyle == 0) 1 else 0
+                                                viewStyle = newStyle
+                                                settingsManager.albumViewStyle = newStyle
+                                            },
+                                            isAlbumView = false,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                            onSortClick = { showSortSheet = true },
+                                            useCustomControlsColor = useCustomControlsColor,
+                                            controlsColorPalette = controlsColorPalette,
+                                            onToggleAlbumView = null
+                                        )
+                                    }
                                 }
                                 
                                 Box(modifier = Modifier.weight(1f)) {
@@ -1493,30 +1538,36 @@ fun MainScreen(
                             var viewStyle by remember { mutableIntStateOf(settingsManager.albumViewStyle) }
                             
                             Column(modifier = Modifier.fillMaxSize()) {
-                                HeaderSurface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null
+                                AnimatedVisibility(
+                                    visible = showSectionHeaders,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
                                 ) {
-                                    AlbumsListHeader(
-                                        albumCount = genresList.size,
-                                        viewStyle = viewStyle,
-                                        onToggleViewStyle = {
-                                            val newStyle = if (viewStyle == 0) 1 else 0
-                                            viewStyle = newStyle
-                                            settingsManager.albumViewStyle = newStyle
-                                        },
-                                        isAlbumView = false,
-                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
-                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
-                                        onSortClick = { showSortSheet = true },
-                                        useCustomControlsColor = useCustomControlsColor,
-                                        controlsColorPalette = controlsColorPalette,
-                                        onToggleAlbumView = null,
-                                        title = sTabGenres,
-                                        icon = Icons.Default.Category
-                                    )
+                                    HeaderSurface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null
+                                    ) {
+                                        AlbumsListHeader(
+                                            albumCount = genresList.size,
+                                            viewStyle = viewStyle,
+                                            onToggleViewStyle = {
+                                                val newStyle = if (viewStyle == 0) 1 else 0
+                                                viewStyle = newStyle
+                                                settingsManager.albumViewStyle = newStyle
+                                            },
+                                            isAlbumView = false,
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                            onSortClick = { showSortSheet = true },
+                                            useCustomControlsColor = useCustomControlsColor,
+                                            controlsColorPalette = controlsColorPalette,
+                                            onToggleAlbumView = null,
+                                            title = sTabGenres,
+                                            icon = Icons.Default.Category
+                                        )
+                                    }
                                 }
                                 
                                 Box(modifier = Modifier.weight(1f)) {
@@ -1571,7 +1622,8 @@ fun MainScreen(
                                 isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
                                 onSortClick = { showSortSheet = true },
                                 useCustomControlsColor = useCustomControlsColor,
-                                controlsColorPalette = controlsColorPalette
+                                controlsColorPalette = controlsColorPalette,
+                                showSectionHeader = showSectionHeaders
                             )
                         }
                         "FOLDER_GRID" -> {
@@ -1583,98 +1635,104 @@ fun MainScreen(
                             val folderActionInactiveTint = if (hasBlurBackgroundMini) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
                             val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
                             val folderActionActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackgroundMini) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+                            val folderActionActiveTint = if (folderActionActiveBg.luminance() > 0.45f) {
+                                MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                            } else {
+                                MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                            }
 
                             Column(modifier = Modifier.fillMaxSize()) {
-                                HeaderSurface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini
+                                AnimatedVisibility(
+                                    visible = showSectionHeaders,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
                                 ) {
-                                    Row(
+                                    HeaderSurface(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 24.dp, vertical = 20.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        hasBlurBackground = hasBlurBackgroundMini
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                                        ) {
                                             Surface(
-                                                shape = RoundedCornerShape(12.dp),
+                                                shape = RoundedCornerShape(14.dp),
                                                 color = folderIconBg,
-                                                modifier = Modifier.size(44.dp)
+                                                modifier = Modifier.height(44.dp)
                                             ) {
-                                                Box(contentAlignment = Alignment.Center) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 14.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
                                                     Icon(
                                                         Icons.Default.Folder,
                                                         contentDescription = null,
                                                         tint = folderIconTint,
-                                                        modifier = Modifier.size(24.dp)
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Text(
+                                                        text = visibleFolders.size.toString(),
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = folderCountColor
                                                     )
                                                 }
                                             }
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Column {
-                                                Text(
-                                                    text = stringResource(R.string.tab_folders),
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = folderTitleColor
-                                                )
-                                                Text(
-                                                    text = visibleFolders.size.toString(),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = folderCountColor
-                                                )
-                                            }
-                                        }
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+
                                             val isFolderSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending
                                             Surface(
                                                 onClick = { showSortSheet = true },
-                                                shape = CircleShape,
+                                                shape = RoundedCornerShape(14.dp),
                                                 color = if (isFolderSortActive) folderActionActiveBg else folderActionInactiveBg,
-                                                modifier = Modifier.size(36.dp).bounceClick()
+                                                modifier = Modifier.size(44.dp).bounceClick()
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         imageVector = if (isFolderSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
                                                         contentDescription = stringResource(R.string.sort_options_title),
-                                                        tint = if (isFolderSortActive) Color.White else folderActionInactiveTint,
-                                                        modifier = Modifier.size(18.dp)
+                                                        tint = if (isFolderSortActive) folderActionActiveTint else folderActionInactiveTint,
+                                                        modifier = Modifier.size(20.dp)
                                                     )
                                                 }
                                             }
+
                                             Surface(
                                                 onClick = {
                                                     folderHierarchyMode = !folderHierarchyMode
                                                     settingsManager.folderHierarchyMode = folderHierarchyMode
                                                 },
-                                                shape = CircleShape,
+                                                shape = RoundedCornerShape(14.dp),
                                                 color = if (folderHierarchyMode) folderActionActiveBg else folderActionInactiveBg,
-                                                modifier = Modifier.size(36.dp).bounceClick()
+                                                modifier = Modifier.size(44.dp).bounceClick()
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         if (folderHierarchyMode) Icons.AutoMirrored.Filled.List else Icons.Default.Folder,
                                                         contentDescription = null,
-                                                        tint = if (folderHierarchyMode) Color.White else folderActionInactiveTint,
-                                                        modifier = Modifier.size(18.dp)
+                                                        tint = if (folderHierarchyMode) folderActionActiveTint else folderActionInactiveTint,
+                                                        modifier = Modifier.size(20.dp)
                                                     )
                                                 }
                                             }
+
                                             Surface(
                                                 onClick = { onShowFolderSheetChange(true) },
-                                                shape = CircleShape,
+                                                shape = RoundedCornerShape(14.dp),
                                                 color = folderActionInactiveBg,
-                                                modifier = Modifier.size(36.dp).bounceClick()
+                                                modifier = Modifier.size(44.dp).bounceClick()
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         Icons.Default.FilterList,
                                                         contentDescription = null,
                                                         tint = folderActionInactiveTint,
-                                                        modifier = Modifier.size(18.dp)
+                                                        modifier = Modifier.size(20.dp)
                                                     )
                                                 }
                                             }
@@ -1886,245 +1944,206 @@ fun MainScreen(
                             }
                         }
                         "LIST" -> {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                val isCurrentListPlaying = playbackManager.activePlaylistId == pageContextId && playbackManager.activeCategory == folder
-                                var localShuffleState by remember(pageContextId) { mutableStateOf(settingsManager.getPlaylistShuffle(pageContextId)) }
-                                val isShuffleActive = if (folder == "ALL" || isCurrentListPlaying) playbackManager.isShuffle else localShuffleState
-                                val showSimplifiedHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
-                                val isGridMode = folder == "ALL" && tracksViewStyle == 1
-                                val pageMainGridState = remember(folder) { LazyGridState() }
+                            val isCurrentListPlaying = playbackManager.activePlaylistId == pageContextId && playbackManager.activeCategory == folder
+                            var localShuffleState by remember(pageContextId) { mutableStateOf(settingsManager.getPlaylistShuffle(pageContextId)) }
+                            val isShuffleActive = if (folder == "ALL" || isCurrentListPlaying) playbackManager.isShuffle else localShuffleState
+                            val hasHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
+                            val isGridMode = folder == "ALL" && tracksViewStyle == 1
+                            val pageMainGridState = remember(folder) { LazyGridState() }
 
-                                if (isGridMode) {
-                                    LazyVerticalGrid(
-                                        state = pageMainGridState,
-                                        columns = GridCells.Fixed(2),
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomPadding + 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                if (hasHeader) {
+                                    AnimatedVisibility(
+                                        visible = showSectionHeaders,
+                                        enter = expandVertically() + fadeIn(),
+                                        exit = shrinkVertically() + fadeOut()
                                     ) {
-                                        if (showSimplifiedHeader) {
-                                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                                HeaderSurface(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 8.dp),
-                                                    hasBlurBackground = hasBlurBackgroundMini
-                                                ) {
-                                                    SongsListHeader(
-                                                        songs = pageSortedSongs,
-                                                        folderName = folder,
-                                                        isShuffleActive = isShuffleActive,
-                                                        isCurrentListPlaying = isCurrentListPlaying,
-                                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
-                                                        hasBlurBackground = hasBlurBackgroundMini,
-                                                        useCustomControlsColor = useCustomControlsColor,
-                                                        controlsColorPalette = controlsColorPalette,
-                                                        onSortClick = { showSortSheet = true },
-                                                        onPlayClick = {
-                                                            if (settingsManager.isHapticVibrationEnabled) {
-                                                                vibrator.triggerLightVibration()
-                                                            }
-                                                            if (isCurrentListPlaying) {
-                                                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                                                onIsPlayingChange(!isPlaying)
-                                                            } else if (pageSortedSongs.isNotEmpty()) {
-                                                                val songToPlay = if (isShuffleActive) pageSortedSongs.random() else pageSortedSongs[0]
-                                                                onCurrentSongChange(songToPlay)
-                                                                playbackManager.play(songToPlay, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
-                                                                onIsPlayingChange(true)
-                                                            }
-                                                        },
-                                                        onShuffleClick = {
-                                                            playbackManager.toggleShuffle()
-                                                            localShuffleState = playbackManager.isShuffle
-                                                        },
-                                                        isGridLayout = true,
-                                                        onToggleLayout = {
-                                                            tracksViewStyle = 0
-                                                            settingsManager.tracksViewStyle = 0
+                                        HeaderSurface(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                            hasBlurBackground = hasBlurBackgroundMini
+                                        ) {
+                                            SongsListHeader(
+                                                songs = pageSortedSongs,
+                                                folderName = folder,
+                                                isShuffleActive = isShuffleActive,
+                                                isCurrentListPlaying = isCurrentListPlaying,
+                                                isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
+                                                hasBlurBackground = hasBlurBackgroundMini,
+                                                useCustomControlsColor = useCustomControlsColor,
+                                                controlsColorPalette = controlsColorPalette,
+                                                onSortClick = { showSortSheet = true },
+                                                onPlayClick = {
+                                                    if (settingsManager.isHapticVibrationEnabled) {
+                                                        vibrator.triggerLightVibration()
+                                                    }
+                                                    if (isCurrentListPlaying) {
+                                                        if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                                                        onIsPlayingChange(!isPlaying)
+                                                    } else if (pageSortedSongs.isNotEmpty()) {
+                                                        val songToPlay = if (isShuffleActive) pageSortedSongs.random() else pageSortedSongs[0]
+                                                        onCurrentSongChange(songToPlay)
+                                                        playbackManager.play(songToPlay, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                        onIsPlayingChange(true)
+                                                    }
+                                                },
+                                                onShuffleClick = {
+                                                    if (isCurrentListPlaying || folder == "ALL") {
+                                                        playbackManager.toggleShuffle()
+                                                        localShuffleState = playbackManager.isShuffle
+                                                    } else {
+                                                        localShuffleState = !localShuffleState
+                                                        settingsManager.setPlaylistShuffle(pageContextId, localShuffleState)
+                                                    }
+                                                },
+                                                isGridLayout = isGridMode,
+                                                onToggleLayout = if (folder == "ALL") {
+                                                    {
+                                                        val newMode = if (isGridMode) 0 else 1
+                                                        tracksViewStyle = newMode
+                                                        settingsManager.tracksViewStyle = newMode
+                                                    }
+                                                } else null
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                    if (isGridMode) {
+                                        LazyVerticalGrid(
+                                            state = pageMainGridState,
+                                            columns = GridCells.Fixed(2),
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomPadding + 16.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
+                                                SongGridItem(
+                                                    song = song,
+                                                    currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
+                                                    isPlaying = isPlaying,
+                                                    hasBlurBackground = hasBlurBackgroundMini,
+                                                    useCustomControlsColor = useCustomControlsColor,
+                                                    controlsColorPalette = controlsColorPalette,
+                                                    onClick = {
+                                                        if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
+                                                            onCurrentSongChange(song)
+                                                            playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                            onIsPlayingChange(true)
                                                         }
-                                                    )
-                                                }
+                                                    },
+                                                    onOptionsClick = {
+                                                        optionsSong = song
+                                                        showOptionsSheet = true
+                                                    },
+                                                    onFavoriteClick = { s ->
+                                                        playbackManager.toggleFavorite(s)?.let { updated ->
+                                                            musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
+                                                        }
+                                                    }
+                                                )
                                             }
                                         }
-                                        itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
-                                            SongGridItem(
-                                                song = song,
-                                                currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
-                                                isPlaying = isPlaying,
-                                                hasBlurBackground = hasBlurBackgroundMini,
-                                                useCustomControlsColor = useCustomControlsColor,
-                                                controlsColorPalette = controlsColorPalette,
-                                                onClick = {
-                                                    if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
-                                                        onCurrentSongChange(song)
-                                                        playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
-                                                        onIsPlayingChange(true)
+                                    } else {
+                                        LazyColumn(
+                                            state = pageMainListState,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(bottom = bottomPadding)
+                                        ) {
+                                            itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
+                                                val isFirst = index == 0
+                                                val isLast = index == pageSortedSongs.lastIndex
+                                                SongItem(
+                                                    isFirst = isFirst,
+                                                    isLast = isLast,
+                                                    song = song,
+                                                    currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
+                                                    isPlaying = isPlaying,
+                                                    hasBlurBackground = hasBlurBackgroundMini,
+                                                    useCustomControlsColor = useCustomControlsColor,
+                                                    controlsColorPalette = controlsColorPalette,
+                                                    onClick = {
+                                                        if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
+                                                            onCurrentSongChange(song)
+                                                            playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
+                                                            onIsPlayingChange(true)
+                                                        }
+                                                    },
+                                                    onOptionsClick = {
+                                                        optionsSong = song
+                                                        showOptionsSheet = true
+                                                    },
+                                                    onFavoriteClick = { s ->
+                                                        playbackManager.toggleFavorite(s)?.let { updated ->
+                                                            musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
+                                                        }
                                                     }
-                                                },
-                                                onOptionsClick = {
-                                                    optionsSong = song
-                                                    showOptionsSheet = true
-                                                },
-                                                onFavoriteClick = { s ->
-                                                    playbackManager.toggleFavorite(s)?.let { updated ->
-                                                        musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    LazyColumn(
-                                        state = pageMainListState,
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(bottom = bottomPadding)
-                                    ) {
-                                        if (showSimplifiedHeader) {
-                                            item {
-                                                HeaderSurface(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                                    hasBlurBackground = hasBlurBackgroundMini
-                                                ) {
-                                                    SongsListHeader(
-                                                        songs = pageSortedSongs,
-                                                        folderName = folder,
-                                                        isShuffleActive = isShuffleActive,
-                                                        isCurrentListPlaying = isCurrentListPlaying,
-                                                        isSortActive = activeSortOption != "ALPHABETICAL" || !activeIsSortAscending,
-                                                        hasBlurBackground = hasBlurBackgroundMini,
-                                                        useCustomControlsColor = useCustomControlsColor,
-                                                        controlsColorPalette = controlsColorPalette,
-                                                        onSortClick = { showSortSheet = true },
-                                                        onPlayClick = {
-                                                            if (settingsManager.isHapticVibrationEnabled) {
-                                                                vibrator.triggerLightVibration()
-                                                            }
-                                                            if (isCurrentListPlaying) {
-                                                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                                                onIsPlayingChange(!isPlaying)
-                                                            } else if (pageSortedSongs.isNotEmpty()) {
-                                                                val songToPlay = if (isShuffleActive) pageSortedSongs.random() else pageSortedSongs[0]
-                                                                onCurrentSongChange(songToPlay)
-                                                                playbackManager.play(songToPlay, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
-                                                                onIsPlayingChange(true)
-                                                            }
-                                                        },
-                                                        onShuffleClick = {
-                                                            if (isCurrentListPlaying || folder == "ALL") {
-                                                                playbackManager.toggleShuffle()
-                                                                localShuffleState = playbackManager.isShuffle
-                                                            } else {
-                                                                localShuffleState = !localShuffleState
-                                                                settingsManager.setPlaylistShuffle(pageContextId, localShuffleState)
-                                                            }
-                                                        },
-                                                        isGridLayout = false,
-                                                        onToggleLayout = if (folder == "ALL") {
-                                                            {
-                                                                tracksViewStyle = 1
-                                                                settingsManager.tracksViewStyle = 1
-                                                            }
-                                                        } else null
-                                                    )
-                                                }
+                                                )
                                             }
                                         }
-                                        itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
-                                            val isFirst = index == 0
-                                            val isLast = index == pageSortedSongs.lastIndex
-                                            SongItem(
-                                                isFirst = isFirst,
-                                                isLast = isLast,
-                                                song = song,
-                                                currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
-                                                isPlaying = isPlaying,
-                                                hasBlurBackground = hasBlurBackgroundMini,
-                                                useCustomControlsColor = useCustomControlsColor,
-                                                controlsColorPalette = controlsColorPalette,
-                                                onClick = {
-                                                    if (playbackManager.currentSong?.id != song.id || playbackManager.activePlaylistId != pageContextId) {
-                                                        onCurrentSongChange(song)
-                                                        playbackManager.play(song, pageSortedSongs, pageContextId, category = folder, shuffleMode = isShuffleActive)
-                                                        onIsPlayingChange(true)
-                                                    }
-                                                },
-                                                onOptionsClick = {
-                                                    optionsSong = song
-                                                    showOptionsSheet = true
-                                                },
-                                                onFavoriteClick = { s ->
-                                                    playbackManager.toggleFavorite(s)?.let { updated ->
-                                                        musicViewModel.syncFavoriteStatusInMemory(updated.id, updated.isFavorite)
-                                                    }
+                                    }
+
+                                    val targetIndex = remember(pageSortedSongs, playbackManager.currentSong, pageContextId, playbackManager.activePlaylistId) {
+                                        val cs = playbackManager.currentSong
+                                        if (cs != null && playbackManager.activePlaylistId == pageContextId) {
+                                            pageSortedSongs.indexOfFirst { it.id == cs.id }
+                                        } else -1
+                                    }
+
+                                    LaunchedEffect(scrollToCurrentTrigger.value) {
+                                        if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                                            if (isGridMode) {
+                                                pageMainGridState.animateScrollToItem(targetIndex)
+                                            } else {
+                                                pageMainListState.animateScrollToItem(targetIndex)
+                                            }
+                                            scrollToCurrentTrigger.value = 0
+                                        }
+                                    }
+
+                                    if (!isGridMode) {
+                                        FastScrollbar(
+                                            listState = pageMainListState,
+                                            items = pageSortedSongs,
+                                            headerItemCount = 0,
+                                            itemKeyOrLetter = { if (activeSortOption == "ALPHABETICAL") it.title else "" },
+                                            hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                            useCustomControlsColor = useCustomControlsColor,
+                                            controlsColorPalette = controlsColorPalette,
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .padding(bottom = bottomPadding)
+                                        )
+                                    }
+
+                                    val isScrollToTopVisible = if (isGridMode) {
+                                        rememberScrollToTopVisibility(pageMainGridState, settingsManager.isScrollToTopEnabled)
+                                    } else {
+                                        rememberScrollToTopVisibility(pageMainListState, settingsManager.isScrollToTopEnabled)
+                                    }
+
+                                    ScrollToTopPill(
+                                        visible = isScrollToTopVisible.value,
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                if (isGridMode) {
+                                                    pageMainGridState.animateScrollToItem(0)
+                                                } else {
+                                                    pageMainListState.animateScrollToItem(0)
                                                 }
-                                            )
-                                        }
-                                    }
-                                }
-
-                                val targetIndex = remember(pageSortedSongs, playbackManager.currentSong, pageContextId, playbackManager.activePlaylistId, showSimplifiedHeader) {
-                                    val cs = playbackManager.currentSong
-                                    if (cs != null && playbackManager.activePlaylistId == pageContextId) {
-                                        val idx = pageSortedSongs.indexOfFirst { it.id == cs.id }
-                                        if (idx != -1) idx + (if (showSimplifiedHeader) 1 else 0) else -1
-                                    } else -1
-                                }
-
-                                LaunchedEffect(scrollToCurrentTrigger.value) {
-                                    if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                                        if (isGridMode) {
-                                            pageMainGridState.animateScrollToItem(targetIndex)
-                                        } else {
-                                            pageMainListState.animateScrollToItem(targetIndex)
-                                        }
-                                        scrollToCurrentTrigger.value = 0
-                                    }
-                                }
-
-                                if (!isGridMode) {
-                                    FastScrollbar(
-                                        listState = pageMainListState,
-                                        items = pageSortedSongs,
-                                        headerItemCount = if (showSimplifiedHeader) 1 else 0,
-                                        itemKeyOrLetter = { if (activeSortOption == "ALPHABETICAL") it.title else "" },
-                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
-                                        useCustomControlsColor = useCustomControlsColor,
-                                        controlsColorPalette = controlsColorPalette,
+                                            }
+                                        },
                                         modifier = Modifier
-                                            .align(Alignment.CenterEnd)
-                                            .padding(bottom = bottomPadding)
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = bottomPadding + 14.dp),
+                                        hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
+                                        isDarkTheme = isDarkThemeMini,
+                                        customActiveColor = listActiveControlsColor
                                     )
                                 }
-
-                                val isScrollToTopVisible = if (isGridMode) {
-                                    rememberScrollToTopVisibility(pageMainGridState, settingsManager.isScrollToTopEnabled)
-                                } else {
-                                    rememberScrollToTopVisibility(pageMainListState, settingsManager.isScrollToTopEnabled)
-                                }
-
-                                ScrollToTopPill(
-                                    visible = isScrollToTopVisible.value,
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            if (isGridMode) {
-                                                pageMainGridState.animateScrollToItem(0)
-                                            } else {
-                                                pageMainListState.animateScrollToItem(0)
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .padding(bottom = bottomPadding + 14.dp),
-                                    hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
-                                    isDarkTheme = isDarkThemeMini,
-                                    customActiveColor = listActiveControlsColor
-                                )
-
                             }
                         }
                     }

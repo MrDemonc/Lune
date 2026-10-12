@@ -147,7 +147,6 @@ fun CustomizationScreen(
     var isCrossfadeCustomDuration by remember { mutableStateOf(settingsManager.isCrossfadeCustomDuration) }
     var crossfadeDurationSeconds by remember { mutableStateOf(settingsManager.crossfadeDurationSeconds) }
     var seamlessLooping by remember { mutableStateOf(settingsManager.seamlessLooping) }
-    var isHeaderWaveEffectEnabled by remember { mutableStateOf(settingsManager.isHeaderWaveEffectEnabled) }
     var isScrollToTopEnabled by remember { mutableStateOf(settingsManager.isScrollToTopEnabled) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -761,28 +760,7 @@ fun CustomizationScreen(
                         )
                     }
                 )
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.header_wave_effect),
-                    supportingText = stringResource(R.string.header_wave_effect_desc),
-                    icon = Icons.Default.Waves,
-                    position = SectionPosition.MIDDLE,
-                    trailingContent = {
-                        BouncySwitch(
-                            checked = isHeaderWaveEffectEnabled,
-                            onCheckedChange = {
-                                isHeaderWaveEffectEnabled = it
-                                settingsManager.isHeaderWaveEffectEnabled = it
-                            },
-                            thumbContent = {
-                                Icon(
-                                    imageVector = if (isHeaderWaveEffectEnabled) Icons.Default.Check else Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize)
-                                )
-                            }
-                        )
-                    }
-                )
+
                 SettingsPreferenceItem(
                     headlineText = stringResource(R.string.scroll_to_top_button),
                     supportingText = stringResource(R.string.scroll_to_top_button_desc),

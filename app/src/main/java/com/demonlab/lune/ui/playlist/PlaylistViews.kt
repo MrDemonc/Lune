@@ -1,5 +1,6 @@
 package com.demonlab.lune.ui.playlist
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -13,6 +14,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.demonlab.lune.ui.utils.bounceClick
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
@@ -32,6 +39,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -40,12 +48,13 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
+import com.demonlab.lune.tools.Song
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.sheets.CreatePlaylistDialog
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.HeaderSurface
-import com.demonlab.lune.ui.components.headerWaveBorder
+
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
@@ -131,7 +140,8 @@ fun PlaylistListScreen(
     isSortActive: Boolean = false,
     onSortClick: (() -> Unit)? = null,
     useCustomControlsColor: Boolean = false,
-    controlsColorPalette: Int = 0
+    controlsColorPalette: Int = 0,
+    showSectionHeader: Boolean = true
 ) {
     val playlists = viewModel.playlists
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -183,17 +193,27 @@ fun PlaylistListScreen(
         }
     )
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)
-    ) {
-        item {
-            val plIconBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-            val plIconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-            val plTitleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-            val plCountColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
-            val plAddBg = if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+    val plIconBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val plIconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+    val plTitleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+    val plCountColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
+    val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
+    val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
+    val actionBtnActiveTint = if (actionBtnActiveBg.luminance() > 0.45f) {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+    } else {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = showSectionHeader,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
             HeaderSurface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -203,76 +223,64 @@ fun PlaylistListScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = plIconBg,
-                            modifier = Modifier.size(44.dp)
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = plIconBg,
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.QueueMusic,
-                                    contentDescription = null,
-                                    tint = plIconTint,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.playlists),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = plTitleColor
+                            Icon(
+                                Icons.AutoMirrored.Filled.QueueMusic,
+                                contentDescription = null,
+                                tint = plIconTint,
+                                modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = "${playlists.size}",
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
                                 color = plCountColor
                             )
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (onSortClick != null) {
-                            val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
-                            val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                            val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-                            val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
-                            val actionBtnActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimary
-                            Surface(
-                                onClick = onSortClick,
-                                shape = CircleShape,
-                                color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
-                                modifier = Modifier.size(36.dp).bounceClick()
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
-                                        contentDescription = stringResource(R.string.sort_options_title),
-                                        tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
 
+                    Surface(
+                        onClick = { showCreateDialog = true },
+                        shape = RoundedCornerShape(14.dp),
+                        color = actionBtnBg,
+                        modifier = Modifier.size(44.dp).bounceClick()
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(R.string.create_playlist),
+                                tint = actionBtnTint,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    if (onSortClick != null) {
                         Surface(
-                            onClick = { showCreateDialog = true },
-                            shape = CircleShape,
-                            color = plAddBg,
-                            modifier = Modifier.size(36.dp).bounceClick()
+                            onClick = onSortClick,
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
+                            modifier = Modifier.size(44.dp).bounceClick()
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                                    contentDescription = stringResource(R.string.sort_options_title),
+                                    tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -280,64 +288,253 @@ fun PlaylistListScreen(
                 }
             }
         }
+
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(top = 8.dp, bottom = bottomPadding + 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         
         itemsIndexed(sortedPlaylists, key = { _, it -> it.id }) { index, playlist ->
-            var songCount by remember { mutableIntStateOf(0) }
-            var totalDuration by remember { mutableLongStateOf(0L) }
-            
-            LaunchedEffect(playlist.id, viewModel.filteredSongs, viewModel.playlistMappings) {
-                viewModel.getPlaylistInfo(playlist.id) { count, duration ->
-                    songCount = count
-                    totalDuration = duration
+            PlaylistCard(
+                playlist = playlist,
+                viewModel = viewModel,
+                playbackManager = playbackManager,
+                hasBlurBackground = hasBlurBackground,
+                onPlaylistClick = onPlaylistClick,
+                onPlayPlaylist = onPlayPlaylist,
+                onLongClick = { selectedOptionsPlaylist = playlist }
+            )
+        }
+    }
+}
+}
+
+private val PLAYLIST_GRADIENTS = listOf(
+    listOf(Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)),
+    listOf(Color(0xFF0D9488), Color(0xFF059669), Color(0xFF10B981)),
+    listOf(Color(0xFFF97316), Color(0xFFEF4444), Color(0xFFEC4899)),
+    listOf(Color(0xFF06B6D4), Color(0xFF3B82F6), Color(0xFF6366F1)),
+    listOf(Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFFF43F5E)),
+    listOf(Color(0xFF10B981), Color(0xFF06B6D4), Color(0xFF3B82F6)),
+    listOf(Color(0xFFF59E0B), Color(0xFFD97706), Color(0xFFB45309)),
+    listOf(Color(0xFFE11D48), Color(0xFFBE123C), Color(0xFF881337))
+)
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PlaylistCard(
+    playlist: Playlist,
+    viewModel: MusicViewModel,
+    playbackManager: PlaybackManager,
+    hasBlurBackground: Boolean,
+    onPlaylistClick: (Playlist) -> Unit,
+    onPlayPlaylist: (Playlist) -> Unit,
+    onLongClick: (Playlist) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val playlistSongs = remember(playlist.id, viewModel.playlistMappings, viewModel.allSongs) {
+        viewModel.getSongsForPlaylistSync(playlist.id)
+    }
+    val songCount = playlistSongs.size
+    val totalDuration = remember(playlistSongs) {
+        playlistSongs.sumOf { it.duration }
+    }
+    val previewSongs = remember(playlistSongs) {
+        playlistSongs.take(4)
+    }
+
+    val gradientColors = remember(playlist.id) {
+        val index = kotlin.math.abs(playlist.id.hashCode()) % PLAYLIST_GRADIENTS.size
+        PLAYLIST_GRADIENTS[index]
+    }
+
+    val isCurrentPlaylist = playbackManager.activePlaylistId == playlist.id
+    val isPlaying = isCurrentPlaylist && playbackManager.isPlaying
+
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = if (hasBlurBackground) Color.White.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surfaceContainer,
+        border = if (hasBlurBackground) BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .bounceClick(scaleDown = 0.98f)
+            .clip(RoundedCornerShape(24.dp))
+            .combinedClickable(
+                onClick = { onPlaylistClick(playlist) },
+                onLongClick = { onLongClick(playlist) }
+            )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Card Top Banner with Cover Collage & Gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .background(Brush.horizontalGradient(gradientColors))
+            ) {
+                // Background covers collage preview
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 16.dp, end = 90.dp),
+                    horizontalArrangement = Arrangement.spacedBy((-16).dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (previewSongs.isEmpty()) {
+                        Surface(
+                            shape = CircleShape,
+                            border = BorderStroke(2.dp, Color.White.copy(alpha = 0.7f)),
+                            color = Color.White.copy(alpha = 0.20f),
+                            modifier = Modifier
+                                .size(70.dp)
+                                .shadow(4.dp, CircleShape)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        previewSongs.forEachIndexed { index, song ->
+                            Surface(
+                                shape = CircleShape,
+                                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.7f)),
+                                modifier = Modifier
+                                    .size(70.dp)
+                                    .offset(x = (index * 6).dp)
+                                    .shadow(4.dp, CircleShape)
+                            ) {
+                                SongCoverImage(
+                                    coverUrl = song.coverUrl ?: song.albumArtUri ?: song.uri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    shape = CircleShape
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Play / Pause Button floating on the right
+                FilledIconButton(
+                    onClick = {
+                        if (isCurrentPlaylist) {
+                            if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                        } else {
+                            onPlayPlaylist(playlist)
+                        }
+                    },
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 18.dp)
+                        .size(54.dp)
+                        .shadow(8.dp, CircleShape)
+                        .bounceClick()
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
 
-            val itemTitleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-            val itemSubtitleColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-
-            ListItem(
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                supportingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.MusicNote, 
-                            null, 
-                            modifier = Modifier.size(14.dp),
-                            tint = itemSubtitleColor
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+            // Playlist Details (excluding track list)
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = playlist.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest
+                    ) {
                         Text(
-                            "$songCount • ${formatLongDuration(totalDuration)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = itemSubtitleColor
+                            text = stringResource(R.string.ai_mix_songs_count, songCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
-                },
-                leadingContent = { 
-                    Box(contentAlignment = Alignment.Center) {
-                        PlaylistPreviewCovers(playlist.id, viewModel, 56.dp)
-                        if (playbackManager.activePlaylistId == playlist.id) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(2.dp)
-                                    .size(16.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                    .border(2.dp, if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface, CircleShape)
-                            )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = if (hasBlurBackground) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = formatLongDuration(totalDuration),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    if (isCurrentPlaylist) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(
+                                            color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                            shape = CircleShape
+                                        )
+                                )
+                                Text(
+                                    text = if (isPlaying) stringResource(R.string.queue_now_playing) else stringResource(R.string.play_state_pause),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
-                },
-                modifier = Modifier.combinedClickable(
-                    onClick = { onPlaylistClick(playlist) },
-                    onLongClick = { selectedOptionsPlaylist = playlist }
-                )
-            ) {
-                Text(
-                    playlist.name,
-                    fontWeight = FontWeight.SemiBold,
-                    color = itemTitleColor
-                )
+                }
             }
         }
     }
@@ -418,7 +615,8 @@ fun PlaylistOptionsAndRename(
     playlists: List<Playlist>,
     viewModel: MusicViewModel,
     onDismissRequest: () -> Unit,
-    onDeleteConfirm: (Playlist) -> Unit
+    onDeleteConfirm: (Playlist) -> Unit,
+    onAddSongsClick: (() -> Unit)? = null
 ) {
     if (playlist == null) return
     val currentPlaylist = playlists.find { it.id == playlist.id } ?: playlist
@@ -501,7 +699,8 @@ fun PlaylistOptionsAndRename(
             viewModel = viewModel,
             onDismissRequest = onDismissRequest,
             onRenameClick = { showRenameDialog = true },
-            onDeleteClick = { showDeleteConfirm = true }
+            onDeleteClick = { showDeleteConfirm = true },
+            onAddSongsClick = onAddSongsClick
         )
     }
 }
@@ -513,7 +712,8 @@ fun PlaylistOptionsSheet(
     viewModel: MusicViewModel,
     onDismissRequest: () -> Unit,
     onRenameClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onAddSongsClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
@@ -571,12 +771,54 @@ fun PlaylistOptionsSheet(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Options
+                if (onAddSongsClick != null) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 1.dp)
+                            .bounceClick(),
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                        color = blurColors.itemContainerColor,
+                        border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
+                    ) {
+                        ListItem(
+                            leadingContent = {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = null,
+                                            tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            },
+                            modifier = Modifier.clickable {
+                                onDismissRequest()
+                                onAddSongsClick()
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        ) {
+                            Text(stringResource(R.string.add_songs), color = blurColors.textColor)
+                        }
+                    }
+                }
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 1.dp)
                         .bounceClick(),
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                    shape = if (onAddSongsClick != null) {
+                        RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                    } else {
+                        RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                    },
                     color = blurColors.itemContainerColor,
                     border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
                 ) {

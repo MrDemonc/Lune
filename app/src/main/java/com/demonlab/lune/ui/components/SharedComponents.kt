@@ -1,6 +1,8 @@
 package com.demonlab.lune.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -9,6 +11,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
@@ -65,6 +68,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -668,182 +672,7 @@ fun SongGridItem(
     }
 }
 
-@Composable
-fun Modifier.headerWaveBackground(
-    strokeWidth: androidx.compose.ui.unit.Dp = 1.2.dp,
-    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp,
-    hasBlurBackground: Boolean = false,
-): Modifier {
-    val infiniteTransition = rememberInfiniteTransition(label = "HeaderWaveTransition")
 
-    val phase1 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 7000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "WavePhase1"
-    )
-
-    val phase2 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 5200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "WavePhase2"
-    )
-
-    val primary = MaterialTheme.colorScheme.primary
-    val tertiary = MaterialTheme.colorScheme.tertiary
-    val secondary = MaterialTheme.colorScheme.secondary
-    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-
-    return this.drawWithCache {
-        val strokePx = strokeWidth.toPx()
-        val radiusPx = cornerRadius.toPx()
-
-        val clipPath = Path().apply {
-            addRoundRect(
-                RoundRect(
-                    rect = Rect(0f, 0f, size.width, size.height),
-                    cornerRadius = CornerRadius(radiusPx, radiusPx)
-                )
-            )
-        }
-
-        val wavePath1 = Path()
-        val wavePath2 = Path()
-
-        val baseH = 22.dp.toPx()
-        val amp1 = 7.dp.toPx()
-        val amp2 = 9.dp.toPx()
-
-        val waveBrush1 = if (hasBlurBackground) {
-            Brush.horizontalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.08f),
-                    Color.White.copy(alpha = 0.16f),
-                    Color.White.copy(alpha = 0.11f),
-                    Color.White.copy(alpha = 0.08f)
-                )
-            )
-        } else {
-            Brush.horizontalGradient(
-                colors = listOf(
-                    primary.copy(alpha = 0.30f),
-                    tertiary.copy(alpha = 0.40f),
-                    secondary.copy(alpha = 0.35f),
-                    primary.copy(alpha = 0.30f)
-                )
-            )
-        }
-
-        val waveBrush2 = if (hasBlurBackground) {
-            Brush.horizontalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.12f),
-                    Color.White.copy(alpha = 0.24f),
-                    Color.White.copy(alpha = 0.18f),
-                    Color.White.copy(alpha = 0.10f)
-                )
-            )
-        } else {
-            Brush.horizontalGradient(
-                colors = listOf(
-                    primaryContainer.copy(alpha = 0.40f),
-                    primary.copy(alpha = 0.55f),
-                    tertiary.copy(alpha = 0.45f),
-                    primaryContainer.copy(alpha = 0.38f)
-                )
-            )
-        }
-
-        val borderBrush = if (hasBlurBackground) {
-            Brush.horizontalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.18f),
-                    Color.White.copy(alpha = 0.32f),
-                    Color.White.copy(alpha = 0.22f),
-                    Color.White.copy(alpha = 0.18f)
-                )
-            )
-        } else {
-            Brush.horizontalGradient(
-                colors = listOf(
-                    primary.copy(alpha = 0.35f),
-                    tertiary.copy(alpha = 0.50f),
-                    primaryContainer.copy(alpha = 0.45f),
-                    primary.copy(alpha = 0.35f)
-                )
-            )
-        }
-
-        onDrawWithContent {
-            val w = size.width
-            val h = size.height
-
-            // Wave 1: Back wave layer with gentle undulating slopes
-            wavePath1.reset()
-            wavePath1.moveTo(0f, h)
-            val wl1 = w * 1.15f
-            var x = 0f
-            val step = 8f
-            while (x <= w) {
-                val y = h - (baseH + amp1 * kotlin.math.sin(2 * Math.PI * (x / wl1) + phase1).toFloat())
-                wavePath1.lineTo(x, y)
-                x += step
-            }
-            val endY1 = h - (baseH + amp1 * kotlin.math.sin(2 * Math.PI * (w / wl1) + phase1).toFloat())
-            wavePath1.lineTo(w, endY1)
-            wavePath1.lineTo(w, h)
-            wavePath1.close()
-
-            // Wave 2: Front wave layer overlapping Wave 1
-            wavePath2.reset()
-            wavePath2.moveTo(0f, h)
-            val wl2 = w * 0.88f
-            x = 0f
-            while (x <= w) {
-                val y = h - ((baseH * 0.88f) + amp2 * kotlin.math.sin(2 * Math.PI * (x / wl2) + phase2).toFloat())
-                wavePath2.lineTo(x, y)
-                x += step
-            }
-            val endY2 = h - ((baseH * 0.88f) + amp2 * kotlin.math.sin(2 * Math.PI * (w / wl2) + phase2).toFloat())
-            wavePath2.lineTo(w, endY2)
-            wavePath2.lineTo(w, h)
-            wavePath2.close()
-
-            // 1. Draw waves in the BACKGROUND (behind the content, clipped to rounded corners)
-            clipPath(clipPath) {
-                drawPath(path = wavePath1, brush = waveBrush1)
-                drawPath(path = wavePath2, brush = waveBrush2)
-            }
-
-            // 2. Draw content ON TOP of the waves!
-            // Icons, text, options and buttons are drawn pristine, 100% uncovered
-            drawContent()
-
-            // 3. Sleek subtle border stroke framing the header
-            drawRoundRect(
-                brush = borderBrush,
-                topLeft = Offset(strokePx / 2f, strokePx / 2f),
-                size = Size(w - strokePx, h - strokePx),
-                cornerRadius = CornerRadius((radiusPx - strokePx / 2f).coerceAtLeast(0f)),
-                style = Stroke(width = strokePx)
-            )
-        }
-    }
-}
-
-@Composable
-fun Modifier.headerWaveBorder(
-    strokeWidth: androidx.compose.ui.unit.Dp = 1.2.dp,
-    cornerRadius: androidx.compose.ui.unit.Dp = 20.dp,
-    hasBlurBackground: Boolean = false,
-): Modifier = headerWaveBackground(strokeWidth, cornerRadius, hasBlurBackground)
 
 @Composable
 fun HeaderSurface(
@@ -852,40 +681,8 @@ fun HeaderSurface(
     hasBlurBackground: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
-    val settingsManager = remember { SettingsManager.getInstance(context) }
-    var isWaveEnabled by remember { mutableStateOf(settingsManager.isHeaderWaveEffectEnabled) }
-
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                isWaveEnabled = settingsManager.isHeaderWaveEffectEnabled
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(cornerRadius),
-        color = if (hasBlurBackground) Color.Black.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = if (!isWaveEnabled && hasBlurBackground) BorderStroke(1.2.dp, Color.White.copy(alpha = 0.16f)) else null,
-        tonalElevation = if (hasBlurBackground) 0.dp else 4.dp,
-        shadowElevation = 0.dp
-    ) {
-        if (isWaveEnabled) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .headerWaveBackground(cornerRadius = cornerRadius, hasBlurBackground = hasBlurBackground)
-            ) {
-                content()
-            }
-        } else {
-            content()
-        }
+    Box(modifier = modifier) {
+        content()
     }
 }
 
@@ -916,99 +713,95 @@ fun AlbumsListHeader(
     val actionBtnBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
     val actionBtnTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
     val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
-    val actionBtnActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimary
+    val actionBtnActiveTint = if (actionBtnActiveBg.luminance() > 0.45f) {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+    } else {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                onClick = { onToggleAlbumView?.invoke() },
-                enabled = onToggleAlbumView != null,
-                shape = RoundedCornerShape(12.dp),
-                color = iconContainerBg,
-                modifier = Modifier.size(44.dp)
+        Surface(
+            onClick = { onToggleAlbumView?.invoke() },
+            enabled = onToggleAlbumView != null,
+            shape = RoundedCornerShape(14.dp),
+            color = iconContainerBg,
+            modifier = Modifier.height(44.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        displayIcon,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = displayTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = titleColor
+                Icon(
+                    displayIcon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = albumCount.toString(),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
                     color = countColor
                 )
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (onSortClick != null) {
-                Surface(
-                    onClick = onSortClick,
-                    shape = CircleShape,
-                    color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
-                    modifier = Modifier.size(36.dp).bounceClick()
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
-                            contentDescription = stringResource(R.string.sort_options_title),
-                            tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
-            if (onToggleAlbumView != null) {
-                Surface(
-                    onClick = onToggleAlbumView,
-                    shape = CircleShape,
-                    color = if (isAlbumView) MaterialTheme.colorScheme.primary else actionBtnBg,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            if (isAlbumView) Icons.Default.Person else Icons.Default.Album,
-                            contentDescription = null,
-                            tint = if (isAlbumView) MaterialTheme.colorScheme.onPrimary else actionBtnTint,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
+        if (onSortClick != null) {
             Surface(
-                onClick = onToggleViewStyle,
-                shape = CircleShape,
-                color = actionBtnBg,
-                modifier = Modifier.size(36.dp)
+                onClick = onSortClick,
+                shape = RoundedCornerShape(14.dp),
+                color = if (isSortActive) actionBtnActiveBg else actionBtnBg,
+                modifier = Modifier.size(44.dp).bounceClick()
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        if (viewStyle == 0) Icons.Default.ViewCarousel else Icons.Default.GridView,
-                        contentDescription = "Toggle View Style",
-                        tint = actionBtnTint,
-                        modifier = Modifier.size(18.dp)
+                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                        contentDescription = stringResource(R.string.sort_options_title),
+                        tint = if (isSortActive) actionBtnActiveTint else actionBtnTint,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
+            }
+        }
+
+        if (onToggleAlbumView != null) {
+            Surface(
+                onClick = onToggleAlbumView,
+                shape = RoundedCornerShape(14.dp),
+                color = if (isAlbumView) actionBtnActiveBg else actionBtnBg,
+                modifier = Modifier.size(44.dp).bounceClick()
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        if (isAlbumView) Icons.Default.Person else Icons.Default.Album,
+                        contentDescription = null,
+                        tint = if (isAlbumView) actionBtnActiveTint else actionBtnTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        Surface(
+            onClick = onToggleViewStyle,
+            shape = RoundedCornerShape(14.dp),
+            color = actionBtnBg,
+            modifier = Modifier.size(44.dp).bounceClick()
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    if (viewStyle == 0) Icons.Default.ViewCarousel else Icons.Default.GridView,
+                    contentDescription = "Toggle View Style",
+                    tint = actionBtnTint,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
@@ -1034,137 +827,87 @@ fun SongsListHeader(
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
     val isPlaying = playbackManager.isPlaying
+    val isPillPlaying = isCurrentListPlaying && isPlaying
+
+    val coroutineScope = rememberCoroutineScope()
+    // Animación de estiramiento elástico estilo Material 3 Expressive al presionar play
+    val stretchProgress = remember { Animatable(0f) }
 
     val activePrimary = com.demonlab.lune.ui.theme.getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val dynamicPrimary = if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primary
 
-    val iconContainerBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val iconTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-    val titleColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-    val subtitleColor = if (hasBlurBackground) Color.White.copy(alpha = 0.80f) else MaterialTheme.colorScheme.onSurfaceVariant
+    // Fondo dinámico de la píldora (claro, oscuro y modo blur)
+    val pillBg = if (hasBlurBackground) dynamicPrimary.copy(alpha = 0.85f) else dynamicPrimary
+    val pillContentColor = if (pillBg.luminance() > 0.45f) {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+    } else {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+    }
+
+    // Animación Expressive de la forma de la píldora:
+    // En Play (detenido/pausado): píldora circular (28.dp) e icono interior circular (20.dp)
+    // En Pause (reproduciendo): píldora cuadrada con esquinas redondeadas (14.dp) e icono interior cuadrado redondeado (10.dp)
+    val pillCornerRadius by animateDpAsState(
+        targetValue = if (isPillPlaying) 14.dp else 28.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+        label = "headerPillCornerRadius"
+    )
+    val iconCornerRadius by animateDpAsState(
+        targetValue = if (isPillPlaying) 10.dp else 20.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+        label = "headerIconCornerRadius"
+    )
+
+    // Botones secundarios de opciones (cuadrados con esquinas redondeadas 14.dp)
     val actionBtnInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
     val actionBtnInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
     val actionBtnActiveBg = if (useCustomControlsColor) activePrimary else if (hasBlurBackground) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary
-    val actionBtnActiveTint = Color.White
+    val actionBtnActiveTint = if (actionBtnActiveBg.luminance() > 0.45f) {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+    } else {
+        MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+    }
+
+    val onPlayWithStretch = {
+        coroutineScope.launch {
+            stretchProgress.snapTo(0f)
+            stretchProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+            )
+            stretchProgress.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            )
+        }
+        onPlayClick()
+    }
+
+    val extraLateralPadding = (stretchProgress.value * 14f).coerceAtLeast(0f).dp
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val leftModifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
-        if (folderName == "FAVORITES") {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = leftModifier) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = iconContainerBg,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.Favorite,
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.tab_favorites),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = titleColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    val totalDuration = songs.sumOf { it.duration }
-                    Text(
-                        text = "${songs.size} · ${formatDurationCompact(totalDuration)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subtitleColor,
-                        maxLines = 1
-                    )
-                }
-            }
-        } else if (folderName == "ALL") {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = leftModifier) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = iconContainerBg,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.tab_all),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = titleColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    val totalDuration = songs.sumOf { it.duration }
-                    Text(
-                        text = "${songs.size} · ${formatDurationCompact(totalDuration)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subtitleColor,
-                        maxLines = 1
-                    )
-                }
-            }
-        } else {
-            Column(horizontalAlignment = Alignment.Start, modifier = leftModifier) {
-                val totalDuration = songs.sumOf { it.duration }
-                Text(
-                    text = formatLongDuration(totalDuration),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = subtitleColor,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.MusicNote,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = iconTint
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    val songsLabel = if (songs.size == 1) stringResource(R.string.song_singular) else stringResource(R.string.song_plural)
-                    Text(
-                        text = "${songs.size} $songsLabel",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = titleColor,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
+        if (folderName == "ALL") {
+            // Orden específico para ALL: 1. Grid, 2. Play pill, 3. Sort
+            // 1. Grid / List Layout toggle a la izquierda
             if (onToggleLayout != null) {
                 Surface(
                     onClick = onToggleLayout,
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(14.dp),
                     color = if (isGridLayout) actionBtnActiveBg else actionBtnInactiveBg,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(44.dp)
+                        .graphicsLayer {
+                            translationX = -stretchProgress.value * 8.dp.toPx()
+                        }
                         .bounceClick()
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -1172,67 +915,201 @@ fun SongsListHeader(
                             imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.List else Icons.Default.GridView,
                             contentDescription = "Toggle Layout",
                             tint = if (isGridLayout) actionBtnActiveTint else actionBtnInactiveTint,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
 
+            // 2. Píldora grande de Play / Pause en el centro
+            Surface(
+                onClick = onPlayWithStretch,
+                shape = RoundedCornerShape(pillCornerRadius),
+                color = pillBg,
+                modifier = Modifier
+                    .height(48.dp)
+                    .graphicsLayer {
+                        scaleY = 1f - (stretchProgress.value * 0.08f)
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        start = 6.dp + extraLateralPadding,
+                        end = 16.dp + extraLateralPadding
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(iconCornerRadius),
+                        color = pillContentColor.copy(alpha = 0.22f),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isPillPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPillPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                tint = pillContentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    AnimatedContent(
+                        targetState = isPillPlaying,
+                        transitionSpec = {
+                            (slideInVertically { h -> h / 2 } + fadeIn(tween(150)))
+                                .togetherWith(slideOutVertically { h -> -h / 2 } + fadeOut(tween(150)))
+                        },
+                        label = "headerPillText"
+                    ) { playing ->
+                        Text(
+                            text = if (playing) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = pillContentColor
+                        )
+                    }
+                }
+            }
+
+            // 3. Sort a la derecha
             Surface(
                 onClick = onSortClick,
-                shape = CircleShape,
+                shape = RoundedCornerShape(14.dp),
                 color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(44.dp)
+                    .graphicsLayer {
+                        translationX = stretchProgress.value * 8.dp.toPx()
+                    }
                     .bounceClick()
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.sort_options_title),
                         tint = if (isSortActive) actionBtnActiveTint else actionBtnInactiveTint,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        } else {
+            // Secciones que no son ALL (FAVORITES, carpetas, etc.)
+            if (onToggleLayout != null) {
+                Surface(
+                    onClick = onToggleLayout,
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isGridLayout) actionBtnActiveBg else actionBtnInactiveBg,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .graphicsLayer {
+                            translationX = -stretchProgress.value * 8.dp.toPx()
+                        }
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.List else Icons.Default.GridView,
+                            contentDescription = "Toggle Layout",
+                            tint = if (isGridLayout) actionBtnActiveTint else actionBtnInactiveTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            // Píldora Play / Pause
+            Surface(
+                onClick = onPlayWithStretch,
+                shape = RoundedCornerShape(pillCornerRadius),
+                color = pillBg,
+                modifier = Modifier
+                    .height(48.dp)
+                    .graphicsLayer {
+                        scaleY = 1f - (stretchProgress.value * 0.08f)
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        start = 6.dp + extraLateralPadding,
+                        end = 16.dp + extraLateralPadding
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(iconCornerRadius),
+                        color = pillContentColor.copy(alpha = 0.22f),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isPillPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPillPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                tint = pillContentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    AnimatedContent(
+                        targetState = isPillPlaying,
+                        transitionSpec = {
+                            (slideInVertically { h -> h / 2 } + fadeIn(tween(150)))
+                                .togetherWith(slideOutVertically { h -> -h / 2 } + fadeOut(tween(150)))
+                        },
+                        label = "headerPillText"
+                    ) { playing ->
+                        Text(
+                            text = if (playing) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = pillContentColor
+                        )
+                    }
+                }
+            }
+
+            // Sort
+            Surface(
+                onClick = onSortClick,
+                shape = RoundedCornerShape(14.dp),
+                color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
+                modifier = Modifier
+                    .size(44.dp)
+                    .graphicsLayer {
+                        translationX = stretchProgress.value * 8.dp.toPx()
+                    }
+                    .bounceClick()
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                        contentDescription = stringResource(R.string.sort_options_title),
+                        tint = if (isSortActive) actionBtnActiveTint else actionBtnInactiveTint,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Shuffle
+            Surface(
+                onClick = onShuffleClick,
+                shape = RoundedCornerShape(14.dp),
+                color = if (isShuffleActive) actionBtnActiveBg else actionBtnInactiveBg,
+                modifier = Modifier
+                    .size(44.dp)
+                    .graphicsLayer {
+                        translationX = stretchProgress.value * 8.dp.toPx()
+                    }
+                    .bounceClick()
             ) {
-                Surface(
-                    onClick = onShuffleClick,
-                    shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                    color = if (isShuffleActive) actionBtnActiveBg else actionBtnInactiveBg,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .bounceClick()
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Shuffle,
-                            contentDescription = null,
-                            tint = if (isShuffleActive) actionBtnActiveTint else actionBtnInactiveTint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-                Surface(
-                    onClick = onPlayClick,
-                    shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                    color = actionBtnActiveBg,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .bounceClick()
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (isCurrentListPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = actionBtnActiveTint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Shuffle,
+                        contentDescription = stringResource(R.string.option_shuffle),
+                        tint = if (isShuffleActive) actionBtnActiveTint else actionBtnInactiveTint,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
