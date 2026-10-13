@@ -47,8 +47,10 @@ import com.demonlab.lune.ui.components.rememberScrollToTopVisibility
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.data.Album
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.random.Random
 import com.demonlab.lune.ui.playlist.PlaylistOptionsAndRename
-import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
 import com.demonlab.lune.ui.sheets.AddSongsToPlaylistDialog
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.utils.triggerLightVibration
@@ -139,8 +141,36 @@ fun PlaylistDetailView(
         }
     }
 
-    val backgroundCover = remember(songs) {
-        songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
+    val allCovers = remember(songs) {
+        songs.groupBy { song ->
+            song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
+        }.values.mapNotNull { group ->
+            group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
+        }
+    }
+
+    var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(allCovers) {
+        if (allCovers.size > 1) {
+            while (isActive) {
+                delay(5000L)
+                val nextIndex = if (allCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(allCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(allCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val activeCover = remember(allCovers, currentCoverIndex) {
+        allCovers.getOrNull(currentCoverIndex)
     }
 
     AppBlurBackdrop(
@@ -159,34 +189,42 @@ fun PlaylistDetailView(
             ) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        if (backgroundCover != null && !hasBlurBackground) {
+                        if (activeCover != null) {
+                            val surfaceColor = if (hasBlurBackground) {
+                                if (isDarkTheme) Color(0xFF141416).copy(alpha = 0.75f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(350.dp)
+                                    .height(380.dp)
                                     .offset(y = (-50).dp)
                                     .graphicsLayer {
                                         alpha = headerAlpha
                                     }
                             ) {
-                                AsyncImage(
-                                    model = backgroundCover,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Crossfade(
+                                    targetState = activeCover,
+                                    animationSpec = tween(durationMillis = 1000),
+                                    label = "playlistCoverCrossfade"
+                                ) { cover ->
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 0f
+                                                0.0f to Color.Transparent,
+                                                0.45f to Color.Transparent,
+                                                0.75f to surfaceColor.copy(alpha = 0.65f),
+                                                1.0f to surfaceColor
                                             )
                                         )
                                 )
@@ -204,14 +242,7 @@ fun PlaylistDetailView(
                                 .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(55.dp))
-                        PlaylistPreviewCovers(
-                            playlistId = playlist.id,
-                            viewModel = viewModel,
-                            size = 180.dp
-                        )
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(260.dp))
                         
                         val currentPlaylistName = viewModel.playlists.find { it.id == playlist.id }?.name ?: playlist.name
                         Text(
@@ -620,8 +651,37 @@ fun AlbumDetailView(
 
     BackHandler(onBack = onBack)
 
-    val backgroundCover = remember(album) {
-        album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
+    val allCovers = remember(songs, album) {
+        val list = if (songs.isNotEmpty()) songs else album.songs
+        list.groupBy { song ->
+            song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
+        }.values.mapNotNull { group ->
+            group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
+        }
+    }
+
+    var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(allCovers) {
+        if (allCovers.size > 1) {
+            while (isActive) {
+                delay(5000L)
+                val nextIndex = if (allCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(allCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(allCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val activeCover = remember(allCovers, currentCoverIndex) {
+        allCovers.getOrNull(currentCoverIndex)
     }
 
     AppBlurBackdrop(
@@ -638,34 +698,42 @@ fun AlbumDetailView(
             ) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        if (backgroundCover != null && !hasBlurBackground) {
+                        if (activeCover != null) {
+                            val surfaceColor = if (hasBlurBackground) {
+                                if (isDarkTheme) Color(0xFF141416).copy(alpha = 0.75f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(350.dp)
+                                    .height(380.dp)
                                     .offset(y = (-50).dp)
                                     .graphicsLayer {
                                         alpha = headerAlpha
                                     }
                             ) {
-                                AsyncImage(
-                                    model = backgroundCover,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Crossfade(
+                                    targetState = activeCover,
+                                    animationSpec = tween(durationMillis = 1000),
+                                    label = "albumCoverCrossfade"
+                                ) { cover ->
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 0f
+                                                0.0f to Color.Transparent,
+                                                0.45f to Color.Transparent,
+                                                0.75f to surfaceColor.copy(alpha = 0.65f),
+                                                1.0f to surfaceColor
                                             )
                                         )
                                 )
@@ -683,22 +751,7 @@ fun AlbumDetailView(
                                 .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(55.dp))
-                        
-                        val albumCoverBytes = remember(album) {
-                            album.songs.firstOrNull()?.let { 
-                                it.coverUrl ?: it.uri 
-                            }
-                        }
-                        
-                        SongCoverImage(
-                            coverUrl = albumCoverBytes,
-                            contentDescription = null,
-                            modifier = Modifier.size(180.dp),
-                            shape = CircleShape
-                        )
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(260.dp))
                         
                         Text(
                             text = album.name,
@@ -1046,12 +1099,36 @@ fun FolderDetailView(
         }
     }
 
-    val backgroundCover = remember(songs) {
-        songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
+    val allCovers = remember(songs) {
+        songs.groupBy { song ->
+            song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
+        }.values.mapNotNull { group ->
+            group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
+        }
     }
 
-    val covers = remember(songs) {
-        songs.map { it.coverUrl ?: it.uri }.distinct().take(4)
+    var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(allCovers) {
+        if (allCovers.size > 1) {
+            while (isActive) {
+                delay(5000L)
+                val nextIndex = if (allCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(allCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(allCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val activeCover = remember(allCovers, currentCoverIndex) {
+        allCovers.getOrNull(currentCoverIndex)
     }
 
     val folderId = folderName.hashCode().toLong()
@@ -1073,32 +1150,40 @@ fun FolderDetailView(
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
 
-                        if (backgroundCover != null && !hasBlurBackground) {
+                        if (activeCover != null) {
+                            val surfaceColor = if (hasBlurBackground) {
+                                if (isDarkTheme) Color(0xFF141416).copy(alpha = 0.75f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(350.dp)
+                                    .height(380.dp)
                                     .offset(y = (-50).dp)
                                     .graphicsLayer { alpha = headerAlpha }
                             ) {
-                                AsyncImage(
-                                    model = backgroundCover,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Crossfade(
+                                    targetState = activeCover,
+                                    animationSpec = tween(durationMillis = 1000),
+                                    label = "folderCoverCrossfade"
+                                ) { cover ->
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 0f
+                                                0.0f to Color.Transparent,
+                                                0.45f to Color.Transparent,
+                                                0.75f to surfaceColor.copy(alpha = 0.65f),
+                                                1.0f to surfaceColor
                                             )
                                         )
                                 )
@@ -1116,86 +1201,7 @@ fun FolderDetailView(
                                 .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(55.dp))
-
-                            Surface(
-                                modifier = Modifier.size(180.dp),
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                val validCovers = remember(covers) { covers.filterNotNull() }
-                                var failedIndices by remember(covers) { mutableStateOf(setOf<Int>()) }
-
-                                if (validCovers.isEmpty() || failedIndices.size >= validCovers.take(4).size) {
-                                    SongCoverImage(
-                                        coverUrl = null,
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxSize(),
-                                        shape = CircleShape
-                                    )
-                                } else if (validCovers.size == 1) {
-                                    SongCoverImage(
-                                        coverUrl = validCovers[0],
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxSize(),
-                                        shape = CircleShape,
-                                        onError = { failedIndices = failedIndices + 0 }
-                                    )
-                                } else {
-                                    Column(modifier = Modifier.fillMaxSize()) {
-                                        Row(modifier = Modifier.weight(1f)) {
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 0) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[0],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 0 }
-                                                    )
-                                                }
-                                            }
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 1) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[1],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 1 }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Row(modifier = Modifier.weight(1f)) {
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 2) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[2],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 2 }
-                                                    )
-                                                }
-                                            }
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 3) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[3],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 3 }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(260.dp))
 
                             Text(
                                 text = folderName,
