@@ -482,4 +482,6 @@
     <string name="auto_sync_backup">Automatyczna synchronizacja kopii</string>
     <string name="auto_sync_backup_desc">Automatycznie aktualizuj wyeksportowaną kopię zapasową, gdy zmieniają się playlisty lub teksty utworów</string>
     <string name="auto_sync_requires_export">Najpierw wyeksportuj kopię zapasową, aby włączyć automatyczną synchronizację</string>
+    <string name="show_headers">Pokaż nagłówki sekcji</string>
+    <string name="hide_headers">Ukryj nagłówki sekcji</string>
 </resources>
