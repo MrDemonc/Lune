@@ -901,6 +901,7 @@ fun QueueBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
+                    .navigationBarsPadding()
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -1617,6 +1618,7 @@ fun EditSongBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 32.dp)
                     .verticalScroll(rememberScrollState()), // Fix keyboard compression

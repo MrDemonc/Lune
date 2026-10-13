@@ -166,9 +166,34 @@ fun LuneTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+            var parent = view.parent
+            var dialogWindow: android.view.Window? = null
+            while (parent != null) {
+                if (parent is androidx.compose.ui.window.DialogWindowProvider) {
+                    dialogWindow = parent.window
+                    break
+                }
+                parent = parent.parent
+            }
+            var activity: Activity? = null
+            var ctx = view.context
+            while (ctx is android.content.ContextWrapper) {
+                if (ctx is Activity) {
+                    activity = ctx
+                    break
+                }
+                ctx = ctx.baseContext
+            }
+            val window = dialogWindow ?: activity?.window
+            window?.let { win ->
+                win.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    win.isNavigationBarContrastEnforced = false
+                }
+                val insets = WindowCompat.getInsetsController(win, win.decorView)
+                insets.isAppearanceLightStatusBars = !darkTheme
+                insets.isAppearanceLightNavigationBars = !darkTheme
+            }
         }
     }
 }

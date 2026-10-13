@@ -23,7 +23,13 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import com.demonlab.lune.ui.utils.triggerLightVibration
+import android.app.Activity
+import android.content.ContextWrapper
+import android.os.Build
 import android.os.Vibrator
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -106,6 +112,39 @@ fun AppBlurBackdrop(
     content: @Composable BoxScope.() -> Unit
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            var parent = view.parent
+            var dialogWindow: android.view.Window? = null
+            while (parent != null) {
+                if (parent is DialogWindowProvider) {
+                    dialogWindow = parent.window
+                    break
+                }
+                parent = parent.parent
+            }
+            var activity: Activity? = null
+            var ctx = view.context
+            while (ctx is ContextWrapper) {
+                if (ctx is Activity) {
+                    activity = ctx
+                    break
+                }
+                ctx = ctx.baseContext
+            }
+            val targetWindow = dialogWindow ?: activity?.window
+            targetWindow?.let { window ->
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                val useLightIcons = isDarkTheme || hasBlurBackground
+                insetsController.isAppearanceLightNavigationBars = !useLightIcons
+            }
+        }
+    }
     val baseBgColor = if (isDarkTheme) Color(0xFF141416) else MaterialTheme.colorScheme.surface
     val fallbackBlurBg = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)
     Box(

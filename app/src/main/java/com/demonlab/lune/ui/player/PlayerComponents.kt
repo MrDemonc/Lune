@@ -1953,20 +1953,34 @@ fun FullPlayer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(swipeUpAction, onMinimize) {
+                    val threshold = 110.dp.toPx()
+                    var totalDragX = 0f
                     var totalDragY = 0f
                     var gestureConsumed = false
                     detectDragGestures(
                         onDragStart = {
+                            totalDragX = 0f
+                            totalDragY = 0f
+                            gestureConsumed = false
+                        },
+                        onDragEnd = {
+                            totalDragX = 0f
+                            totalDragY = 0f
+                            gestureConsumed = false
+                        },
+                        onDragCancel = {
+                            totalDragX = 0f
                             totalDragY = 0f
                             gestureConsumed = false
                         },
                         onDrag = { _, dragAmount ->
                             if (!gestureConsumed) {
+                                totalDragX += dragAmount.x
                                 totalDragY += dragAmount.y
                                 val absY = abs(totalDragY)
-                                val absX = abs(dragAmount.x)
-                                if (absY > 60 && absY > absX * 1.5f) {
+                                val absX = abs(totalDragX)
+                                if (absY > threshold && absY > absX * 1.8f) {
                                     if (totalDragY > 0) {
                                         onMinimize()
                                     } else {
@@ -1993,7 +2007,7 @@ fun FullPlayer(
                                                         }
                                                         context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.option_share)))
                                                     }
-                                                } catch (e: Exception) {}
+                                                } catch (_: Exception) {}
                                             }
                                         }
                                     }
