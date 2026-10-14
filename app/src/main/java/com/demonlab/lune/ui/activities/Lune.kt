@@ -650,9 +650,9 @@ fun MainScreen(
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomPadding = if (!isPlayerExpanded) {
         if (currentSong != null && !settingsManager.isMiniPlayerMinimized) {
-            bottomInset + 146.dp
+            bottomInset + 160.dp
         } else {
-            bottomInset + 76.dp
+            bottomInset + 86.dp
         }
     } else {
         0.dp
@@ -3209,12 +3209,12 @@ fun UnifiedHeaderPill(
     }
 
     Surface(
-        shape = RoundedCornerShape(30.dp),
+        shape = RoundedCornerShape(35.dp),
         color = outerPillColor,
         tonalElevation = if (hasBlurBackground) 0.dp else 6.dp,
         modifier = modifier
             .fillMaxWidth()
-            .height(60.dp)
+            .height(70.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (hasBlurBackground) {
@@ -3278,7 +3278,7 @@ fun UnifiedHeaderPill(
 
                 Surface(
                     onClick = { showSectionMenuSheet() },
-                    shape = RoundedCornerShape(30.dp),
+                    shape = RoundedCornerShape(35.dp),
                     color = selectedBg,
                     modifier = Modifier
                         .fillMaxHeight()
@@ -3292,24 +3292,24 @@ fun UnifiedHeaderPill(
                     Row(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .padding(horizontal = 18.dp),
+                            .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(30.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             when (selectedFolder) {
-                                "RESUME" -> Icon(Icons.Default.History, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "MIXES" -> Icon(Icons.Default.AutoAwesome, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "GENRES" -> Icon(Icons.Default.Category, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
-                                else -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(20.dp))
+                                "RESUME" -> Icon(Icons.Default.History, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "MIXES" -> Icon(Icons.Default.AutoAwesome, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "ARTISTS" -> Icon(Icons.Default.Person, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "GENRES" -> Icon(Icons.Default.Category, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "PLAYLISTS" -> Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "FOLDERS" -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "FAVORITES" -> Icon(Icons.Default.FavoriteBorder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                else -> Icon(Icons.Default.Folder, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                             }
                         }
                         Spacer(modifier = Modifier.width(6.dp))
@@ -3333,13 +3333,13 @@ fun UnifiedHeaderPill(
                             imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = null,
                             tint = onSelected.copy(alpha = 0.8f),
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                         if (isCurrentContext) {
                             Spacer(modifier = Modifier.width(4.dp))
                             Box(
                                 modifier = Modifier
-                                    .size(6.dp)
+                                    .size(7.dp)
                                     .background(onSelected, CircleShape)
                             )
                         }
@@ -3352,29 +3352,29 @@ fun UnifiedHeaderPill(
                 Row(
                     modifier = Modifier
                         .bounceClick()
-                        .clip(RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(26.dp))
                         .clickable { showSearchScreen() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = stringResource(R.string.search),
                         color = searchTextColor,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = CircleShape,
                         color = searchIconBg,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = stringResource(R.string.search),
                                 tint = searchIconTint,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }

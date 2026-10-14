@@ -2184,7 +2184,8 @@ fun ScallopPlayPauseButtonWithProgress(
     hasBlurBackground: Boolean,
     useCustomControlsColor: Boolean,
     activePrimary: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    size: Dp = 48.dp
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
@@ -2222,9 +2223,14 @@ fun ScallopPlayPauseButtonWithProgress(
         MaterialTheme.colorScheme.primary
     }
 
+    val scaleRatio = size.value / 48f
+    val playIconSize = (24 * scaleRatio).dp
+    val pauseBarHeight = (16 * scaleRatio).dp
+    val pauseBarWidth = (4 * scaleRatio).dp
+
     Box(
         modifier = modifier
-            .size(48.dp)
+            .size(size)
             .bounceClick()
             .clickable(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
@@ -2247,20 +2253,20 @@ fun ScallopPlayPauseButtonWithProgress(
 
         if (isPlaying) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy((4 * scaleRatio).dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .width(4.dp)
-                        .height(16.dp)
+                        .width(pauseBarWidth)
+                        .height(pauseBarHeight)
                         .clip(CircleShape)
                         .background(iconTint)
                 )
                 Box(
                     modifier = Modifier
-                        .width(4.dp)
-                        .height(16.dp)
+                        .width(pauseBarWidth)
+                        .height(pauseBarHeight)
                         .clip(CircleShape)
                         .background(iconTint)
                 )
@@ -2271,8 +2277,8 @@ fun ScallopPlayPauseButtonWithProgress(
                 contentDescription = stringResource(R.string.play_state_play),
                 tint = iconTint,
                 modifier = Modifier
-                    .size(24.dp)
-                    .offset(x = 1.5.dp)
+                    .size(playIconSize)
+                    .offset(x = (1.5 * scaleRatio).dp)
             )
         }
     }
@@ -2339,7 +2345,7 @@ fun MiniPlayer(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(70.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 1. Cápsula / Píldora principal interactiva (A la izquierda)
@@ -2408,7 +2414,7 @@ fun MiniPlayer(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(start = 18.dp, end = 6.dp),
+                        .padding(start = 20.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Título de la canción y debajo icono de dispositivo + artista
@@ -2420,7 +2426,7 @@ fun MiniPlayer(
                             text = song.title,
                             modifier = Modifier.basicMarquee(),
                             color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1
                         )
@@ -2430,24 +2436,24 @@ fun MiniPlayer(
                                 imageVector = currentOutputIcon,
                                 contentDescription = null,
                                 tint = if (hasBlurBackground) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = song.artist,
                                 modifier = Modifier.basicMarquee(),
                                 color = if (hasBlurBackground) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     // Controles a la derecha de la cápsula
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Botón Sonando Ahora (solo visible cuando se está dentro de la lista que está sonando)
@@ -2471,7 +2477,7 @@ fun MiniPlayer(
                                 shape = CircleShape,
                                 color = pillMiniColor,
                                 modifier = Modifier
-                                    .size(38.dp)
+                                    .size(42.dp)
                                     .bounceClick()
                                     .scale(pulseScale)
                             ) {
@@ -2480,7 +2486,7 @@ fun MiniPlayer(
                                         imageVector = Icons.Default.MusicNote,
                                         contentDescription = "Scroll to current",
                                         tint = pillMiniIconTint,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -2493,7 +2499,8 @@ fun MiniPlayer(
                             onClick = onTogglePlay,
                             hasBlurBackground = hasBlurBackground,
                             useCustomControlsColor = useCustomControlsColor,
-                            activePrimary = activePrimary
+                            activePrimary = activePrimary,
+                            size = 52.dp
                         )
                     }
                 }
@@ -2505,7 +2512,7 @@ fun MiniPlayer(
         // 2. Cover a la derecha de la píldora (siempre circular - CircleShape, al tocarlo minimiza el miniplayer)
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(70.dp)
                 .bounceClick(),
             contentAlignment = Alignment.Center
         ) {
@@ -2663,8 +2670,8 @@ fun MiniPlayerMinimized(
     )
 
     Box(
-        modifier = modifier.padding(top = 10.dp),
-        contentAlignment = Alignment.BottomCenter
+        modifier = modifier,
+        contentAlignment = Alignment.Center
     ) {
         Surface(
             onClick = onRestore,
@@ -2674,7 +2681,7 @@ fun MiniPlayerMinimized(
             modifier = Modifier
                 .offset { IntOffset(0, offsetY.value.roundToInt()) }
                 .then(dragModifier)
-                .size(52.dp)
+                .size(70.dp)
                 .scale(coverScale)
                 .shadow(6.dp, CircleShape)
         ) {
@@ -2721,23 +2728,21 @@ fun MiniPlayerMinimized(
                 animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
                 label = "MiniPlayerCoverCrossfade"
             ) { targetSong ->
-                if (coverShape == 2 && coverVinylEffect) {
+                val isVinylActive = coverShape == 2 && coverVinylEffect
+                val isSpinActive = coverShape == 2 && coverSpin && isPlaying
+                if (isVinylActive) {
                     VinylRecordAsyncCover(
                         model = targetSong.coverUrl ?: targetSong.uri,
-                        rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                        rotation = if (isSpinActive) spinRotation else 0f,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    val activeShape = when (coverShape) {
-                        1 -> RoundedCornerShape(0.dp)
-                        2 -> CircleShape
-                        else -> RoundedCornerShape(8.dp)
-                    }
+                    val activeShape = CircleShape
                     Surface(
                         shape = activeShape,
                         modifier = Modifier
                             .fillMaxSize()
-                            .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                            .rotate(if (isSpinActive) spinRotation else 0f),
                         color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         SongCoverImage(
