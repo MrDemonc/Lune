@@ -1,7 +1,5 @@
 package com.demonlab.lune.ui.screens
 
-import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -11,13 +9,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
-import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.screens.resume.HeroSection
 import com.demonlab.lune.ui.screens.resume.PlaylistGridSection
@@ -51,21 +47,6 @@ fun ResumeScreen(
     onPlayToggle: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    val context = LocalContext.current
-    val playbackManager = remember { PlaybackManager.getInstance(context) }
-
-    val dailyListeningTimeMs = playbackManager.dailyListeningTime
-    val dailyListeningTimeStr = remember(dailyListeningTimeMs) {
-        val hours = (dailyListeningTimeMs / (1000 * 60 * 60)).toInt()
-        val minutes = ((dailyListeningTimeMs / (1000 * 60)) % 60).toInt()
-        val seconds = ((dailyListeningTimeMs / 1000) % 60).toInt()
-        when {
-            hours > 0 -> context.getString(R.string.stats_hours_unit, hours)
-            minutes > 0 -> context.getString(R.string.stats_minutes_unit, minutes)
-            else -> context.getString(R.string.stats_seconds_unit, seconds)
-        }
-    }
-
     val sUnknownArtist = stringResource(R.string.unknown_artist)
     val sUnknownSong = stringResource(R.string.unknown_song)
 
@@ -160,24 +141,18 @@ fun ResumeScreen(
         allSongs.sortedByDescending { it.dateAdded }.take(10)
     }
 
-    val favoriteCount = remember(allSongs) {
-        allSongs.count { it.isFavorite }
+    val topArtistSongs = remember(allSongs, realTopArtistName) {
+        allSongs.filter { it.artist.equals(realTopArtistName, ignoreCase = true) }
     }
 
-    val settingsManager = remember { com.demonlab.lune.tools.SettingsManager.getInstance(context) }
-    val prefs = remember(context) { context.getSharedPreferences("lune_settings", Context.MODE_PRIVATE) }
-    var showHeroSection by remember { mutableStateOf(settingsManager.showHeroSection) }
+    val topGenreStat = viewModel.topGenreStats.firstOrNull()
+    val realTopGenreName = remember(topGenreStat, topGenresList) {
+        topGenreStat?.id?.replace("GENRE_", "") ?: (topGenresList.firstOrNull()?.name ?: "")
+    }
 
-    DisposableEffect(prefs) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "show_hero_section") {
-                showHeroSection = settingsManager.showHeroSection
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose {
-            prefs.unregisterOnSharedPreferenceChangeListener(listener)
-        }
+    val topSongStat = viewModel.topSongStats.firstOrNull()
+    val totalPlays = remember(viewModel.topSongStats) {
+        viewModel.topSongStats.sumOf { it.playCount }
     }
 
     Column(
@@ -194,12 +169,14 @@ fun ResumeScreen(
             HeroSection(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
-                dailyListeningTimeStr = dailyListeningTimeStr,
-                totalSongs = allSongs.size,
-                playlistsCount = allPlaylists.size,
-                favoriteCount = favoriteCount,
                 topArtist = realTopArtistName,
-                showGreetingCard = showHeroSection,
+                topArtistSongs = topArtistSongs,
+                topSong = topSong,
+                topSongPlayCount = topSongStat?.playCount ?: 0L,
+                topGenre = realTopGenreName,
+                totalPlays = totalPlays,
+                onArtistClick = onArtistClick,
+                onSongClick = { song -> onSongClick(song, allSongs) },
                 hasBlurBackground = hasBlurBackground,
                 isDarkTheme = isDarkTheme,
                 useCustomControlsColor = useCustomControlsColor,
@@ -219,6 +196,9 @@ fun ResumeScreen(
                     title = stringResource(R.string.resume_recommendations),
                     songs = recommendations,
                     hasBlurBackground = hasBlurBackground,
+                    isDarkTheme = isDarkTheme,
+                    useCustomControlsColor = useCustomControlsColor,
+                    controlsColorPalette = controlsColorPalette,
                     onSongClick = { song -> onSongClick(song, allSongs) }
                 )
             }

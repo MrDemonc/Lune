@@ -91,6 +91,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import androidx.compose.ui.draw.blur
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.PlaybackManager
@@ -1449,7 +1450,7 @@ fun ScrollToCurrentButton(
         Surface(
             onClick = {
                 coroutineScope.launch {
-                    listState.animateScrollToItem(targetIndex)
+                    listState.fastSmoothScrollToItem(targetIndex)
                 }
             },
             shape = CircleShape,

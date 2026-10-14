@@ -58,6 +58,7 @@ import com.demonlab.lune.ui.utils.rememberReorderableState
 import com.demonlab.lune.ui.utils.reorderable
 import com.demonlab.lune.ui.utils.reorderableItem
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
@@ -485,7 +486,11 @@ fun PlaylistDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(currentPlaylistSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(
+                        currentPlaylistSongs,
+                        key = { _, it -> it.id },
+                        contentType = { _, _ -> "song_item" }
+                    ) { index, song ->
                         val isFirst = index == 0
                         val isLast = index == currentPlaylistSongs.lastIndex
                         SongItem(
@@ -562,7 +567,7 @@ fun PlaylistDetailView(
 
         LaunchedEffect(scrollToCurrentTrigger.value) {
             if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.animateScrollToItem(targetIndex)
+                listState.fastSmoothScrollToItem(targetIndex)
                 scrollToCurrentTrigger.value = 0
             }
         }
@@ -585,7 +590,7 @@ fun PlaylistDetailView(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    listState.animateScrollToItem(0)
+                    listState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier
@@ -985,7 +990,11 @@ fun AlbumDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(sortedSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(
+                        sortedSongs,
+                        key = { _, it -> it.id },
+                        contentType = { _, _ -> "song_item" }
+                    ) { index, song ->
                         val isFirst = index == 0
                         val isLast = index == sortedSongs.lastIndex
                         SongItem(
@@ -1013,7 +1022,7 @@ fun AlbumDetailView(
 
         LaunchedEffect(scrollToCurrentTrigger.value) {
             if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.animateScrollToItem(targetIndex)
+                listState.fastSmoothScrollToItem(targetIndex)
                 scrollToCurrentTrigger.value = 0
             }
         }
@@ -1036,7 +1045,7 @@ fun AlbumDetailView(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    listState.animateScrollToItem(0)
+                    listState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier
@@ -1420,7 +1429,11 @@ fun FolderDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(sortedSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(
+                        sortedSongs,
+                        key = { _, it -> it.id },
+                        contentType = { _, _ -> "song_item" }
+                    ) { index, song ->
                         val isFirst = index == 0
                         val isLast = index == sortedSongs.lastIndex
                         SongItem(
@@ -1447,7 +1460,7 @@ fun FolderDetailView(
 
         LaunchedEffect(scrollToCurrentTrigger.value) {
             if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.animateScrollToItem(targetIndex)
+                listState.fastSmoothScrollToItem(targetIndex)
                 scrollToCurrentTrigger.value = 0
             }
         }
@@ -1470,7 +1483,7 @@ fun FolderDetailView(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    listState.animateScrollToItem(0)
+                    listState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier

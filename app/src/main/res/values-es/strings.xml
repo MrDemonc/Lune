@@ -136,6 +136,7 @@
     <string name="unknown_artist">Artista desconocido</string>
     <string name="unknown_song">Canción desconocida</string>
     <string name="unknown_album">Álbum desconocido</string>
+    <string name="unknown_genre">Género desconocido</string>
 
     <!-- Accessibility / Icons -->
     <string name="cd_back">Atrás</string>
@@ -426,8 +427,6 @@
     <string name="sd_card">Tarjeta SD</string>
     <string name="folder_browser_title">Explorador de carpetas</string>
     <string name="no_songs_folder">No se encontraron canciones en esta carpeta</string>
-    <string name="show_hero_section">Mostrar tarjeta de saludo</string>
-    <string name="show_hero_section_desc">Muestra la tarjeta de saludo y estadísticas en la pantalla Inicio</string>
     <string name="show_ai_section">Mostrar sección de IA</string>
     <string name="show_ai_section_desc">Muestra la pestaña de mezclas y recomendaciones de IA</string>
     <string name="seamless_looping">Bucle continuo</string>
@@ -485,4 +484,13 @@
     <string name="auto_sync_requires_export">Exporta un respaldo primero para activar la sincronización</string>
     <string name="show_headers">Mostrar encabezados de sección</string>
     <string name="hide_headers">Ocultar encabezados de sección</string>
+
+    <!-- M3 Expressive Welcome / Top Stats Cards -->
+    <string name="card_top_artist">Top Artista</string>
+    <string name="card_top_song">Canción más escuchada</string>
+    <string name="card_top_genre">Género favorito</string>
+    <string name="card_artist_songs">%d canciones</string>
+    <string name="card_plays_count">%d reproducciones</string>
+    <string name="card_play_count_single">%d reproducción</string>
+    <string name="card_no_plays">Sin reproducciones</string>
 </resources>

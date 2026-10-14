@@ -12,6 +12,8 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -221,3 +223,53 @@ fun Modifier.songSwipeGestures(
             )
         }
 }
+
+/**
+ * Smoothly scrolls to [targetIndex] with optimized performance for long lists.
+ * If the target is further away than [threshold], it first snaps close to the target
+ * before smoothly animating the remaining items, avoiding frame drops caused by
+ * composing hundreds of intermediate items.
+ */
+suspend fun LazyListState.fastSmoothScrollToItem(
+    targetIndex: Int = 0,
+    threshold: Int = 12
+) {
+    val currentIndex = firstVisibleItemIndex
+    if (currentIndex == targetIndex && firstVisibleItemScrollOffset == 0) return
+    val distance = kotlin.math.abs(currentIndex - targetIndex)
+    if (distance > threshold) {
+        val total = layoutInfo.totalItemsCount
+        val intermediateIndex = if (currentIndex > targetIndex) {
+            if (total > 0) (targetIndex + threshold).coerceAtMost(total - 1) else targetIndex + threshold
+        } else {
+            (targetIndex - threshold).coerceAtLeast(0)
+        }
+        scrollToItem(intermediateIndex)
+    }
+    animateScrollToItem(targetIndex)
+}
+
+/**
+ * Smoothly scrolls to [targetIndex] with optimized performance for long grids.
+ * If the target is further away than [threshold], it first snaps close to the target
+ * before smoothly animating the remaining items, avoiding frame drops.
+ */
+suspend fun LazyGridState.fastSmoothScrollToItem(
+    targetIndex: Int = 0,
+    threshold: Int = 16
+) {
+    val currentIndex = firstVisibleItemIndex
+    if (currentIndex == targetIndex && firstVisibleItemScrollOffset == 0) return
+    val distance = kotlin.math.abs(currentIndex - targetIndex)
+    if (distance > threshold) {
+        val total = layoutInfo.totalItemsCount
+        val intermediateIndex = if (currentIndex > targetIndex) {
+            if (total > 0) (targetIndex + threshold).coerceAtMost(total - 1) else targetIndex + threshold
+        } else {
+            (targetIndex - threshold).coerceAtLeast(0)
+        }
+        scrollToItem(intermediateIndex)
+    }
+    animateScrollToItem(targetIndex)
+}
+

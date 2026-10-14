@@ -2024,7 +2024,11 @@ fun MainScreen(
                                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                                             verticalArrangement = Arrangement.spacedBy(16.dp)
                                         ) {
-                                            itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
+                                            itemsIndexed(
+                                                pageSortedSongs,
+                                                key = { _, it -> it.id },
+                                                contentType = { _, _ -> "song_grid_item" }
+                                            ) { index, song ->
                                                 SongGridItem(
                                                     song = song,
                                                     currentlyPlaying = playbackManager.currentSong?.id == song.id && playbackManager.activePlaylistId == pageContextId,
@@ -2057,7 +2061,11 @@ fun MainScreen(
                                             modifier = Modifier.fillMaxSize(),
                                             contentPadding = PaddingValues(bottom = bottomPadding)
                                         ) {
-                                            itemsIndexed(pageSortedSongs, key = { _, it -> it.id }) { index, song ->
+                                            itemsIndexed(
+                                                pageSortedSongs,
+                                                key = { _, it -> it.id },
+                                                contentType = { _, _ -> "song_item" }
+                                            ) { index, song ->
                                                 val isFirst = index == 0
                                                 val isLast = index == pageSortedSongs.lastIndex
                                                 SongItem(
@@ -2100,9 +2108,9 @@ fun MainScreen(
                                     LaunchedEffect(scrollToCurrentTrigger.value) {
                                         if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
                                             if (isGridMode) {
-                                                pageMainGridState.animateScrollToItem(targetIndex)
+                                                pageMainGridState.fastSmoothScrollToItem(targetIndex)
                                             } else {
-                                                pageMainListState.animateScrollToItem(targetIndex)
+                                                pageMainListState.fastSmoothScrollToItem(targetIndex)
                                             }
                                             scrollToCurrentTrigger.value = 0
                                         }
@@ -2134,9 +2142,9 @@ fun MainScreen(
                                         onClick = {
                                             coroutineScope.launch {
                                                 if (isGridMode) {
-                                                    pageMainGridState.animateScrollToItem(0)
+                                                    pageMainGridState.fastSmoothScrollToItem(0)
                                                 } else {
-                                                    pageMainListState.animateScrollToItem(0)
+                                                    pageMainListState.fastSmoothScrollToItem(0)
                                                 }
                                             }
                                         },

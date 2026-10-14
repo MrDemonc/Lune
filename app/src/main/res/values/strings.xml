@@ -135,6 +135,7 @@
     <string name="unknown_artist">Unknown Artist</string>
     <string name="unknown_song">Unknown Song</string>
     <string name="unknown_album">Unknown Album</string>
+    <string name="unknown_genre">Unknown Genre</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">Back</string>
@@ -425,8 +426,6 @@
     <string name="sd_card">SD Card</string>
     <string name="folder_browser_title">Folder Browser</string>
     <string name="no_songs_folder">No songs found in this folder</string>
-    <string name="show_hero_section">Show Greeting Card</string>
-    <string name="show_hero_section_desc">Display the greeting and statistics card in the Resume screen</string>
     <string name="show_ai_section">Show AI Section</string>
     <string name="show_ai_section_desc">Display the AI mixes and smart recommendations tab</string>
     <string name="seamless_looping">Seamless Looping</string>
@@ -484,4 +483,13 @@
     <string name="auto_sync_requires_export">Export a backup first to enable auto-sync</string>
     <string name="show_headers">Show section headers</string>
     <string name="hide_headers">Hide section headers</string>
+
+    <!-- M3 Expressive Welcome / Top Stats Cards -->
+    <string name="card_top_artist">Top Artist</string>
+    <string name="card_top_song">Top Song</string>
+    <string name="card_top_genre">Top Genre</string>
+    <string name="card_artist_songs">%d songs</string>
+    <string name="card_plays_count">%d plays</string>
+    <string name="card_play_count_single">%d play</string>
+    <string name="card_no_plays">No plays yet</string>
 </resources>

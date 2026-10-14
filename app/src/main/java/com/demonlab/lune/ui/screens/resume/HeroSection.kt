@@ -1,79 +1,52 @@
 package com.demonlab.lune.ui.screens.resume
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.SongCoverImage
-import kotlinx.coroutines.delay
-import java.util.Calendar
-
-import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.player.ScallopPlayPauseButtonWithProgress
+import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.utils.bounceClick
 
-private data class HeroGreetingTheme(
-    val greeting: String,
-    val icon: ImageVector,
-    val brush: Brush,
-    val contentColor: Color,
-    val iconBgColor: Color,
-    val iconTint: Color
-)
-
-private data class ThemeColors(
-    val brush: Brush,
-    val contentColor: Color,
-    val iconBgColor: Color,
-    val iconTint: Color
-)
-
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HeroSection(
     currentSong: Song?,
     isPlaying: Boolean,
-    dailyListeningTimeStr: String,
-    totalSongs: Int,
-    playlistsCount: Int,
-    favoriteCount: Int,
     topArtist: String,
-    showGreetingCard: Boolean = true,
+    topArtistSongs: List<Song> = emptyList(),
+    topSong: Song? = null,
+    topSongPlayCount: Long = 0L,
+    topGenre: String = "",
+    totalPlays: Long = 0L,
+    onArtistClick: ((String) -> Unit)? = null,
+    onSongClick: ((Song) -> Unit)? = null,
     hasBlurBackground: Boolean = false,
     isDarkTheme: Boolean = false,
     useCustomControlsColor: Boolean = false,
@@ -82,169 +55,46 @@ fun HeroSection(
     onContinueListening: () -> Unit,
     onPlayToggle: () -> Unit,
 ) {
-    val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
-    val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
 
-    val heroTheme = remember(hour, colorScheme, hasBlurBackground, isDarkTheme) {
-        val isDark = if (hasBlurBackground) isDarkTheme else colorScheme.surface.luminance() < 0.5f
-
-        val greetingStr = when (hour) {
-            in 0..5 -> context.getString(R.string.welcome_early_morning)
-            in 6..11 -> context.getString(R.string.welcome_morning)
-            in 12..13 -> context.getString(R.string.welcome_noon)
-            in 14..17 -> context.getString(R.string.welcome_afternoon)
-            in 18..19 -> context.getString(R.string.welcome_evening)
-            else -> context.getString(R.string.welcome_night)
-        }
-        val icon = when (hour) {
-            in 0..5 -> Icons.Default.NightsStay
-            in 6..11 -> Icons.Default.WbSunny
-            in 12..13 -> Icons.Default.LightMode
-            in 14..17 -> Icons.Default.WbSunny
-            in 18..19 -> Icons.Default.WbTwilight
-            else -> Icons.Default.NightsStay
-        }
-        val colors = if (hasBlurBackground) {
-            val b = Brush.linearGradient(
+    val cardBrush = remember(hasBlurBackground, isDarkTheme, colorScheme) {
+        if (hasBlurBackground) {
+            Brush.linearGradient(
                 colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.28f),
-                    if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.16f)
+                    if (isDarkTheme) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.32f),
+                    if (isDarkTheme) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.18f)
                 )
             )
-            ThemeColors(b, Color.White, Color.White.copy(alpha = 0.20f), Color.White)
-        } else when (hour) {
-            // Madrugada (0..5h)
-            in 0..5 -> {
-                if (isDark) {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.tertiaryContainer,
-                            colorScheme.surfaceContainerHighest
-                        )
+        } else {
+            val isDark = colorScheme.surface.luminance() < 0.5f
+            if (isDark) {
+                Brush.linearGradient(
+                    colors = listOf(
+                        colorScheme.secondaryContainer,
+                        colorScheme.tertiaryContainer.copy(alpha = 0.75f)
                     )
-                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
-                } else {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.tertiaryContainer.copy(alpha = 0.9f),
-                            colorScheme.secondaryContainer
-                        )
+                )
+            } else {
+                Brush.linearGradient(
+                    colors = listOf(
+                        colorScheme.secondaryContainer,
+                        colorScheme.primaryContainer.copy(alpha = 0.65f)
                     )
-                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
-                }
-            }
-            // Mañana (6..11h)
-            in 6..11 -> {
-                if (isDark) {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.primaryContainer,
-                            colorScheme.surfaceContainerHighest
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
-                } else {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.primaryContainer,
-                            colorScheme.tertiaryContainer.copy(alpha = 0.6f)
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
-                }
-            }
-            // Mediodía (12..13h)
-            in 12..13 -> {
-                if (isDark) {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.primaryContainer,
-                            colorScheme.secondaryContainer
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
-                } else {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.primaryContainer,
-                            colorScheme.surfaceTint.copy(alpha = 0.35f)
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onPrimaryContainer, colorScheme.primary, colorScheme.onPrimary)
-                }
-            }
-            // Tarde (14..17h)
-            in 14..17 -> {
-                if (isDark) {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.secondaryContainer,
-                            colorScheme.surfaceContainerHighest
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onSecondaryContainer, colorScheme.secondary, colorScheme.onSecondary)
-                } else {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.secondaryContainer,
-                            colorScheme.primaryContainer.copy(alpha = 0.5f)
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onSecondaryContainer, colorScheme.secondary, colorScheme.onSecondary)
-                }
-            }
-            // Atardecer (18..19h)
-            in 18..19 -> {
-                if (isDark) {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.tertiaryContainer,
-                            colorScheme.secondaryContainer
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
-                } else {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.tertiaryContainer,
-                            colorScheme.secondaryContainer
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onTertiaryContainer, colorScheme.tertiary, colorScheme.onTertiary)
-                }
-            }
-            // Noche (20..23h)
-            else -> {
-                if (isDark) {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.surfaceContainerHighest,
-                            colorScheme.tertiaryContainer.copy(alpha = 0.7f)
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onSurface, colorScheme.primary, colorScheme.onPrimary)
-                } else {
-                    val b = Brush.linearGradient(
-                        colors = listOf(
-                            colorScheme.surfaceVariant,
-                            colorScheme.secondaryContainer.copy(alpha = 0.4f)
-                        )
-                    )
-                    ThemeColors(b, colorScheme.onSurfaceVariant, colorScheme.primary, colorScheme.onPrimary)
-                }
+                )
             }
         }
-        HeroGreetingTheme(greetingStr, icon, colors.brush, colors.contentColor, colors.iconBgColor, colors.iconTint)
     }
 
-    var infoCardType by remember { mutableStateOf<String?>(null) }
+    val cardContentColor = if (hasBlurBackground) {
+        Color.White
+    } else {
+        colorScheme.onSecondaryContainer
+    }
 
-    LaunchedEffect(infoCardType) {
-        if (infoCardType != null) {
-            delay(4000)
-            infoCardType = null
-        }
+    val cardChipBgColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.22f)
+    } else {
+        colorScheme.surface.copy(alpha = 0.50f)
     }
 
     Column(
@@ -253,127 +103,38 @@ fun HeroSection(
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (showGreetingCard) {
+        // Tops Summary Hero Card
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.Transparent,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(190.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-                    .padding(horizontal = 16.dp)
+                    .fillMaxSize()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(brush = heroTheme.brush)
-                    .padding(20.dp)
+                    .background(brush = cardBrush)
+                    .padding(16.dp)
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = heroTheme.greeting,
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = heroTheme.contentColor,
-                                maxLines = 1
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = stringResource(R.string.stats_music_unit),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = heroTheme.contentColor.copy(alpha = 0.75f)
-                            )
-                        }
-                        Surface(
-                            shape = CircleShape,
-                            color = heroTheme.iconBgColor,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = heroTheme.icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(28.dp),
-                                    tint = heroTheme.iconTint
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatChip(
-                            icon = Icons.Default.History,
-                            value = dailyListeningTimeStr,
-                            contentColor = heroTheme.contentColor,
-                            iconBgColor = heroTheme.iconBgColor,
-                            modifier = Modifier.weight(1f),
-                            onClick = { infoCardType = "time" }
-                        )
-                        StatChip(
-                            icon = Icons.Default.MusicNote,
-                            value = totalSongs.toString(),
-                            contentColor = heroTheme.contentColor,
-                            iconBgColor = heroTheme.iconBgColor,
-                            modifier = Modifier.weight(1f),
-                            onClick = { infoCardType = "songs" }
-                        )
-                        StatChip(
-                            icon = Icons.Default.Favorite,
-                            value = favoriteCount.toString(),
-                            contentColor = heroTheme.contentColor,
-                            iconBgColor = heroTheme.iconBgColor,
-                            modifier = Modifier.weight(1f),
-                            onClick = { infoCardType = "favorites" }
-                        )
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = infoCardType != null,
-                enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                    slideInVertically(animationSpec = tween(400, easing = FastOutSlowInEasing)) { it / 2 },
-                exit = fadeOut(animationSpec = tween(500, easing = FastOutSlowInEasing)) +
-                    slideOutVertically(animationSpec = tween(500, easing = FastOutSlowInEasing)) { it / 2 }
-            ) {
-                InfoCard(
-                    type = infoCardType ?: "",
-                    dailyListeningTimeStr = dailyListeningTimeStr,
-                    totalSongs = totalSongs,
-                    favoriteCount = favoriteCount,
-                    hasBlurBackground = hasBlurBackground,
-                    isDarkTheme = isDarkTheme
+                TopStatsCardContent(
+                    topArtist = topArtist,
+                    topArtistSongs = topArtistSongs,
+                    topSong = topSong,
+                    topSongPlayCount = topSongPlayCount,
+                    topGenre = topGenre,
+                    totalPlays = totalPlays,
+                    contentColor = cardContentColor,
+                    chipBgColor = cardChipBgColor,
+                    onArtistClick = onArtistClick,
+                    onSongClick = onSongClick
                 )
             }
         }
 
         if (currentSong != null) {
-            val pm = com.demonlab.lune.tools.PlaybackManager.getInstance(context)
-            val cat = pm.activeCategory ?: ""
-            val pId = pm.activePlaylistId
-            val pName = pm.activePlaylistName
-            val sourceLabel = remember(cat, pId, pName) {
-                if (pId == -300L) {
-                    context.getString(R.string.playing_from_search)
-                } else if (cat == "ALL") {
-                    context.getString(R.string.tab_all)
-                } else if (cat == "FAVORITES") {
-                    context.getString(R.string.tab_favorites)
-                } else if (cat == "RESUME") {
-                    context.getString(R.string.tab_resume)
-                } else if (pName != null) {
-                    "$cat: $pName"
-                } else {
-                    cat
-                }
-            }
-
-            PlayingFromCard(
-                sourceLabel = sourceLabel,
-                hasBlurBackground = hasBlurBackground,
-                isDarkTheme = isDarkTheme
-            )
             ContinueListeningCard(
                 song = currentSong,
                 isPlaying = isPlaying,
@@ -389,129 +150,214 @@ fun HeroSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun InfoCard(
-    type: String,
-    dailyListeningTimeStr: String,
-    totalSongs: Int,
-    favoriteCount: Int,
-    hasBlurBackground: Boolean = false,
-    isDarkTheme: Boolean = false
-) {
-    val context = LocalContext.current
-    val (emoji, message) = remember(type, dailyListeningTimeStr, totalSongs, favoriteCount) {
-        when (type) {
-            "time" -> "🎉" to context.getString(R.string.info_card_time, dailyListeningTimeStr)
-            "songs" -> "🎵" to context.getString(R.string.info_card_songs, totalSongs)
-            "favorites" -> "⭐" to if (favoriteCount > 0) {
-                context.getString(R.string.info_card_favorites_has, favoriteCount)
-            } else {
-                context.getString(R.string.info_card_favorites_none)
-            }
-            else -> "" to ""
-        }
-    }
-
-    val infiniteTransition = rememberInfiniteTransition(label = "emoji")
-    val bounce by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -10f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bounce"
-    )
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
-    val cardBg = if (hasBlurBackground) {
-        if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.25f)
-    } else {
-        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f)
-    }
-    val textColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = cardBg,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(16.dp))
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Text(
-                text = emoji,
-                fontSize = 34.sp,
-                modifier = Modifier.graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationY = bounce
-                )
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = textColor,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatChip(
-    icon: ImageVector,
-    value: String,
+private fun TopStatsCardContent(
+    topArtist: String,
+    topArtistSongs: List<Song>,
+    topSong: Song?,
+    topSongPlayCount: Long,
+    topGenre: String,
+    totalPlays: Long,
     contentColor: Color,
-    iconBgColor: Color = contentColor.copy(alpha = 0.18f),
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
+    chipBgColor: Color,
+    onArtistClick: ((String) -> Unit)?,
+    onSongClick: ((Song) -> Unit)?
 ) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = iconBgColor.copy(alpha = 0.28f),
-        border = BorderStroke(1.dp, contentColor.copy(alpha = 0.25f)),
-        modifier = modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .bounceClick()
-            .clickable(onClick = onClick)
+    val artistCoverSong = remember(topArtist, topArtistSongs) {
+        val withCover = topArtistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
+        if (withCover.isNotEmpty()) {
+            withCover.random()
+        } else {
+            topArtistSongs.firstOrNull()
+        }
+    }
+
+    val expressiveShape = MaterialShapes.Flower.toShape()
+
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 10.dp)
+        // Left side: Large artist cover in M3 Expressive shape
+        Box(
+            modifier = Modifier
+                .size(140.dp)
+                .clip(expressiveShape)
+                .background(chipBgColor)
+                .clickable(enabled = onArtistClick != null) {
+                    onArtistClick?.invoke(topArtist)
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = contentColor.copy(alpha = 0.85f)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            val coverObj = artistCoverSong?.coverUrl ?: artistCoverSong?.albumArtUri
+            if (coverObj != null) {
+                SongCoverImage(
+                    coverUrl = coverObj,
+                    shape = expressiveShape,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = contentColor
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Right side: All "top" stats vertically aligned with basicMarquee
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // 1. Top Artist
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = onArtistClick != null) {
+                        onArtistClick?.invoke(topArtist)
+                    }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(11.dp),
+                        tint = contentColor.copy(alpha = 0.85f)
+                    )
+                    Text(
+                        text = stringResource(R.string.card_top_artist).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor.copy(alpha = 0.85f),
+                        fontSize = 9.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = topArtist,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee()
+                )
+                val songsCountStr = if (topArtistSongs.isNotEmpty()) {
+                    stringResource(R.string.card_artist_songs, topArtistSongs.size)
+                } else if (totalPlays > 0) {
+                    stringResource(R.string.card_plays_count, totalPlays)
+                } else {
+                    ""
+                }
+                if (songsCountStr.isNotEmpty()) {
+                    Text(
+                        text = songsCountStr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.7f),
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        modifier = Modifier.basicMarquee()
+                    )
+                }
+            }
+
+            // 2. Top Song
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = topSong != null && onSongClick != null) {
+                        topSong?.let { onSongClick?.invoke(it) }
+                    }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(11.dp),
+                        tint = contentColor.copy(alpha = 0.85f)
+                    )
+                    Text(
+                        text = stringResource(R.string.card_top_song).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor.copy(alpha = 0.85f),
+                        fontSize = 9.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                    if (topSongPlayCount > 0) {
+                        Text(
+                            text = "• " + if (topSongPlayCount == 1L) {
+                                stringResource(R.string.card_play_count_single, topSongPlayCount)
+                            } else {
+                                stringResource(R.string.card_plays_count, topSongPlayCount)
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = contentColor.copy(alpha = 0.65f),
+                            fontSize = 9.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = topSong?.title ?: stringResource(R.string.card_no_plays),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor,
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee()
+                )
+            }
+
+            // 3. Top Genre
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Category,
+                        contentDescription = null,
+                        modifier = Modifier.size(11.dp),
+                        tint = contentColor.copy(alpha = 0.85f)
+                    )
+                    Text(
+                        text = stringResource(R.string.card_top_genre).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor.copy(alpha = 0.85f),
+                        fontSize = 9.sp,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = topGenre.ifBlank { stringResource(R.string.unknown_genre) },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor,
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee()
+                )
+            }
         }
     }
 }
@@ -586,50 +432,6 @@ private fun ContinueListeningCard(
                 useCustomControlsColor = useCustomControlsColor,
                 activePrimary = activePrimary,
                 modifier = Modifier.size(46.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun PlayingFromCard(
-    sourceLabel: String,
-    hasBlurBackground: Boolean = false,
-    isDarkTheme: Boolean = false,
-) {
-    val cardBg = if (hasBlurBackground) {
-        if (isDarkTheme) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.22f)
-    } else {
-        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
-    }
-    val contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = cardBg,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(16.dp))
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MusicNote,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = contentColor
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = stringResource(R.string.playing_from, sourceLabel),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
             )
         }
     }

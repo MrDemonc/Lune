@@ -418,10 +418,6 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("show_ai_section", true)
         set(value) = prefs.edit().putBoolean("show_ai_section", value).apply()
 
-    var showHeroSection: Boolean
-        get() = prefs.getBoolean("show_hero_section", true)
-        set(value) = prefs.edit().putBoolean("show_hero_section", value).apply()
-
     private val _coverShape = mutableStateOf(prefs.getInt("cover_shape", 0))
     var coverShape: Int
         get() = _coverShape.value

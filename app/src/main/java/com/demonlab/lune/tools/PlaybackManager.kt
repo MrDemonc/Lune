@@ -504,6 +504,13 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        if (song.artist.isNotBlank() && song.artist != "<unknown>") {
+            updatePlaybackStats("ARTIST", "ARTIST_${song.artist}", incrementCount = true)
+        }
+        val genre = song.genre?.trim()
+        if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+            updatePlaybackStats("GENRE", "GENRE_$genre", incrementCount = true)
+        }
 
         savePlaybackState(wasPlaying = true)
         preloadSurroundingArtwork()
@@ -846,6 +853,13 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play (Automatic/Crossfade)
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        if (song.artist.isNotBlank() && song.artist != "<unknown>") {
+            updatePlaybackStats("ARTIST", "ARTIST_${song.artist}", incrementCount = true)
+        }
+        val genre = song.genre?.trim()
+        if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+            updatePlaybackStats("GENRE", "GENRE_$genre", incrementCount = true)
+        }
         settings.lastPlayedSongId = song.id
         savePlaybackState(wasPlaying = true)
         preloadSurroundingArtwork()
@@ -932,6 +946,10 @@ class PlaybackManager private constructor(private val context: Context) {
             updatePlaybackStats("SONG", "SONG_${song.id}", timeMs = pendingStatsTimeMs)
             if (song.artist.isNotBlank() && song.artist != "<unknown>") {
                 updatePlaybackStats("ARTIST", "ARTIST_${song.artist}", timeMs = pendingStatsTimeMs)
+            }
+            val genre = song.genre?.trim()
+            if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+                updatePlaybackStats("GENRE", "GENRE_$genre", timeMs = pendingStatsTimeMs)
             }
         }
         val pId = activePlaylistId

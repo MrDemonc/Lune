@@ -1,6 +1,7 @@
 package com.demonlab.lune.ui.playlist
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -59,6 +60,7 @@ import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import com.demonlab.lune.ui.components.AppBlurBackdrop
+import kotlinx.coroutines.delay
 
 @Composable
 fun PlaylistPreviewCovers(
@@ -327,6 +329,9 @@ fun PlaylistListScreen(
                 viewModel = viewModel,
                 playbackManager = playbackManager,
                 hasBlurBackground = hasBlurBackground,
+                isDarkTheme = isDarkTheme,
+                useCustomControlsColor = useCustomControlsColor,
+                controlsColorPalette = controlsColorPalette,
                 onPlaylistClick = onPlaylistClick,
                 onPlayPlaylist = onPlayPlaylist,
                 onLongClick = { selectedOptionsPlaylist = playlist }
@@ -354,6 +359,9 @@ private fun PlaylistCard(
     viewModel: MusicViewModel,
     playbackManager: PlaybackManager,
     hasBlurBackground: Boolean,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
     onPlaylistClick: (Playlist) -> Unit,
     onPlayPlaylist: (Playlist) -> Unit,
     onLongClick: (Playlist) -> Unit,
@@ -366,8 +374,26 @@ private fun PlaylistCard(
     val totalDuration = remember(playlistSongs) {
         playlistSongs.sumOf { it.duration }
     }
-    val previewSongs = remember(playlistSongs) {
-        playlistSongs.take(4)
+
+    val songsWithCover = remember(playlistSongs) {
+        playlistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
+    }
+
+    var currentCoverIndex by remember(playlist.id, songsWithCover.size) {
+        mutableIntStateOf(if (songsWithCover.isNotEmpty()) kotlin.random.Random.nextInt(songsWithCover.size) else 0)
+    }
+
+    LaunchedEffect(playlist.id, songsWithCover) {
+        if (songsWithCover.size > 1) {
+            while (true) {
+                delay(6000)
+                currentCoverIndex = (currentCoverIndex + 1) % songsWithCover.size
+            }
+        }
+    }
+
+    val activeCoverSong = remember(songsWithCover, currentCoverIndex) {
+        songsWithCover.getOrNull(currentCoverIndex) ?: playlistSongs.firstOrNull()
     }
 
     val gradientColors = remember(playlist.id) {
@@ -393,91 +419,62 @@ private fun PlaylistCard(
             )
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Card Top Banner with Cover Collage & Gradient
+            // Card Top Banner with Full Cover & Random Change
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(130.dp)
+                    .height(140.dp)
                     .background(Brush.horizontalGradient(gradientColors))
             ) {
-                // Background covers collage preview
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 16.dp, end = 90.dp),
-                    horizontalArrangement = Arrangement.spacedBy((-16).dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (previewSongs.isEmpty()) {
-                        Surface(
-                            shape = CircleShape,
-                            border = BorderStroke(2.dp, Color.White.copy(alpha = 0.7f)),
-                            color = Color.White.copy(alpha = 0.20f),
-                            modifier = Modifier
-                                .size(70.dp)
-                                .shadow(4.dp, CircleShape)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
-                        }
-                    } else {
-                        previewSongs.forEachIndexed { index, song ->
-                            Surface(
-                                shape = CircleShape,
-                                border = BorderStroke(2.dp, Color.White.copy(alpha = 0.7f)),
-                                modifier = Modifier
-                                    .size(70.dp)
-                                    .offset(x = (index * 6).dp)
-                                    .shadow(4.dp, CircleShape)
-                            ) {
-                                SongCoverImage(
-                                    coverUrl = song.coverUrl ?: song.albumArtUri ?: song.uri,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    shape = CircleShape
-                                )
-                            }
-                        }
+                val coverObj = activeCoverSong?.coverUrl ?: activeCoverSong?.albumArtUri
+                if (coverObj != null) {
+                    Crossfade(
+                        targetState = coverObj,
+                        animationSpec = tween(600),
+                        label = "playlistCoverCrossfade",
+                        modifier = Modifier.fillMaxSize()
+                    ) { targetCover ->
+                        SongCoverImage(
+                            coverUrl = targetCover,
+                            contentDescription = playlist.name,
+                            modifier = Modifier.fillMaxSize(),
+                            shape = RoundedCornerShape(0.dp),
+                            contentScale = ContentScale.Crop
+                        )
                     }
-                }
 
-                // Play / Pause Button floating on the right
-                FilledIconButton(
-                    onClick = {
-                        if (isCurrentPlaylist) {
-                            if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                        } else {
-                            onPlayPlaylist(playlist)
-                        }
-                    },
-                    shape = CircleShape,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 18.dp)
-                        .size(54.dp)
-                        .shadow(8.dp, CircleShape)
-                        .bounceClick()
-                ) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
-                        modifier = Modifier.size(28.dp)
+                    // Subtle gradient overlay on top of cover
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.15f),
+                                        Color.Black.copy(alpha = 0.45f)
+                                    )
+                                )
+                            )
                     )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.85f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
                 }
             }
 
-            // Playlist Details (excluding track list)
-            Column(modifier = Modifier.padding(18.dp)) {
+            // Playlist Details
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Top row: Playlist name + Play button where the song count previously was
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -490,24 +487,58 @@ private fun PlaylistCard(
                         color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+                    val playBtnBg = if (useCustomControlsColor) {
+                        activePrimary
+                    } else if (hasBlurBackground) {
+                        if (isDarkTheme) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.18f)
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+
+                    val playBtnTint = if (useCustomControlsColor) {
+                        if (activePrimary.luminance() > 0.45f) Color(0xFF141316) else Color.White
+                    } else if (hasBlurBackground) {
+                        Color.White
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    }
+
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceContainerHighest
+                        onClick = {
+                            if (isCurrentPlaylist) {
+                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                            } else {
+                                onPlayPlaylist(playlist)
+                            }
+                        },
+                        shape = CircleShape,
+                        color = playBtnBg,
+                        border = if (hasBlurBackground) BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)) else null,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .bounceClick()
                     ) {
-                        Text(
-                            text = stringResource(R.string.ai_mix_songs_count, songCount),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                tint = playBtnTint,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
+
+                // Bottom row: Time + Song count beside each other!
+                val secondaryColor = if (hasBlurBackground) Color.White.copy(alpha = 0.72f) else MaterialTheme.colorScheme.onSurfaceVariant
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -516,25 +547,44 @@ private fun PlaylistCard(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Schedule,
                             contentDescription = null,
-                            tint = if (hasBlurBackground) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = secondaryColor,
                             modifier = Modifier.size(15.dp)
                         )
                         Text(
                             text = formatLongDuration(totalDuration),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = secondaryColor
+                        )
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = secondaryColor.copy(alpha = 0.6f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = secondaryColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.ai_mix_songs_count, songCount),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = secondaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
                     if (isCurrentPlaylist) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
+                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -545,7 +595,11 @@ private fun PlaylistCard(
                                     modifier = Modifier
                                         .size(6.dp)
                                         .background(
-                                            color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                            color = if (isPlaying) {
+                                                if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                            } else {
+                                                if (hasBlurBackground) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline
+                                            },
                                             shape = CircleShape
                                         )
                                 )
@@ -553,7 +607,7 @@ private fun PlaylistCard(
                                     text = if (isPlaying) stringResource(R.string.queue_now_playing) else stringResource(R.string.play_state_pause),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         }

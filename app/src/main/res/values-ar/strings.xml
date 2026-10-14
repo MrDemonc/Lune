@@ -407,8 +407,6 @@
     <string name="sd_card">بطاقة SD</string>
     <string name="folder_browser_title">متصفح المجلدات</string>
     <string name="no_songs_folder">لم يتم العثور على أغاني في هذا المجلد</string>
-    <string name="show_hero_section">إظهار بطاقة الترحيب</string>
-    <string name="show_hero_section_desc">عرض بطاقة الترحيب والإحصائيات في شاشة المتابعة</string>
     <string name="show_ai_section">إظهار قسم الذكاء الاصطناعي</string>
     <string name="show_ai_section_desc">عرض تبويب ميكسات وتوصيات الذكاء الاصطناعي</string>
     <string name="seamless_looping">تكرار سلس (Seamless Looping)</string>

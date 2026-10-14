@@ -425,8 +425,6 @@
     <string name="sd_card">Karta SD</string>
     <string name="folder_browser_title">Przeglądarka folderów</string>
     <string name="no_songs_folder">Nie znaleziono utworów w tym folderze</string>
-    <string name="show_hero_section">Pokazuj kartę powitalną</string>
-    <string name="show_hero_section_desc">Wyświetlaj kartę z powitaniem i statystykami na ekranie „Wznów”</string>
     <string name="show_ai_section">Pokazuj sekcję AI</string>
     <string name="show_ai_section_desc">Wyświetlaj miksy AI oraz kartę inteligentnych rekomendacji</string>
     <string name="seamless_looping">Płynne zapętlanie</string>

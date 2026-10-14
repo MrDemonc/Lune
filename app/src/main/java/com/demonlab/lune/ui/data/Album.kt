@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.compose.ui.draw.clip
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.tools.SettingsManager
@@ -80,7 +81,11 @@ fun AlbumGrid(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            itemsIndexed(albums) { index, album ->
+            itemsIndexed(
+                albums,
+                key = { _, album -> album.id },
+                contentType = { _, _ -> "album_card" }
+            ) { index, album ->
                 val isFirst = index == 0
                 val isLast = index == albums.lastIndex
                 val isPlaying = album.id == activePlaylistId
@@ -97,7 +102,7 @@ fun AlbumGrid(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    gridState.animateScrollToItem(0)
+                    gridState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier
