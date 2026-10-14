@@ -2175,6 +2175,7 @@ fun PlayerActionButton(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ScallopPlayPauseButtonWithProgress(
     isPlaying: Boolean,
@@ -2188,10 +2189,14 @@ fun ScallopPlayPauseButtonWithProgress(
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "ScallopProgress"
+        label = "WavyProgress"
     )
 
-    val scallopShape = remember { MaterialExpressiveScallopShape(lobes = 8, amplitude = 0.07f) }
+    val animatedAmplitude by animateFloatAsState(
+        targetValue = if (isPlaying) 1f else 0f,
+        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+        label = "WavyAmplitude"
+    )
 
     val trackColor = if (useCustomControlsColor) {
         activePrimary.copy(alpha = 0.25f)
@@ -2209,122 +2214,66 @@ fun ScallopPlayPauseButtonWithProgress(
         MaterialTheme.colorScheme.primary
     }
 
-    val buttonBg = if (useCustomControlsColor) {
+    val iconTint = if (useCustomControlsColor) {
         activePrimary
     } else if (hasBlurBackground) {
-        Color.White.copy(alpha = 0.35f)
+        Color.White
     } else {
         MaterialTheme.colorScheme.primary
     }
 
-    val iconTint = if (useCustomControlsColor) {
-        Color.White
-    } else if (hasBlurBackground) {
-        Color.White
-    } else {
-        MaterialTheme.colorScheme.onPrimary
-    }
-
     Box(
         modifier = modifier
-            .size(52.dp)
-            .bounceClick(),
+            .size(48.dp)
+            .bounceClick()
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
-        // Concentric Scalloped Progress Ring Canvas
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val lobes = 8
-            val amplitude = 0.07f
-            val strokeWidth = 3.5.dp.toPx()
-            val centerX = size.width / 2f
-            val centerY = size.height / 2f
-            val baseRadius = (minOf(size.width, size.height) / 2f - strokeWidth) / (1f + amplitude)
-            val steps = lobes * 16
-            val angleStep = (2.0 * Math.PI / steps).toFloat()
+        CircularWavyProgressIndicator(
+            progress = { animatedProgress },
+            modifier = Modifier.fillMaxSize(),
+            color = progressColor,
+            trackColor = trackColor,
+            stroke = WavyProgressIndicatorDefaults.circularIndicatorStroke,
+            trackStroke = WavyProgressIndicatorDefaults.circularTrackStroke,
+            gapSize = 0.dp,
+            amplitude = { animatedAmplitude },
+            waveSpeed = if (isPlaying) 20.dp else 0.dp
+        )
 
-            // 1. Background full track
-            val trackPath = Path()
-            for (i in 0..steps) {
-                val theta = i * angleStep - (Math.PI / 2.0).toFloat()
-                val r = baseRadius * (1f + amplitude * cos(lobes * theta))
-                val x = centerX + r * cos(theta)
-                val y = centerY + r * sin(theta)
-                if (i == 0) trackPath.moveTo(x, y) else trackPath.lineTo(x, y)
-            }
-            trackPath.close()
-            drawPath(
-                path = trackPath,
-                color = trackColor,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-
-            // 2. Active progress path
-            if (animatedProgress > 0.005f) {
-                val progressPath = Path()
-                val targetSteps = (steps * animatedProgress).toInt().coerceIn(1, steps)
-                val targetFraction = steps * animatedProgress
-
-                for (i in 0..targetSteps) {
-                    val theta = i * angleStep - (Math.PI / 2.0).toFloat()
-                    val r = baseRadius * (1f + amplitude * cos(lobes * theta))
-                    val x = centerX + r * cos(theta)
-                    val y = centerY + r * sin(theta)
-                    if (i == 0) progressPath.moveTo(x, y) else progressPath.lineTo(x, y)
-                }
-
-                if (targetSteps < steps) {
-                    val theta = targetFraction * angleStep - (Math.PI / 2.0).toFloat()
-                    val r = baseRadius * (1f + amplitude * cos(lobes * theta))
-                    val x = centerX + r * cos(theta)
-                    val y = centerY + r * sin(theta)
-                    progressPath.lineTo(x, y)
-                }
-
-                drawPath(
-                    path = progressPath,
-                    color = progressColor,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        if (isPlaying) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(16.dp)
+                        .clip(CircleShape)
+                        .background(iconTint)
+                )
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(16.dp)
+                        .clip(CircleShape)
+                        .background(iconTint)
                 )
             }
-        }
-
-        // Inner Scalloped Button
-        Surface(
-            onClick = onClick,
-            shape = scallopShape,
-            color = buttonBg,
-            modifier = Modifier.size(38.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                if (isPlaying) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(16.dp)
-                                .clip(CircleShape)
-                                .background(iconTint)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(16.dp)
-                                .clip(CircleShape)
-                                .background(iconTint)
-                        )
-                    }
-                } else {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play",
-                        tint = iconTint,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
+        } else {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = stringResource(R.string.play_state_play),
+                tint = iconTint,
+                modifier = Modifier
+                    .size(24.dp)
+                    .offset(x = 1.5.dp)
+            )
         }
     }
 }

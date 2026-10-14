@@ -431,7 +431,7 @@ private fun ContinueListeningCard(
                 hasBlurBackground = hasBlurBackground,
                 useCustomControlsColor = useCustomControlsColor,
                 activePrimary = activePrimary,
-                modifier = Modifier.size(46.dp)
+                modifier = Modifier.size(48.dp)
             )
         }
     }
