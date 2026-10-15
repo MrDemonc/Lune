@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -634,7 +636,8 @@ fun AlbumDetailView(
     hasBlurBackground: Boolean = false,
     isDarkTheme: Boolean = false,
     useCustomControlsColor: Boolean = false,
-    controlsColorPalette: Int = 0
+    controlsColorPalette: Int = 0,
+    isArtistView: Boolean = album.artist.isEmpty()
 ) {
     val context = LocalContext.current
     val playbackManager = PlaybackManager.getInstance(context)
@@ -646,8 +649,58 @@ fun AlbumDetailView(
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val stretchProgress = remember { Animatable(0f) }
 
-    val sortedSongs = remember(songs, sortOption, isSortAscending) {
-        playbackManager.getSortedList(songs, sortOption, isSortAscending)
+    var selectedAlbumName by remember(album.id) { mutableStateOf<String?>(null) }
+
+    val artistAlbums = remember(songs, isArtistView) {
+        if (!isArtistView) {
+            emptyList()
+        } else {
+            songs
+                .groupBy { it.album.trim() }
+                .filter { (albumName, _) ->
+                    albumName.isNotBlank() &&
+                    !albumName.equals("<unknown>", ignoreCase = true) &&
+                    !albumName.equals("unknown", ignoreCase = true)
+                }
+                .map { (albumName, albumSongs) ->
+                    Album(
+                        id = albumName.hashCode().toLong(),
+                        name = albumName,
+                        artist = albumSongs.firstOrNull()?.artist ?: "",
+                        albumArtUri = albumSongs.firstOrNull()?.albumArtUri,
+                        coverUrl = albumSongs.firstOrNull()?.coverUrl,
+                        songs = albumSongs
+                    )
+                }
+                .sortedBy { it.name.lowercase(java.util.Locale.getDefault()) }
+        }
+    }
+
+    val singlesCount = remember(songs, isArtistView) {
+        if (!isArtistView) 0
+        else songs.count {
+            it.album.isBlank() ||
+            it.album.equals("<unknown>", ignoreCase = true) ||
+            it.album.equals("unknown", ignoreCase = true)
+        }
+    }
+
+    val displayedSongs = remember(songs, selectedAlbumName) {
+        if (selectedAlbumName == null) {
+            songs
+        } else if (selectedAlbumName == "__SINGLES__") {
+            songs.filter {
+                it.album.isBlank() ||
+                it.album.equals("<unknown>", ignoreCase = true) ||
+                it.album.equals("unknown", ignoreCase = true)
+            }
+        } else {
+            songs.filter { it.album.trim().equals(selectedAlbumName!!.trim(), ignoreCase = true) }
+        }
+    }
+
+    val sortedSongs = remember(displayedSongs, sortOption, isSortAscending) {
+        playbackManager.getSortedList(displayedSongs, sortOption, isSortAscending)
     }
     
     val headerAlpha by remember {
@@ -668,7 +721,13 @@ fun AlbumDetailView(
         }
     }
 
-    BackHandler(onBack = onBack)
+    BackHandler(onBack = {
+        if (selectedAlbumName != null) {
+            selectedAlbumName = null
+        } else {
+            onBack()
+        }
+    })
 
     val allCovers = remember(songs, album) {
         val list = if (songs.isNotEmpty()) songs else album.songs
@@ -703,6 +762,14 @@ fun AlbumDetailView(
         allCovers.getOrNull(currentCoverIndex)
     }
 
+    val currentDisplayCover = remember(selectedAlbumName, activeCover, displayedSongs) {
+        if (selectedAlbumName != null) {
+            displayedSongs.firstNotNullOfOrNull { it.coverUrl ?: it.albumArtUri ?: it.uri } ?: activeCover
+        } else {
+            activeCover
+        }
+    }
+
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
         isDarkTheme = isDarkTheme,
@@ -717,7 +784,7 @@ fun AlbumDetailView(
             ) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        if (activeCover != null) {
+                        if (currentDisplayCover != null) {
                             val fadeBrush = remember {
                                 Brush.verticalGradient(
                                     0.0f to Color.Black,
@@ -745,7 +812,7 @@ fun AlbumDetailView(
                                     }
                             ) {
                                 Crossfade(
-                                    targetState = activeCover,
+                                    targetState = currentDisplayCover,
                                     animationSpec = tween(durationMillis = 1000),
                                     label = "albumCoverCrossfade"
                                 ) { cover ->
@@ -778,7 +845,7 @@ fun AlbumDetailView(
                                     scaleX = headerScale
                                     scaleY = headerScale
                                 }
-                                .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
+                                .padding(bottom = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Spacer(modifier = Modifier.height(260.dp))
@@ -791,7 +858,7 @@ fun AlbumDetailView(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                         )
 
                         if (album.artist.isNotEmpty()) {
@@ -803,14 +870,15 @@ fun AlbumDetailView(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         val isCurrentAlbumPlaying = playbackManager.activePlaylistId == album.id
-                        val isPillPlaying = isCurrentAlbumPlaying && isPlaying
+                        val isCurrentPlayingInSelection = isCurrentAlbumPlaying && (selectedAlbumName == null || displayedSongs.any { it.id == currentlyPlayingId })
+                        val isPillPlaying = isCurrentPlayingInSelection && isPlaying
 
                         val pillCornerRadius by animateDpAsState(
                             targetValue = if (isPillPlaying) 14.dp else 28.dp,
@@ -887,7 +955,7 @@ fun AlbumDetailView(
                             if (settingsManager.isHapticVibrationEnabled) {
                                 vibrator.triggerLightVibration()
                             }
-                            if (isCurrentAlbumPlaying) {
+                            if (isCurrentPlayingInSelection) {
                                 if (isPlaying) playbackManager.pause() else playbackManager.resume()
                             } else if (sortedSongs.isNotEmpty()) {
                                 val songToPlay = if (playbackManager.isShuffle) sortedSongs.random() else sortedSongs[0]
@@ -980,8 +1048,8 @@ fun AlbumDetailView(
                         }
 
                         // Info: time + separador + número de canciones
-                        val totalAlbumDuration = remember(songs) { songs.sumOf { it.duration } }
-                        val songsCountText = if (songs.size == 1) "1 ${stringResource(R.string.song_singular)}" else stringResource(R.string.ai_mix_songs_count, songs.size)
+                        val totalAlbumDuration = remember(displayedSongs) { displayedSongs.sumOf { it.duration } }
+                        val songsCountText = if (displayedSongs.size == 1) "1 ${stringResource(R.string.song_singular)}" else stringResource(R.string.ai_mix_songs_count, displayedSongs.size)
 
                         Row(
                             modifier = Modifier
@@ -995,6 +1063,85 @@ fun AlbumDetailView(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+
+                        if (isArtistView && (artistAlbums.isNotEmpty() || singlesCount > 0)) {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp, bottom = 4.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Chip General ("Todas las canciones")
+                                item(key = "artist_all_songs_chip") {
+                                    val isSelected = selectedAlbumName == null
+                                    ArtistFilterChip(
+                                        label = stringResource(R.string.filter_all_songs),
+                                        count = songs.size,
+                                        isSelected = isSelected,
+                                        leadingIcon = Icons.Default.MusicNote,
+                                        hasBlurBackground = hasBlurBackground,
+                                        isDarkTheme = effectiveDarkTheme,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        activeControlsPrimary = activeControlsPrimary,
+                                        onClick = {
+                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                vibrator.triggerLightVibration()
+                                            }
+                                            selectedAlbumName = null
+                                        }
+                                    )
+                                }
+
+                                // Chips de Álbumes
+                                items(
+                                    items = artistAlbums,
+                                    key = { "album_${it.id}" }
+                                ) { albumItem ->
+                                    val isSelected = selectedAlbumName?.equals(albumItem.name, ignoreCase = true) == true
+                                    ArtistFilterChip(
+                                        label = albumItem.name,
+                                        count = albumItem.songs.size,
+                                        isSelected = isSelected,
+                                        coverUrl = albumItem.coverUrl ?: albumItem.albumArtUri ?: albumItem.songs.firstNotNullOfOrNull { it.coverUrl ?: it.albumArtUri },
+                                        hasBlurBackground = hasBlurBackground,
+                                        isDarkTheme = effectiveDarkTheme,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        activeControlsPrimary = activeControlsPrimary,
+                                        onClick = {
+                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                vibrator.triggerLightVibration()
+                                            }
+                                            selectedAlbumName = if (isSelected) null else albumItem.name
+                                        }
+                                    )
+                                }
+
+                                // Chip de Sencillos si existen
+                                if (singlesCount > 0) {
+                                    item(key = "artist_singles_chip") {
+                                        val isSelected = selectedAlbumName == "__SINGLES__"
+                                        ArtistFilterChip(
+                                            label = stringResource(R.string.artist_filter_singles),
+                                            count = singlesCount,
+                                            isSelected = isSelected,
+                                            leadingIcon = Icons.Default.Album,
+                                            hasBlurBackground = hasBlurBackground,
+                                            isDarkTheme = effectiveDarkTheme,
+                                            useCustomControlsColor = useCustomControlsColor,
+                                            activeControlsPrimary = activeControlsPrimary,
+                                            onClick = {
+                                                if (settingsManager.isHapticVibrationEnabled) {
+                                                    vibrator.triggerLightVibration()
+                                                }
+                                                selectedAlbumName = if (isSelected) null else "__SINGLES__"
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1080,6 +1227,123 @@ fun AlbumDetailView(
             isDarkTheme = isDarkTheme,
             customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
         )
+    }
+}
+
+@Composable
+private fun ArtistFilterChip(
+    label: String,
+    count: Int,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    coverUrl: Any? = null,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    activeControlsPrimary: Color = MaterialTheme.colorScheme.primary,
+    onClick: () -> Unit
+) {
+    val containerColor = if (isSelected) {
+        if (useCustomControlsColor) {
+            activeControlsPrimary
+        } else if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.20f)
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+    } else {
+        if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        }
+    }
+
+    val contentColor = if (isSelected) {
+        if (hasBlurBackground && !useCustomControlsColor) {
+            if (isDarkTheme) Color.White else Color(0xFF141316)
+        } else if (containerColor.luminance() > 0.45f) {
+            Color(0xFF141316)
+        } else {
+            Color.White
+        }
+    } else {
+        if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.90f) else Color(0xFF141316).copy(alpha = 0.90f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    }
+
+    val countBadgeBg = if (isSelected) {
+        contentColor.copy(alpha = 0.18f)
+    } else {
+        if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+        }
+    }
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = containerColor,
+        modifier = modifier
+            .height(36.dp)
+            .bounceClick()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            if (coverUrl != null) {
+                SongCoverImage(
+                    coverUrl = coverUrl,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                )
+            } else if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Surface(
+                shape = CircleShape,
+                color = countBadgeBg,
+                modifier = Modifier
+                    .height(18.dp)
+                    .defaultMinSize(minWidth = 18.dp)
+            ) {
+                Box(
+                    modifier = Modifier.padding(horizontal = 5.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$count",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                }
+            }
+        }
     }
 }
 

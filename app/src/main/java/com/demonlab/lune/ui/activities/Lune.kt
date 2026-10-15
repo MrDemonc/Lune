@@ -2321,7 +2321,8 @@ fun MainScreen(
                     hasBlurBackground = hasBlurBackgroundMini,
                     isDarkTheme = isDarkThemeMini,
                     useCustomControlsColor = useCustomControlsColor,
-                    controlsColorPalette = controlsColorPalette
+                    controlsColorPalette = controlsColorPalette,
+                    isArtistView = (if (selectedFolder == "GENRES") "GENRES" else if (selectedFolder == "ARTISTS") "ARTISTS" else "ALBUMS") == "ARTISTS" || (!isAlbumView && albumRender.artist.isEmpty() && selectedFolder != "GENRES")
                 )
             }
         }

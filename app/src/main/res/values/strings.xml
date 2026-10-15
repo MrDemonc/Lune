@@ -492,4 +492,5 @@
     <string name="card_plays_count">%d plays</string>
     <string name="card_play_count_single">%d play</string>
     <string name="card_no_plays">No plays yet</string>
+    <string name="artist_filter_singles">Singles</string>
 </resources>

@@ -493,4 +493,5 @@
     <string name="card_plays_count">%d reproducciones</string>
     <string name="card_play_count_single">%d reproducción</string>
     <string name="card_no_plays">Sin reproducciones</string>
+    <string name="artist_filter_singles">Sencillos</string>
 </resources>
