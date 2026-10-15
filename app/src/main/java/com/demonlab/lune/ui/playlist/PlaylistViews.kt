@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -411,7 +412,6 @@ private fun PlaylistCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (hasBlurBackground) Color.White.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surfaceContainer,
-        border = if (hasBlurBackground) BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
         modifier = modifier
             .fillMaxWidth()
             .bounceClick(scaleDown = 0.98f)
@@ -525,7 +525,9 @@ private fun PlaylistCard(
                         color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .basicMarquee()
                     )
 
                     Spacer(modifier = Modifier.width(6.dp))

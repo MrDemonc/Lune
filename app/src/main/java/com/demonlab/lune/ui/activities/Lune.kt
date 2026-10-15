@@ -2461,6 +2461,7 @@ fun MainScreen(
                                         isDarkTheme = isDarkThemeMini,
                                         useCustomControlsColor = useCustomControlsColor,
                                         controlsColorPalette = controlsColorPalette,
+                                        showSearchText = false,
                                         sTabResume = sTabResume,
                                         sTabMixes = sTabMixes,
                                         sTabAll = sTabAll,
@@ -2493,35 +2494,6 @@ fun MainScreen(
                                     .padding(bottom = bottomInset + 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 14.dp)
-                                ) {
-                                    UnifiedHeaderPill(
-                                        selectedFolder = currentActiveFolder,
-                                        folders = folders,
-                                        onSelectedFolderChange = onSelectedFolderChange,
-                                        showSectionMenuSheet = { showSectionMenuSheet = true },
-                                        showSearchScreen = { showSearchScreen = true },
-                                        playbackManager = playbackManager,
-                                        song = song,
-                                        hasBlurBackground = hasBlurBackgroundMini,
-                                        isDarkTheme = isDarkThemeMini,
-                                        useCustomControlsColor = useCustomControlsColor,
-                                        controlsColorPalette = controlsColorPalette,
-                                        sTabResume = sTabResume,
-                                        sTabMixes = sTabMixes,
-                                        sTabAll = sTabAll,
-                                        sTabFavorites = sTabFavorites,
-                                        sTabAlbums = sTabAlbums,
-                                        sTabArtists = sTabArtists,
-                                        sTabGenres = sTabGenres,
-                                        sTabPlaylists = sTabPlaylists,
-                                        sTabFolders = sTabFolders
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
                                 val isCurrentPlaybackListViewed = remember(
                                     selectedPlaylist,
                                     selectedAlbum,
@@ -2591,6 +2563,36 @@ fun MainScreen(
                                         onScrollToCurrent = if (isCurrentPlaybackListViewed) { { scrollToCurrentTrigger.value++ } } else null,
 
                                         onMinimize = { settingsManager.isMiniPlayerMinimized = true }
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp)
+                                ) {
+                                    UnifiedHeaderPill(
+                                        selectedFolder = currentActiveFolder,
+                                        folders = folders,
+                                        onSelectedFolderChange = onSelectedFolderChange,
+                                        showSectionMenuSheet = { showSectionMenuSheet = true },
+                                        showSearchScreen = { showSearchScreen = true },
+                                        playbackManager = playbackManager,
+                                        song = song,
+                                        hasBlurBackground = hasBlurBackgroundMini,
+                                        isDarkTheme = isDarkThemeMini,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        controlsColorPalette = controlsColorPalette,
+                                        showSearchText = true,
+                                        sTabResume = sTabResume,
+                                        sTabMixes = sTabMixes,
+                                        sTabAll = sTabAll,
+                                        sTabFavorites = sTabFavorites,
+                                        sTabAlbums = sTabAlbums,
+                                        sTabArtists = sTabArtists,
+                                        sTabGenres = sTabGenres,
+                                        sTabPlaylists = sTabPlaylists,
+                                        sTabFolders = sTabFolders
                                     )
                                 }
                             }
@@ -3120,6 +3122,7 @@ fun UnifiedHeaderPill(
     isDarkTheme: Boolean = false,
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0,
+    showSearchText: Boolean = true,
     sTabResume: String,
     sTabMixes: String,
     sTabAll: String,
@@ -3354,16 +3357,30 @@ fun UnifiedHeaderPill(
                         .bounceClick()
                         .clip(RoundedCornerShape(26.dp))
                         .clickable { showSearchScreen() }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(
+                            start = if (showSearchText) 12.dp else 6.dp,
+                            end = if (showSearchText) 10.dp else 6.dp,
+                            top = 6.dp,
+                            bottom = 6.dp
+                        ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(R.string.search),
-                        color = searchTextColor,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    AnimatedVisibility(
+                        visible = showSearchText,
+                        enter = fadeIn(tween(200)) + expandHorizontally(),
+                        exit = fadeOut(tween(150)) + shrinkHorizontally()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(R.string.search),
+                                color = searchTextColor,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                    }
                     Surface(
                         shape = CircleShape,
                         color = searchIconBg,

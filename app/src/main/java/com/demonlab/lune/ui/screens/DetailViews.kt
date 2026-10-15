@@ -23,8 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -191,10 +194,14 @@ fun PlaylistDetailView(
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (activeCover != null) {
-                            val surfaceColor = if (hasBlurBackground) {
-                                if (isDarkTheme) Color(0xFF141416).copy(alpha = 0.75f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
-                            } else {
-                                MaterialTheme.colorScheme.surface
+                            val fadeBrush = remember {
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.40f to Color.Black,
+                                    0.70f to Color.Black.copy(alpha = 0.50f),
+                                    0.88f to Color.Black.copy(alpha = 0.15f),
+                                    1.0f to Color.Transparent
+                                )
                             }
                             Box(
                                 modifier = Modifier
@@ -203,6 +210,14 @@ fun PlaylistDetailView(
                                     .offset(y = (-50).dp)
                                     .graphicsLayer {
                                         alpha = headerAlpha
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = fadeBrush,
+                                            blendMode = BlendMode.DstIn
+                                        )
                                     }
                             ) {
                                 Crossfade(
@@ -223,9 +238,8 @@ fun PlaylistDetailView(
                                         .background(
                                             Brush.verticalGradient(
                                                 0.0f to Color.Transparent,
-                                                0.45f to Color.Transparent,
-                                                0.75f to surfaceColor.copy(alpha = 0.65f),
-                                                1.0f to surfaceColor
+                                                0.50f to Color.Transparent,
+                                                1.0f to (if (hasBlurBackground) Color.Black.copy(alpha = 0.40f) else Color.Transparent)
                                             )
                                         )
                                 )
@@ -704,10 +718,14 @@ fun AlbumDetailView(
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         if (activeCover != null) {
-                            val surfaceColor = if (hasBlurBackground) {
-                                if (isDarkTheme) Color(0xFF141416).copy(alpha = 0.75f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
-                            } else {
-                                MaterialTheme.colorScheme.surface
+                            val fadeBrush = remember {
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.40f to Color.Black,
+                                    0.70f to Color.Black.copy(alpha = 0.50f),
+                                    0.88f to Color.Black.copy(alpha = 0.15f),
+                                    1.0f to Color.Transparent
+                                )
                             }
                             Box(
                                 modifier = Modifier
@@ -716,6 +734,14 @@ fun AlbumDetailView(
                                     .offset(y = (-50).dp)
                                     .graphicsLayer {
                                         alpha = headerAlpha
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = fadeBrush,
+                                            blendMode = BlendMode.DstIn
+                                        )
                                     }
                             ) {
                                 Crossfade(
@@ -736,9 +762,8 @@ fun AlbumDetailView(
                                         .background(
                                             Brush.verticalGradient(
                                                 0.0f to Color.Transparent,
-                                                0.45f to Color.Transparent,
-                                                0.75f to surfaceColor.copy(alpha = 0.65f),
-                                                1.0f to surfaceColor
+                                                0.50f to Color.Transparent,
+                                                1.0f to (if (hasBlurBackground) Color.Black.copy(alpha = 0.40f) else Color.Transparent)
                                             )
                                         )
                                 )
@@ -1160,17 +1185,31 @@ fun FolderDetailView(
                     Box(modifier = Modifier.fillMaxWidth()) {
 
                         if (activeCover != null) {
-                            val surfaceColor = if (hasBlurBackground) {
-                                if (isDarkTheme) Color(0xFF141416).copy(alpha = 0.75f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
-                            } else {
-                                MaterialTheme.colorScheme.surface
+                            val fadeBrush = remember {
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.40f to Color.Black,
+                                    0.70f to Color.Black.copy(alpha = 0.50f),
+                                    0.88f to Color.Black.copy(alpha = 0.15f),
+                                    1.0f to Color.Transparent
+                                )
                             }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(380.dp)
                                     .offset(y = (-50).dp)
-                                    .graphicsLayer { alpha = headerAlpha }
+                                    .graphicsLayer {
+                                        alpha = headerAlpha
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = fadeBrush,
+                                            blendMode = BlendMode.DstIn
+                                        )
+                                    }
                             ) {
                                 Crossfade(
                                     targetState = activeCover,
@@ -1190,9 +1229,8 @@ fun FolderDetailView(
                                         .background(
                                             Brush.verticalGradient(
                                                 0.0f to Color.Transparent,
-                                                0.45f to Color.Transparent,
-                                                0.75f to surfaceColor.copy(alpha = 0.65f),
-                                                1.0f to surfaceColor
+                                                0.50f to Color.Transparent,
+                                                1.0f to (if (hasBlurBackground) Color.Black.copy(alpha = 0.40f) else Color.Transparent)
                                             )
                                         )
                                 )
