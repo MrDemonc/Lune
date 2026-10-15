@@ -403,13 +403,27 @@ class MusicService : MediaLibraryService() {
             }
             ACTION_DISMISS -> {
                 isNotificationDismissed = true
+                pauseTimeoutJob?.cancel()
+                try {
+                    mediaPlayer?.pause()
+                    secondaryPlayer?.pause()
+                } catch (_: Exception) {}
+                val pm = PlaybackManager.getInstance(applicationContext)
+                pm.updatePlayingState(false)
+                pm.savePlaybackState(wasPlaying = false)
+                stopWidgetUpdateTimer()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                 } else {
                     @Suppress("DEPRECATION")
                     stopForeground(true)
                 }
+                try {
+                    val notificationManager = getSystemService(NotificationManager::class.java)
+                    notificationManager?.cancel(1)
+                } catch (_: Exception) {}
                 updatePlaybackState()
+                stopSelf()
             }
             ACTION_UPDATE_WIDGET -> {
                 val pm = PlaybackManager.getInstance(this)
@@ -432,12 +446,11 @@ class MusicService : MediaLibraryService() {
         return START_STICKY
     }
 
-
-
     override fun onTaskRemoved(rootIntent: Intent?) {
         val shouldStopOnClose = settingsManager.stopOnTaskRemoved
-        Log.i("MusicService", "onTaskRemoved triggered: shouldStopOnClose=$shouldStopOnClose, isPlaying=${isPlaying()}")
-        if (shouldStopOnClose || !isPlaying()) {
+        val playing = isPlaying()
+        Log.i("MusicService", "onTaskRemoved triggered: shouldStopOnClose=$shouldStopOnClose, isPlaying=$playing")
+        if (shouldStopOnClose) {
             isNotificationDismissed = true
             pauseTimeoutJob?.cancel()
             try {
@@ -447,7 +460,6 @@ class MusicService : MediaLibraryService() {
             val pm = PlaybackManager.getInstance(applicationContext)
             pm.updatePlayingState(false)
             pm.savePlaybackState(wasPlaying = false)
-            updatePlaybackState()
             stopWidgetUpdateTimer()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -459,9 +471,17 @@ class MusicService : MediaLibraryService() {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
             } catch (_: Exception) {}
+            updatePlaybackState()
             stopSelf()
+            return
         }
-        super.onTaskRemoved(rootIntent)
+
+        // When stopOnTaskRemoved is false (default):
+        // Keep the foreground service and playback running seamlessly in the background.
+        // We MUST NOT call super.onTaskRemoved(rootIntent) because MediaSessionService.onTaskRemoved
+        // evaluates isPlaybackOngoing() == false (since Lune manages its own custom foreground notification
+        // rather than Media3's internal MediaNotificationManager) and erroneously invokes stopSelf().
+        Log.i("MusicService", "onTaskRemoved: keeping playback and notification active in background")
     }
 
     override fun onBind(intent: Intent?): IBinder? {
