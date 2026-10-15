@@ -51,8 +51,8 @@ fun ResumeScreen(
     val sUnknownSong = stringResource(R.string.unknown_song)
 
     val fallbackTopArtistName = remember(allSongs) {
-        allSongs.filter { it.artist.isNotBlank() && it.artist != "<unknown>" }
-            .groupingBy { it.artist }
+        allSongs.filter { it.artist.isNotBlank() && !it.artist.equals("<unknown>", ignoreCase = true) }
+            .groupingBy { it.artist.trim() }
             .eachCount()
             .maxByOrNull { it.value }?.key
     }
@@ -73,19 +73,47 @@ fun ResumeScreen(
 
     val topSong = top3Songs.firstOrNull()
 
-    val topArtistStat = viewModel.topArtistStats.firstOrNull()
-    val realTopArtistName = remember(topArtistStat, fallbackTopArtistName) {
-        topArtistStat?.id?.replace("ARTIST_", "") ?: (fallbackTopArtistName ?: sUnknownArtist)
+    val realTopArtistName = remember(viewModel.topArtistStats, viewModel.topSongStats, allSongs, fallbackTopArtistName) {
+        val artistPlaysMap = mutableMapOf<String, Long>()
+
+        // 1. Accumulate plays from top played songs
+        for (stat in viewModel.topSongStats) {
+            val sId = stat.id.removePrefix("SONG_").toLongOrNull()
+            if (sId != null && stat.playCount > 0) {
+                val s = allSongs.find { it.id == sId }
+                val art = s?.artist?.trim()
+                if (!art.isNullOrBlank() && !art.equals("<unknown>", ignoreCase = true)) {
+                    artistPlaysMap[art] = (artistPlaysMap[art] ?: 0L) + stat.playCount
+                }
+            }
+        }
+
+        // 2. Combine with direct ARTIST_ stats
+        for (stat in viewModel.topArtistStats) {
+            val art = stat.id.removePrefix("ARTIST_").trim()
+            if (art.isNotBlank() && !art.equals("<unknown>", ignoreCase = true) && stat.playCount > 0) {
+                val existing = artistPlaysMap[art] ?: 0L
+                artistPlaysMap[art] = maxOf(existing, stat.playCount)
+            }
+        }
+
+        // 3. Find artist with highest playCount
+        val bestByPlays = artistPlaysMap.filter { it.value > 0 }.maxByOrNull { it.value }?.key
+
+        bestByPlays
+            ?: viewModel.topArtistStats.firstOrNull { it.playCount > 0 }?.id?.removePrefix("ARTIST_")?.trim()
+            ?: fallbackTopArtistName
+            ?: sUnknownArtist
     }
 
     val recommendations = remember(allSongs) {
-        val topArtists = allSongs.groupingBy { it.artist }
+        val topArtists = allSongs.groupingBy { it.artist.trim() }
             .eachCount()
             .toList()
             .sortedByDescending { it.second }
             .take(5)
             .map { it.first }
-        allSongs.filter { topArtists.contains(it.artist) }
+        allSongs.filter { topArtists.contains(it.artist.trim()) }
             .distinctBy { it.id }
             .shuffled()
             .take(20)
@@ -95,16 +123,31 @@ fun ResumeScreen(
         allPlaylists.take(10)
     }
 
-    val topArtistsList = remember(allSongs, viewModel.topArtistStats) {
-        val statsMap = viewModel.topArtistStats.associate { stat ->
-            val artistName = stat.id.replace("ARTIST_", "")
-            artistName to stat.playCount
+    val topArtistsList = remember(allSongs, viewModel.topArtistStats, viewModel.topSongStats) {
+        val artistPlaysMap = mutableMapOf<String, Long>()
+        for (stat in viewModel.topSongStats) {
+            val sId = stat.id.removePrefix("SONG_").toLongOrNull()
+            if (sId != null && stat.playCount > 0) {
+                val s = allSongs.find { it.id == sId }
+                val art = s?.artist?.trim()
+                if (!art.isNullOrBlank() && !art.equals("<unknown>", ignoreCase = true)) {
+                    artistPlaysMap[art] = (artistPlaysMap[art] ?: 0L) + stat.playCount
+                }
+            }
         }
+        for (stat in viewModel.topArtistStats) {
+            val art = stat.id.removePrefix("ARTIST_").trim()
+            if (art.isNotBlank() && !art.equals("<unknown>", ignoreCase = true) && stat.playCount > 0) {
+                val existing = artistPlaysMap[art] ?: 0L
+                artistPlaysMap[art] = maxOf(existing, stat.playCount)
+            }
+        }
+
         allSongs.filter { it.artist.isNotBlank() && !it.artist.equals("<unknown>", ignoreCase = true) }
-            .groupBy { it.artist }
+            .groupBy { it.artist.trim() }
             .entries
             .map { (artistName, songs) ->
-                val playCount: Int = (statsMap[artistName] ?: songs.size.toLong()).toInt()
+                val playCount: Int = (artistPlaysMap[artistName] ?: songs.size.toLong()).toInt()
                 val coverSong = songs.firstOrNull { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null } ?: songs.firstOrNull()
                 val coverStr: String? = coverSong?.coverUrl ?: coverSong?.albumArtUri?.toString()
                 ArtistItem(
@@ -142,7 +185,7 @@ fun ResumeScreen(
     }
 
     val topArtistSongs = remember(allSongs, realTopArtistName) {
-        allSongs.filter { it.artist.equals(realTopArtistName, ignoreCase = true) }
+        allSongs.filter { it.artist.trim().equals(realTopArtistName.trim(), ignoreCase = true) }
     }
 
     val topGenreStat = viewModel.topGenreStats.firstOrNull()

@@ -2193,12 +2193,6 @@ fun ScallopPlayPauseButtonWithProgress(
         label = "WavyProgress"
     )
 
-    val animatedAmplitude by animateFloatAsState(
-        targetValue = if (isPlaying) 1f else 0f,
-        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-        label = "WavyAmplitude"
-    )
-
     val trackColor = if (useCustomControlsColor) {
         activePrimary.copy(alpha = 0.25f)
     } else if (hasBlurBackground) {
@@ -2247,8 +2241,8 @@ fun ScallopPlayPauseButtonWithProgress(
             stroke = WavyProgressIndicatorDefaults.circularIndicatorStroke,
             trackStroke = WavyProgressIndicatorDefaults.circularTrackStroke,
             gapSize = 0.dp,
-            amplitude = { animatedAmplitude },
-            waveSpeed = if (isPlaying) 20.dp else 0.dp
+            amplitude = { if (isPlaying) 1f else 0f },
+            waveSpeed = 20.dp
         )
 
         if (isPlaying) {
