@@ -135,6 +135,7 @@
     <string name="unknown_artist">Nieznany wykonawca</string>
     <string name="unknown_song">Nieznany utwór</string>
     <string name="unknown_album">Nieznany album</string>
+    <string name="unknown_genre">Nieznany gatunek</string>
 
     <!-- Accessibility / Icons -->
     <string name="cd_back">Wstecz</string>
@@ -482,4 +483,14 @@
     <string name="auto_sync_requires_export">Najpierw wyeksportuj kopię zapasową, aby włączyć automatyczną synchronizację</string>
     <string name="show_headers">Pokaż nagłówki sekcji</string>
     <string name="hide_headers">Ukryj nagłówki sekcji</string>
+
+    <!-- M3 Expressive Welcome / Top Stats Cards -->
+    <string name="card_top_artist">Najlepszy wykonawca</string>
+    <string name="card_top_song">Najlepszy utwór</string>
+    <string name="card_top_genre">Najpopularniejszy gatunek</string>
+    <string name="card_artist_songs">%d utworów</string>
+    <string name="card_plays_count">%d odtworzeń</string>
+    <string name="card_play_count_single">%d odtworzenie</string>
+    <string name="card_no_plays">Brak odtworzeń</string>
+    <string name="artist_filter_singles">Single</string>
 </resources>
