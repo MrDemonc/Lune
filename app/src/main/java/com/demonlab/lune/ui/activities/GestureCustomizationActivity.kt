@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -184,47 +185,65 @@ fun GestureCustomizationScreen(
                 )
                 ModalBottomSheet(
                     onDismissRequest = { showSwipeUpOptions = false },
-                    containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surface,
-                    dragHandle = {
-                        BottomSheetDefaults.DragHandle(
-                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    containerColor = if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface,
+                    dragHandle = null,
+                    contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
                 ) {
-                    Column(modifier = Modifier.padding(bottom = 32.dp)) {
-                        Text(
-                            text = stringResource(R.string.change_gesture),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                        swipeUpOptions.forEachIndexed { index, title ->
-                            val isSelected = swipeUpAction == index
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        swipeUpAction = index
-                                        settingsManager.swipeUpAction = index
-                                        showSwipeUpOptions = false
-                                    }
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    AppBlurBackdrop(
+                        hasBlurBackground = hasBlurBackground,
+                        isDarkTheme = isDarkTheme,
+                        currentSong = currentSong,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(bottom = 24.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = null,
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
-                                        unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                BottomSheetDefaults.DragHandle(
+                                    color = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.change_gesture),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
+                            swipeUpOptions.forEachIndexed { index, title ->
+                                val isSelected = swipeUpAction == index
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            swipeUpAction = index
+                                            settingsManager.swipeUpAction = index
+                                            showSwipeUpOptions = false
+                                        }
+                                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = null,
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                            unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     )
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = title,
-                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-                                )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = title,
+                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     }

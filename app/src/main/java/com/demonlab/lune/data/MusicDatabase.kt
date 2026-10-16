@@ -121,10 +121,10 @@ interface PlaybackStatsDao {
     @Query("SELECT * FROM playback_stats WHERE id = :id")
     suspend fun getStatsById(id: String): PlaybackStats?
 
-    @Query("SELECT * FROM playback_stats WHERE type = :type ORDER BY playCount DESC LIMIT :limit")
+    @Query("SELECT * FROM playback_stats WHERE type = :type ORDER BY playCount DESC, totalTimeMs DESC LIMIT :limit")
     fun getTopByCountFlow(type: String, limit: Int): kotlinx.coroutines.flow.Flow<List<PlaybackStats>>
 
-    @Query("SELECT * FROM playback_stats WHERE type = :type ORDER BY totalTimeMs DESC LIMIT :limit")
+    @Query("SELECT * FROM playback_stats WHERE type = :type ORDER BY totalTimeMs DESC, playCount DESC LIMIT :limit")
     fun getTopByTimeFlow(type: String, limit: Int): kotlinx.coroutines.flow.Flow<List<PlaybackStats>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -183,6 +183,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var topArtistStats by mutableStateOf<List<com.demonlab.lune.data.PlaybackStats>>(emptyList())
         private set
+    var topGenreStats by mutableStateOf<List<com.demonlab.lune.data.PlaybackStats>>(emptyList())
+        private set
 
     fun loadPlaylists() {
         viewModelScope.launch {
@@ -403,13 +405,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val dao = db.playbackStatsDao()
             
             launch {
-                dao.getTopByCountFlow("SONG", 3).collect { topSongStats = it }
+                dao.getTopByCountFlow("SONG", 50).collect { topSongStats = it }
             }
             launch {
-                dao.getTopByTimeFlow("PLAYLIST", 1).collect { topPlaylistStats = it }
+                dao.getTopByTimeFlow("PLAYLIST", 10).collect { topPlaylistStats = it }
             }
             launch {
-                dao.getTopByTimeFlow("ARTIST", 1).collect { topArtistStats = it }
+                dao.getTopByCountFlow("ARTIST", 50).collect { topArtistStats = it }
+            }
+            launch {
+                dao.getTopByCountFlow("GENRE", 10).collect { topGenreStats = it }
             }
         }
     }

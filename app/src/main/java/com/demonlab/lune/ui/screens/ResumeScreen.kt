@@ -1,7 +1,5 @@
 package com.demonlab.lune.ui.screens
 
-import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -11,13 +9,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
-import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.screens.resume.HeroSection
 import com.demonlab.lune.ui.screens.resume.PlaylistGridSection
@@ -51,27 +47,12 @@ fun ResumeScreen(
     onPlayToggle: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    val context = LocalContext.current
-    val playbackManager = remember { PlaybackManager.getInstance(context) }
-
-    val dailyListeningTimeMs = playbackManager.dailyListeningTime
-    val dailyListeningTimeStr = remember(dailyListeningTimeMs) {
-        val hours = (dailyListeningTimeMs / (1000 * 60 * 60)).toInt()
-        val minutes = ((dailyListeningTimeMs / (1000 * 60)) % 60).toInt()
-        val seconds = ((dailyListeningTimeMs / 1000) % 60).toInt()
-        when {
-            hours > 0 -> context.getString(R.string.stats_hours_unit, hours)
-            minutes > 0 -> context.getString(R.string.stats_minutes_unit, minutes)
-            else -> context.getString(R.string.stats_seconds_unit, seconds)
-        }
-    }
-
     val sUnknownArtist = stringResource(R.string.unknown_artist)
     val sUnknownSong = stringResource(R.string.unknown_song)
 
     val fallbackTopArtistName = remember(allSongs) {
-        allSongs.filter { it.artist.isNotBlank() && it.artist != "<unknown>" }
-            .groupingBy { it.artist }
+        allSongs.filter { it.artist.isNotBlank() && !it.artist.equals("<unknown>", ignoreCase = true) }
+            .groupingBy { it.artist.trim() }
             .eachCount()
             .maxByOrNull { it.value }?.key
     }
@@ -92,19 +73,47 @@ fun ResumeScreen(
 
     val topSong = top3Songs.firstOrNull()
 
-    val topArtistStat = viewModel.topArtistStats.firstOrNull()
-    val realTopArtistName = remember(topArtistStat, fallbackTopArtistName) {
-        topArtistStat?.id?.replace("ARTIST_", "") ?: (fallbackTopArtistName ?: sUnknownArtist)
+    val realTopArtistName = remember(viewModel.topArtistStats, viewModel.topSongStats, allSongs, fallbackTopArtistName) {
+        val artistPlaysMap = mutableMapOf<String, Long>()
+
+        // 1. Accumulate plays from top played songs
+        for (stat in viewModel.topSongStats) {
+            val sId = stat.id.removePrefix("SONG_").toLongOrNull()
+            if (sId != null && stat.playCount > 0) {
+                val s = allSongs.find { it.id == sId }
+                val art = s?.artist?.trim()
+                if (!art.isNullOrBlank() && !art.equals("<unknown>", ignoreCase = true)) {
+                    artistPlaysMap[art] = (artistPlaysMap[art] ?: 0L) + stat.playCount
+                }
+            }
+        }
+
+        // 2. Combine with direct ARTIST_ stats
+        for (stat in viewModel.topArtistStats) {
+            val art = stat.id.removePrefix("ARTIST_").trim()
+            if (art.isNotBlank() && !art.equals("<unknown>", ignoreCase = true) && stat.playCount > 0) {
+                val existing = artistPlaysMap[art] ?: 0L
+                artistPlaysMap[art] = maxOf(existing, stat.playCount)
+            }
+        }
+
+        // 3. Find artist with highest playCount
+        val bestByPlays = artistPlaysMap.filter { it.value > 0 }.maxByOrNull { it.value }?.key
+
+        bestByPlays
+            ?: viewModel.topArtistStats.firstOrNull { it.playCount > 0 }?.id?.removePrefix("ARTIST_")?.trim()
+            ?: fallbackTopArtistName
+            ?: sUnknownArtist
     }
 
     val recommendations = remember(allSongs) {
-        val topArtists = allSongs.groupingBy { it.artist }
+        val topArtists = allSongs.groupingBy { it.artist.trim() }
             .eachCount()
             .toList()
             .sortedByDescending { it.second }
             .take(5)
             .map { it.first }
-        allSongs.filter { topArtists.contains(it.artist) }
+        allSongs.filter { topArtists.contains(it.artist.trim()) }
             .distinctBy { it.id }
             .shuffled()
             .take(20)
@@ -114,16 +123,31 @@ fun ResumeScreen(
         allPlaylists.take(10)
     }
 
-    val topArtistsList = remember(allSongs, viewModel.topArtistStats) {
-        val statsMap = viewModel.topArtistStats.associate { stat ->
-            val artistName = stat.id.replace("ARTIST_", "")
-            artistName to stat.playCount
+    val topArtistsList = remember(allSongs, viewModel.topArtistStats, viewModel.topSongStats) {
+        val artistPlaysMap = mutableMapOf<String, Long>()
+        for (stat in viewModel.topSongStats) {
+            val sId = stat.id.removePrefix("SONG_").toLongOrNull()
+            if (sId != null && stat.playCount > 0) {
+                val s = allSongs.find { it.id == sId }
+                val art = s?.artist?.trim()
+                if (!art.isNullOrBlank() && !art.equals("<unknown>", ignoreCase = true)) {
+                    artistPlaysMap[art] = (artistPlaysMap[art] ?: 0L) + stat.playCount
+                }
+            }
         }
+        for (stat in viewModel.topArtistStats) {
+            val art = stat.id.removePrefix("ARTIST_").trim()
+            if (art.isNotBlank() && !art.equals("<unknown>", ignoreCase = true) && stat.playCount > 0) {
+                val existing = artistPlaysMap[art] ?: 0L
+                artistPlaysMap[art] = maxOf(existing, stat.playCount)
+            }
+        }
+
         allSongs.filter { it.artist.isNotBlank() && !it.artist.equals("<unknown>", ignoreCase = true) }
-            .groupBy { it.artist }
+            .groupBy { it.artist.trim() }
             .entries
             .map { (artistName, songs) ->
-                val playCount: Int = (statsMap[artistName] ?: songs.size.toLong()).toInt()
+                val playCount: Int = (artistPlaysMap[artistName] ?: songs.size.toLong()).toInt()
                 val coverSong = songs.firstOrNull { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null } ?: songs.firstOrNull()
                 val coverStr: String? = coverSong?.coverUrl ?: coverSong?.albumArtUri?.toString()
                 ArtistItem(
@@ -160,24 +184,18 @@ fun ResumeScreen(
         allSongs.sortedByDescending { it.dateAdded }.take(10)
     }
 
-    val favoriteCount = remember(allSongs) {
-        allSongs.count { it.isFavorite }
+    val topArtistSongs = remember(allSongs, realTopArtistName) {
+        allSongs.filter { it.artist.trim().equals(realTopArtistName.trim(), ignoreCase = true) }
     }
 
-    val settingsManager = remember { com.demonlab.lune.tools.SettingsManager.getInstance(context) }
-    val prefs = remember(context) { context.getSharedPreferences("lune_settings", Context.MODE_PRIVATE) }
-    var showHeroSection by remember { mutableStateOf(settingsManager.showHeroSection) }
+    val topGenreStat = viewModel.topGenreStats.firstOrNull()
+    val realTopGenreName = remember(topGenreStat, topGenresList) {
+        topGenreStat?.id?.replace("GENRE_", "") ?: (topGenresList.firstOrNull()?.name ?: "")
+    }
 
-    DisposableEffect(prefs) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "show_hero_section") {
-                showHeroSection = settingsManager.showHeroSection
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose {
-            prefs.unregisterOnSharedPreferenceChangeListener(listener)
-        }
+    val topSongStat = viewModel.topSongStats.firstOrNull()
+    val totalPlays = remember(viewModel.topSongStats) {
+        viewModel.topSongStats.sumOf { it.playCount }
     }
 
     Column(
@@ -194,12 +212,14 @@ fun ResumeScreen(
             HeroSection(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
-                dailyListeningTimeStr = dailyListeningTimeStr,
-                totalSongs = allSongs.size,
-                playlistsCount = allPlaylists.size,
-                favoriteCount = favoriteCount,
                 topArtist = realTopArtistName,
-                showGreetingCard = showHeroSection,
+                topArtistSongs = topArtistSongs,
+                topSong = topSong,
+                topSongPlayCount = topSongStat?.playCount ?: 0L,
+                topGenre = realTopGenreName,
+                totalPlays = totalPlays,
+                onArtistClick = onArtistClick,
+                onSongClick = { song -> onSongClick(song, allSongs) },
                 hasBlurBackground = hasBlurBackground,
                 isDarkTheme = isDarkTheme,
                 useCustomControlsColor = useCustomControlsColor,
@@ -219,6 +239,9 @@ fun ResumeScreen(
                     title = stringResource(R.string.resume_recommendations),
                     songs = recommendations,
                     hasBlurBackground = hasBlurBackground,
+                    isDarkTheme = isDarkTheme,
+                    useCustomControlsColor = useCustomControlsColor,
+                    controlsColorPalette = controlsColorPalette,
                     onSongClick = { song -> onSongClick(song, allSongs) }
                 )
             }

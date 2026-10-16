@@ -69,6 +69,7 @@ import android.os.Vibrator
 import com.demonlab.lune.ui.player.MiniPlayer
 import com.demonlab.lune.ui.player.MiniPlayerMinimized
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import com.demonlab.lune.ui.utils.triggerLightVibration
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import java.util.regex.Pattern
@@ -169,7 +170,7 @@ fun LyricsScreen(onBack: () -> Unit, isDarkTheme: Boolean = false) {
     
     LaunchedEffect(activeIndex) {
         if (lyricsLines.isNotEmpty()) {
-            listState.animateScrollToItem(
+            listState.fastSmoothScrollToItem(
                 (activeIndex - 2).coerceAtLeast(0)
             )
         }

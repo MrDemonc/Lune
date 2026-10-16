@@ -43,6 +43,7 @@ import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import kotlinx.coroutines.launch
 
@@ -780,7 +781,7 @@ fun SearchScreen(
                 visible = isScrollToTopVisible.value,
                 onClick = {
                     scope.launch {
-                        listState.animateScrollToItem(0)
+                        listState.fastSmoothScrollToItem(0)
                     }
                 },
                 modifier = Modifier

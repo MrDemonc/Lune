@@ -25,8 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.automirrored.filled.LastPage
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
@@ -902,6 +901,7 @@ fun QueueBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
+                    .navigationBarsPadding()
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -1174,17 +1174,19 @@ fun QueueBottomSheet(
 @Composable
 fun PlayerOptionsBottomSheet(
     playbackManager: PlaybackManager,
-    showWaveform: Boolean,
-    onToggleWaveform: () -> Unit,
+    showWaveform: Boolean = false,
+    onToggleWaveform: () -> Unit = {},
     onRefreshSongs: (() -> Unit)? = null,
     onSyncFavorite: ((Long, Boolean) -> Unit)? = null,
     onDismiss: () -> Unit,
-    onAddToPlaylistClick: () -> Unit,
+    onAddToPlaylistClick: () -> Unit = {},
     onShowVisualizerSettings: () -> Unit,
-    onShowLyrics: () -> Unit
+    onShowLyrics: () -> Unit = {}
 ) {
     val currentSong = playbackManager.currentSong
     val blurColors = rememberBlurSheetColors(currentSong)
+    val context = LocalContext.current
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = blurColors.containerColor,
@@ -1199,9 +1201,7 @@ fun PlayerOptionsBottomSheet(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
-            val isFavorite = playbackManager.currentSong?.isFavorite == true
             var showCustomTimerDialog by remember { mutableStateOf(false) }
-            var showCustomRepeatDialogInSheet by remember { mutableStateOf(false) }
 
             if (showCustomTimerDialog) {
                 CustomSleepTimerDialog(
@@ -1214,12 +1214,26 @@ fun PlayerOptionsBottomSheet(
                 )
             }
 
-            if (showCustomRepeatDialogInSheet) {
-                CustomRepeatDialog(
-                    playbackManager = playbackManager,
-                    currentSong = currentSong,
-                    onDismiss = { showCustomRepeatDialogInSheet = false }
-                )
+            var sliderValue by remember { mutableStateOf(playbackManager.currentVolumePercent) }
+            var lastNonZeroVolume by remember { mutableStateOf(if (playbackManager.currentVolumePercent > 0f) playbackManager.currentVolumePercent else 0.5f) }
+
+            LaunchedEffect(playbackManager.currentVolumePercent) {
+                sliderValue = playbackManager.currentVolumePercent
+                if (playbackManager.currentVolumePercent > 0f) {
+                    lastNonZeroVolume = playbackManager.currentVolumePercent
+                }
+            }
+
+            var speedValue by remember { mutableStateOf(playbackManager.playbackSpeed) }
+            LaunchedEffect(playbackManager.playbackSpeed) {
+                speedValue = playbackManager.playbackSpeed
+            }
+
+            val volumeIcon = when {
+                sliderValue == 0f -> Icons.AutoMirrored.Filled.VolumeOff
+                playbackManager.currentOutputIcon == Icons.Default.Headphones -> Icons.Default.Headphones
+                sliderValue < 0.5f -> Icons.AutoMirrored.Filled.VolumeDown
+                else -> Icons.AutoMirrored.Filled.VolumeUp
             }
 
             Column(
@@ -1236,85 +1250,155 @@ fun PlayerOptionsBottomSheet(
                         color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // Audio device header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .padding(horizontal = 24.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    val context = LocalContext.current
-                    val song = playbackManager.currentSong
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        OptionButton(
-                            icon = Icons.Default.Share,
-                            label = stringResource(R.string.option_share),
-                            active = false,
-                            onClick = {
-                                song?.let {
-                                    try {
-                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                            type = "audio/*"
-                                            putExtra(android.content.Intent.EXTRA_STREAM, it.uri)
-                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        }
-                                        context.startActivity(android.content.Intent.createChooser(shareIntent, context.getString(R.string.option_share)))
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
+                    Icon(
+                        imageVector = playbackManager.currentOutputIcon,
+                        contentDescription = null,
+                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = playbackManager.currentOutputName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Volume Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .bounceClick(0.92f)
+                            .clip(CircleShape)
+                            .clickable {
+                                if (sliderValue > 0f) {
+                                    lastNonZeroVolume = sliderValue
+                                    playbackManager.setVolume(0f)
+                                } else {
+                                    playbackManager.setVolume(if (lastNonZeroVolume > 0f) lastNonZeroVolume else 0.5f)
                                 }
-                            }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = volumeIcon,
+                            contentDescription = playbackManager.currentOutputName,
+                            tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
-                    // Repeat
-                    val repeatIcon = when (playbackManager.repeatMode) {
-                        1 -> Icons.Default.RepeatOne
-                        else -> Icons.Default.Repeat
-                    }
-                    val repeatLabel = when (playbackManager.repeatMode) {
-                        1 -> stringResource(R.string.option_repeat_one)
-                        2 -> stringResource(R.string.option_repeat_all)
-                        else -> stringResource(R.string.option_repeat_off)
-                    }
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        OptionButton(
-                            icon = repeatIcon,
-                            label = repeatLabel,
-                            active = playbackManager.repeatMode > 0,
-                            onClick = { playbackManager.toggleRepeatMode() },
-                            onLongClick = { showCustomRepeatDialogInSheet = true }
-                        )
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    val volumeSliderState = remember { SliderState(sliderValue.coerceIn(0f, 1f)) }
+                    LaunchedEffect(sliderValue) {
+                        volumeSliderState.value = sliderValue.coerceIn(0f, 1f)
                     }
 
-                    // Crossfade
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        OptionButton(
-                            icon = Icons.Default.Tune,
-                            label = stringResource(R.string.option_crossfade),
-                            active = playbackManager.isCrossfade,
-                            onClick = { playbackManager.toggleCrossfade() }
+                    Slider(
+                        state = volumeSliderState,
+                        onValueChange = {
+                            sliderValue = it
+                            playbackManager.setVolume(it)
+                        },
+                        thumb = { _ -> },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp),
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         )
-                    }
+                    )
 
-                    // Automix
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        OptionButton(
-                            icon = Icons.Default.AutoAwesome,
-                            label = stringResource(R.string.option_automix),
-                            active = playbackManager.isAutomix,
-                            onClick = { playbackManager.toggleAutomix() }
+                    Box(
+                        modifier = Modifier.width(44.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Text(
+                            text = "${(sliderValue * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.End
                         )
                     }
                 }
 
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Playback Speed Bar
+                val speedSteps = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+                Surface(
+                    shape = CircleShape,
+                    color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        speedSteps.forEach { speedOption ->
+                            val isSelected = Math.abs(speedOption - speedValue) < 0.05f
+                            Surface(
+                                onClick = {
+                                    speedValue = speedOption
+                                    playbackManager.updatePlaybackSpeed(speedOption)
+                                },
+                                shape = CircleShape,
+                                color = if (isSelected) {
+                                    if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                                } else Color.Transparent,
+                                contentColor = if (isSelected) {
+                                    if (blurColors.hasBlur) Color.Black.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = if (speedOption == 1.0f) "1x" else "${speedOption}x",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Dedicated audio options row: Timer, Crossfade, Automix, Visualizer, Share
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 16.dp),
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    val context = LocalContext.current
-                    // Timer
+                    // 1. Timer
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         OptionButton(
                             icon = Icons.Default.Timer,
@@ -1325,40 +1409,56 @@ fun PlayerOptionsBottomSheet(
                         )
                     }
 
-                    // EQ
+                    // 2. Crossfade
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         OptionButton(
-                            icon = Icons.Default.GraphicEq,
-                            label = stringResource(R.string.eq_title),
-                            active = playbackManager.isEqEnabled,
-                            onClick = {
-                                onDismiss()
-                                val intent = android.content.Intent(context, EqualizerActivity::class.java)
-                                context.startActivity(intent)
-                            }
+                            icon = Icons.Default.Tune,
+                            label = stringResource(R.string.option_crossfade),
+                            active = playbackManager.isCrossfade,
+                            onClick = { playbackManager.toggleCrossfade() }
                         )
                     }
 
-                    // Playlist
+                    // 3. Automix
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         OptionButton(
-                            icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                            label = stringResource(R.string.add_to_playlist),
-                            active = false,
-                            onClick = {
-                                onDismiss()
-                                onAddToPlaylistClick()
-                            }
+                            icon = Icons.Default.AutoAwesome,
+                            label = stringResource(R.string.option_automix),
+                            active = playbackManager.isAutomix,
+                            onClick = { playbackManager.toggleAutomix() }
                         )
                     }
 
-                    // Waveform Visualizer
+                    // 4. Waveform Visualizer
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         OptionButton(
                             icon = Icons.Default.Audiotrack,
                             label = stringResource(R.string.option_visualizer),
                             active = playbackManager.isFullPlayerVisualizerEnabled || playbackManager.isMiniPlayerVisualizerEnabled,
                             onClick = onShowVisualizerSettings
+                        )
+                    }
+
+                    // 5. Share
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        OptionButton(
+                            icon = Icons.Default.Share,
+                            label = stringResource(R.string.option_share),
+                            active = false,
+                            onClick = {
+                                currentSong?.let { song ->
+                                    try {
+                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "audio/*"
+                                            putExtra(android.content.Intent.EXTRA_STREAM, song.uri)
+                                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(shareIntent, context.getString(R.string.option_share)))
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            }
                         )
                     }
                 }
@@ -1518,6 +1618,7 @@ fun EditSongBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 32.dp)
                     .verticalScroll(rememberScrollState()), // Fix keyboard compression

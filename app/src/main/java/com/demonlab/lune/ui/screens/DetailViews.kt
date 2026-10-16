@@ -3,8 +3,11 @@ package com.demonlab.lune.ui.screens
 import android.os.Vibrator
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -19,8 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,8 +52,10 @@ import com.demonlab.lune.ui.components.rememberScrollToTopVisibility
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.components.SongItem
 import com.demonlab.lune.ui.data.Album
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.random.Random
 import com.demonlab.lune.ui.playlist.PlaylistOptionsAndRename
-import com.demonlab.lune.ui.playlist.PlaylistPreviewCovers
 import com.demonlab.lune.ui.sheets.AddSongsToPlaylistDialog
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.utils.triggerLightVibration
@@ -52,6 +63,7 @@ import com.demonlab.lune.ui.utils.rememberReorderableState
 import com.demonlab.lune.ui.utils.reorderable
 import com.demonlab.lune.ui.utils.reorderableItem
 import com.demonlab.lune.ui.utils.bounceClick
+import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
@@ -84,6 +96,7 @@ fun PlaylistDetailView(
     var showAddSongsDialog by remember { mutableStateOf(false) }
     val isPlaying = playbackManager.isPlaying
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val stretchProgress = remember { Animatable(0f) }
     
     val sortedSongs = remember(songs, sortOption, isSortAscending) {
         playbackManager.getSortedList(songs, sortOption, isSortAscending)
@@ -134,8 +147,36 @@ fun PlaylistDetailView(
         }
     }
 
-    val backgroundCover = remember(songs) {
-        songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
+    val allCovers = remember(songs) {
+        songs.groupBy { song ->
+            song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
+        }.values.mapNotNull { group ->
+            group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
+        }
+    }
+
+    var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(allCovers) {
+        if (allCovers.size > 1) {
+            while (isActive) {
+                delay(5000L)
+                val nextIndex = if (allCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(allCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(allCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val activeCover = remember(allCovers, currentCoverIndex) {
+        allCovers.getOrNull(currentCoverIndex)
     }
 
     AppBlurBackdrop(
@@ -154,34 +195,53 @@ fun PlaylistDetailView(
             ) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        if (backgroundCover != null && !hasBlurBackground) {
+                        if (activeCover != null) {
+                            val fadeBrush = remember {
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.40f to Color.Black,
+                                    0.70f to Color.Black.copy(alpha = 0.50f),
+                                    0.88f to Color.Black.copy(alpha = 0.15f),
+                                    1.0f to Color.Transparent
+                                )
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(350.dp)
+                                    .height(380.dp)
                                     .offset(y = (-50).dp)
                                     .graphicsLayer {
                                         alpha = headerAlpha
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = fadeBrush,
+                                            blendMode = BlendMode.DstIn
+                                        )
                                     }
                             ) {
-                                AsyncImage(
-                                    model = backgroundCover,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Crossfade(
+                                    targetState = activeCover,
+                                    animationSpec = tween(durationMillis = 1000),
+                                    label = "playlistCoverCrossfade"
+                                ) { cover ->
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 0f
+                                                0.0f to Color.Transparent,
+                                                0.50f to Color.Transparent,
+                                                1.0f to (if (hasBlurBackground) Color.Black.copy(alpha = 0.40f) else Color.Transparent)
                                             )
                                         )
                                 )
@@ -199,14 +259,7 @@ fun PlaylistDetailView(
                                 .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(55.dp))
-                        PlaylistPreviewCovers(
-                            playlistId = playlist.id,
-                            viewModel = viewModel,
-                            size = 180.dp
-                        )
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(260.dp))
                         
                         val currentPlaylistName = viewModel.playlists.find { it.id == playlist.id }?.name ?: playlist.name
                         Text(
@@ -222,162 +275,214 @@ fun PlaylistDetailView(
 
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        Surface(
+                        val isCurrentPlaylistPlaying = playbackManager.activePlaylistId == playlist.id && playbackManager.activeCategory == "PLAYLISTS"
+                        val isPillPlaying = isCurrentPlaylistPlaying && isPlaying
+
+                        val pillCornerRadius by animateDpAsState(
+                            targetValue = if (isPillPlaying) 14.dp else 28.dp,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                            label = "playlistPillCornerRadius"
+                        )
+                        val iconCornerRadius by animateDpAsState(
+                            targetValue = if (isPillPlaying) 10.dp else 20.dp,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                            label = "playlistIconCornerRadius"
+                        )
+
+                        val dynamicPrimary = if (useCustomControlsColor) activeControlsPrimary else MaterialTheme.colorScheme.primary
+                        val isSystemDark = isSystemInDarkTheme()
+                        val effectiveDarkTheme = isDarkTheme || when (settingsManager.themeMode) {
+                            1 -> false
+                            2 -> true
+                            else -> isSystemDark
+                        }
+
+                        val pillBg = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.10f)
+                        } else if (hasBlurBackground) {
+                            dynamicPrimary.copy(alpha = 0.85f)
+                        } else {
+                            dynamicPrimary
+                        }
+
+                        val pillContentColor = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else if (pillBg.luminance() > 0.45f) {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                        }
+
+                        val actionBtnInactiveBg = if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+                        } else MaterialTheme.colorScheme.secondaryContainer
+
+                        val actionBtnInactiveTint = if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else MaterialTheme.colorScheme.onSecondaryContainer
+
+                        val actionBtnActiveBg = if (useCustomControlsColor) {
+                            activeControlsPrimary
+                        } else if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f)
+                        } else MaterialTheme.colorScheme.primary
+
+                        val actionBtnActiveTint = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else if (actionBtnActiveBg.luminance() > 0.45f) {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                        }
+
+                        val onPlayWithStretch = {
+                            scope.launch {
+                                stretchProgress.snapTo(0f)
+                                stretchProgress.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+                                )
+                                stretchProgress.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
+                            }
+                            if (settingsManager.isHapticVibrationEnabled) {
+                                vibrator.triggerLightVibration()
+                            }
+                            if (isCurrentPlaylistPlaying) {
+                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                            } else if (sortedSongs.isNotEmpty()) {
+                                val songToPlay = if (playbackManager.isShuffle) sortedSongs.random() else sortedSongs[0]
+                                onSongClick(songToPlay, sortedSongs)
+                            }
+                        }
+
+                        val extraLateralPadding = (stretchProgress.value * 14f).coerceAtLeast(0f).dp
+
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp)),
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.25f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            tonalElevation = if (hasBlurBackground) 0.dp else 4.dp,
-                            shadowElevation = 0.dp
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 20.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            val settingsManager = SettingsManager.getInstance(LocalContext.current)
-                            val isCurrentPlaylistPlaying = playbackManager.activePlaylistId == playlist.id && playbackManager.activeCategory == "PLAYLISTS"
-                            var localShuffleState by remember(playlist.id) { mutableStateOf(settingsManager.getPlaylistShuffle(playlist.id)) }
-                            val isShuffleActive = if (isCurrentPlaylistPlaying) playbackManager.isShuffle else localShuffleState
-
-                            Column(horizontalAlignment = Alignment.Start) {
-                                val totalPlaylistDuration = songs.sumOf { it.duration }
-                                Text(
-                                    text = formatLongDuration(totalPlaylistDuration),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                            // 1. Botón de 3 puntos a la izquierda
+                            Surface(
+                                onClick = { showPlaylistOptions = true },
+                                shape = RoundedCornerShape(14.dp),
+                                color = actionBtnInactiveBg,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .graphicsLayer {
+                                        translationX = -stretchProgress.value * 8.dp.toPx()
+                                    }
+                                    .bounceClick()
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        Icons.Default.MusicNote,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "${songs.size}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = stringResource(R.string.player_options),
+                                        tint = actionBtnInactiveTint,
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
                             }
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(
-                                    onClick = { showPlaylistOptions = true },
-                                    modifier = Modifier.size(36.dp).bounceClick()
+                            // 2. Píldora de Play en el centro
+                            Surface(
+                                onClick = onPlayWithStretch,
+                                shape = RoundedCornerShape(pillCornerRadius),
+                                color = pillBg,
+                                modifier = Modifier
+                                    .height(48.dp)
+                                    .graphicsLayer {
+                                        scaleY = 1f - (stretchProgress.value * 0.08f)
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(
+                                        start = 6.dp + extraLateralPadding,
+                                        end = 16.dp + extraLateralPadding
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.MoreVert,
-                                        contentDescription = "Options",
-                                        tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                
-                                IconButton(
-                                    onClick = { showAddSongsDialog = true },
-                                    modifier = Modifier.size(36.dp).bounceClick()
-                                ) {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        contentDescription = stringResource(R.string.add_songs),
-                                        tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                    )
-                                }
-
-                                val isSortActive = playbackManager.sortOption != "ALPHABETICAL" || !playbackManager.isSortAscending
-                                val sortActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                val sortInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                                val sortActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                val sortInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                Surface(
-                                    onClick = onSortClick,
-                                    shape = CircleShape,
-                                    color = if (isSortActive) sortActiveBg else sortInactiveBg,
-                                    modifier = Modifier.size(36.dp).bounceClick()
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
-                                            contentDescription = null,
-                                            tint = if (isSortActive) sortActiveTint else sortInactiveTint,
-                                            modifier = Modifier.size(18.dp)
+                                    Surface(
+                                        shape = RoundedCornerShape(iconCornerRadius),
+                                        color = pillContentColor.copy(alpha = 0.22f),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = if (isPillPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                contentDescription = if (isPillPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                                tint = pillContentColor,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                    AnimatedContent(
+                                        targetState = isPillPlaying,
+                                        transitionSpec = {
+                                            (slideInVertically { h -> h / 2 } + fadeIn(tween(150)))
+                                                .togetherWith(slideOutVertically { h -> -h / 2 } + fadeOut(tween(150)))
+                                        },
+                                        label = "playlistPillText"
+                                    ) { playing ->
+                                        Text(
+                                            text = if (playing) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = pillContentColor
                                         )
                                     }
                                 }
-                                
-                                Spacer(modifier = Modifier.width(8.dp))
+                            }
 
-                                val shuffleActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                val shuffleInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                                val shuffleActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                val shuffleInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        onClick = { 
-                                            if (isCurrentPlaylistPlaying) {
-                                                playbackManager.toggleShuffle()
-                                                localShuffleState = playbackManager.isShuffle
-                                            } else {
-                                                localShuffleState = !localShuffleState
-                                                settingsManager.setPlaylistShuffle(playlist.id, localShuffleState)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                                        color = if (isShuffleActive) shuffleActiveBg else shuffleInactiveBg,
-                                        modifier = Modifier.size(44.dp).bounceClick()
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                Icons.Default.Shuffle,
-                                                contentDescription = null,
-                                                tint = if (isShuffleActive) shuffleActiveTint else shuffleInactiveTint,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
+                            // 3. Sort a la derecha
+                            val isSortActive = playbackManager.sortOption != "ALPHABETICAL" || !playbackManager.isSortAscending
+                            Surface(
+                                onClick = onSortClick,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .graphicsLayer {
+                                        translationX = stretchProgress.value * 8.dp.toPx()
                                     }
-
-                                    val playBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                    val playTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-
-                                    Surface(
-                                        onClick = { 
-                                            if (settingsManager.isHapticVibrationEnabled) {
-                                                vibrator.triggerLightVibration()
-                                            }
-                                            if (isCurrentPlaylistPlaying) {
-                                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                            } else if (sortedSongs.isNotEmpty()) {
-                                                val songToPlay = if (isShuffleActive) sortedSongs.random() else sortedSongs[0]
-                                                onSongClick(songToPlay, sortedSongs)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                                        color = playBg,
-                                        modifier = Modifier.size(44.dp).bounceClick()
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = if (isCurrentPlaylistPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, 
-                                                contentDescription = null,
-                                                tint = playTint,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
-                                    }
+                                    .bounceClick()
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                                        contentDescription = stringResource(R.string.sort_options_title),
+                                        tint = if (isSortActive) actionBtnActiveTint else actionBtnInactiveTint,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
-
                             }
                         }
+
+                        // Info: time + separador + número de canciones
+                        val totalPlaylistDuration = remember(songs) { songs.sumOf { it.duration } }
+                        val songsCountText = if (songs.size == 1) "1 ${stringResource(R.string.song_singular)}" else stringResource(R.string.ai_mix_songs_count, songs.size)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${formatLongDuration(totalPlaylistDuration)} • $songsCountText",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -397,7 +502,11 @@ fun PlaylistDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(currentPlaylistSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(
+                        currentPlaylistSongs,
+                        key = { _, it -> it.id },
+                        contentType = { _, _ -> "song_item" }
+                    ) { index, song ->
                         val isFirst = index == 0
                         val isLast = index == currentPlaylistSongs.lastIndex
                         SongItem(
@@ -431,6 +540,9 @@ fun PlaylistDetailView(
                 if (isActive) playbackManager.stop()
                 showPlaylistOptions = false
                 onBack()
+            },
+            onAddSongsClick = {
+                showAddSongsDialog = true
             }
         )
 
@@ -471,7 +583,7 @@ fun PlaylistDetailView(
 
         LaunchedEffect(scrollToCurrentTrigger.value) {
             if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.animateScrollToItem(targetIndex)
+                listState.fastSmoothScrollToItem(targetIndex)
                 scrollToCurrentTrigger.value = 0
             }
         }
@@ -494,7 +606,7 @@ fun PlaylistDetailView(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    listState.animateScrollToItem(0)
+                    listState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier
@@ -524,7 +636,8 @@ fun AlbumDetailView(
     hasBlurBackground: Boolean = false,
     isDarkTheme: Boolean = false,
     useCustomControlsColor: Boolean = false,
-    controlsColorPalette: Int = 0
+    controlsColorPalette: Int = 0,
+    isArtistView: Boolean = album.artist.isEmpty()
 ) {
     val context = LocalContext.current
     val playbackManager = PlaybackManager.getInstance(context)
@@ -534,9 +647,60 @@ fun AlbumDetailView(
     val scope = rememberCoroutineScope()
     val isPlaying = playbackManager.isPlaying
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val stretchProgress = remember { Animatable(0f) }
 
-    val sortedSongs = remember(songs, sortOption, isSortAscending) {
-        playbackManager.getSortedList(songs, sortOption, isSortAscending)
+    var selectedAlbumName by remember(album.id) { mutableStateOf<String?>(null) }
+
+    val artistAlbums = remember(songs, isArtistView) {
+        if (!isArtistView) {
+            emptyList()
+        } else {
+            songs
+                .groupBy { it.album.trim() }
+                .filter { (albumName, _) ->
+                    albumName.isNotBlank() &&
+                    !albumName.equals("<unknown>", ignoreCase = true) &&
+                    !albumName.equals("unknown", ignoreCase = true)
+                }
+                .map { (albumName, albumSongs) ->
+                    Album(
+                        id = albumName.hashCode().toLong(),
+                        name = albumName,
+                        artist = albumSongs.firstOrNull()?.artist ?: "",
+                        albumArtUri = albumSongs.firstOrNull()?.albumArtUri,
+                        coverUrl = albumSongs.firstOrNull()?.coverUrl,
+                        songs = albumSongs
+                    )
+                }
+                .sortedBy { it.name.lowercase(java.util.Locale.getDefault()) }
+        }
+    }
+
+    val singlesCount = remember(songs, isArtistView) {
+        if (!isArtistView) 0
+        else songs.count {
+            it.album.isBlank() ||
+            it.album.equals("<unknown>", ignoreCase = true) ||
+            it.album.equals("unknown", ignoreCase = true)
+        }
+    }
+
+    val displayedSongs = remember(songs, selectedAlbumName) {
+        if (selectedAlbumName == null) {
+            songs
+        } else if (selectedAlbumName == "__SINGLES__") {
+            songs.filter {
+                it.album.isBlank() ||
+                it.album.equals("<unknown>", ignoreCase = true) ||
+                it.album.equals("unknown", ignoreCase = true)
+            }
+        } else {
+            songs.filter { it.album.trim().equals(selectedAlbumName!!.trim(), ignoreCase = true) }
+        }
+    }
+
+    val sortedSongs = remember(displayedSongs, sortOption, isSortAscending) {
+        playbackManager.getSortedList(displayedSongs, sortOption, isSortAscending)
     }
     
     val headerAlpha by remember {
@@ -557,10 +721,53 @@ fun AlbumDetailView(
         }
     }
 
-    BackHandler(onBack = onBack)
+    BackHandler(onBack = {
+        if (selectedAlbumName != null) {
+            selectedAlbumName = null
+        } else {
+            onBack()
+        }
+    })
 
-    val backgroundCover = remember(album) {
-        album.songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
+    val allCovers = remember(songs, album) {
+        val list = if (songs.isNotEmpty()) songs else album.songs
+        list.groupBy { song ->
+            song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
+        }.values.mapNotNull { group ->
+            group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
+        }
+    }
+
+    var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(allCovers) {
+        if (allCovers.size > 1) {
+            while (isActive) {
+                delay(5000L)
+                val nextIndex = if (allCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(allCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(allCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val activeCover = remember(allCovers, currentCoverIndex) {
+        allCovers.getOrNull(currentCoverIndex)
+    }
+
+    val currentDisplayCover = remember(selectedAlbumName, activeCover, displayedSongs) {
+        if (selectedAlbumName != null) {
+            displayedSongs.firstNotNullOfOrNull { it.coverUrl ?: it.albumArtUri ?: it.uri } ?: activeCover
+        } else {
+            activeCover
+        }
     }
 
     AppBlurBackdrop(
@@ -577,34 +784,53 @@ fun AlbumDetailView(
             ) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        if (backgroundCover != null && !hasBlurBackground) {
+                        if (currentDisplayCover != null) {
+                            val fadeBrush = remember {
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.40f to Color.Black,
+                                    0.70f to Color.Black.copy(alpha = 0.50f),
+                                    0.88f to Color.Black.copy(alpha = 0.15f),
+                                    1.0f to Color.Transparent
+                                )
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(350.dp)
+                                    .height(380.dp)
                                     .offset(y = (-50).dp)
                                     .graphicsLayer {
                                         alpha = headerAlpha
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = fadeBrush,
+                                            blendMode = BlendMode.DstIn
+                                        )
                                     }
                             ) {
-                                AsyncImage(
-                                    model = backgroundCover,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Crossfade(
+                                    targetState = currentDisplayCover,
+                                    animationSpec = tween(durationMillis = 1000),
+                                    label = "albumCoverCrossfade"
+                                ) { cover ->
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 0f
+                                                0.0f to Color.Transparent,
+                                                0.50f to Color.Transparent,
+                                                1.0f to (if (hasBlurBackground) Color.Black.copy(alpha = 0.40f) else Color.Transparent)
                                             )
                                         )
                                 )
@@ -619,25 +845,10 @@ fun AlbumDetailView(
                                     scaleX = headerScale
                                     scaleY = headerScale
                                 }
-                                .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
+                                .padding(bottom = 8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(55.dp))
-                        
-                        val albumCoverBytes = remember(album) {
-                            album.songs.firstOrNull()?.let { 
-                                it.coverUrl ?: it.uri 
-                            }
-                        }
-                        
-                        SongCoverImage(
-                            coverUrl = albumCoverBytes,
-                            contentDescription = null,
-                            modifier = Modifier.size(180.dp),
-                            shape = CircleShape
-                        )
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(260.dp))
                         
                         Text(
                             text = album.name,
@@ -647,7 +858,7 @@ fun AlbumDetailView(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                         )
 
                         if (album.artist.isNotEmpty()) {
@@ -659,140 +870,278 @@ fun AlbumDetailView(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        Surface(
+                        val isCurrentAlbumPlaying = playbackManager.activePlaylistId == album.id
+                        val isCurrentPlayingInSelection = isCurrentAlbumPlaying && (selectedAlbumName == null || displayedSongs.any { it.id == currentlyPlayingId })
+                        val isPillPlaying = isCurrentPlayingInSelection && isPlaying
+
+                        val pillCornerRadius by animateDpAsState(
+                            targetValue = if (isPillPlaying) 14.dp else 28.dp,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                            label = "albumPillCornerRadius"
+                        )
+                        val iconCornerRadius by animateDpAsState(
+                            targetValue = if (isPillPlaying) 10.dp else 20.dp,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                            label = "albumIconCornerRadius"
+                        )
+
+                        val dynamicPrimary = if (useCustomControlsColor) activeControlsPrimary else MaterialTheme.colorScheme.primary
+                        val isSystemDark = isSystemInDarkTheme()
+                        val effectiveDarkTheme = isDarkTheme || when (settingsManager.themeMode) {
+                            1 -> false
+                            2 -> true
+                            else -> isSystemDark
+                        }
+
+                        val pillBg = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.10f)
+                        } else if (hasBlurBackground) {
+                            dynamicPrimary.copy(alpha = 0.85f)
+                        } else {
+                            dynamicPrimary
+                        }
+
+                        val pillContentColor = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else if (pillBg.luminance() > 0.45f) {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                        }
+
+                        val actionBtnInactiveBg = if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+                        } else MaterialTheme.colorScheme.secondaryContainer
+
+                        val actionBtnInactiveTint = if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else MaterialTheme.colorScheme.onSecondaryContainer
+
+                        val actionBtnActiveBg = if (useCustomControlsColor) {
+                            activeControlsPrimary
+                        } else if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f)
+                        } else MaterialTheme.colorScheme.primary
+
+                        val actionBtnActiveTint = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else if (actionBtnActiveBg.luminance() > 0.45f) {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                        }
+
+                        val onPlayWithStretch = {
+                            scope.launch {
+                                stretchProgress.snapTo(0f)
+                                stretchProgress.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+                                )
+                                stretchProgress.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
+                            }
+                            if (settingsManager.isHapticVibrationEnabled) {
+                                vibrator.triggerLightVibration()
+                            }
+                            if (isCurrentPlayingInSelection) {
+                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                            } else if (sortedSongs.isNotEmpty()) {
+                                val songToPlay = if (playbackManager.isShuffle) sortedSongs.random() else sortedSongs[0]
+                                onSongClick(songToPlay, sortedSongs)
+                            }
+                        }
+
+                        val extraLateralPadding = (stretchProgress.value * 14f).coerceAtLeast(0f).dp
+
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp)),
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.25f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            tonalElevation = if (hasBlurBackground) 0.dp else 4.dp,
-                            shadowElevation = 0.dp
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 20.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            val albumId = album.id
-                            val isCurrentAlbumPlaying = playbackManager.activePlaylistId == album.id
-                            var localShuffleState by remember(album.id) { mutableStateOf(settingsManager.getPlaylistShuffle(album.id)) }
-                            val isShuffleActive = if (isCurrentAlbumPlaying) playbackManager.isShuffle else localShuffleState
-
-                            Column(horizontalAlignment = Alignment.Start) {
-                                val totalDuration = album.songs.sumOf { it.duration }
-                                Text(
-                                    text = formatLongDuration(totalDuration),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.MusicNote,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "${album.songs.size}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                val isSortActive = playbackManager.sortOption != "ALPHABETICAL" || !playbackManager.isSortAscending
-                                val sortActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                val sortInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                                val sortActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                val sortInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                Surface(
-                                    onClick = onSortClick,
-                                    shape = CircleShape,
-                                    color = if (isSortActive) sortActiveBg else sortInactiveBg,
-                                    modifier = Modifier.size(36.dp).bounceClick()
+                            // Píldora de Play en el centro
+                            Surface(
+                                onClick = onPlayWithStretch,
+                                shape = RoundedCornerShape(pillCornerRadius),
+                                color = pillBg,
+                                modifier = Modifier
+                                    .height(48.dp)
+                                    .graphicsLayer {
+                                        scaleY = 1f - (stretchProgress.value * 0.08f)
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(
+                                        start = 6.dp + extraLateralPadding,
+                                        end = 16.dp + extraLateralPadding
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
-                                            contentDescription = null,
-                                            tint = if (isSortActive) sortActiveTint else sortInactiveTint,
-                                            modifier = Modifier.size(18.dp)
+                                    Surface(
+                                        shape = RoundedCornerShape(iconCornerRadius),
+                                        color = pillContentColor.copy(alpha = 0.22f),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = if (isPillPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                contentDescription = if (isPillPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                                tint = pillContentColor,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                    AnimatedContent(
+                                        targetState = isPillPlaying,
+                                        transitionSpec = {
+                                            (slideInVertically { h -> h / 2 } + fadeIn(tween(150)))
+                                                .togetherWith(slideOutVertically { h -> -h / 2 } + fadeOut(tween(150)))
+                                        },
+                                        label = "albumPillText"
+                                    ) { playing ->
+                                        Text(
+                                            text = if (playing) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = pillContentColor
                                         )
                                     }
                                 }
-                                
-                                Spacer(modifier = Modifier.width(8.dp))
+                            }
 
-                                val shuffleActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                val shuffleInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                                val shuffleActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                val shuffleInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        onClick = { 
-                                            playbackManager.toggleShuffle()
-                                            localShuffleState = playbackManager.isShuffle
-                                            settingsManager.setPlaylistShuffle(albumId, playbackManager.isShuffle)
-                                        },
-                                        shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                                        color = if (isShuffleActive) shuffleActiveBg else shuffleInactiveBg,
-                                        modifier = Modifier.size(44.dp).bounceClick()
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                Icons.Default.Shuffle,
-                                                contentDescription = null,
-                                                tint = if (isShuffleActive) shuffleActiveTint else shuffleInactiveTint,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
+                            // Sort a la derecha
+                            val isSortActive = playbackManager.sortOption != "ALPHABETICAL" || !playbackManager.isSortAscending
+                            Surface(
+                                onClick = onSortClick,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .graphicsLayer {
+                                        translationX = stretchProgress.value * 8.dp.toPx()
                                     }
-
-                                    val playBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                    val playTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-
-                                    Surface(
-                                        onClick = { 
-                                            if (settingsManager.isHapticVibrationEnabled) {
-                                                vibrator.triggerLightVibration()
-                                            }
-                                            if (isCurrentAlbumPlaying) {
-                                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                            } else if (sortedSongs.isNotEmpty()) {
-                                                val songToPlay = if (isShuffleActive) sortedSongs.random() else sortedSongs[0]
-                                                onSongClick(songToPlay, sortedSongs)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                                        color = playBg,
-                                        modifier = Modifier.size(44.dp).bounceClick()
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = if (isCurrentAlbumPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, 
-                                                contentDescription = null,
-                                                tint = playTint,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
-                                    }
+                                    .bounceClick()
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                                        contentDescription = stringResource(R.string.sort_options_title),
+                                        tint = if (isSortActive) actionBtnActiveTint else actionBtnInactiveTint,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
                         }
+
+                        // Info: time + separador + número de canciones
+                        val totalAlbumDuration = remember(displayedSongs) { displayedSongs.sumOf { it.duration } }
+                        val songsCountText = if (displayedSongs.size == 1) "1 ${stringResource(R.string.song_singular)}" else stringResource(R.string.ai_mix_songs_count, displayedSongs.size)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${formatLongDuration(totalAlbumDuration)} • $songsCountText",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (isArtistView && (artistAlbums.isNotEmpty() || singlesCount > 0)) {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp, bottom = 4.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Chip General ("Todas las canciones")
+                                item(key = "artist_all_songs_chip") {
+                                    val isSelected = selectedAlbumName == null
+                                    ArtistFilterChip(
+                                        label = stringResource(R.string.filter_all_songs),
+                                        count = songs.size,
+                                        isSelected = isSelected,
+                                        leadingIcon = Icons.Default.MusicNote,
+                                        hasBlurBackground = hasBlurBackground,
+                                        isDarkTheme = effectiveDarkTheme,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        activeControlsPrimary = activeControlsPrimary,
+                                        onClick = {
+                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                vibrator.triggerLightVibration()
+                                            }
+                                            selectedAlbumName = null
+                                        }
+                                    )
+                                }
+
+                                // Chips de Álbumes
+                                items(
+                                    items = artistAlbums,
+                                    key = { "album_${it.id}" }
+                                ) { albumItem ->
+                                    val isSelected = selectedAlbumName?.equals(albumItem.name, ignoreCase = true) == true
+                                    ArtistFilterChip(
+                                        label = albumItem.name,
+                                        count = albumItem.songs.size,
+                                        isSelected = isSelected,
+                                        coverUrl = albumItem.coverUrl ?: albumItem.albumArtUri ?: albumItem.songs.firstNotNullOfOrNull { it.coverUrl ?: it.albumArtUri },
+                                        hasBlurBackground = hasBlurBackground,
+                                        isDarkTheme = effectiveDarkTheme,
+                                        useCustomControlsColor = useCustomControlsColor,
+                                        activeControlsPrimary = activeControlsPrimary,
+                                        onClick = {
+                                            if (settingsManager.isHapticVibrationEnabled) {
+                                                vibrator.triggerLightVibration()
+                                            }
+                                            selectedAlbumName = if (isSelected) null else albumItem.name
+                                        }
+                                    )
+                                }
+
+                                // Chip de Sencillos si existen
+                                if (singlesCount > 0) {
+                                    item(key = "artist_singles_chip") {
+                                        val isSelected = selectedAlbumName == "__SINGLES__"
+                                        ArtistFilterChip(
+                                            label = stringResource(R.string.artist_filter_singles),
+                                            count = singlesCount,
+                                            isSelected = isSelected,
+                                            leadingIcon = Icons.Default.Album,
+                                            hasBlurBackground = hasBlurBackground,
+                                            isDarkTheme = effectiveDarkTheme,
+                                            useCustomControlsColor = useCustomControlsColor,
+                                            activeControlsPrimary = activeControlsPrimary,
+                                            onClick = {
+                                                if (settingsManager.isHapticVibrationEnabled) {
+                                                    vibrator.triggerLightVibration()
+                                                }
+                                                selectedAlbumName = if (isSelected) null else "__SINGLES__"
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -813,7 +1162,11 @@ fun AlbumDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(sortedSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(
+                        sortedSongs,
+                        key = { _, it -> it.id },
+                        contentType = { _, _ -> "song_item" }
+                    ) { index, song ->
                         val isFirst = index == 0
                         val isLast = index == sortedSongs.lastIndex
                         SongItem(
@@ -841,7 +1194,7 @@ fun AlbumDetailView(
 
         LaunchedEffect(scrollToCurrentTrigger.value) {
             if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.animateScrollToItem(targetIndex)
+                listState.fastSmoothScrollToItem(targetIndex)
                 scrollToCurrentTrigger.value = 0
             }
         }
@@ -864,7 +1217,7 @@ fun AlbumDetailView(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    listState.animateScrollToItem(0)
+                    listState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier
@@ -874,6 +1227,123 @@ fun AlbumDetailView(
             isDarkTheme = isDarkTheme,
             customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
         )
+    }
+}
+
+@Composable
+private fun ArtistFilterChip(
+    label: String,
+    count: Int,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    coverUrl: Any? = null,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    activeControlsPrimary: Color = MaterialTheme.colorScheme.primary,
+    onClick: () -> Unit
+) {
+    val containerColor = if (isSelected) {
+        if (useCustomControlsColor) {
+            activeControlsPrimary
+        } else if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.20f)
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+    } else {
+        if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.14f) else Color.Black.copy(alpha = 0.08f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        }
+    }
+
+    val contentColor = if (isSelected) {
+        if (hasBlurBackground && !useCustomControlsColor) {
+            if (isDarkTheme) Color.White else Color(0xFF141316)
+        } else if (containerColor.luminance() > 0.45f) {
+            Color(0xFF141316)
+        } else {
+            Color.White
+        }
+    } else {
+        if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.90f) else Color(0xFF141316).copy(alpha = 0.90f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    }
+
+    val countBadgeBg = if (isSelected) {
+        contentColor.copy(alpha = 0.18f)
+    } else {
+        if (hasBlurBackground) {
+            if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+        }
+    }
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = containerColor,
+        modifier = modifier
+            .height(36.dp)
+            .bounceClick()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            if (coverUrl != null) {
+                SongCoverImage(
+                    coverUrl = coverUrl,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                )
+            } else if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Surface(
+                shape = CircleShape,
+                color = countBadgeBg,
+                modifier = Modifier
+                    .height(18.dp)
+                    .defaultMinSize(minWidth = 18.dp)
+            ) {
+                Box(
+                    modifier = Modifier.padding(horizontal = 5.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$count",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -903,6 +1373,7 @@ fun FolderDetailView(
     val scope = rememberCoroutineScope()
     val isPlaying = playbackManager.isPlaying
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val stretchProgress = remember { Animatable(0f) }
 
     val sortedSongs = remember(songs, sortOption, isSortAscending) {
         playbackManager.getSortedList(songs, sortOption, isSortAscending)
@@ -926,18 +1397,40 @@ fun FolderDetailView(
         }
     }
 
-    val backgroundCover = remember(songs) {
-        songs.firstOrNull()?.let { it.coverUrl ?: it.uri }
+    val allCovers = remember(songs) {
+        songs.groupBy { song ->
+            song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
+        }.values.mapNotNull { group ->
+            group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
+        }
     }
 
-    val covers = remember(songs) {
-        songs.map { it.coverUrl ?: it.uri }.distinct().take(4)
+    var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(allCovers) {
+        if (allCovers.size > 1) {
+            while (isActive) {
+                delay(5000L)
+                val nextIndex = if (allCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(allCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(allCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val activeCover = remember(allCovers, currentCoverIndex) {
+        allCovers.getOrNull(currentCoverIndex)
     }
 
     val folderId = folderName.hashCode().toLong()
     val isCurrentFolderPlaying = playbackManager.activePlaylistId == folderId && playbackManager.activeCategory == "FOLDERS"
-    var localShuffleState by remember(folderId) { mutableStateOf(settingsManager.getPlaylistShuffle(folderId)) }
-    val isShuffleActive = if (isCurrentFolderPlaying) playbackManager.isShuffle else localShuffleState
 
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
@@ -955,32 +1448,53 @@ fun FolderDetailView(
                 item {
                     Box(modifier = Modifier.fillMaxWidth()) {
 
-                        if (backgroundCover != null && !hasBlurBackground) {
+                        if (activeCover != null) {
+                            val fadeBrush = remember {
+                                Brush.verticalGradient(
+                                    0.0f to Color.Black,
+                                    0.40f to Color.Black,
+                                    0.70f to Color.Black.copy(alpha = 0.50f),
+                                    0.88f to Color.Black.copy(alpha = 0.15f),
+                                    1.0f to Color.Transparent
+                                )
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(350.dp)
+                                    .height(380.dp)
                                     .offset(y = (-50).dp)
-                                    .graphicsLayer { alpha = headerAlpha }
+                                    .graphicsLayer {
+                                        alpha = headerAlpha
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = fadeBrush,
+                                            blendMode = BlendMode.DstIn
+                                        )
+                                    }
                             ) {
-                                AsyncImage(
-                                    model = backgroundCover,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().blur(60.dp).alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
+                                Crossfade(
+                                    targetState = activeCover,
+                                    animationSpec = tween(durationMillis = 1000),
+                                    label = "folderCoverCrossfade"
+                                ) { cover ->
+                                    AsyncImage(
+                                        model = cover,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(
                                             Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 0f
+                                                0.0f to Color.Transparent,
+                                                0.50f to Color.Transparent,
+                                                1.0f to (if (hasBlurBackground) Color.Black.copy(alpha = 0.40f) else Color.Transparent)
                                             )
                                         )
                                 )
@@ -998,86 +1512,7 @@ fun FolderDetailView(
                                 .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(55.dp))
-
-                            Surface(
-                                modifier = Modifier.size(180.dp),
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                val validCovers = remember(covers) { covers.filterNotNull() }
-                                var failedIndices by remember(covers) { mutableStateOf(setOf<Int>()) }
-
-                                if (validCovers.isEmpty() || failedIndices.size >= validCovers.take(4).size) {
-                                    SongCoverImage(
-                                        coverUrl = null,
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxSize(),
-                                        shape = CircleShape
-                                    )
-                                } else if (validCovers.size == 1) {
-                                    SongCoverImage(
-                                        coverUrl = validCovers[0],
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxSize(),
-                                        shape = CircleShape,
-                                        onError = { failedIndices = failedIndices + 0 }
-                                    )
-                                } else {
-                                    Column(modifier = Modifier.fillMaxSize()) {
-                                        Row(modifier = Modifier.weight(1f)) {
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 0) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[0],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 0 }
-                                                    )
-                                                }
-                                            }
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 1) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[1],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 1 }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Row(modifier = Modifier.weight(1f)) {
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 2) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[2],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 2 }
-                                                    )
-                                                }
-                                            }
-                                            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                                                if (validCovers.size > 3) {
-                                                    SongCoverImage(
-                                                        coverUrl = validCovers[3],
-                                                        contentDescription = null,
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        shape = RoundedCornerShape(0.dp),
-                                                        onError = { failedIndices = failedIndices + 3 }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(260.dp))
 
                             Text(
                                 text = folderName,
@@ -1092,147 +1527,192 @@ fun FolderDetailView(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
+                        val isPillPlaying = isCurrentFolderPlaying && isPlaying
+
+                        val pillCornerRadius by animateDpAsState(
+                            targetValue = if (isPillPlaying) 14.dp else 28.dp,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                            label = "folderPillCornerRadius"
+                        )
+                        val iconCornerRadius by animateDpAsState(
+                            targetValue = if (isPillPlaying) 10.dp else 20.dp,
+                            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+                            label = "folderIconCornerRadius"
+                        )
+
+                        val dynamicPrimary = if (useCustomControlsColor) activeControlsPrimary else MaterialTheme.colorScheme.primary
+                        val isSystemDark = isSystemInDarkTheme()
+                        val effectiveDarkTheme = isDarkTheme || when (settingsManager.themeMode) {
+                            1 -> false
+                            2 -> true
+                            else -> isSystemDark
+                        }
+
+                        val pillBg = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.28f) else Color.Black.copy(alpha = 0.10f)
+                        } else if (hasBlurBackground) {
+                            dynamicPrimary.copy(alpha = 0.85f)
+                        } else {
+                            dynamicPrimary
+                        }
+
+                        val pillContentColor = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else if (pillBg.luminance() > 0.45f) {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                        }
+
+                        val actionBtnInactiveBg = if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+                        } else MaterialTheme.colorScheme.secondaryContainer
+
+                        val actionBtnInactiveTint = if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else MaterialTheme.colorScheme.onSecondaryContainer
+
+                        val actionBtnActiveBg = if (useCustomControlsColor) {
+                            activeControlsPrimary
+                        } else if (hasBlurBackground) {
+                            if (effectiveDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f)
+                        } else MaterialTheme.colorScheme.primary
+
+                        val actionBtnActiveTint = if (hasBlurBackground && !useCustomControlsColor) {
+                            if (effectiveDarkTheme) Color.White else Color(0xFF141316)
+                        } else if (actionBtnActiveBg.luminance() > 0.45f) {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() < 0.4f } ?: Color(0xFF141316)
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary.takeIf { it.luminance() > 0.6f } ?: Color.White
+                        }
+
+                        val onPlayWithStretch = {
+                            scope.launch {
+                                stretchProgress.snapTo(0f)
+                                stretchProgress.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing)
+                                )
+                                stretchProgress.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
+                            }
+                            if (settingsManager.isHapticVibrationEnabled) {
+                                vibrator.triggerLightVibration()
+                            }
+                            if (isCurrentFolderPlaying) {
+                                if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                            } else if (sortedSongs.isNotEmpty()) {
+                                val songToPlay = if (playbackManager.isShuffle) sortedSongs.random() else sortedSongs[0]
+                                onSongClick(songToPlay, sortedSongs)
+                            }
+                        }
+
+                        val extraLateralPadding = (stretchProgress.value * 14f).coerceAtLeast(0f).dp
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Píldora de Play en el centro
                             Surface(
+                                onClick = onPlayWithStretch,
+                                shape = RoundedCornerShape(pillCornerRadius),
+                                color = pillBg,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(20.dp)),
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.25f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                tonalElevation = if (hasBlurBackground) 0.dp else 4.dp,
-                                shadowElevation = 0.dp
+                                    .height(48.dp)
+                                    .graphicsLayer {
+                                        scaleY = 1f - (stretchProgress.value * 0.08f)
+                                    }
                             ) {
                                 Row(
+                                    modifier = Modifier.padding(
+                                        start = 6.dp + extraLateralPadding,
+                                        end = 16.dp + extraLateralPadding
+                                    ),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 20.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Column(horizontalAlignment = Alignment.Start) {
-                                        val totalDuration = songs.sumOf { it.duration }
-                                        Text(
-                                            text = formatLongDuration(totalDuration),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = RoundedCornerShape(iconCornerRadius),
+                                        color = pillContentColor.copy(alpha = 0.22f),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
                                             Icon(
-                                                Icons.Default.MusicNote,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(14.dp),
-                                                tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = "${songs.size}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            val songsLabel = if (songs.size == 1) stringResource(R.string.song_singular) else stringResource(R.string.song_plural)
-                                            Text(
-                                                text = songsLabel,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = "${songs.size}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                                imageVector = if (isPillPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                                contentDescription = if (isPillPlaying) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                                tint = pillContentColor,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     }
-
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        val isSortActive = playbackManager.sortOption != "ALPHABETICAL" || !playbackManager.isSortAscending
-                                        val sortActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                        val sortInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                                        val sortActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                        val sortInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                        Surface(
-                                            onClick = onSortClick,
-                                            shape = CircleShape,
-                                            color = if (isSortActive) sortActiveBg else sortInactiveBg,
-                                            modifier = Modifier.size(36.dp).bounceClick()
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(
-                                                    imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
-                                                    contentDescription = null,
-                                                    tint = if (isSortActive) sortActiveTint else sortInactiveTint,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        val shuffleActiveBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                        val shuffleInactiveBg = if (hasBlurBackground) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-                                        val shuffleActiveTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                        val shuffleInactiveTint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Surface(
-                                                onClick = {
-                                                    if (isCurrentFolderPlaying) {
-                                                        playbackManager.toggleShuffle()
-                                                        localShuffleState = playbackManager.isShuffle
-                                                    } else {
-                                                        localShuffleState = !localShuffleState
-                                                        settingsManager.setPlaylistShuffle(folderId, localShuffleState)
-                                                    }
-                                                },
-                                                shape = RoundedCornerShape(topStart = 22.dp, bottomStart = 22.dp, topEnd = 4.dp, bottomEnd = 4.dp),
-                                                color = if (isShuffleActive) shuffleActiveBg else shuffleInactiveBg,
-                                                modifier = Modifier.size(44.dp).bounceClick()
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        Icons.Default.Shuffle,
-                                                        contentDescription = null,
-                                                        tint = if (isShuffleActive) shuffleActiveTint else shuffleInactiveTint,
-                                                        modifier = Modifier.size(22.dp)
-                                                    )
-                                                }
-                                            }
-
-                                            val playBg = if (useCustomControlsColor) activeControlsPrimary else if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                            val playTint = if (useCustomControlsColor) Color.White else if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-
-                                            Surface(
-                                                onClick = {
-                                                    if (settingsManager.isHapticVibrationEnabled) vibrator.triggerLightVibration()
-                                                    if (isCurrentFolderPlaying) {
-                                                        if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                                    } else if (sortedSongs.isNotEmpty()) {
-                                                        val songToPlay = if (isShuffleActive) sortedSongs.random() else sortedSongs[0]
-                                                        onSongClick(songToPlay, sortedSongs)
-                                                    }
-                                                },
-                                                shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 22.dp, bottomEnd = 22.dp),
-                                                color = playBg,
-                                                modifier = Modifier.size(44.dp).bounceClick()
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = if (isCurrentFolderPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                                        contentDescription = null,
-                                                        tint = playTint,
-                                                        modifier = Modifier.size(22.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
+                                    AnimatedContent(
+                                        targetState = isPillPlaying,
+                                        transitionSpec = {
+                                            (slideInVertically { h -> h / 2 } + fadeIn(tween(150)))
+                                                .togetherWith(slideOutVertically { h -> -h / 2 } + fadeOut(tween(150)))
+                                        },
+                                        label = "folderPillText"
+                                    ) { playing ->
+                                        Text(
+                                            text = if (playing) stringResource(R.string.play_state_pause) else stringResource(R.string.play_state_play),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = pillContentColor
+                                        )
                                     }
                                 }
                             }
+
+                            // Sort a la derecha
+                            val isSortActive = playbackManager.sortOption != "ALPHABETICAL" || !playbackManager.isSortAscending
+                            Surface(
+                                onClick = onSortClick,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSortActive) actionBtnActiveBg else actionBtnInactiveBg,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .graphicsLayer {
+                                        translationX = stretchProgress.value * 8.dp.toPx()
+                                    }
+                                    .bounceClick()
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (isSortActive) Icons.Default.Schedule else Icons.Default.SortByAlpha,
+                                        contentDescription = stringResource(R.string.sort_options_title),
+                                        tint = if (isSortActive) actionBtnActiveTint else actionBtnInactiveTint,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Info: time + separador + número de canciones
+                        val totalFolderDuration = remember(songs) { songs.sumOf { it.duration } }
+                        val songsCountText = if (songs.size == 1) "1 ${stringResource(R.string.song_singular)}" else stringResource(R.string.ai_mix_songs_count, songs.size)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${formatLongDuration(totalFolderDuration)} • $songsCountText",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         }
                     }
                 }
@@ -1251,7 +1731,11 @@ fun FolderDetailView(
                         }
                     }
                 } else {
-                    itemsIndexed(sortedSongs, key = { _, it -> it.id }) { index, song ->
+                    itemsIndexed(
+                        sortedSongs,
+                        key = { _, it -> it.id },
+                        contentType = { _, _ -> "song_item" }
+                    ) { index, song ->
                         val isFirst = index == 0
                         val isLast = index == sortedSongs.lastIndex
                         SongItem(
@@ -1278,7 +1762,7 @@ fun FolderDetailView(
 
         LaunchedEffect(scrollToCurrentTrigger.value) {
             if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.animateScrollToItem(targetIndex)
+                listState.fastSmoothScrollToItem(targetIndex)
                 scrollToCurrentTrigger.value = 0
             }
         }
@@ -1301,7 +1785,7 @@ fun FolderDetailView(
             visible = isScrollToTopVisible.value,
             onClick = {
                 scope.launch {
-                    listState.animateScrollToItem(0)
+                    listState.fastSmoothScrollToItem(0)
                 }
             },
             modifier = Modifier

@@ -156,6 +156,7 @@
     <string name="lang_russian">Russe</string>
     <string name="lang_persian">Persan</string>
     <string name="lang_arabic">Arabe</string>
+    <string name="lang_polish">Polonais</string>
 
     <string name="ok">OK</string>
     <string name="cd_activate_eq">Activer l’EQ</string>
@@ -408,8 +409,6 @@
     <string name="sd_card">Carte SD</string>
     <string name="folder_browser_title">Navigateur de dossiers</string>
     <string name="no_songs_folder">Aucune chanson trouvée dans ce dossier</string>
-    <string name="show_hero_section">Afficher la carte de bienvenue</string>
-    <string name="show_hero_section_desc">Afficher la carte de bienvenue et de statistiques sur l\'écran d\'accueil</string>
     <string name="show_ai_section">Afficher la section IA</string>
     <string name="show_ai_section_desc">Afficher l\'onglet des mixes IA et des recommandations intelligentes</string>
     <string name="seamless_looping">Boucle continue</string>

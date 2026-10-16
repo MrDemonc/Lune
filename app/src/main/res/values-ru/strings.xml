@@ -156,6 +156,7 @@
     <string name="lang_russian">Русский</string>
     <string name="lang_persian">Персидский</string>
     <string name="lang_arabic">Арабский</string>
+    <string name="lang_polish">Польский</string>
 
     <string name="ok">ОК</string>
     <string name="cd_activate_eq">Включить эквалайзер</string>
@@ -408,8 +409,6 @@
     <string name="sd_card">SD-карта</string>
     <string name="folder_browser_title">Обзор папок</string>
     <string name="no_songs_folder">В этой папке нет песен</string>
-    <string name="show_hero_section">Показывать карточку приветствия</string>
-    <string name="show_hero_section_desc">Отображать карточку приветствия и статистики на главном экране</string>
     <string name="show_ai_section">Показывать раздел AI</string>
     <string name="show_ai_section_desc">Отображать вкладку AI миксов и умных рекомендаций</string>
     <string name="seamless_looping">Бесшовный повтор</string>

@@ -480,9 +480,8 @@ class PlaybackManager private constructor(private val context: Context) {
             }
         }
 
-        // Start service as foreground when playing begins
+        // Ensure service is started as a foreground service
         Intent(context, MusicService::class.java).also { intent ->
-            intent.action = MusicService.ACTION_PLAY
             intent.data = song.uri
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -491,7 +490,7 @@ class PlaybackManager private constructor(private val context: Context) {
                 context.startService(intent)
             }
         }
-        
+
         if (musicService != null) {
             try {
                 musicService?.playSong(song)
@@ -505,6 +504,14 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        val trimmedArtist = song.artist.trim()
+        if (trimmedArtist.isNotBlank() && !trimmedArtist.equals("<unknown>", ignoreCase = true)) {
+            updatePlaybackStats("ARTIST", "ARTIST_$trimmedArtist", incrementCount = true)
+        }
+        val genre = song.genre?.trim()
+        if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+            updatePlaybackStats("GENRE", "GENRE_$genre", incrementCount = true)
+        }
 
         savePlaybackState(wasPlaying = true)
         preloadSurroundingArtwork()
@@ -847,6 +854,14 @@ class PlaybackManager private constructor(private val context: Context) {
         
         // Record stat: New Play (Automatic/Crossfade)
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        val trimmedArtist = song.artist.trim()
+        if (trimmedArtist.isNotBlank() && !trimmedArtist.equals("<unknown>", ignoreCase = true)) {
+            updatePlaybackStats("ARTIST", "ARTIST_$trimmedArtist", incrementCount = true)
+        }
+        val genre = song.genre?.trim()
+        if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+            updatePlaybackStats("GENRE", "GENRE_$genre", incrementCount = true)
+        }
         settings.lastPlayedSongId = song.id
         savePlaybackState(wasPlaying = true)
         preloadSurroundingArtwork()
@@ -931,8 +946,13 @@ class PlaybackManager private constructor(private val context: Context) {
                 Log.e("PlaybackManager", "Error reporting AI stats: ${e.message}", e)
             }
             updatePlaybackStats("SONG", "SONG_${song.id}", timeMs = pendingStatsTimeMs)
-            if (song.artist.isNotBlank() && song.artist != "<unknown>") {
-                updatePlaybackStats("ARTIST", "ARTIST_${song.artist}", timeMs = pendingStatsTimeMs)
+            val trimmedArtist = song.artist.trim()
+            if (trimmedArtist.isNotBlank() && !trimmedArtist.equals("<unknown>", ignoreCase = true)) {
+                updatePlaybackStats("ARTIST", "ARTIST_$trimmedArtist", timeMs = pendingStatsTimeMs)
+            }
+            val genre = song.genre?.trim()
+            if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+                updatePlaybackStats("GENRE", "GENRE_$genre", timeMs = pendingStatsTimeMs)
             }
         }
         val pId = activePlaylistId
@@ -1055,6 +1075,14 @@ class PlaybackManager private constructor(private val context: Context) {
 
     fun onSongLooped(song: Song) {
         updatePlaybackStats("SONG", "SONG_${song.id}", incrementCount = true)
+        val trimmedArtist = song.artist.trim()
+        if (trimmedArtist.isNotBlank() && !trimmedArtist.equals("<unknown>", ignoreCase = true)) {
+            updatePlaybackStats("ARTIST", "ARTIST_$trimmedArtist", incrementCount = true)
+        }
+        val genre = song.genre?.trim()
+        if (!genre.isNullOrEmpty() && !genre.equals("<unknown>", ignoreCase = true) && !genre.equals("unknown", ignoreCase = true)) {
+            updatePlaybackStats("GENRE", "GENRE_$genre", incrementCount = true)
+        }
     }
 
     fun toggleRepeatMode() {

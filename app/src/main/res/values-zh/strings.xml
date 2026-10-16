@@ -135,6 +135,7 @@
     <string name="crossfade_time_desc">设置交叉淡化的过渡时长</string>
     <string name="unknown_artist">未知艺术家</string>
     <string name="unknown_song">未知歌曲</string>
+    <string name="unknown_album">未知专辑</string>
     
     <!-- Accessibility / Icons -->
     <string name="cd_back">返回</string>
@@ -156,10 +157,21 @@
     <string name="lang_russian">俄语</string>
     <string name="lang_persian">波斯语</string>
     <string name="lang_arabic">阿拉伯语</string>
+    <string name="lang_polish">波兰语</string>
 
     <string name="ok">确定</string>
     <string name="cd_activate_eq">启用均衡器</string>
     <string name="cd_play_pause">播放/暂停</string>
+    <string name="play_state_play">播放</string>
+    <string name="play_state_pause">暂停</string>
+    <string name="audio_quality_details">音频质量详情</string>
+    <string name="audio_lossless">无损</string>
+    <string name="audio_compressed">有损压缩</string>
+    <string name="audio_bitrate">比特率</string>
+    <string name="audio_sample_rate">采样率</string>
+    <string name="audio_bit_depth">位深度</string>
+    <string name="audio_file_format">文件格式</string>
+    <string name="audio_file_path">文件路径</string>
     <string name="cd_change_cover">更换封面</string>
     <string name="playlists">播放列表</string>
     <string name="add_to_playlist">播放列表</string>
@@ -319,6 +331,12 @@
     <string name="sort_artist">艺术家</string>
     <string name="sort_duration">时长</string>
     <string name="sort_date_added">添加日期</string>
+    <string name="sort_album">专辑</string>
+    <string name="sort_track_count">曲目数量</string>
+    <string name="sort_album_count">专辑数量</string>
+    <string name="filter_scope_folders">文件夹</string>
+    <string name="filter_scope_albums">专辑</string>
+    <string name="filter_all_albums">所有专辑</string>
     <string name="backup_warning_title">重要提示</string>
     <string name="backup_warning_desc">Lune 仅能导入由本应用导出的播放列表。请确保您的设备上有相应的音乐文件以正常播放。</string>
     <string name="export_playlists">导出播放列表</string>
@@ -344,7 +362,7 @@
     <string name="stats_hours_unit">%d小时</string>
     <string name="stats_minutes_unit">%d分钟</string>
     <string name="stats_seconds_unit">%d秒</string>
-    <string name="stats_music_unit">的音乐</string>
+    <string name="stats_music_unit">音乐</string>
 
     <!-- Info Cards -->
     <string name="info_card_time">恭喜！今天您已经听了 %s 的音乐</string>
@@ -405,8 +423,6 @@
     <string name="sd_card">SD卡</string>
     <string name="folder_browser_title">文件夹浏览器</string>
     <string name="no_songs_folder">此文件夹中未找到歌曲</string>
-    <string name="show_hero_section">显示欢迎卡片</string>
-    <string name="show_hero_section_desc">在主页屏幕上显示欢迎和统计卡片</string>
     <string name="show_ai_section">显示 AI 专区</string>
     <string name="show_ai_section_desc">显示 AI 混音与智能推荐标签页</string>
     <string name="seamless_looping">无缝循环</string>
@@ -460,4 +476,8 @@
     <string name="auto_sync_backup">自动同步备份</string>
     <string name="auto_sync_backup_desc">播放列表或歌词更改时自动更新已导出的备份</string>
     <string name="auto_sync_requires_export">请先导出备份以启用自动同步</string>
+    <string name="scroll_to_top_button">快速返回顶部</string>
+    <string name="scroll_to_top_button_desc">向上滑动时显示浮动按钮，以便快速返回列表顶部</string>
+    <string name="show_headers">显示分区标题</string>
+    <string name="hide_headers">隐藏分区标题</string>
 </resources>

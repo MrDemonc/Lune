@@ -205,7 +205,8 @@ fun SettingsScreen(
                         "de" to stringResource(R.string.lang_german),
                         "ru" to stringResource(R.string.lang_russian),
                         "fa" to stringResource(R.string.lang_persian),
-                        "ar" to stringResource(R.string.lang_arabic)
+                        "ar" to stringResource(R.string.lang_arabic),
+                        "pl" to stringResource(R.string.lang_polish)
                     )
                     languages.forEach { (code, label) ->
                         Row(
@@ -382,6 +383,7 @@ fun SettingsScreen(
                             "ru" -> stringResource(R.string.lang_russian)
                             "fa" -> stringResource(R.string.lang_persian)
                             "ar" -> stringResource(R.string.lang_arabic)
+                            "pl" -> stringResource(R.string.lang_polish)
                             else -> stringResource(R.string.lang_system)
                         },
                         icon = Icons.Default.Language,
