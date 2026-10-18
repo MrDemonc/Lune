@@ -177,10 +177,13 @@
       contributorsListEl.appendChild(creatorCard);
 
       // 2. Desukia (Design & UX Testing)
-      const desukiaCard = document.createElement('div');
+      const desukiaCard = document.createElement('a');
+      desukiaCard.href = 'https://github.com/desukia';
+      desukiaCard.target = '_blank';
+      desukiaCard.rel = 'noopener noreferrer';
       desukiaCard.className = 'contributor-card';
       desukiaCard.innerHTML = `
-        <div class="contributor-avatar avatar-text">D</div>
+        <img src="https://avatars.githubusercontent.com/u/204925243?v=4" alt="desukia" class="contributor-avatar" loading="lazy">
         <div class="contributor-details">
           <span class="contributor-name">Desukia</span>
           <span class="contributor-role-badge badge-design">Design & UX Testing</span>
