@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="launcher_background">#FF2B2B2B</color>
-    <color name="launcher_soft_tone">#FF000000</color>
-    <color name="launcher_dark_tone">#FFFFFFFF</color>
+    <color name="launcher_background">#FF554492</color>
+    <color name="launcher_soft_tone">#FFFFFFFF</color>
+    <color name="launcher_dark_tone">#FF554492</color>
 
     <color name="placeholder_background">#FF1E1B24</color>
     <color name="placeholder_soft_tone">#FF524375</color>
