@@ -357,6 +357,7 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     private fun updateAudioOutput() {
+        musicService?.onAudioOutputDeviceChanged()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
             var bestDevice: AudioDeviceInfo? = null

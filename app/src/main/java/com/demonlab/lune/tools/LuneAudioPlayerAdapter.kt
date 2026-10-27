@@ -41,7 +41,7 @@ class LuneAudioPlayerAdapter(
 
     override fun getState(): State {
         val pm = PlaybackManager.getInstance(service)
-        val currentSong = pm.currentSong
+        val currentSong = pm.currentSong ?: pm.playbackStateSaver.restore()?.savedSong
         val isPlaying = service.isPlaying()
 
         val playWhenReadyReason = if (service.wasPlayingBeforeLoss) {

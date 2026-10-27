@@ -41,8 +41,10 @@ import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.widget.RemoteViews
 import android.media.AudioDeviceInfo
+import android.view.KeyEvent
 import android.view.View
 import androidx.annotation.OptIn
+import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
@@ -228,6 +230,7 @@ class MusicService : MediaLibraryService() {
     companion object {
         const val ACTION_PLAY = "com.demonlab.lune.ACTION_PLAY"
         const val ACTION_PAUSE = "com.demonlab.lune.ACTION_PAUSE"
+        const val ACTION_PLAY_PAUSE = "com.demonlab.lune.ACTION_PLAY_PAUSE"
         const val ACTION_PREVIOUS = "com.demonlab.lune.ACTION_PREVIOUS"
         const val ACTION_NEXT = "com.demonlab.lune.ACTION_NEXT"
         const val ACTION_SHUFFLE = "com.demonlab.lune.ACTION_SHUFFLE"
@@ -235,6 +238,12 @@ class MusicService : MediaLibraryService() {
         const val ACTION_DISMISS = "com.demonlab.lune.ACTION_DISMISS"
         const val ACTION_UPDATE_WIDGET = "com.demonlab.lune.ACTION_UPDATE_WIDGET"
         const val PAUSE_TIMEOUT_MS = 5 * 60 * 1000L
+    }
+
+    fun onAudioOutputDeviceChanged() {
+        // Audio output changed (e.g. Bluetooth connected/disconnected).
+        // Invalidate cached audio focus so next resume re-requests focus from system.
+        hasAudioFocus = false
     }
 
     inner class MusicBinder : Binder() {
@@ -283,8 +292,8 @@ class MusicService : MediaLibraryService() {
         }
     }
 
-    private fun requestAudioFocus(): Boolean {
-        if (hasAudioFocus) return true
+    private fun requestAudioFocus(force: Boolean = false): Boolean {
+        if (hasAudioFocus && !force) return true
 
         val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val request = audioFocusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
@@ -414,6 +423,9 @@ class MusicService : MediaLibraryService() {
         when (action) {
             ACTION_PLAY -> resume()
             ACTION_PAUSE -> pause()
+            ACTION_PLAY_PAUSE -> {
+                if (isPlaying()) pause() else resume()
+            }
             ACTION_PREVIOUS -> pm.playPreviousFromService()
             ACTION_NEXT -> pm.playNextFromService()
             ACTION_SHUFFLE -> {
@@ -477,7 +489,7 @@ class MusicService : MediaLibraryService() {
         val shouldStopOnClose = settingsManager.stopOnTaskRemoved
         val playing = isPlaying()
         Log.i("MusicService", "onTaskRemoved triggered: shouldStopOnClose=$shouldStopOnClose, isPlaying=$playing")
-        if (shouldStopOnClose) {
+        if (shouldStopOnClose || !playing) {
             isNotificationDismissed = true
             pauseTimeoutJob?.cancel()
             try {
@@ -503,7 +515,7 @@ class MusicService : MediaLibraryService() {
             return
         }
 
-        // When stopOnTaskRemoved is false (default):
+        // When stopOnTaskRemoved is false (default) and playback is ongoing:
         // Keep the foreground service and playback running seamlessly in the background.
         // We MUST NOT call super.onTaskRemoved(rootIntent) because MediaSessionService.onTaskRemoved
         // evaluates isPlaybackOngoing() == false (since Lune manages its own custom foreground notification
@@ -748,6 +760,23 @@ class MusicService : MediaLibraryService() {
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
 
+        override fun onMediaButtonEvent(
+            session: MediaSession,
+            controllerInfo: MediaSession.ControllerInfo,
+            intent: Intent
+        ): Boolean {
+            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            }
+            if (keyEvent != null && handleMediaKeyEvent(keyEvent)) {
+                return true
+            }
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
+        }
+
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo
@@ -757,12 +786,77 @@ class MusicService : MediaLibraryService() {
                 .add(SessionCommand(ACTION_FAVORITE, Bundle.EMPTY))
                 .build()
             val customLayout = buildCustomLayout()
+            val playerCommands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+                .addAll(
+                    Player.COMMAND_PLAY_PAUSE,
+                    Player.COMMAND_PREPARE,
+                    Player.COMMAND_STOP,
+                    Player.COMMAND_SEEK_TO_DEFAULT_POSITION,
+                    Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
+                    Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+                    Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+                    Player.COMMAND_SEEK_TO_PREVIOUS,
+                    Player.COMMAND_SEEK_TO_NEXT,
+                    Player.COMMAND_SEEK_BACK,
+                    Player.COMMAND_SEEK_FORWARD
+                )
+                .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(sessionCommands)
-                .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
+                .setAvailablePlayerCommands(playerCommands)
                 .setCustomLayout(customLayout)
                 .setMediaButtonPreferences(customLayout)
                 .build()
+        }
+    }
+
+    fun handleMediaKeyEvent(keyEvent: KeyEvent): Boolean {
+        val pm = PlaybackManager.getInstance(applicationContext)
+        val keyCode = keyEvent.keyCode
+        val action = keyEvent.action
+        val isDown = action == KeyEvent.ACTION_DOWN
+
+        return when (keyCode) {
+            KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                if (isDown && keyEvent.repeatCount == 0) resume()
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                if (isDown && keyEvent.repeatCount == 0) pause()
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+            KeyEvent.KEYCODE_HEADSETHOOK -> {
+                if (isDown && keyEvent.repeatCount == 0) {
+                    if (isPlaying()) pause() else resume()
+                }
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                if (isDown && keyEvent.repeatCount == 0) pm.playNextFromService()
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                if (isDown && keyEvent.repeatCount == 0) pm.playPreviousFromService()
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_STOP -> {
+                if (isDown && keyEvent.repeatCount == 0) pause()
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                if (isDown && keyEvent.repeatCount == 0) {
+                    seekTo((currentPosition() + 10000).coerceAtMost(duration()))
+                }
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                if (isDown && keyEvent.repeatCount == 0) {
+                    seekTo((currentPosition() - 10000).coerceAtLeast(0))
+                }
+                true
+            }
+            else -> false
         }
     }
 
@@ -809,16 +903,22 @@ class MusicService : MediaLibraryService() {
                 this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE
             )
             val initialLayout = buildCustomLayout()
-            mediaSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
+            val newSession = MediaLibrarySession.Builder(this, lunePlayerAdapter!!, librarySessionCallback)
                 .setSessionActivity(sessionPendingIntent)
                 .setCustomLayout(initialLayout)
                 .setMediaButtonPreferences(initialLayout)
                 .build()
+            mediaSession = newSession
+            try {
+                addSession(newSession)
+            } catch (e: Exception) {
+                Log.w("MusicService", "addSession failed: ${e.message}")
+            }
 
             val notificationHints = Bundle().apply {
                 putBoolean("androidx.media3.session.MediaNotificationManager", true)
             }
-            MediaController.Builder(this, mediaSession!!.token)
+            MediaController.Builder(this, newSession.token)
                 .setConnectionHints(notificationHints)
                 .buildAsync()
         }
@@ -1305,7 +1405,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun resume() {
-        if (!requestAudioFocus()) {
+        if (!requestAudioFocus(force = true)) {
             if (resumeOnFocusGain) {
                 Log.d("MusicService", "Audio focus delayed; playback will resume when granted")
             } else {
@@ -1328,10 +1428,10 @@ class MusicService : MediaLibraryService() {
         acquireWakeLock()
 
         if (mediaPlayer == null) {
-            if (pm.currentSong == null && !pm.stateRestored) {
+            if (pm.currentSong == null) {
                 pm.restorePlaybackState()
             }
-            val song = pm.currentSong
+            val song = pm.currentSong ?: pm.playbackStateSaver.restore()?.savedSong
             if (song != null) {
                 val savedPos = pm.playbackStateSaver.restore()?.playbackPositionMs ?: 0L
                 restorePlayback(song, savedPos, andPlay = true)
@@ -2009,7 +2109,12 @@ class MusicService : MediaLibraryService() {
         secondaryVirtualizer?.release()
         mediaPlayer?.release()
         secondaryPlayer?.release()
-        mediaSession?.release()
+        mediaSession?.let {
+            try {
+                removeSession(it)
+            } catch (_: Exception) {}
+            it.release()
+        }
         mediaSession = null
         lunePlayerAdapter?.release()
         lunePlayerAdapter = null
