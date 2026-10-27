@@ -92,9 +92,9 @@
     <string name="ai_mix_artist_radio_title">رادیو: %1$s</string>
     <string name="ai_mix_artist_radio_sub">بهترین‌های %1$s و هنرمندان مشابه</string>
     <string name="resume_recommendations">پیشنهادیا</string>
-    <string name="resume_top_playlists">پلی‌لیست‌های تاپ</string>
-    <string name="resume_top_artists">خواننده‌های تاپ</string>
-    <string name="resume_top_genres">سبک‌های تاپ</string>
+    <string name="resume_top_playlists">پلی‌لیست‌ها</string>
+    <string name="resume_top_artists">خواننده‌ها</string>
+    <string name="resume_top_genres">سبک‌ها</string>
     <string name="rescan_library">اسکن دوباره آهنگ‌ها</string>
     <string name="rescan_library_desc">گوشی رو می‌گرده تا اگه آهنگ جدیدی ریختی پیداش کنه</string>
     <string name="rescan_library_success">حله! %1$d تا آهنگ جدید پیدا شد</string>

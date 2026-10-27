@@ -93,9 +93,9 @@
     <string name="ai_mix_artist_radio_title">%1$s 专属电台</string>
     <string name="ai_mix_artist_radio_sub">%1$s 及其同频艺术家的精选</string>
     <string name="resume_recommendations">推荐</string>
-    <string name="resume_top_playlists">热门播放列表</string>
-    <string name="resume_top_artists">热门歌手</string>
-    <string name="resume_top_genres">热门流派</string>
+    <string name="resume_top_playlists">播放列表</string>
+    <string name="resume_top_artists">歌手</string>
+    <string name="resume_top_genres">流派</string>
     <string name="rescan_library">重新扫描音乐库</string>
     <string name="rescan_library_desc">强制扫描系统媒体以查找新音频文件</string>
     <string name="rescan_library_success">音乐库已刷新：找到 %1$d 首歌曲</string>
@@ -480,4 +480,8 @@
     <string name="scroll_to_top_button_desc">向上滑动时显示浮动按钮，以便快速返回列表顶部</string>
     <string name="show_headers">显示分区标题</string>
     <string name="hide_headers">隐藏分区标题</string>
+    <!-- M3 Expressive Welcome / Top Stats Cards -->
+    <string name="card_top_artist">最佳歌手</string>
+    <string name="card_top_song">最常听歌曲</string>
+    <string name="card_top_genre">最常听流派</string>
 </resources>

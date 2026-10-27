@@ -93,9 +93,9 @@
     <string name="ai_mix_artist_radio_title">Радио: %1$s</string>
     <string name="ai_mix_artist_radio_sub">Лучшее от %1$s и похожих исполнителей</string>
     <string name="resume_recommendations">Рекомендации</string>
-    <string name="resume_top_playlists">Лучшие плейлисты</string>
-    <string name="resume_top_artists">Популярные исполнители</string>
-    <string name="resume_top_genres">Популярные жанры</string>
+    <string name="resume_top_playlists">Плейлисты</string>
+    <string name="resume_top_artists">Исполнители</string>
+    <string name="resume_top_genres">Жанры</string>
     <string name="rescan_library">Пересканировать медиатеку</string>
     <string name="rescan_library_desc">Принудительно искать новые аудиофайлы в системе</string>
     <string name="rescan_library_success">Медиатека обновлена: найдено %1$d треков</string>

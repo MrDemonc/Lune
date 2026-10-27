@@ -92,9 +92,9 @@
     <string name="ai_mix_artist_radio_title">Radio: %1$s</string>
     <string name="ai_mix_artist_radio_sub">Najlepsze utwory od %1$s i podobnych wykonawców</string>
     <string name="resume_recommendations">Rekomendacje</string>
-    <string name="resume_top_playlists">Najpopularniejsze playlisty</string>
-    <string name="resume_top_artists">Najlepsi wykonawcy</string>
-    <string name="resume_top_genres">Najpopularniejsze gatunki</string>
+    <string name="resume_top_playlists">Playlisty</string>
+    <string name="resume_top_artists">Wykonawcy</string>
+    <string name="resume_top_genres">Gatunki</string>
     <string name="rescan_library">Przeskanuj bibliotekę ponownie</string>
     <string name="rescan_library_desc">Wymuś skanowanie multimediów systemowych w poszukiwaniu nowych plików audio</string>
     <string name="rescan_library_success">Odświeżono bibliotekę: znaleziono %1$d utworów</string>
@@ -487,7 +487,7 @@
     <!-- M3 Expressive Welcome / Top Stats Cards -->
     <string name="card_top_artist">Najlepszy wykonawca</string>
     <string name="card_top_song">Najlepszy utwór</string>
-    <string name="card_top_genre">Najpopularniejszy gatunek</string>
+    <string name="card_top_genre">Ulubiony gatunek</string>
     <string name="card_artist_songs">%d utworów</string>
     <string name="card_plays_count">%d odtworzeń</string>
     <string name="card_play_count_single">%d odtworzenie</string>

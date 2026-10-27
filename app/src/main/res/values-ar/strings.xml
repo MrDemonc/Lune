@@ -92,9 +92,9 @@
     <string name="ai_mix_artist_radio_title">راديو: %1$s</string>
     <string name="ai_mix_artist_radio_sub">أفضل أعمال %1$s وفنانين مشابهين</string>
     <string name="resume_recommendations">توصيات</string>
-    <string name="resume_top_playlists">أفضل قوائم التشغيل</string>
-    <string name="resume_top_artists">أفضل الفنانين</string>
-    <string name="resume_top_genres">أفضل الأنواع</string>
+    <string name="resume_top_playlists">قوائم التشغيل</string>
+    <string name="resume_top_artists">الفنانون</string>
+    <string name="resume_top_genres">الأنواع</string>
     <string name="rescan_library">إعادة فحص المكتبة</string>
     <string name="rescan_library_desc">فرض فحص وسائط النظام للبحث عن ملفات صوتية جديدة</string>
     <string name="rescan_library_success">تم تحديث المكتبة: العثور على %1$d أغنية</string>

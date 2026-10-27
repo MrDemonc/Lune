@@ -92,9 +92,9 @@
     <string name="ai_mix_artist_radio_title">Radio: %1$s</string>
     <string name="ai_mix_artist_radio_sub">The best of %1$s and kindred artists</string>
     <string name="resume_recommendations">Recommendations</string>
-    <string name="resume_top_playlists">Top Playlists</string>
-    <string name="resume_top_artists">Top Artists</string>
-    <string name="resume_top_genres">Top Genres</string>
+    <string name="resume_top_playlists">Playlists</string>
+    <string name="resume_top_artists">Artists</string>
+    <string name="resume_top_genres">Genres</string>
     <string name="rescan_library">Rescan Library</string>
     <string name="rescan_library_desc">Force scan system media for new audio files</string>
     <string name="rescan_library_success">Library refreshed: %1$d songs found</string>

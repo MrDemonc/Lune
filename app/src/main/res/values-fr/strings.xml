@@ -93,9 +93,9 @@
     <string name="ai_mix_artist_radio_title">Radio : %1$s</string>
     <string name="ai_mix_artist_radio_sub">Le meilleur de %1$s et artistes similaires</string>
     <string name="resume_recommendations">Recommandations</string>
-    <string name="resume_top_playlists">Playlists les plus écoutées</string>
-    <string name="resume_top_artists">Artistes les plus écoutés</string>
-    <string name="resume_top_genres">Genres les plus écoutés</string>
+    <string name="resume_top_playlists">Playlists</string>
+    <string name="resume_top_artists">Artistes</string>
+    <string name="resume_top_genres">Genres</string>
     <string name="rescan_library">Analyser à nouveau la bibliothèque</string>
     <string name="rescan_library_desc">Forcer l\'analyse des fichiers audio du système</string>
     <string name="rescan_library_success">Bibliothèque actualisée : %1$d chansons trouvées</string>
