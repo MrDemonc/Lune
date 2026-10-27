@@ -641,6 +641,15 @@ fun CustomizationScreen(
                     }
                 )
                 SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.font_customization),
+                    supportingText = stringResource(R.string.font_customization_desc),
+                    icon = Icons.Default.TextFields,
+                    position = SectionPosition.MIDDLE,
+                    onClick = {
+                        context.startActivity(Intent(context, FontCustomizationActivity::class.java))
+                    }
+                )
+                SettingsPreferenceItem(
                     headlineText = stringResource(R.string.crossfade_time),
                     supportingText = stringResource(R.string.crossfade_time_desc),
                     icon = Icons.Default.Tune,

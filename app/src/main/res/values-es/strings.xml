@@ -494,4 +494,28 @@
     <string name="card_play_count_single">%d reproducción</string>
     <string name="card_no_plays">Sin reproducciones</string>
     <string name="artist_filter_singles">Sencillos</string>
+
+    <!-- Personalización de fuentes -->
+    <string name="font_customization">Fuente</string>
+    <string name="font_customization_desc">Personaliza el tamaño, fuentes del sistema e importa fuentes TTF/OTF</string>
+    <string name="font_size">Tamaño de fuente</string>
+    <string name="font_size_reset">Restablecer</string>
+    <string name="font_preview">Vista previa</string>
+    <string name="font_preview_sample_text">El veloz murciélago hindú comía feliz cardillo y kiwi. 0123456789</string>
+    <string name="font_system_section">Fuentes del sistema</string>
+    <string name="font_imported_section">Fuentes importadas</string>
+    <string name="font_no_imported_desc">No hay fuentes importadas aún. Importa archivos .ttf u .otf para usarlas en toda la app.</string>
+    <string name="font_import_button">Importar fuente</string>
+    <string name="font_import_desc">Selecciona un archivo .ttf u .otf de tu dispositivo</string>
+    <string name="font_default_lune">Quicksand (Predeterminada)</string>
+    <string name="font_system_default">Predeterminada del sistema</string>
+    <string name="font_sans_serif">Sans-serif</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_monospace">Monospace</string>
+    <string name="font_cursive">Cursive</string>
+    <string name="font_import_invalid">El archivo seleccionado no es una fuente válida (.ttf u .otf)</string>
+    <string name="font_import_success">Fuente importada con éxito</string>
+    <string name="font_delete_confirm_title">Eliminar fuente</string>
+    <string name="font_delete_confirm_message">¿Estás seguro de que deseas eliminar \"%s\"?</string>
+    <string name="font_deleted">Fuente eliminada</string>
 </resources>

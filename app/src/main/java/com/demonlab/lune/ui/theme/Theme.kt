@@ -8,11 +8,14 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.demonlab.lune.tools.SettingsManager
 
 import androidx.compose.ui.graphics.Color
 
@@ -114,8 +117,22 @@ fun LuneTheme(
     useCustomColors: Boolean = false,
     customColorPalette: Int = 0,
     useAmoledPitchBlack: Boolean = false,
+    typography: Typography? = null,
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val resolvedTypography = typography ?: remember(
+        settingsManager.fontType,
+        settingsManager.customFontFileName,
+        settingsManager.fontScale
+    ) {
+        createAppTypography(
+            fontFamily = settingsManager.resolveFontFamily(),
+            fontScale = settingsManager.fontScale
+        )
+    }
+
     val baseColorScheme = when {
         useCustomColors -> {
             if (darkTheme) {
@@ -159,7 +176,7 @@ fun LuneTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = resolvedTypography,
         content = content
     )
 
@@ -185,6 +202,7 @@ fun LuneTheme(
                 ctx = ctx.baseContext
             }
             val window = dialogWindow ?: activity?.window
+            @Suppress("DEPRECATION")
             window?.let { win ->
                 win.navigationBarColor = android.graphics.Color.TRANSPARENT
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

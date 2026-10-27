@@ -139,6 +139,11 @@
             android:label="@string/blur"
             android:theme="@style/Theme.Lune" />
         <activity
+            android:name=".ui.activities.FontCustomizationActivity"
+            android:exported="false"
+            android:label="@string/font_customization"
+            android:theme="@style/Theme.Lune" />
+        <activity
             android:name=".ui.activities.EqualizerActivity"
             android:exported="false"
             android:label="@string/eq_title"

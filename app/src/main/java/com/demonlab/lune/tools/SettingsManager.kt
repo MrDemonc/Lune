@@ -2,13 +2,18 @@ package com.demonlab.lune.tools
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.font.FontFamily
+import com.demonlab.lune.ui.theme.quicksand
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 
 class SettingsManager(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("lune_settings", Context.MODE_PRIVATE)
+    private val appContext: Context = context.applicationContext
+    private val prefs: SharedPreferences = appContext.getSharedPreferences("lune_settings", Context.MODE_PRIVATE)
 
     private val _customTitleFlow = MutableStateFlow(prefs.getString("custom_title", "") ?: "")
     val customTitleFlow: StateFlow<String> = _customTitleFlow.asStateFlow()
@@ -520,6 +525,97 @@ class SettingsManager(context: Context) {
 
     fun setPlaylistShuffle(playlistId: Long, value: Boolean) {
         prefs.edit().putBoolean("shuffle_playlist_$playlistId", value).apply()
+    }
+
+    private val _fontScale = mutableFloatStateOf(prefs.getFloat("font_scale", 1.0f))
+    var fontScale: Float
+        get() = _fontScale.floatValue
+        set(value) {
+            _fontScale.floatValue = value
+            prefs.edit().putFloat("font_scale", value).apply()
+        }
+
+    private val _fontType = mutableStateOf(prefs.getString("font_type", "quicksand") ?: "quicksand")
+    var fontType: String
+        get() = _fontType.value
+        set(value) {
+            _fontType.value = value
+            prefs.edit().putString("font_type", value).apply()
+        }
+
+    private val _customFontFileName = mutableStateOf(prefs.getString("custom_font_file_name", "") ?: "")
+    var customFontFileName: String
+        get() = _customFontFileName.value
+        set(value) {
+            _customFontFileName.value = value
+            prefs.edit().putString("custom_font_file_name", value).apply()
+        }
+
+    private val fontCache = mutableMapOf<String, FontFamily>()
+
+    fun getCustomFontsDir(): File {
+        val dir = File(appContext.filesDir, "fonts")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return dir
+    }
+
+    fun getImportedFonts(): List<File> {
+        val dir = getCustomFontsDir()
+        return dir.listFiles { file ->
+            file.isFile && (file.extension.equals("ttf", ignoreCase = true) || file.extension.equals("otf", ignoreCase = true) || file.extension.equals("ttc", ignoreCase = true))
+        }?.sortedBy { it.name.lowercase() } ?: emptyList()
+    }
+
+    fun deleteImportedFont(fileName: String): Boolean {
+        val file = File(getCustomFontsDir(), fileName)
+        val deleted = if (file.exists()) file.delete() else false
+        fontCache.keys.removeAll { it.startsWith(fileName) }
+        if (fontType == "custom" && customFontFileName == fileName) {
+            fontType = "quicksand"
+            customFontFileName = ""
+        }
+        return deleted
+    }
+
+    fun getFontFamilyForFile(file: File): FontFamily {
+        val key = "${file.name}_${file.lastModified()}"
+        return fontCache.getOrPut(key) {
+            try {
+                val typeface = android.graphics.Typeface.createFromFile(file)
+                if (typeface != null) {
+                    FontFamily(typeface)
+                } else {
+                    quicksand
+                }
+            } catch (_: Exception) {
+                quicksand
+            }
+        }
+    }
+
+    fun resolveFontFamily(): FontFamily {
+        return when (fontType) {
+            "system" -> FontFamily.Default
+            "sans_serif" -> FontFamily.SansSerif
+            "serif" -> FontFamily.Serif
+            "monospace" -> FontFamily.Monospace
+            "cursive" -> FontFamily.Cursive
+            "custom" -> {
+                if (customFontFileName.isNotEmpty()) {
+                    val fontFile = File(getCustomFontsDir(), customFontFileName)
+                    if (fontFile.exists() && fontFile.canRead()) {
+                        getFontFamilyForFile(fontFile)
+                    } else {
+                        quicksand
+                    }
+                } else {
+                    quicksand
+                }
+            }
+            else -> quicksand
+        }
     }
 
     companion object {

@@ -493,4 +493,28 @@
     <string name="card_play_count_single">%d play</string>
     <string name="card_no_plays">No plays yet</string>
     <string name="artist_filter_singles">Singles</string>
+
+    <!-- Font Customization -->
+    <string name="font_customization">Font</string>
+    <string name="font_customization_desc">Customize font size, system fonts, and import TTF/OTF fonts</string>
+    <string name="font_size">Font size</string>
+    <string name="font_size_reset">Reset</string>
+    <string name="font_preview">Preview</string>
+    <string name="font_preview_sample_text">The quick brown fox jumps over the lazy dog. 0123456789</string>
+    <string name="font_system_section">System fonts</string>
+    <string name="font_imported_section">Imported fonts</string>
+    <string name="font_no_imported_desc">No imported fonts yet. Import .ttf or .otf files to use them across the app.</string>
+    <string name="font_import_button">Import font</string>
+    <string name="font_import_desc">Select a .ttf or .otf font file from your device</string>
+    <string name="font_default_lune">Quicksand (Default)</string>
+    <string name="font_system_default">System default</string>
+    <string name="font_sans_serif">Sans-serif</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_monospace">Monospace</string>
+    <string name="font_cursive">Cursive</string>
+    <string name="font_import_invalid">The selected file is not a valid font (.ttf or .otf)</string>
+    <string name="font_import_success">Font imported successfully</string>
+    <string name="font_delete_confirm_title">Delete font</string>
+    <string name="font_delete_confirm_message">Are you sure you want to delete \"%s\"?</string>
+    <string name="font_deleted">Font deleted</string>
 </resources>
