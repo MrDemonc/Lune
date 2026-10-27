@@ -18,6 +18,9 @@
       <img src="https://img.shields.io/badge/Website-Visit-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white"/>
     </a>
   </p>
+<p align="center">
+    <b>English</b> | <a href="README.fa.md">فارسی</a>
+  </p>
   <p align="center">
     Lune is a minimalist and elegant music player for Android, designed with a focus on aesthetics and a premium user experience. 
     It features a modern Jetpack Compose UI, dynamic color support, and a unique high-quality dark defocus widget system.
