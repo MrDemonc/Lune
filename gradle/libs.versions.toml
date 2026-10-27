@@ -18,8 +18,10 @@ room3 = "3.0.3"
 ksp = "2.3.11"
 appcompat = "1.8.0"
 documentfile = "1.1.0"
+desugarJdkLibs = "2.1.5"
 
 [libraries]
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibs" }
 androidx-compose-animation-graphics = { module = "androidx.compose.animation:animation-graphics" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-media = { group = "androidx.media", name = "media", version.ref = "media" }

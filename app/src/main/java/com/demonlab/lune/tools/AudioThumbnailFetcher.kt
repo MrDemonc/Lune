@@ -100,7 +100,7 @@ class AudioThumbnailFetcher(
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             // ignore
         }
 

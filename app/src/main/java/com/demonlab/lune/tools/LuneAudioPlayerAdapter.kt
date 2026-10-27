@@ -44,9 +44,15 @@ class LuneAudioPlayerAdapter(
         val currentSong = pm.currentSong
         val isPlaying = service.isPlaying()
 
+        val playWhenReadyReason = if (service.wasPlayingBeforeLoss) {
+            Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS
+        } else {
+            Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST
+        }
+
         val stateBuilder = State.Builder()
             .setAvailableCommands(availableCommands)
-            .setPlayWhenReady(isPlaying, Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
+            .setPlayWhenReady(isPlaying, playWhenReadyReason)
             .setPlaybackState(if (currentSong != null) Player.STATE_READY else Player.STATE_IDLE)
             .setRepeatMode(pm.repeatMode)
             .setShuffleModeEnabled(pm.isShuffle)

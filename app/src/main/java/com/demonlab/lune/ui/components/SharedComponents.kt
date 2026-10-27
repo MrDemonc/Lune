@@ -135,6 +135,7 @@ fun AppBlurBackdrop(
                 ctx = ctx.baseContext
             }
             val targetWindow = dialogWindow ?: activity?.window
+            @Suppress("DEPRECATION")
             targetWindow?.let { window ->
                 window.navigationBarColor = android.graphics.Color.TRANSPARENT
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

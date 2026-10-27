@@ -18,25 +18,29 @@ class ReverbEffect {
         currentPreset = preset
         try {
             if (Build.VERSION.SDK_INT >= 31) {
-                val r = EnvironmentalReverb(0, sessionId).apply {
-                    applyPreset(preset)
-                    enabled = preset != 0
+                try {
+                    val r = EnvironmentalReverb(0, sessionId).apply {
+                        applyPreset(preset)
+                        enabled = preset != 0
+                    }
+                    if (isSecondary) {
+                        secondaryReverb = r
+                    } else {
+                        reverb = r
+                    }
+                    return
+                } catch (e: Exception) {
+                    Log.w(tag, "EnvironmentalReverb not supported, falling back to PresetReverb: ${e.message}")
                 }
-                if (isSecondary) {
-                    secondaryReverb = r
-                } else {
-                    reverb = r
-                }
+            }
+            val r = PresetReverb(0, sessionId).apply {
+                setPreset(preset.toShort())
+                enabled = preset != 0
+            }
+            if (isSecondary) {
+                secondaryReverbLegacy = r
             } else {
-                val r = PresetReverb(0, sessionId).apply {
-                    setPreset(preset.toShort())
-                    enabled = preset != 0
-                }
-                if (isSecondary) {
-                    secondaryReverbLegacy = r
-                } else {
-                    reverbLegacy = r
-                }
+                reverbLegacy = r
             }
         } catch (e: Exception) {
             Log.e(tag, "Failed to create reverb effect", e)

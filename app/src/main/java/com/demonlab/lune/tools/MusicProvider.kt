@@ -188,7 +188,7 @@ class MusicProvider(private val context: Context) {
                         retriever.setDataSource(file.absolutePath)
                         duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
                         retriever.release()
-                    } catch (_: Exception) {}
+                    } catch (_: Throwable) {}
                 }
 
                 if (title.isBlank() || title.equals("<unknown>", ignoreCase = true)) {
@@ -289,7 +289,7 @@ class MusicProvider(private val context: Context) {
                                 }
                             }
                         }
-                    } catch (_: Exception) {
+                    } catch (_: Throwable) {
                         if (bitrate != null && bitrate >= 2304000) {
                             isHiRes = true
                         }

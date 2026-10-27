@@ -142,7 +142,7 @@ object SongResolver {
                     if (duration == 0L) duration = header.trackLength * 1000L
                     if (bitrate == null) bitrate = (header.bitRateAsNumber * 1000).toInt()
                 }
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
                 // ignore
             }
         }

@@ -27,8 +27,8 @@ android {
         applicationId = "com.demonlab.lune"
         minSdk = 24
         targetSdk = 37
-        versionCode = 12
-        versionName = "1.5.4"
+        versionCode = 13
+        versionName = "1.5.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -77,6 +77,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+        isCoreLibraryDesugaringEnabled = true
     }
 
     buildFeatures {
@@ -105,6 +106,7 @@ base {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.media)
