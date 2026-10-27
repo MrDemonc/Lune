@@ -67,8 +67,12 @@ class LuneAudioPlayerAdapter(
 
             val metadataBuilder = MediaMetadata.Builder()
                 .setTitle(currentSong.title)
+                .setDisplayTitle(currentSong.title)
                 .setArtist(currentSong.artist)
+                .setAlbumArtist(currentSong.artist)
+                .setSubtitle(currentSong.artist)
                 .setAlbumTitle(currentSong.album)
+                .setDescription(currentSong.album)
                 .setArtworkUri(artUri)
                 .setIsPlayable(true)
 
@@ -94,6 +98,7 @@ class LuneAudioPlayerAdapter(
                 .build()
 
             stateBuilder.setPlaylist(listOf(itemData))
+            stateBuilder.setPlaylistMetadata(mediaMetadata)
             stateBuilder.setCurrentMediaItemIndex(0)
             stateBuilder.setContentPositionMs(PositionSupplier {
                 service.currentPosition().toLong().coerceAtLeast(0L)

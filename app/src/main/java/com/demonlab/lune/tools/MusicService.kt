@@ -1772,6 +1772,7 @@ class MusicService : MediaLibraryService() {
         val customLayout = buildCustomLayout()
         mediaSession?.setCustomLayout(customLayout)
         mediaSession?.setMediaButtonPreferences(customLayout)
+        broadcastMediaMetadata(song, isPlaying())
     }
 
     private fun updatePlaybackState() {
@@ -1780,6 +1781,44 @@ class MusicService : MediaLibraryService() {
         val customLayout = buildCustomLayout()
         mediaSession?.setCustomLayout(customLayout)
         mediaSession?.setMediaButtonPreferences(customLayout)
+        currentSong()?.let { broadcastMediaMetadata(it, isPlaying()) }
+    }
+
+    private fun broadcastMediaMetadata(song: Song?, isPlaying: Boolean) {
+        if (song == null) return
+        try {
+            val dur = if (song.duration > 0) song.duration else duration().toLong().coerceAtLeast(0L)
+            val pos = currentPosition().toLong().coerceAtLeast(0L)
+            val metaIntent = Intent("com.android.music.metachanged").apply {
+                putExtra("id", song.id)
+                putExtra("artist", song.artist)
+                putExtra("album", song.album)
+                putExtra("track", song.title)
+                putExtra("song", song.title)
+                putExtra("playing", isPlaying)
+                putExtra("isPlaying", isPlaying)
+                putExtra("duration", dur)
+                putExtra("position", pos)
+                putExtra("package", packageName)
+                putExtra("scrobbling_source", packageName)
+            }
+            sendBroadcast(metaIntent)
+
+            val stateIntent = Intent("com.android.music.playstatechanged").apply {
+                putExtra("id", song.id)
+                putExtra("artist", song.artist)
+                putExtra("album", song.album)
+                putExtra("track", song.title)
+                putExtra("song", song.title)
+                putExtra("playing", isPlaying)
+                putExtra("isPlaying", isPlaying)
+                putExtra("duration", dur)
+                putExtra("position", pos)
+                putExtra("package", packageName)
+                putExtra("scrobbling_source", packageName)
+            }
+            sendBroadcast(stateIntent)
+        } catch (_: Exception) {}
     }
 
     private fun currentSong(): Song? {
