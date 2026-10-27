@@ -19,7 +19,7 @@
     </a>
   </p>
 <p align="center">
-    <b>English</b> | <a href="README.fa.md">فارسی</a>
+    <b>English</b> | <a href="README_fa.md">فارسی</a>
   </p>
   <p align="center">
     Lune is a minimalist and elegant music player for Android, designed with a focus on aesthetics and a premium user experience. 
