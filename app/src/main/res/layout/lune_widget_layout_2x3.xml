@@ -37,8 +37,8 @@
                 android:id="@+id/widget_cover"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:maxWidth="100dp"
-                android:maxHeight="100dp"
+                android:maxWidth="85dp"
+                android:maxHeight="85dp"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_lune_placeholder" />

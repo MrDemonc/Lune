@@ -2398,10 +2398,10 @@ class MusicService : MediaLibraryService() {
 
             for (appWidgetId in appWidgetIds) {
                 val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-                val layoutResId = LuneWidgetProvider.getWidgetLayoutResId(options)
+                val layoutResId = LuneWidgetProvider.getWidgetLayoutResId(applicationContext, options)
                 val views = RemoteViews(packageName, layoutResId)
                 LuneWidgetProvider.applyWidgetStyling(applicationContext, views, settingsManager)
-                LuneWidgetProvider.applyWidgetResponsiveLayout(views, options)
+                LuneWidgetProvider.applyWidgetResponsiveLayout(applicationContext, views, options)
 
                 if (song != null) {
                     views.setTextViewText(R.id.widget_title, song.title)

@@ -128,15 +128,71 @@ class LuneWidgetProvider : AppWidgetProvider() {
             }
         }
 
+        data class WidgetDimensions(
+            val isSingleRow: Boolean,
+            val isTwoColumns: Boolean,
+            val isThreeColumns: Boolean
+        )
+
+        fun getWidgetDimensions(context: Context?, options: android.os.Bundle): WidgetDimensions {
+            val colSpan = options.getInt("semAppWidgetColumnSpan", -1)
+            val rowSpan = options.getInt("semAppWidgetRowSpan", -1)
+
+            if (rowSpan > 0 && colSpan > 0) {
+                return WidgetDimensions(
+                    isSingleRow = rowSpan == 1,
+                    isTwoColumns = colSpan <= 2,
+                    isThreeColumns = colSpan == 3
+                )
+            }
+
+            val isPortrait = context?.resources?.configuration?.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+            val maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0)
+            val minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+            val maxH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
+
+            val widthDp = if (isPortrait) {
+                if (minW > 0) minW else maxW
+            } else {
+                if (maxW > 0) maxW else minW
+            }.let { if (it > 0) it else 250 }
+
+            val heightDp = if (isPortrait) {
+                if (maxH > 0) maxH else minH
+            } else {
+                if (minH > 0) minH else maxH
+            }.let { if (it > 0) it else 110 }
+
+            val isSingleRow = heightDp < 95
+            val isTwoColumns = widthDp < 170
+            val isThreeColumns = widthDp in 170..245
+
+            return WidgetDimensions(
+                isSingleRow = isSingleRow,
+                isTwoColumns = isTwoColumns,
+                isThreeColumns = isThreeColumns
+            )
+        }
+
+        fun getWidgetLayoutResId(context: Context, options: android.os.Bundle): Int {
+            val dims = getWidgetDimensions(context, options)
+            return when {
+                !dims.isSingleRow && dims.isTwoColumns -> R.layout.lune_widget_layout_2x2
+                !dims.isSingleRow && dims.isThreeColumns -> R.layout.lune_widget_layout_2x3
+                else -> R.layout.lune_widget_layout
+            }
+        }
+
         fun getWidgetLayoutResId(options: android.os.Bundle): Int {
             val colSpan = options.getInt("semAppWidgetColumnSpan", -1)
             val rowSpan = options.getInt("semAppWidgetRowSpan", -1)
-            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
-            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
 
-            val isSingleRow = if (rowSpan > 0) rowSpan == 1 else minHeight in 1..125
-            val isTwoColumns = if (colSpan > 0) colSpan <= 2 else minWidth in 1..179
-            val isThreeColumns = if (colSpan > 0) colSpan == 3 else minWidth in 180..270
+            val isSingleRow = if (rowSpan > 0) rowSpan == 1 else (minHeight in 1..94)
+            val isTwoColumns = if (colSpan > 0) colSpan <= 2 else (minWidth in 1..169)
+            val isThreeColumns = if (colSpan > 0) colSpan == 3 else (minWidth in 170..245)
 
             return when {
                 !isSingleRow && isTwoColumns -> R.layout.lune_widget_layout_2x2
@@ -145,15 +201,48 @@ class LuneWidgetProvider : AppWidgetProvider() {
             }
         }
 
+        fun applyWidgetResponsiveLayout(context: Context, views: RemoteViews, options: android.os.Bundle) {
+            val dims = getWidgetDimensions(context, options)
+
+            // Output pill badge: visible only in wide widgets (4+ columns)
+            if (dims.isTwoColumns || dims.isThreeColumns) {
+                views.setViewVisibility(R.id.widget_output_pill, android.view.View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_output_pill, android.view.View.VISIBLE)
+            }
+
+            // Song title & artist: visible in 2-row widgets (2x4, 2x3, 2x2)
+            if (dims.isSingleRow) {
+                views.setViewVisibility(R.id.widget_title, android.view.View.GONE)
+                views.setViewVisibility(R.id.widget_artist, android.view.View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_title, android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.widget_artist, android.view.View.VISIBLE)
+            }
+
+            // Playback controls: all 3 controls (Previous, Play/Pause, Next) are visible in 4x2, 4x1, 3x2, 3x1, 2x2.
+            // Only in 1x2 (1 row, 2 cols), Previous and Next are hidden.
+            if (dims.isSingleRow && dims.isTwoColumns) {
+                views.setViewVisibility(R.id.widget_prev, android.view.View.GONE)
+                views.setViewVisibility(R.id.widget_next, android.view.View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_prev, android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.widget_next, android.view.View.VISIBLE)
+            }
+
+            views.setImageViewResource(R.id.widget_prev, R.drawable.ic_widget_prev)
+            views.setImageViewResource(R.id.widget_next, R.drawable.ic_widget_next)
+        }
+
         fun applyWidgetResponsiveLayout(views: RemoteViews, options: android.os.Bundle) {
             val colSpan = options.getInt("semAppWidgetColumnSpan", -1)
             val rowSpan = options.getInt("semAppWidgetRowSpan", -1)
-            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
-            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
 
-            val isSingleRow = if (rowSpan > 0) rowSpan == 1 else minHeight in 1..125
-            val isTwoColumns = if (colSpan > 0) colSpan <= 2 else minWidth in 1..179
-            val isThreeColumns = if (colSpan > 0) colSpan == 3 else minWidth in 180..270
+            val isSingleRow = if (rowSpan > 0) rowSpan == 1 else (minHeight in 1..94)
+            val isTwoColumns = if (colSpan > 0) colSpan <= 2 else (minWidth in 1..169)
+            val isThreeColumns = if (colSpan > 0) colSpan == 3 else (minWidth in 170..245)
 
             // Output pill badge: visible only in 4-column widgets (1x4, 2x4)
             if (isTwoColumns || isThreeColumns) {
@@ -179,6 +268,9 @@ class LuneWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_prev, android.view.View.VISIBLE)
                 views.setViewVisibility(R.id.widget_next, android.view.View.VISIBLE)
             }
+
+            views.setImageViewResource(R.id.widget_prev, R.drawable.ic_widget_prev)
+            views.setImageViewResource(R.id.widget_next, R.drawable.ic_widget_next)
         }
 
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
@@ -195,11 +287,11 @@ class LuneWidgetProvider : AppWidgetProvider() {
             val settingsManager = SettingsManager.getInstance(context)
 
             val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-            val layoutResId = getWidgetLayoutResId(options)
+            val layoutResId = getWidgetLayoutResId(context, options)
             val views = RemoteViews(context.packageName, layoutResId)
 
             applyWidgetStyling(context, views, settingsManager)
-            applyWidgetResponsiveLayout(views, options)
+            applyWidgetResponsiveLayout(context, views, options)
 
             val openAppIntent = Intent(context, Lune::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK

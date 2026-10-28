@@ -23,11 +23,12 @@
         android:paddingBottom="12dp"
         android:gravity="center_vertical">
 
-        <!-- Album Cover Art (Left Side - Full height centered) -->
+        <!-- Album Cover Art (Left Side - Centered) -->
         <RelativeLayout
             android:id="@+id/cover_container"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:layout_marginEnd="14dp"
             android:background="@drawable/widget_cover_shape"
             android:clipToOutline="true">
@@ -35,9 +36,11 @@
             <ImageView
                 android:id="@+id/widget_cover"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:maxWidth="110dp"
+                android:maxHeight="110dp"
                 android:adjustViewBounds="true"
-                android:scaleType="centerCrop"
+                android:scaleType="fitCenter"
                 android:src="@drawable/ic_lune_placeholder" />
         </RelativeLayout>
 
@@ -46,7 +49,8 @@
             android:id="@+id/right_side_container"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:gravity="center_vertical">
 
             <!-- Output Device Badge (Top Right Corner) -->
             <LinearLayout
@@ -96,7 +100,7 @@
                     android:layout_height="wrap_content"
                     android:text="Song Title"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:maxLines="1"
                     android:ellipsize="end"
@@ -108,10 +112,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginBottom="8dp"
                     android:text="Artist Name"
                     android:textColor="#D0D0D0"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:maxLines="1"
                     android:ellipsize="end"
                     android:gravity="center_horizontal" />
@@ -139,8 +143,8 @@
                         android:id="@+id/widget_play_pause"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
-                        android:layout_marginStart="12dp"
-                        android:layout_marginEnd="12dp"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="10dp"
                         android:background="?android:attr/selectableItemBackgroundBorderless"
                         android:padding="4dp"
                         android:scaleType="fitCenter"
