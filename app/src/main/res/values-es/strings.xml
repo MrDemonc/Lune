@@ -222,6 +222,11 @@
     <string name="show_in_full_player">Mostrar en reproductor</string>
     <string name="show_options">Mostrar opciones</string>
     <string name="hide_options">Ocultar opciones</string>
+    <string name="player_customization">Personalización del reproductor</string>
+    <string name="player_customization_desc">Personaliza la carátula, controles y barra de progreso</string>
+    <string name="progress_bar_style_title">Barra de progreso</string>
+    <string name="progress_bar_wave">Onda</string>
+    <string name="progress_bar_line">Recta</string>
     <string name="cover_player">Reproductor de carátula</string>
     <string name="cover_player_desc">Personaliza la forma, tamaño y rotación de la carátula</string>
     <string name="shape_default">Por defecto</string>

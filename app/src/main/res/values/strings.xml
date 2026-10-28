@@ -228,6 +228,11 @@
     <string name="show_in_full_player">Show in full player</string>
     <string name="show_options">Show options</string>
     <string name="hide_options">Hide options</string>
+    <string name="player_customization">Player customization</string>
+    <string name="player_customization_desc">Customize cover, controls, and progress bar</string>
+    <string name="progress_bar_style_title">Progress bar</string>
+    <string name="progress_bar_wave">Wave</string>
+    <string name="progress_bar_line">Linear</string>
     <string name="cover_player">Cover player</string>
     <string name="cover_player_desc">Customize cover shape, size, and rotation</string>
     <string name="shape_default">Default</string>

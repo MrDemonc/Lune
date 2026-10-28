@@ -1654,18 +1654,30 @@ fun FullPlayer(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    val targetAmplitude = if (isPlaying) 1f else 0f
-                    val amplitudeLambda: (Float) -> Float = remember(targetAmplitude) { { _: Float -> targetAmplitude } }
+                    if (settingsManager.progressBarStyle == 1) {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
+                            trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
+                            drawStopIndicator = {}
+                        )
+                    } else {
+                        val targetAmplitude = if (isPlaying) 1f else 0f
+                        val amplitudeLambda: (Float) -> Float = remember(targetAmplitude) { { _: Float -> targetAmplitude } }
 
-                    LinearWavyProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
-                        trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
-                        amplitude = amplitudeLambda
-                    )
+                        LinearWavyProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary,
+                            trackColor = if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant,
+                            amplitude = amplitudeLambda
+                        )
+                    }
 
                     val infiniteTransition = rememberInfiniteTransition(label = "thumbRotation")
                     val rotation by infiniteTransition.animateFloat(

@@ -593,21 +593,12 @@ fun CustomizationScreen(
                 )
 
                 SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.cover_player),
-                    supportingText = stringResource(R.string.cover_player_desc),
-                    icon = Icons.Default.Album,
-                    position = SectionPosition.MIDDLE,
-                    onClick = {
-                        context.startActivity(Intent(context, CoverCustomizationActivity::class.java))
-                    }
-                )
-                SettingsPreferenceItem(
-                    headlineText = stringResource(R.string.controls_player),
-                    supportingText = stringResource(R.string.controls_player_desc),
-                    icon = Icons.Default.PlayArrow,
+                    headlineText = stringResource(R.string.player_customization),
+                    supportingText = stringResource(R.string.player_customization_desc),
+                    icon = Icons.Default.Tune,
                     position = SectionPosition.LAST,
                     onClick = {
-                        context.startActivity(Intent(context, ControlsCustomizationActivity::class.java))
+                        context.startActivity(Intent(context, PlayerCustomizationActivity::class.java))
                     }
                 )
             }

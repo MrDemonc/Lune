@@ -121,6 +121,11 @@
             android:label="@string/general"
             android:theme="@style/Theme.Lune" />
         <activity
+            android:name=".ui.activities.PlayerCustomizationActivity"
+            android:exported="false"
+            android:label="@string/player_customization"
+            android:theme="@style/Theme.Lune" />
+        <activity
             android:name=".ui.activities.CoverCustomizationActivity"
             android:exported="false"
             android:label="@string/cover_player"

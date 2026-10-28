@@ -487,6 +487,14 @@ class SettingsManager(context: Context) {
             prefs.edit().putInt("controls_color_palette", value).apply()
         }
 
+    private val _progressBarStyle = mutableStateOf(prefs.getInt("progress_bar_style", 0))
+    var progressBarStyle: Int
+        get() = _progressBarStyle.value
+        set(value) {
+            _progressBarStyle.value = value
+            prefs.edit().putInt("progress_bar_style", value).apply()
+        }
+
     var playbackSpeed: Float
         get() = prefs.getFloat("playback_speed", 1.0f)
         set(value) = prefs.edit().putFloat("playback_speed", value).apply()
