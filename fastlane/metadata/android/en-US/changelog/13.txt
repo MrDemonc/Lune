@@ -1,0 +1,15 @@
+- Updated widget aspect ratio.
+- Updated application logo.
+- Removed the welcome card and replaced it with music information.
+- New presentation for recommendations in the summary view.
+- Updated mini-player design.
+- Updated full-player design.
+- Consolidated customization options for album art and controls; added an option for the progress bar design.
+- Added support for custom fonts.
+- Optimized several bottom sheets.
+- Redesigned section headers and added an option to hide them.
+- Added auto-scroll functionality.
+- New layout for album, artist, and playlist covers, etc.
+- Improved notification system.
+- Fixed an issue where focus was lost when running in the background.
+- Many more fixes.
