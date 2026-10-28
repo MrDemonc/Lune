@@ -31,6 +31,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     var allSongs by mutableStateOf<List<Song>>(emptyList())
         private set
 
+    var randomResumeArtistNames by mutableStateOf<List<String>>(emptyList())
+        private set
+
     val visuallyDeletedIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
     val filteredSongs: List<Song>
@@ -39,6 +42,28 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     var isLoading by mutableStateOf(false)
         private set
 
+    fun updateRandomResumeArtists(songs: List<Song>, force: Boolean = false) {
+        if (force || randomResumeArtistNames.isEmpty()) {
+            val validArtists = songs
+                .filter { it.artist.isNotBlank() && !it.artist.equals("<unknown>", ignoreCase = true) && !it.artist.equals("unknown", ignoreCase = true) }
+                .groupBy { it.artist.trim() }
+                .filter { (_, artistSongs) ->
+                    val distinctAlbums = artistSongs
+                        .filter { it.album.isNotBlank() && !it.album.equals("<unknown>", ignoreCase = true) && !it.album.equals("unknown", ignoreCase = true) }
+                        .map { it.album.trim().lowercase(java.util.Locale.getDefault()) }
+                        .distinct()
+                    distinctAlbums.size > 3
+                }
+                .keys
+                .toList()
+            if (validArtists.isNotEmpty()) {
+                randomResumeArtistNames = validArtists.shuffled().take(3)
+            } else {
+                randomResumeArtistNames = emptyList()
+            }
+        }
+    }
+
     fun loadSongs() {
         viewModelScope.launch {
             val cached = withContext(Dispatchers.IO) {
@@ -46,6 +71,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (cached.isNotEmpty() && allSongs.isEmpty()) {
                 allSongs = cached
+                updateRandomResumeArtists(cached)
             } else if (allSongs.isEmpty()) {
                 isLoading = true
             }
@@ -61,6 +87,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val refreshed = musicProvider.refreshLibrary()
             if (refreshed.isNotEmpty()) {
                 allSongs = refreshed
+                updateRandomResumeArtists(refreshed, force = false)
             }
             isLoading = false
         }
@@ -100,6 +127,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             if (synced != allSongs) {
                 allSongs = synced
             }
+            updateRandomResumeArtists(synced)
         } else {
             // If sync returned empty but we already had songs, don't clear the list.
             // This prevents the "no songs" bug when permissions or MediaStore fail temporarily.

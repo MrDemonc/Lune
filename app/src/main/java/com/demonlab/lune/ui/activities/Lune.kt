@@ -1382,6 +1382,10 @@ fun MainScreen(
                                     isAlbumView = false
                                     onSelectedFolderChange("ARTISTS")
                                 },
+                                onAlbumClick = { album ->
+                                    selectedAlbum = album
+                                    isAlbumView = true
+                                },
                                 onGenreClick = { genreName ->
                                     val genreSongs = if (genreName == "Desconocido") {
                                         visibleSongs.filter {
@@ -2287,8 +2291,14 @@ fun MainScreen(
                             }
                         }
                         else -> {
-                            if (isAlbumView) visibleSongs.filter { it.album == albumRender.name }
-                            else visibleSongs.filter { it.artist.trim().equals(albumRender.name.trim(), ignoreCase = true) }
+                            if (isAlbumView) {
+                                val matches = visibleSongs.filter {
+                                    it.album == albumRender.name && (albumRender.artist.isEmpty() || it.artist.trim().equals(albumRender.artist.trim(), ignoreCase = true))
+                                }
+                                if (matches.isNotEmpty()) matches else visibleSongs.filter { it.album == albumRender.name }
+                            } else {
+                                visibleSongs.filter { it.artist.trim().equals(albumRender.name.trim(), ignoreCase = true) }
+                            }
                         }
                     }
                 }

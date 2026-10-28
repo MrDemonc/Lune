@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.ui.data.Album
 import com.demonlab.lune.ui.screens.resume.HeroSection
 import com.demonlab.lune.ui.screens.resume.PlaylistGridSection
 import com.demonlab.lune.ui.screens.resume.RecommendationSection
@@ -24,6 +25,8 @@ import com.demonlab.lune.ui.screens.resume.TopArtistsSection
 import com.demonlab.lune.ui.screens.resume.ArtistItem
 import com.demonlab.lune.ui.screens.resume.TopGenresSection
 import com.demonlab.lune.ui.screens.resume.GenreItem
+import com.demonlab.lune.ui.screens.resume.ArtistAlbumsSection
+import com.demonlab.lune.ui.screens.resume.ArtistAlbumsSectionData
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
 @Composable
@@ -42,6 +45,7 @@ fun ResumeScreen(
     onSongClick: (Song, List<Song>) -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
     onArtistClick: (String) -> Unit,
+    onAlbumClick: (Album) -> Unit = {},
     onGenreClick: (String) -> Unit,
     onExpandPlayer: () -> Unit,
     onPlayToggle: () -> Unit,
@@ -198,6 +202,41 @@ fun ResumeScreen(
         viewModel.topSongStats.sumOf { it.playCount }
     }
 
+    LaunchedEffect(allSongs) {
+        if (allSongs.isNotEmpty() && viewModel.randomResumeArtistNames.isEmpty()) {
+            viewModel.updateRandomResumeArtists(allSongs)
+        }
+    }
+
+    val randomArtistSections = remember(viewModel.randomResumeArtistNames, allSongs) {
+        viewModel.randomResumeArtistNames.mapNotNull { artistName ->
+            val songs = allSongs.filter { it.artist.trim().equals(artistName.trim(), ignoreCase = true) }
+            val albums = songs
+                .filter { it.album.isNotBlank() && !it.album.equals("<unknown>", ignoreCase = true) && !it.album.equals("unknown", ignoreCase = true) }
+                .groupBy { it.album.trim() }
+                .map { (albumName, albumSongs) ->
+                    Album(
+                        id = albumName.hashCode().toLong(),
+                        name = albumName,
+                        artist = artistName,
+                        albumArtUri = albumSongs.firstOrNull { it.albumArtUri != null }?.albumArtUri,
+                        coverUrl = albumSongs.firstOrNull { !it.coverUrl.isNullOrEmpty() }?.coverUrl,
+                        songs = albumSongs.sortedBy { it.title }
+                    )
+                }
+                .sortedBy { it.name.lowercase(java.util.Locale.getDefault()) }
+            if (albums.size > 3) {
+                val coverSong = songs.firstOrNull { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null } ?: songs.firstOrNull()
+                val coverUrl = coverSong?.coverUrl ?: coverSong?.albumArtUri?.toString()
+                ArtistAlbumsSectionData(
+                    artistName = artistName,
+                    coverUrl = coverUrl,
+                    albums = albums
+                )
+            } else null
+        }.take(3)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -244,6 +283,23 @@ fun ResumeScreen(
                     controlsColorPalette = controlsColorPalette,
                     onSongClick = { song -> onSongClick(song, allSongs) }
                 )
+            }
+        }
+
+        if (randomArtistSections.isNotEmpty()) {
+            randomArtistSections.forEach { section ->
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + slideInVertically { it / 2 }
+                ) {
+                    ArtistAlbumsSection(
+                        section = section,
+                        currentSong = currentSong,
+                        hasBlurBackground = hasBlurBackground,
+                        onArtistClick = onArtistClick,
+                        onAlbumClick = onAlbumClick
+                    )
+                }
             }
         }
 
