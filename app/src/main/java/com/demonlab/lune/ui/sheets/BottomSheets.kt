@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -1599,14 +1600,18 @@ fun EditSongBottomSheet(
         unfocusedLabelColor = blurColors.textSecondaryColor
     )
 
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
+        sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = blurColors.containerColor,
         dragHandle = null,
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-        modifier = Modifier.imePadding() // Fix keyboard compression
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
             hasBlurBackground = blurColors.hasBlur,
@@ -1615,13 +1620,18 @@ fun EditSongBottomSheet(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
+            val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+            val isSmallHeight = screenHeight < 680.dp
+            val coverSize = if (isSmallHeight) 110.dp else 160.dp
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .imePadding()
                     .navigationBarsPadding()
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 32.dp)
-                    .verticalScroll(rememberScrollState()), // Fix keyboard compression
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
@@ -1661,7 +1671,7 @@ fun EditSongBottomSheet(
                 // Cover with Circular Edit Button
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
+                        .size(coverSize)
                         .clip(RoundedCornerShape(24.dp))
                         .background(blurColors.itemContainerColor),
                     contentAlignment = Alignment.Center
@@ -1698,7 +1708,7 @@ fun EditSongBottomSheet(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(if (isSmallHeight) 14.dp else 24.dp))
 
                 OutlinedTextField(
                     value = title,
@@ -1746,7 +1756,7 @@ fun EditSongBottomSheet(
                     colors = textFieldColors
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(if (isSmallHeight) 20.dp else 32.dp))
 
                 Button(
                     onClick = { onSave(title, artist, album, genre, selectedCoverUri) },

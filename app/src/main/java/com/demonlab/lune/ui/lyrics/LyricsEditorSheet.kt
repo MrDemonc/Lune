@@ -31,6 +31,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import android.view.WindowManager
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import coil.compose.AsyncImage
 import com.demonlab.lune.tools.SettingsManager
 import androidx.compose.ui.res.stringResource
@@ -221,8 +227,24 @@ fun LyricsEditorSheet(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
+        val view = LocalView.current
+        SideEffect {
+            var parent = view.parent
+            while (parent != null) {
+                if (parent is DialogWindowProvider) {
+                    @Suppress("DEPRECATION")
+                    parent.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+                    break
+                }
+                parent = parent.parent
+            }
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             if (hasBlurBackground) {
                 // Blurred Background with album art
@@ -266,6 +288,7 @@ fun LyricsEditorSheet(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
+                    .imePadding()
                     .navigationBarsPadding()
             ) {
                 // Top Bar
@@ -441,16 +464,20 @@ fun LyricsEditorSheet(
 
                 // Content for Tab 0: Text / LRC
                 if (selectedTab == 0) {
+                    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+                    val isSmallHeight = screenHeight < 680.dp
+
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .padding(horizontal = 16.dp, vertical = if (isSmallHeight) 8.dp else 16.dp)
                     ) {
                         // Action Bar Chips
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 12.dp),
+                                .horizontalScroll(rememberScrollState())
+                                .padding(bottom = if (isSmallHeight) 6.dp else 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             val chipColors = AssistChipDefaults.assistChipColors(

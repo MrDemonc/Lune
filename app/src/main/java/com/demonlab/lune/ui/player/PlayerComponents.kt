@@ -314,12 +314,6 @@ fun AudioQualityBadges(
         else -> if (useBlurControls) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
     }
 
-    val tierBorder = when {
-        isHiRes -> Color(0xFFFFB300).copy(alpha = 0.65f)
-        isHiFi -> Color(0xFF00E5FF).copy(alpha = 0.55f)
-        else -> if (useBlurControls) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-    }
-
     val tierColor = when {
         isHiRes -> Color(0xFFFFC107)
         isHiFi -> Color(0xFF00E5FF)
@@ -330,12 +324,6 @@ fun AudioQualityBadges(
         if (isDarkTheme) Color.Black.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.35f)
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-    }
-
-    val badgeBorder = if (useBlurControls) {
-        if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.12f)
-    } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
     }
 
     val badgeTextColor = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurface
@@ -357,8 +345,7 @@ fun AudioQualityBadges(
         if (tierName != null) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = tierBg,
-                border = BorderStroke(1.dp, tierBorder)
+                color = tierBg
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -385,8 +372,7 @@ fun AudioQualityBadges(
 
         Surface(
             shape = RoundedCornerShape(percent = 50),
-            color = badgeBg,
-            border = BorderStroke(1.dp, badgeBorder)
+            color = badgeBg
         ) {
             Text(
                 text = format,
@@ -400,8 +386,7 @@ fun AudioQualityBadges(
         if (specsText != null) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = badgeBg,
-                border = BorderStroke(1.dp, badgeBorder)
+                color = badgeBg
             ) {
                 Text(
                     text = specsText,
