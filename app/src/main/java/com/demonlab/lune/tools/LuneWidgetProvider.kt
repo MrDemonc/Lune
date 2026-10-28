@@ -466,7 +466,7 @@ class LuneWidgetProvider : AppWidgetProvider() {
             return output
         }
 
-        fun getCircularBitmap(bitmap: Bitmap, maxDim: Int = 400): Bitmap {
+        fun getCircularBitmap(bitmap: Bitmap, maxDim: Int = 450): Bitmap {
             val scaledBitmap = if (bitmap.width > maxDim || bitmap.height > maxDim || bitmap.width != bitmap.height) {
                 val size = Math.min(bitmap.width, Math.min(bitmap.height, maxDim))
                 val x = (bitmap.width - size) / 2
@@ -492,7 +492,7 @@ class LuneWidgetProvider : AppWidgetProvider() {
             return output
         }
 
-        fun getVinylRecordBitmap(bitmap: Bitmap, size: Int = 400): Bitmap {
+        fun getVinylRecordBitmap(bitmap: Bitmap, size: Int = 450): Bitmap {
             val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(output)
             val center = size / 2f
@@ -559,7 +559,7 @@ class LuneWidgetProvider : AppWidgetProvider() {
             return output
         }
 
-        fun getSquareScaledBitmap(bitmap: Bitmap, maxDim: Int = 400): Bitmap {
+        fun getSquareScaledBitmap(bitmap: Bitmap, maxDim: Int = 450): Bitmap {
             val scaledBitmap = if (bitmap.width > maxDim || bitmap.height > maxDim || bitmap.width != bitmap.height) {
                 val size = Math.min(bitmap.width, bitmap.height)
                 val x = (bitmap.width - size) / 2
