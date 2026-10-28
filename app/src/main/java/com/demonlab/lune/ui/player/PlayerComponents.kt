@@ -456,7 +456,8 @@ fun UnifiedMarqueeHeader(
     runtimeBitrate: Int?,
     onArtistClick: ((String) -> Unit)?,
     onAudioBadgesClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isCompact: Boolean = false
 ) {
     key(song.id) {
         var marqueeOffset by remember(song.id) { mutableFloatStateOf(0f) }
@@ -501,7 +502,7 @@ fun UnifiedMarqueeHeader(
         val titleContent: @Composable (Boolean) -> Unit = { isMeasuring ->
             Text(
                 text = song.title,
-                style = MaterialTheme.typography.headlineSmall,
+                style = if (isCompact) MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold) else MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 softWrap = false,
@@ -518,7 +519,7 @@ fun UnifiedMarqueeHeader(
         val artistRowContent: @Composable (Boolean) -> Unit = { isMeasuring ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (isCompact) 4.dp else 6.dp),
                 modifier = if (isMeasuring) {
                     Modifier.onSizeChanged { artistRowWidth = it.width }
                 } else {
@@ -534,13 +535,16 @@ fun UnifiedMarqueeHeader(
                 ) {
                     Text(
                         text = song.artist,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = if (isCompact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
                         color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false,
                         textAlign = TextAlign.Start,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(
+                            horizontal = if (isCompact) 8.dp else 12.dp,
+                            vertical = if (isCompact) 2.dp else 4.dp
+                        )
                     )
                 }
 
@@ -663,7 +667,7 @@ fun UnifiedMarqueeHeader(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 2.dp else 6.dp))
 
             // Line 2: Artist & Audio Badges Row
             if (!isArtistLong) {
@@ -771,13 +775,14 @@ fun FullPlayer(
 
     val isCinematic = settingsManager.isCinematicPlayerEnabled
 
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isLandscapeDevice = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isInMultiWindow = activity?.isInMultiWindowMode == true
 
-    DisposableEffect(isCinematic, isLandscape) {
+    DisposableEffect(isCinematic, isLandscapeDevice, isInMultiWindow) {
         val window = activity?.window
         if (window != null) {
             val controller = WindowCompat.getInsetsController(window, window.decorView)
-            if (isCinematic || isLandscape) {
+            if (!isInMultiWindow && (isCinematic || isLandscapeDevice)) {
                 controller.hide(WindowInsetsCompat.Type.statusBars())
                 controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             } else {
@@ -785,7 +790,7 @@ fun FullPlayer(
             }
         }
         onDispose {
-            if (isCinematic || isLandscape) {
+            if (!isInMultiWindow && (isCinematic || isLandscapeDevice)) {
                 val window = activity?.window
                 if (window != null) {
                     val controller = WindowCompat.getInsetsController(window, window.decorView)
@@ -1001,11 +1006,19 @@ fun FullPlayer(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
+        val isMultiWindow = activity?.isInMultiWindowMode == true
+        val isDeviceLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+        // Ventana flotante / modo compacto: solo se activa si Android reporta multi-window con ventana reducida
+        // o si las dimensiones de la ventana son estrictamente pequeñas (menores a 560dp de alto y 380dp de ancho)
+        val isFloatingWindow = (isMultiWindow && (maxWidth < 560.dp || maxHeight < 620.dp)) ||
+                               (maxHeight < 560.dp && maxWidth < 380.dp)
+        val isLandscape = if (isFloatingWindow) (maxWidth > maxHeight) else isDeviceLandscape
+        val isCompact = isFloatingWindow
         if (!isCinematic && hasBlurBackground) {
             Crossfade(
                 targetState = song.toArtwork(),
@@ -1240,7 +1253,13 @@ fun FullPlayer(
         val coverSection: @Composable () -> Unit = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = if (isLandscape) Modifier.fillMaxHeight() else Modifier.fillMaxWidth(),
+                modifier = if (isLandscape) {
+                    Modifier.fillMaxHeight()
+                } else if (isFloatingWindow) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier.fillMaxWidth()
+                },
                 verticalArrangement = if (isLandscape) Arrangement.Center else Arrangement.Top
             ) {
                 var playingFromStep by remember(song.id, playingFromContext) { mutableIntStateOf(0) }
@@ -1254,19 +1273,35 @@ fun FullPlayer(
                     }
                 }
 
+                val topBtnSize = if (isFloatingWindow) 36.dp else 46.dp
+                val topIconSize = if (isFloatingWindow) 20.dp else 24.dp
+                val playlistShape = RoundedCornerShape(if (isFloatingWindow) 10.dp else 14.dp)
+                val eqShape = RoundedCornerShape(
+                    topStart = if (isFloatingWindow) 18.dp else 23.dp,
+                    bottomStart = if (isFloatingWindow) 18.dp else 23.dp,
+                    topEnd = if (isFloatingWindow) 4.dp else 5.dp,
+                    bottomEnd = if (isFloatingWindow) 4.dp else 5.dp
+                )
+                val optShape = RoundedCornerShape(
+                    topStart = if (isFloatingWindow) 4.dp else 5.dp,
+                    bottomStart = if (isFloatingWindow) 4.dp else 5.dp,
+                    topEnd = if (isFloatingWindow) 18.dp else 23.dp,
+                    bottomEnd = if (isFloatingWindow) 18.dp else 23.dp
+                )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = if (isLandscape) 8.dp else 16.dp),
+                        .padding(bottom = if (isFloatingWindow) 6.dp else if (isLandscape) 8.dp else 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Add to Playlist button: Material 3 Expressive rounded square container
                     Surface(
                         onClick = { showAddToPlaylistInPlayer = true },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = playlistShape,
                         color = topBarBtnBg,
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(topBtnSize)
                             .bounceClick()
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -1274,18 +1309,18 @@ fun FullPlayer(
                                 imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                                 contentDescription = stringResource(R.string.add_to_playlist),
                                 tint = topBarBtnTint,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(topIconSize)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(if (isFloatingWindow) 6.dp else 10.dp))
 
                     // Animated Playing From "x" text: aligned to the right of the back button, WITHOUT container/background
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(end = 8.dp),
+                            .padding(end = if (isFloatingWindow) 4.dp else 8.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         AnimatedContent(
@@ -1304,7 +1339,7 @@ fun FullPlayer(
                             if (step == 0) {
                                 Text(
                                     text = stringResource(R.string.playing_from_header),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = if (isFloatingWindow) 13.sp else 16.sp),
                                     fontWeight = FontWeight.SemiBold,
                                     color = playingFromHeaderColor,
                                     maxLines = 1,
@@ -1313,7 +1348,7 @@ fun FullPlayer(
                             } else {
                                 Text(
                                     text = playingFromContext,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 17.sp),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontSize = if (isFloatingWindow) 14.sp else 17.sp),
                                     fontWeight = FontWeight.Bold,
                                     color = playingFromTextColor,
                                     maxLines = 1,
@@ -1333,10 +1368,10 @@ fun FullPlayer(
                                 val eqIntent = Intent(context, EqualizerActivity::class.java)
                                 context.startActivity(eqIntent)
                             },
-                            shape = RoundedCornerShape(topStart = 23.dp, bottomStart = 23.dp, topEnd = 5.dp, bottomEnd = 5.dp),
+                            shape = eqShape,
                             color = topBarBtnBg,
                             modifier = Modifier
-                                .size(46.dp)
+                                .size(topBtnSize)
                                 .bounceClick()
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -1344,7 +1379,7 @@ fun FullPlayer(
                                     imageVector = Icons.Default.GraphicEq,
                                     contentDescription = stringResource(R.string.eq_title),
                                     tint = eqIconTint,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(topIconSize)
                                 )
                             }
                         }
@@ -1352,10 +1387,10 @@ fun FullPlayer(
                         // 2. Extra Options BottomSheet Button
                         Surface(
                             onClick = { showOptionsSheet = true },
-                            shape = RoundedCornerShape(topStart = 5.dp, bottomStart = 5.dp, topEnd = 23.dp, bottomEnd = 23.dp),
+                            shape = optShape,
                             color = topBarBtnBg,
                             modifier = Modifier
-                                .size(46.dp)
+                                .size(topBtnSize)
                                 .bounceClick()
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -1363,149 +1398,174 @@ fun FullPlayer(
                                     imageVector = playbackManager.currentOutputIcon,
                                     contentDescription = playbackManager.currentOutputName,
                                     tint = topBarBtnTint,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(topIconSize)
                                 )
                             }
                         }
                     }
                 }
 
-                val coverModifier = if (isLandscape) {
-                    Modifier
-                        .weight(1f, fill = false)
-                        .aspectRatio(1f, matchHeightConstraintsFirst = true)
-                        .scale(coverScale)
-                        .songSwipeGestures(
-                            enabled = isGesturesEnabled,
-                            onNext = handleNext,
-                            onPrevious = handlePrevious
-                        )
-                } else {
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .scale(coverScale)
-                        .songSwipeGestures(
-                            enabled = isGesturesEnabled,
-                            onNext = handleNext,
-                            onPrevious = handlePrevious
-                        )
-                }
+                val coverContent: @Composable (Modifier) -> Unit = { mod ->
+                    if (isCinematic) {
+                        Box(modifier = mod)
+                    } else {
+                        val activeShape = when (coverShape) {
+                            1 -> RoundedCornerShape(0.dp)
+                            2 -> CircleShape
+                            else -> RoundedCornerShape(if (isFloatingWindow) 18.dp else 28.dp)
+                        }
+                        val glowProgress = favoriteGlowAnim.value
 
-                if (isCinematic) {
-                    Box(
-                        modifier = coverModifier,
-                    )
-                } else {
-                    val activeShape = when (coverShape) {
-                        1 -> RoundedCornerShape(0.dp)
-                        2 -> CircleShape
-                        else -> RoundedCornerShape(28.dp)
-                    }
-                    val glowProgress = favoriteGlowAnim.value
-
-                    Box(
-                        modifier = coverModifier,
-                        contentAlignment = Alignment.Center
-                    ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer {
-                                    scaleX = coverBounceScale.value
-                                    scaleY = coverBounceScale.value
-                                },
+                            modifier = mod,
                             contentAlignment = Alignment.Center
                         ) {
-                            // Resplandor difuminado con degradé adaptado al Dynamic Color y forma de la carátula
-                            if (glowProgress > 0.001f) {
-                                Canvas(
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    val maxSpreadPx = 18.dp.toPx()
-                                    val spreadPx = maxSpreadPx * glowProgress
-                                    if (spreadPx <= 0.5f) return@Canvas
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        scaleX = coverBounceScale.value
+                                        scaleY = coverBounceScale.value
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // Resplandor difuminado con degradé adaptado al Dynamic Color y forma de la carátula
+                                if (glowProgress > 0.001f) {
+                                    Canvas(
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        val maxSpreadPx = (if (isFloatingWindow) 12.dp else 18.dp).toPx()
+                                        val spreadPx = maxSpreadPx * glowProgress
+                                        if (spreadPx <= 0.5f) return@Canvas
 
-                                    val baseRadius = when (coverShape) {
-                                        1 -> 0f
-                                        2 -> size.minDimension / 2f
-                                        else -> 28.dp.toPx()
-                                    }
+                                        val baseRadius = when (coverShape) {
+                                            1 -> 0f
+                                            2 -> size.minDimension / 2f
+                                            else -> (if (isFloatingWindow) 18.dp else 28.dp).toPx()
+                                        }
 
-                                    val maxAlpha = 0.85f * glowProgress
+                                        val maxAlpha = 0.85f * glowProgress
 
-                                    // Base sólida justo detrás del borde de la carátula para evitar fisuras subpíxel
-                                    drawRoundRect(
-                                        color = favoriteGlowColor.copy(alpha = maxAlpha),
-                                        topLeft = Offset.Zero,
-                                        size = size,
-                                        cornerRadius = CornerRadius(baseRadius, baseRadius)
-                                    )
+                                        // Base sólida justo detrás del borde de la carátula para evitar fisuras subpíxel
+                                        drawRoundRect(
+                                            color = favoriteGlowColor.copy(alpha = maxAlpha),
+                                            topLeft = Offset.Zero,
+                                            size = size,
+                                            cornerRadius = CornerRadius(baseRadius, baseRadius)
+                                        )
 
-                                    // Trazos concéntricos con decaimiento cuadrático para un degradé y difuminado continuo
-                                    val steps = 24
-                                    val stepPx = spreadPx / steps
-                                    val strokeWidth = stepPx * 1.75f
+                                        // Trazos concéntricos con decaimiento cuadrático para un degradé y difuminado continuo
+                                        val steps = 24
+                                        val stepPx = spreadPx / steps
+                                        val strokeWidth = stepPx * 1.75f
 
-                                    for (i in 0 until steps) {
-                                        val t = i.toFloat() / steps
-                                        val d = t * spreadPx
-                                        val falloff = (1.0f - t).toDouble().pow(2.0).toFloat()
-                                        val alpha = (maxAlpha * falloff).coerceIn(0f, 1f)
+                                        for (i in 0 until steps) {
+                                            val t = i.toFloat() / steps
+                                            val d = t * spreadPx
+                                            val falloff = (1.0f - t).toDouble().pow(2.0).toFloat()
+                                            val alpha = (maxAlpha * falloff).coerceIn(0f, 1f)
 
-                                        if (alpha > 0.002f) {
-                                            val cornerRadius = if (baseRadius > 0f) baseRadius + d else 0f
-                                            drawRoundRect(
-                                                color = favoriteGlowColor.copy(alpha = alpha),
-                                                topLeft = Offset(-d, -d),
-                                                size = Size(size.width + 2 * d, size.height + 2 * d),
-                                                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                                                style = Stroke(width = strokeWidth)
-                                            )
+                                            if (alpha > 0.002f) {
+                                                val cornerRadius = if (baseRadius > 0f) baseRadius + d else 0f
+                                                drawRoundRect(
+                                                    color = favoriteGlowColor.copy(alpha = alpha),
+                                                    topLeft = Offset(-d, -d),
+                                                    size = Size(size.width + 2 * d, size.height + 2 * d),
+                                                    cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                                                    style = Stroke(width = strokeWidth)
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            Crossfade(
-                                targetState = song.toArtwork(),
-                                animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
-                                label = "FullPlayerCoverCrossfade"
-                            ) { targetSong ->
-                                if (coverShape == 2 && coverVinylEffect) {
-                                    VinylRecordAsyncCover(
-                                        model = targetSong.coverUrl ?: targetSong.uri,
-                                        rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                } else {
-                                    Surface(
-                                        shape = activeShape,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                        tonalElevation = 8.dp
-                                    ) {
-                                        SongCoverImage(
-                                            coverUrl = targetSong.coverUrl ?: targetSong.uri,
-                                            contentDescription = null,
-                                            modifier = Modifier.fillMaxSize(),
-                                            shape = activeShape,
-                                            iconScale = 0.68f
+                                Crossfade(
+                                    targetState = song.toArtwork(),
+                                    animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+                                    label = "FullPlayerCoverCrossfade"
+                                ) { targetSong ->
+                                    if (coverShape == 2 && coverVinylEffect) {
+                                        VinylRecordAsyncCover(
+                                            model = targetSong.coverUrl ?: targetSong.uri,
+                                            rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                                            modifier = Modifier.fillMaxSize()
                                         )
+                                    } else {
+                                        Surface(
+                                            shape = activeShape,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                            tonalElevation = 8.dp
+                                        ) {
+                                            SongCoverImage(
+                                                coverUrl = targetSong.coverUrl ?: targetSong.uri,
+                                                contentDescription = null,
+                                                modifier = Modifier.fillMaxSize(),
+                                                shape = activeShape,
+                                                iconScale = 0.68f
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+
+                if (isFloatingWindow) {
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .weight(1f, fill = true)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val maxCoverDim = minOf(maxWidth, maxHeight)
+                        val coverModifier = Modifier
+                            .size(maxCoverDim)
+                            .scale(coverScale)
+                            .songSwipeGestures(
+                                enabled = isGesturesEnabled,
+                                onNext = handleNext,
+                                onPrevious = handlePrevious
+                            )
+                        coverContent(coverModifier)
+                    }
+                } else {
+                    val coverModifier = if (isLandscape) {
+                        Modifier
+                            .weight(1f, fill = false)
+                            .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                            .scale(coverScale)
+                            .songSwipeGestures(
+                                enabled = isGesturesEnabled,
+                                onNext = handleNext,
+                                onPrevious = handlePrevious
+                            )
+                    } else {
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .scale(coverScale)
+                            .songSwipeGestures(
+                                enabled = isGesturesEnabled,
+                                onNext = handleNext,
+                                onPrevious = handlePrevious
+                            )
+                    }
+                    coverContent(coverModifier)
+                }
             }
         }
 
         val controlsSection: @Composable () -> Unit = {
+            val btnSize = if (isFloatingWindow) 38.dp else 48.dp
+            val btnIconSize = if (isFloatingWindow) 20.dp else 24.dp
+            val headerVertPadding = if (isFloatingWindow) 2.dp else 8.dp
+
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = headerVertPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1522,9 +1582,10 @@ fun FullPlayer(
                         runtimeBitrate = runtimeBitrate,
                         onArtistClick = onArtistClick,
                         onAudioBadgesClick = { showAudioDetailsSheet = true },
+                        isCompact = isFloatingWindow,
                         modifier = Modifier
                             .weight(1f)
-                            .padding(end = 12.dp)
+                            .padding(end = if (isFloatingWindow) 6.dp else 12.dp)
                     )
                 }
 
@@ -1542,16 +1603,21 @@ fun FullPlayer(
                 ) {
                     Surface(
                         onClick = { onShowLyrics() },
-                        shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp, topEnd = 4.dp, bottomEnd = 4.dp),
+                        shape = RoundedCornerShape(
+                            topStart = if (isFloatingWindow) 18.dp else 24.dp,
+                            bottomStart = if (isFloatingWindow) 18.dp else 24.dp,
+                            topEnd = 4.dp,
+                            bottomEnd = 4.dp
+                        ),
                         color = pillBg,
-                        modifier = Modifier.size(48.dp).bounceClick()
+                        modifier = Modifier.size(btnSize).bounceClick()
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Lyrics,
                                 contentDescription = stringResource(R.string.option_lyrics),
                                 tint = lyricsIconColor,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(btnIconSize)
                             )
                         }
                     }
@@ -1573,9 +1639,14 @@ fun FullPlayer(
                                 )
                             }
                         },
-                        shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 24.dp, bottomEnd = 24.dp),
+                        shape = RoundedCornerShape(
+                            topStart = 4.dp,
+                            bottomStart = 4.dp,
+                            topEnd = if (isFloatingWindow) 18.dp else 24.dp,
+                            bottomEnd = if (isFloatingWindow) 18.dp else 24.dp
+                        ),
                         color = pillBg,
-                        modifier = Modifier.size(48.dp).bounceClick()
+                        modifier = Modifier.size(btnSize).bounceClick()
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
@@ -1586,7 +1657,7 @@ fun FullPlayer(
                                 } else {
                                     if (useBlurControls) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 },
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(btnIconSize)
                             )
                         }
                     }
@@ -1634,11 +1705,11 @@ fun FullPlayer(
                         thumb = { _ ->
                             Box(
                                 modifier = Modifier
-                                    .size(14.dp)
+                                    .size(if (isFloatingWindow) 11.dp else 14.dp)
                                     .graphicsLayer {
                                         rotationZ = if (isPlaying) rotation else 0f
                                     }
-                                    .background(color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(5.dp))
+                                    .background(color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(if (isFloatingWindow) 4.dp else 5.dp))
                             )
                         },
                         colors = SliderDefaults.colors(
@@ -1652,7 +1723,7 @@ fun FullPlayer(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp)
-                        .padding(top = 2.dp, bottom = 4.dp),
+                        .padding(top = if (isFloatingWindow) 1.dp else 2.dp, bottom = if (isFloatingWindow) 2.dp else 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1662,10 +1733,10 @@ fun FullPlayer(
                     ) {
                         Text(
                             text = formatDuration((song.duration * progress).toLong()),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = if (isFloatingWindow) MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp) else MaterialTheme.typography.labelSmall,
                             color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = if (isFloatingWindow) 6.dp else 8.dp, vertical = if (isFloatingWindow) 1.dp else 2.dp)
                         )
                     }
 
@@ -1675,10 +1746,10 @@ fun FullPlayer(
                     ) {
                         Text(
                             text = formatDuration(song.duration),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = if (isFloatingWindow) MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp) else MaterialTheme.typography.labelSmall,
                             color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = if (isFloatingWindow) 6.dp else 8.dp, vertical = if (isFloatingWindow) 1.dp else 2.dp)
                         )
                     }
                 }
@@ -1732,8 +1803,14 @@ fun FullPlayer(
                 showPlayStateLabel = false
             }
 
+            val targetPlayWidth = if (showPlayStateLabel) {
+                if (isFloatingWindow) 110.dp else 156.dp
+            } else {
+                if (isFloatingWindow) 70.dp else 96.dp
+            }
+
             val playButtonWidth by animateDpAsState(
-                targetValue = if (showPlayStateLabel) 156.dp else 96.dp,
+                targetValue = targetPlayWidth,
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
                     stiffness = Spring.StiffnessMediumLow
@@ -1741,13 +1818,21 @@ fun FullPlayer(
                 label = "PlayWidthAnim"
             )
 
-            val playShape = RoundedCornerShape(30.dp)
-            val skipShape = RoundedCornerShape(26.dp)
+            val playRowHeight = if (isFloatingWindow) 52.dp else 68.dp
+            val skipButtonSize = if (isFloatingWindow) 52.dp else 68.dp
+            val skipIconSize = if (isFloatingWindow) 24.dp else 34.dp
+            val playIconSize = if (isFloatingWindow) 28.dp else 38.dp
+            val skipCornerRadius = if (isFloatingWindow) 18.dp else 26.dp
+            val playCornerRadius = if (isFloatingWindow) 22.dp else 30.dp
+            val skipGap = if (isFloatingWindow) 8.dp else 14.dp
+
+            val playShape = RoundedCornerShape(playCornerRadius)
+            val skipShape = RoundedCornerShape(skipCornerRadius)
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(68.dp),
+                    .height(playRowHeight),
                 contentAlignment = Alignment.Center
             ) {
                 Surface(
@@ -1755,11 +1840,11 @@ fun FullPlayer(
                     shape = skipShape,
                     color = activeContainerColor,
                     modifier = Modifier
-                        .size(68.dp)
+                        .size(skipButtonSize)
                         .offset {
                             val halfPlay = playButtonWidth.toPx() / 2f
-                            val gap = 14.dp.toPx()
-                            val halfSkip = 34.dp.toPx()
+                            val gap = skipGap.toPx()
+                            val halfSkip = (skipButtonSize.toPx()) / 2f
                             IntOffset(x = -(halfPlay + gap + halfSkip).roundToInt(), y = 0)
                         }
                         .bounceClick()
@@ -1770,7 +1855,7 @@ fun FullPlayer(
                             controlsIconStyle = controlsIconStyle,
                             isControlsFilled = isControlsFilled,
                             tint = activeIconTint,
-                            modifier = Modifier.size(34.dp)
+                            modifier = Modifier.size(skipIconSize)
                         )
                     }
                 }
@@ -1784,7 +1869,7 @@ fun FullPlayer(
                     shape = playShape,
                     color = playBgColor,
                     modifier = Modifier
-                        .height(68.dp)
+                        .height(playRowHeight)
                         .width(playButtonWidth)
                         .bounceClick()
                 ) {
@@ -1795,13 +1880,13 @@ fun FullPlayer(
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            modifier = Modifier.padding(horizontal = if (isFloatingWindow) 4.dp else 8.dp)
                         ) {
                             val avd = AnimatedImageVector.animatedVectorResource(R.drawable.avd_play_pause_morph)
                             Icon(
                                 painter = rememberAnimatedVectorPainter(avd, atEnd = isPlaying),
                                 contentDescription = stringResource(R.string.cd_play_pause),
-                                modifier = Modifier.size(38.dp),
+                                modifier = Modifier.size(playIconSize),
                                 tint = playIconTint
                             )
 
@@ -1830,11 +1915,11 @@ fun FullPlayer(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(start = 6.dp, end = 4.dp)
+                                    modifier = Modifier.padding(start = if (isFloatingWindow) 4.dp else 6.dp, end = if (isFloatingWindow) 2.dp else 4.dp)
                                 ) {
                                     Text(
                                         text = stringResource(if (isPlaying) R.string.play_state_play else R.string.play_state_pause),
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = if (isFloatingWindow) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = playIconTint,
                                         maxLines = 1,
@@ -1851,11 +1936,11 @@ fun FullPlayer(
                     shape = skipShape,
                     color = activeContainerColor,
                     modifier = Modifier
-                        .size(68.dp)
+                        .size(skipButtonSize)
                         .offset {
                             val halfPlay = playButtonWidth.toPx() / 2f
-                            val gap = 14.dp.toPx()
-                            val halfSkip = 34.dp.toPx()
+                            val gap = skipGap.toPx()
+                            val halfSkip = (skipButtonSize.toPx()) / 2f
                             IntOffset(x = (halfPlay + gap + halfSkip).roundToInt(), y = 0)
                         }
                         .bounceClick()
@@ -1866,13 +1951,13 @@ fun FullPlayer(
                             controlsIconStyle = controlsIconStyle,
                             isControlsFilled = isControlsFilled,
                             tint = activeIconTint,
-                            modifier = Modifier.size(34.dp)
+                            modifier = Modifier.size(skipIconSize)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 12.dp))
+            Spacer(modifier = Modifier.height(if (isFloatingWindow) 6.dp else if (isLandscape) 8.dp else 12.dp))
 
             // Options Row (Shuffle, Repeat, Queue) - Material 3 Expressive Morphing Pills
             val activeAccent = if (useBlurControls || hasBlurBackground) {
@@ -1893,8 +1978,8 @@ fun FullPlayer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = if (isFloatingWindow) 2.dp else 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (isFloatingWindow) 4.dp else 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 1. Shuffle
@@ -1910,6 +1995,7 @@ fun FullPlayer(
                     isDarkTheme = isDarkTheme,
                     activeAccent = activeAccent,
                     isLandscape = isLandscape,
+                    isCompact = isFloatingWindow,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -1927,6 +2013,7 @@ fun FullPlayer(
                     isDarkTheme = isDarkTheme,
                     activeAccent = activeAccent,
                     isLandscape = isLandscape,
+                    isCompact = isFloatingWindow,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -1943,18 +2030,19 @@ fun FullPlayer(
                     isDarkTheme = isDarkTheme,
                     activeAccent = activeAccent,
                     isLandscape = isLandscape,
+                    isCompact = isFloatingWindow,
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            Spacer(modifier = Modifier.height(if (isLandscape) 10.dp else 16.dp))
+            Spacer(modifier = Modifier.height(if (isFloatingWindow) 4.dp else if (isLandscape) 10.dp else 16.dp))
         }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(swipeUpAction, onMinimize) {
-                    val threshold = 110.dp.toPx()
+                    val threshold = if (isFloatingWindow) 60.dp.toPx() else 110.dp.toPx()
                     var totalDragX = 0f
                     var totalDragY = 0f
                     var gestureConsumed = false
@@ -2022,7 +2110,7 @@ fun FullPlayer(
                 WaveformVisualizer(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .height(80.dp)
+                        .height(if (isFloatingWindow) 48.dp else 80.dp)
                         .fillMaxWidth()
                         .alpha(0.6f),
                     magnitudes = effectiveVisualizerData,
@@ -2034,7 +2122,12 @@ fun FullPlayer(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 16.dp, bottom = 16.dp, start = 48.dp, end = 48.dp),
+                        .padding(
+                            top = if (isFloatingWindow) 8.dp else 16.dp,
+                            bottom = if (isFloatingWindow) 8.dp else 16.dp,
+                            start = if (isFloatingWindow) 14.dp else 48.dp,
+                            end = if (isFloatingWindow) 14.dp else 48.dp
+                        ),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -2042,7 +2135,7 @@ fun FullPlayer(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .padding(end = 24.dp),
+                            .padding(end = if (isFloatingWindow) 12.dp else 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         coverSection()
@@ -2056,6 +2149,24 @@ fun FullPlayer(
                     ) {
                         controlsSection()
                     }
+                }
+            } else if (isFloatingWindow) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 8.dp, bottom = 8.dp, start = 12.dp, end = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        coverSection()
+                    }
+                    controlsSection()
                 }
             } else {
                 Column(
@@ -2946,7 +3057,8 @@ private fun PlayerOptionPill(
     isAmoled: Boolean = false,
     isDarkTheme: Boolean = true,
     activeAccent: Color = MaterialTheme.colorScheme.primary,
-    isLandscape: Boolean = false
+    isLandscape: Boolean = false,
+    isCompact: Boolean = false
 ) {
     val isBlur = useBlurControls || hasBlurBackground
 
@@ -3013,10 +3125,26 @@ private fun PlayerOptionPill(
     }
     val textColor by animateColorAsState(targetValue = targetTextColor, animationSpec = tween(220), label = "textColor")
 
-    val pillHeight = if (isLandscape) 36.dp else 40.dp
-    val badgeSize = if (isLandscape) 26.dp else 28.dp
-    val iconSize = if (isLandscape) 15.dp else 16.dp
-    val textSize = if (isLandscape) 11.sp else 11.5.sp
+    val pillHeight = when {
+        isCompact -> 32.dp
+        isLandscape -> 36.dp
+        else -> 40.dp
+    }
+    val badgeSize = when {
+        isCompact -> 22.dp
+        isLandscape -> 26.dp
+        else -> 28.dp
+    }
+    val iconSize = when {
+        isCompact -> 13.dp
+        isLandscape -> 15.dp
+        else -> 16.dp
+    }
+    val textSize = when {
+        isCompact -> 9.5.sp
+        isLandscape -> 11.sp
+        else -> 11.5.sp
+    }
 
     val clickModifier = if (onLongClick != null) {
         Modifier.combinedClickable(
@@ -3039,7 +3167,10 @@ private fun PlayerOptionPill(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = if (isLandscape) 5.dp else 6.dp, end = if (isLandscape) 6.dp else 8.dp),
+                .padding(
+                    start = if (isCompact) 4.dp else if (isLandscape) 5.dp else 6.dp,
+                    end = if (isCompact) 4.dp else if (isLandscape) 6.dp else 8.dp
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
@@ -3057,7 +3188,7 @@ private fun PlayerOptionPill(
                 )
             }
 
-            Spacer(modifier = Modifier.width(if (isLandscape) 5.dp else 6.dp))
+            Spacer(modifier = Modifier.width(if (isCompact) 3.dp else if (isLandscape) 5.dp else 6.dp))
 
             Text(
                 text = label,
