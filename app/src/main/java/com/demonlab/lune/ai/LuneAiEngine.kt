@@ -288,9 +288,10 @@ class LuneAiEngine private constructor(private val context: Context) {
     // ─────────────────────────────────────────────────────────────
 
     fun generateSmartShuffle(songs: List<Song>, startingSong: Song? = null): List<Song> {
-        if (songs.size <= 2) return songs
+        val uniqueSongs = songs.distinctBy { it.id }
+        if (uniqueSongs.size <= 2) return uniqueSongs
 
-        val remaining = songs.toMutableList()
+        val remaining = uniqueSongs.toMutableList()
         val result = mutableListOf<Song>()
 
         val seed = startingSong?.let { s -> remaining.find { it.id == s.id } }
@@ -332,42 +333,57 @@ class LuneAiEngine private constructor(private val context: Context) {
     fun generateDiscoveryQueue(allSongs: List<Song>, seedSong: Song? = null): List<Song> {
         if (allSongs.isEmpty()) return emptyList()
 
+        val uniqueSongs = allSongs.distinctBy { it.id }
+
         // Partition songs into favorites/familiar vs unexplored
-        val familiar = allSongs.filter { getSongAffinity(it.id) >= 12f }
-        val unexplored = allSongs.filter { 
+        val familiar = uniqueSongs.filter { getSongAffinity(it.id) >= 12f }
+        val unexplored = uniqueSongs.filter { 
             val interaction = storage.getInteraction(it.id)
             interaction.playCount <= 1 && !interaction.isFavorite
         }
 
         if (unexplored.isEmpty()) {
-            return generateSmartShuffle(allSongs, seedSong)
+            return generateSmartShuffle(uniqueSongs, seedSong)
         }
 
-        val seed = seedSong ?: familiar.maxByOrNull { getSongAffinity(it.id) } ?: allSongs.first()
+        val seed = seedSong?.let { s -> uniqueSongs.find { it.id == s.id } }
+            ?: familiar.maxByOrNull { getSongAffinity(it.id) } 
+            ?: uniqueSongs.first()
+
+        val addedIds = mutableSetOf(seed.id)
         val result = mutableListOf<Song>(seed)
 
         // Find unexplored tracks that have high similarity to user's favorite tracks
-        val rankedUnexplored = unexplored.map { candidate ->
-            val maxSimToFavorites = familiar.maxOfOrNull { computeSongSimilarity(it, candidate) } ?: 0.3f
-            candidate to maxSimToFavorites
-        }.sortedByDescending { it.second }
+        val rankedUnexplored = unexplored
+            .filter { it.id !in addedIds }
+            .map { candidate ->
+                val maxSimToFavorites = familiar.maxOfOrNull { computeSongSimilarity(it, candidate) } ?: 0.3f
+                candidate to maxSimToFavorites
+            }.sortedByDescending { it.second }
 
-        val familiarPool = (familiar - seed).toMutableList()
-        val unexploredPool = rankedUnexplored.map { it.first }.toMutableList()
+        val familiarPool = familiar.filter { it.id !in addedIds }.toMutableList()
+        val unexploredPool = rankedUnexplored.map { it.first }.filter { it.id !in addedIds && familiarPool.none { f -> f.id == it.id } }.toMutableList()
 
         // Interleave: 2 familiar tracks -> 1 high-confidence discovery track
         var flip = 0
         while (familiarPool.isNotEmpty() || unexploredPool.isNotEmpty()) {
             if (flip % 3 == 2 && unexploredPool.isNotEmpty()) {
                 val nextDisc = unexploredPool.removeAt(0)
-                result.add(nextDisc)
+                if (addedIds.add(nextDisc.id)) {
+                    result.add(nextDisc)
+                }
             } else if (familiarPool.isNotEmpty()) {
                 val last = result.last()
                 val nextFam = familiarPool.maxByOrNull { computeSongSimilarity(last, it) } ?: familiarPool.first()
                 familiarPool.remove(nextFam)
-                result.add(nextFam)
+                if (addedIds.add(nextFam.id)) {
+                    result.add(nextFam)
+                }
             } else if (unexploredPool.isNotEmpty()) {
-                result.add(unexploredPool.removeAt(0))
+                val nextDisc = unexploredPool.removeAt(0)
+                if (addedIds.add(nextDisc.id)) {
+                    result.add(nextDisc)
+                }
             }
             flip++
         }

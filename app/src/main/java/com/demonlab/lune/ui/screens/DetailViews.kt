@@ -504,7 +504,7 @@ fun PlaylistDetailView(
                 } else {
                     itemsIndexed(
                         currentPlaylistSongs,
-                        key = { _, it -> it.id },
+                        key = { index, it -> "playlist_${it.id}_$index" },
                         contentType = { _, _ -> "song_item" }
                     ) { index, song ->
                         val isFirst = index == 0
