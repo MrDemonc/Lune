@@ -355,9 +355,9 @@ fun PlaylistDetailView(
                             }
                             if (isCurrentPlaylistPlaying) {
                                 if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                            } else if (sortedSongs.isNotEmpty()) {
-                                val songToPlay = if (playbackManager.isShuffle) sortedSongs.random() else sortedSongs[0]
-                                onSongClick(songToPlay, sortedSongs)
+                            } else if (currentPlaylistSongs.isNotEmpty()) {
+                                val songToPlay = if (playbackManager.isShuffle) currentPlaylistSongs.random() else currentPlaylistSongs[0]
+                                onSongClick(songToPlay, currentPlaylistSongs)
                             }
                         }
 

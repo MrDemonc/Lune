@@ -68,6 +68,9 @@ class MusicService : MediaLibraryService() {
     private var mediaPlayer: MediaPlayer? = null
     private var secondaryPlayer: MediaPlayer? = null
     private var isCrossfading = false
+    private var crossfadeJob: Job? = null
+    @Volatile private var isPlayerPrepared = false
+    @Volatile private var isSecondaryPrepared = false
     private var mediaSession: MediaLibrarySession? = null
     private val binder = MusicBinder()
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
@@ -209,9 +212,11 @@ class MusicService : MediaLibraryService() {
 
     private fun pauseForTransientFocusLoss() {
         pauseTimeoutJob?.cancel()
+        crossfadeJob?.cancel()
+        crossfadeJob = null
         try {
-            mediaPlayer?.pause()
-            secondaryPlayer?.pause()
+            if (isPlayerPrepared) mediaPlayer?.pause()
+            if (isSecondaryPrepared) secondaryPlayer?.pause()
         } catch (e: Exception) {
             Log.e("MusicService", "Error pausing player on transient focus loss", e)
         }
@@ -972,6 +977,8 @@ class MusicService : MediaLibraryService() {
     }
 
     fun playSong(song: Song) {
+        crossfadeJob?.cancel()
+        crossfadeJob = null
         isNotificationDismissed = false
         isCrossfading = false
         PlaybackManager.getInstance(applicationContext).isTransitioning = false
@@ -983,6 +990,8 @@ class MusicService : MediaLibraryService() {
         // Promote service to foreground immediately with the active song
         showNotification(song, true)
 
+        isPlayerPrepared = false
+        isSecondaryPrepared = false
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
@@ -1000,6 +1009,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            isPlayerPrepared = false
             releaseWakeLock()
             PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
             return
@@ -1011,6 +1021,7 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
+                        isPlayerPrepared = true
                         acquireWakeLock()
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
@@ -1046,7 +1057,11 @@ class MusicService : MediaLibraryService() {
                 }
                 setOnErrorListener { _, what, extra ->
                     Log.e("MusicService", "MediaPlayer error in playSong: what=$what, extra=$extra")
-                    if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                    if (what == -38) {
+                        // Non-fatal native state warning (e.g. query before prepared), ignore and do NOT trigger onCompletion
+                        true
+                    } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                        isPlayerPrepared = false
                         try {
                             player.release()
                         } catch (_: Exception) {}
@@ -1060,8 +1075,10 @@ class MusicService : MediaLibraryService() {
                         }
                         true
                     } else {
-                        // Returning false triggers onCompletionListener to automatically advance to next song
-                        false
+                        isPlayerPrepared = false
+                        // For fatal errors, cleanly skip to next song and return true so onCompletion doesn't double-fire
+                        PlaybackManager.getInstance(applicationContext).playNextFromService(true)
+                        true
                     }
                 }
                 prepareAsync()
@@ -1080,6 +1097,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            isPlayerPrepared = false
             releaseWakeLock()
             PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         }
@@ -1154,9 +1172,14 @@ class MusicService : MediaLibraryService() {
         // Disable completion listener on current player to prevent EOF race condition during crossfade
         mediaPlayer?.setOnCompletionListener(null)
 
+        crossfadeJob?.cancel()
         secondaryPlayer?.setOnCompletionListener(null)
         secondaryPlayer?.setOnErrorListener(null)
-        secondaryPlayer?.release()
+        try {
+            secondaryPlayer?.release()
+        } catch (_: Exception) {}
+        secondaryPlayer = null
+        isSecondaryPrepared = false
 
         val sec = MediaPlayer()
         configurePlayer(sec)
@@ -1168,7 +1191,7 @@ class MusicService : MediaLibraryService() {
             extractLyrics(nextSong)
         }
 
-        serviceScope.launch {
+        crossfadeJob = serviceScope.launch {
             try {
                 var prepared = false
                 withContext(Dispatchers.IO) {
@@ -1185,12 +1208,22 @@ class MusicService : MediaLibraryService() {
                     }
                 }
 
-                if (!prepared || !isCrossfading) {
+                if (!prepared || !isCrossfading || !isActive) {
+                    val shouldFallback = isCrossfading && !prepared
                     isCrossfading = false
                     playbackManager.isTransitioning = false
-                    playSong(nextSong)
+                    try {
+                        secondaryPlayer?.release()
+                    } catch (_: Exception) {}
+                    secondaryPlayer = null
+                    isSecondaryPrepared = false
+                    if (shouldFallback) {
+                        playSong(nextSong)
+                    }
                     return@launch
                 }
+
+                isSecondaryPrepared = true
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try {
@@ -1212,7 +1245,7 @@ class MusicService : MediaLibraryService() {
 
                 // Recalculate exact remaining time on current player after preparation completed
                 val currentMp = mediaPlayer
-                val actualFadeMs = if (currentMp != null && currentMp.isPlaying) {
+                val actualFadeMs = if (currentMp != null && isPlayerPrepared && currentMp.isPlaying) {
                     (currentMp.duration - currentMp.currentPosition).toLong().coerceIn(1000L, fadeDurationMs)
                 } else {
                     fadeDurationMs
@@ -1223,12 +1256,12 @@ class MusicService : MediaLibraryService() {
                 val interval = actualFadeMs / steps
 
                 for (i in 1..steps) {
-                    if (!isCrossfading) break
+                    if (!isCrossfading || !isActive) break
 
-                    while (!PlaybackManager.getInstance(applicationContext).isPlaying && isCrossfading) {
+                    while (!PlaybackManager.getInstance(applicationContext).isPlaying && isCrossfading && isActive) {
                         delay(100)
                     }
-                    if (!isCrossfading) break
+                    if (!isCrossfading || !isActive) break
 
                     val progress = i.toFloat() / steps
 
@@ -1236,16 +1269,25 @@ class MusicService : MediaLibraryService() {
                     val volCurrent = ((1f - progress) * (1f - progress)).coerceIn(0f, 1f)
                     val volNext = (progress * progress).coerceIn(0f, 1f)
 
-                    mediaPlayer?.setVolume(volCurrent, volCurrent)
-                    secondaryPlayer?.setVolume(volNext, volNext)
+                    if (isPlayerPrepared) mediaPlayer?.setVolume(volCurrent, volCurrent)
+                    if (isSecondaryPrepared) secondaryPlayer?.setVolume(volNext, volNext)
                     delay(interval)
                 }
 
-                if (!isCrossfading) return@launch
+                if (!isCrossfading || !isActive) {
+                    try {
+                        secondaryPlayer?.release()
+                    } catch (_: Exception) {}
+                    secondaryPlayer = null
+                    isSecondaryPrepared = false
+                    return@launch
+                }
 
                 val oldPlayer = mediaPlayer
                 mediaPlayer = secondaryPlayer
                 secondaryPlayer = null
+                isPlayerPrepared = isSecondaryPrepared
+                isSecondaryPrepared = false
 
                 equalizer?.release()
                 bassBoost?.release()
@@ -1289,12 +1331,20 @@ class MusicService : MediaLibraryService() {
                 updatePlaybackState()
                 showNotification(nextSong, true, art)
             } catch (e: Throwable) {
+                if (e is CancellationException) throw e
                 Log.e("MusicService", "Crossfade failed: ${nextSong.title}", e)
                 secondaryPlayer?.setOnCompletionListener(null)
                 secondaryPlayer?.setOnErrorListener(null)
-                secondaryPlayer?.release()
+                try {
+                    secondaryPlayer?.release()
+                } catch (_: Exception) {}
                 secondaryPlayer = null
-                playSong(nextSong)
+                isSecondaryPrepared = false
+                if (isCrossfading) {
+                    isCrossfading = false
+                    playbackManager.isTransitioning = false
+                    playSong(nextSong)
+                }
             } finally {
                 isCrossfading = false
                 playbackManager.isTransitioning = false
@@ -1386,9 +1436,11 @@ class MusicService : MediaLibraryService() {
             stopSelf()
         }
 
+        crossfadeJob?.cancel()
+        crossfadeJob = null
         try {
-            mediaPlayer?.pause()
-            secondaryPlayer?.pause()
+            if (isPlayerPrepared) mediaPlayer?.pause()
+            if (isSecondaryPrepared) secondaryPlayer?.pause()
         } catch (e: Exception) {
             Log.e("MusicService", "Error pausing player", e)
         }
@@ -1468,10 +1520,21 @@ class MusicService : MediaLibraryService() {
     }
 
     fun hasPlayer(): Boolean = mediaPlayer != null
-    fun isPlaying(): Boolean = try { mediaPlayer?.isPlaying == true || secondaryPlayer?.isPlaying == true } catch (_: Throwable) { false }
-    fun currentPosition(): Int = try { mediaPlayer?.currentPosition ?: 0 } catch (_: Throwable) { 0 }
-    fun duration(): Int = try { mediaPlayer?.duration ?: 0 } catch (_: Throwable) { 0 }
-    fun getAudioSessionId(): Int = try { mediaPlayer?.audioSessionId ?: 0 } catch (_: Throwable) { 0 }
+    fun isPlaying(): Boolean = try {
+        (isPlayerPrepared && mediaPlayer?.isPlaying == true) || (isSecondaryPrepared && secondaryPlayer?.isPlaying == true)
+    } catch (_: Throwable) { false }
+
+    fun currentPosition(): Int = try {
+        if (isPlayerPrepared) mediaPlayer?.currentPosition ?: 0 else 0
+    } catch (_: Throwable) { 0 }
+
+    fun duration(): Int = try {
+        if (isPlayerPrepared) mediaPlayer?.duration ?: 0 else 0
+    } catch (_: Throwable) { 0 }
+
+    fun getAudioSessionId(): Int = try {
+        if (isPlayerPrepared) mediaPlayer?.audioSessionId ?: 0 else 0
+    } catch (_: Throwable) { 0 }
 
     fun setLooping(looping: Boolean) {
         try {
@@ -1506,6 +1569,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun seekTo(pos: Int) {
+        if (!isPlayerPrepared) return
         mediaPlayer?.seekTo(pos)
         updatePlaybackState()
         updateWidget()
@@ -1558,6 +1622,8 @@ class MusicService : MediaLibraryService() {
     }
 
     fun restorePlayback(song: Song, positionMs: Long, andPlay: Boolean) {
+        crossfadeJob?.cancel()
+        crossfadeJob = null
         isCrossfading = false
         PlaybackManager.getInstance(applicationContext).isTransitioning = false
         monitorJob?.cancel()
@@ -1566,6 +1632,8 @@ class MusicService : MediaLibraryService() {
             acquireWakeLock()
         }
 
+        isPlayerPrepared = false
+        isSecondaryPrepared = false
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
@@ -1583,6 +1651,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            isPlayerPrepared = false
             if (andPlay) releaseWakeLock()
             val pm = PlaybackManager.getInstance(applicationContext)
             pm.updatePlayingState(false)
@@ -1595,6 +1664,7 @@ class MusicService : MediaLibraryService() {
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
                     try {
+                        isPlayerPrepared = true
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
                         isDucked = false
@@ -1637,7 +1707,10 @@ class MusicService : MediaLibraryService() {
                 }
                 setOnErrorListener { _, what, extra ->
                     Log.e("MusicService", "MediaPlayer error in restorePlayback: what=$what, extra=$extra")
-                    if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                    if (what == -38) {
+                        true
+                    } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                        isPlayerPrepared = false
                         try {
                             player.release()
                         } catch (_: Exception) {}
@@ -1651,7 +1724,9 @@ class MusicService : MediaLibraryService() {
                         }
                         true
                     } else {
-                        false
+                        isPlayerPrepared = false
+                        PlaybackManager.getInstance(applicationContext).playNextFromService(true)
+                        true
                     }
                 }
                 prepareAsync()
@@ -1667,6 +1742,7 @@ class MusicService : MediaLibraryService() {
                 player.release()
             } catch (_: Exception) {}
             mediaPlayer = null
+            isPlayerPrepared = false
             if (andPlay) releaseWakeLock()
             PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
         }

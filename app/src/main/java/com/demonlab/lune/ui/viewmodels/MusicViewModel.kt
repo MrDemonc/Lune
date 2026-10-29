@@ -367,7 +367,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val ids = withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getSongIdsForPlaylist(playlistId)
             }
-            callback(allSongs.filter { it.id in ids })
+            val songMap = allSongs.associateBy { it.id }
+            callback(ids.mapNotNull { songMap[it] })
         }
     }
 
