@@ -383,7 +383,34 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun deletePlaylist(playlist: com.demonlab.lune.data.Playlist, onComplete: (() -> Unit)? = null) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                com.demonlab.lune.tools.PlaylistCoverManager.deleteCoversForPlaylist(getApplication(), playlist.id)
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().deletePlaylist(playlist)
+            }
+            loadPlaylists()
+            notifyPlaylistsChanged()
+            onComplete?.invoke()
+        }
+    }
+
+    fun updatePlaylist(
+        playlistId: Long,
+        newName: String,
+        customCovers: List<String>?,
+        onComplete: (() -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
+                val playlist = db.playlistDao().getAllPlaylists().find { it.id == playlistId }
+                if (playlist != null) {
+                    val finalCovers = if (customCovers != null) {
+                        com.demonlab.lune.tools.PlaylistCoverManager.saveCovers(getApplication(), playlistId, customCovers)
+                    } else {
+                        emptyList()
+                    }
+                    val coversFormatted = com.demonlab.lune.tools.PlaylistCoverManager.formatCovers(finalCovers)
+                    db.playlistDao().updatePlaylist(playlist.copy(name = newName, customCovers = coversFormatted))
+                }
             }
             loadPlaylists()
             notifyPlaylistsChanged()
@@ -408,6 +435,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getPlaylistPreviewCovers(playlistId: Long, callback: (List<String?>) -> Unit) {
         viewModelScope.launch {
+            val pl = playlists.find { it.id == playlistId }
+            val custom = com.demonlab.lune.tools.PlaylistCoverManager.parseCovers(pl?.customCovers)
+            if (custom.isNotEmpty()) {
+                callback(custom.take(4))
+                return@launch
+            }
             val ids = withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getSongIdsForPlaylist(playlistId)
             }

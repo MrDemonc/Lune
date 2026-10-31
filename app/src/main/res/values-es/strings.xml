@@ -523,4 +523,15 @@
     <string name="font_delete_confirm_title">Eliminar fuente</string>
     <string name="font_delete_confirm_message">¿Estás seguro de que deseas eliminar \"%s\"?</string>
     <string name="font_deleted">Fuente eliminada</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Editar Playlist</string>
+    <string name="custom_covers">Carátulas personalizadas</string>
+    <string name="add_from_gallery">Galería</string>
+    <string name="add_from_files">Archivos</string>
+    <string name="covers_rotating_notice">Varias carátulas rotarán automáticamente</string>
+    <string name="using_song_covers">Usando carátulas de las canciones de la playlist</string>
+    <string name="restore_default_covers">Restaurar carátulas por defecto</string>
+    <string name="edit_covers">Editar carátulas</string>
+    <string name="using_default_covers">Usando las carátulas originales de las canciones</string>
 </resources>

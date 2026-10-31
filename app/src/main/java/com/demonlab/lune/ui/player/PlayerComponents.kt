@@ -280,7 +280,8 @@ fun AudioQualityBadges(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    enableScroll: Boolean = false
+    enableScroll: Boolean = false,
+    customActiveColor: Color? = null
 ) {
     val format = song.format.uppercase().ifEmpty {
         song.path.substringAfterLast('.', "").uppercase().ifEmpty { "AUDIO" }
@@ -308,16 +309,18 @@ fun AudioQualityBadges(
         else -> null
     }
 
+    val dynamicPrimary = customActiveColor ?: MaterialTheme.colorScheme.primary
+
     val tierBg = when {
         isHiRes -> if (useBlurControls) Color(0xFFFFB300).copy(alpha = 0.28f) else Color(0xFFFFB300).copy(alpha = 0.20f)
-        isHiFi -> if (useBlurControls) Color(0xFF00E5FF).copy(alpha = 0.24f) else Color(0xFF00E5FF).copy(alpha = 0.16f)
-        else -> if (useBlurControls) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        isHiFi -> if (useBlurControls) dynamicPrimary.copy(alpha = 0.24f) else dynamicPrimary.copy(alpha = 0.16f)
+        else -> if (useBlurControls) Color.White.copy(alpha = 0.18f) else dynamicPrimary.copy(alpha = 0.12f)
     }
 
     val tierColor = when {
         isHiRes -> Color(0xFFFFC107)
-        isHiFi -> Color(0xFF00E5FF)
-        else -> if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary
+        isHiFi -> dynamicPrimary
+        else -> if (useBlurControls) Color.White else dynamicPrimary
     }
 
     val badgeBg = if (useBlurControls) {
@@ -442,7 +445,8 @@ fun UnifiedMarqueeHeader(
     onArtistClick: ((String) -> Unit)?,
     onAudioBadgesClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isCompact: Boolean = false
+    isCompact: Boolean = false,
+    customActiveColor: Color? = null
 ) {
     key(song.id) {
         var marqueeOffset by remember(song.id) { mutableFloatStateOf(0f) }
@@ -543,7 +547,8 @@ fun UnifiedMarqueeHeader(
                         isDarkTheme = isDarkTheme,
                         onClick = onAudioBadgesClick,
                         horizontalAlignment = Alignment.Start,
-                        enableScroll = false
+                        enableScroll = false,
+                        customActiveColor = customActiveColor
                     )
                 }
             }
@@ -1548,6 +1553,7 @@ fun FullPlayer(
             val btnSize = if (isFloatingWindow) 38.dp else 48.dp
             val btnIconSize = if (isFloatingWindow) 20.dp else 24.dp
             val headerVertPadding = if (isFloatingWindow) 2.dp else 8.dp
+            val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = headerVertPadding),
@@ -1570,7 +1576,8 @@ fun FullPlayer(
                         isCompact = isFloatingWindow,
                         modifier = Modifier
                             .weight(1f)
-                            .padding(end = if (isFloatingWindow) 6.dp else 12.dp)
+                            .padding(end = if (isFloatingWindow) 6.dp else 12.dp),
+                        customActiveColor = if (useCustomControlsColor) activePrimary else null
                     )
                 }
 
@@ -1752,7 +1759,6 @@ fun FullPlayer(
                 }
             }
 
-            val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
             val activeContainerColor = if (useBlurControls) {
                 blurContainerColor
             } else if (useCustomControlsColor) {

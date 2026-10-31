@@ -1,6 +1,8 @@
 package com.demonlab.lune.ui.data
 
 import android.net.Uri
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.utils.fastSmoothScrollToItem
 import com.demonlab.lune.R
+import com.demonlab.lune.tools.CategoryCoverManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.components.SongCoverImage
@@ -33,7 +36,10 @@ import com.demonlab.lune.ui.components.ScrollToTopPill
 import com.demonlab.lune.ui.components.rememberScrollToTopVisibility
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 data class Album(
     val id: Long,
@@ -52,7 +58,8 @@ fun AlbumGrid(
     hasBlurBackground: Boolean = false,
     isDarkTheme: Boolean = false,
     customActiveColor: Color? = null,
-    activePlaylistId: Long? = null
+    activePlaylistId: Long? = null,
+    category: String = "ALBUMS"
 ) {
     val initialIndex = remember(activePlaylistId, albums) {
         if (activePlaylistId != null) {
@@ -93,7 +100,8 @@ fun AlbumGrid(
                     album = album,
                     onClick = { onAlbumClick(album) },
                     hasBlurBackground = hasBlurBackground,
-                    isPlaying = isPlaying
+                    isPlaying = isPlaying,
+                    category = category
                 )
             }
         }
@@ -120,8 +128,41 @@ fun AlbumCard(
     album: Album,
     onClick: () -> Unit,
     hasBlurBackground: Boolean = false,
-    isPlaying: Boolean = false
+    isPlaying: Boolean = false,
+    category: String = "ALBUMS"
 ) {
+    val context = LocalContext.current
+    val categoryUpdates by CategoryCoverManager.updates.collectAsState()
+    val customCovers = remember(album.name, category, categoryUpdates) {
+        CategoryCoverManager.getCustomCovers(context, category, album.name)
+    }
+
+    val activeCovers = remember(customCovers, album.coverUrl, album.albumArtUri) {
+        if (customCovers.isNotEmpty()) customCovers else listOfNotNull(album.coverUrl ?: album.albumArtUri)
+    }
+
+    var currentCoverIndex by remember(activeCovers) { mutableIntStateOf(0) }
+
+    LaunchedEffect(activeCovers) {
+        if (activeCovers.size > 1) {
+            while (isActive) {
+                delay(6000L)
+                val nextIndex = if (activeCovers.size == 2) {
+                    1 - currentCoverIndex
+                } else {
+                    var candidate = Random.nextInt(activeCovers.size)
+                    while (candidate == currentCoverIndex) {
+                        candidate = Random.nextInt(activeCovers.size)
+                    }
+                    candidate
+                }
+                currentCoverIndex = nextIndex
+            }
+        }
+    }
+
+    val currentCover = activeCovers.getOrNull(currentCoverIndex)
+
     val cardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
     val coverShape = RoundedCornerShape(24.dp)
     Column(
@@ -139,13 +180,19 @@ fun AlbumCard(
                 shape = coverShape,
                 color = MaterialTheme.colorScheme.secondaryContainer
             ) {
-                SongCoverImage(
-                    coverUrl = album.coverUrl ?: album.albumArtUri,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    shape = coverShape,
-                    iconScale = 0.68f
-                )
+                Crossfade(
+                    targetState = currentCover,
+                    animationSpec = tween(durationMillis = 600),
+                    label = "albumCardCoverCrossfade"
+                ) { cover ->
+                    SongCoverImage(
+                        coverUrl = cover,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        shape = coverShape,
+                        iconScale = 0.68f
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(8.dp))

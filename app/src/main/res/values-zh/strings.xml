@@ -517,4 +517,15 @@
     <string name="font_delete_confirm_title">删除字体</string>
     <string name="font_delete_confirm_message">确定要删除 \"%s\" 吗？</string>
     <string name="font_deleted">字体已删除</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">编辑播放列表</string>
+    <string name="custom_covers">自定义封面</string>
+    <string name="add_from_gallery">相册</string>
+    <string name="add_from_files">文件</string>
+    <string name="covers_rotating_notice">多个封面将自动轮播</string>
+    <string name="using_song_covers">使用此播放列表中歌曲的封面</string>
+    <string name="restore_default_covers">恢复默认封面</string>
+    <string name="edit_covers">编辑封面</string>
+    <string name="using_default_covers">使用原歌曲封面</string>
 </resources>

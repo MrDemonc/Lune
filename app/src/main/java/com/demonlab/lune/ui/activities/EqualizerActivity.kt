@@ -1,5 +1,6 @@
 package com.demonlab.lune.ui.activities
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -629,41 +630,43 @@ fun EqualizerScreen(onBack: () -> Unit) {
                     colors = sliderColors
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                val dynamicsNames = listOf("None", "Light", "Medium", "Strong", "Night")
-                val dynamicsValues = listOf(0, 1, 2, 3, 4)
-                var currentDynamics by remember { mutableStateOf(playbackManager.dynamicsPreset) }
+                    val dynamicsNames = listOf("None", "Light", "Medium", "Strong", "Night")
+                    val dynamicsValues = listOf(0, 1, 2, 3, 4)
+                    var currentDynamics by remember { mutableStateOf(playbackManager.dynamicsPreset) }
 
-                LaunchedEffect(playbackManager.dynamicsPreset) {
-                    currentDynamics = playbackManager.dynamicsPreset
-                }
+                    LaunchedEffect(playbackManager.dynamicsPreset) {
+                        currentDynamics = playbackManager.dynamicsPreset
+                    }
 
-                Text(
-                    stringResource(R.string.dynamics_label),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = textColor
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(dynamicsNames.size) { index ->
-                        val isActive = currentDynamics == dynamicsValues[index]
-                        FilterChip(
-                            selected = isActive,
-                            onClick = {
-                                currentDynamics = dynamicsValues[index]
-                                playbackManager.updateDynamicsPreset(dynamicsValues[index])
-                            },
-                            label = { Text(dynamicsNames[index]) },
-                            border = null,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = if (hasBlurBackground && currentSong != null) (if (useCustomControlsColor) activePrimary else Color.White.copy(alpha = 0.35f)) else (if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primaryContainer),
-                                selectedLabelColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
-                                containerColor = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                labelColor = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            modifier = Modifier.bounceClick()
-                        )
+                    Text(
+                        stringResource(R.string.dynamics_label),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = textColor
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(dynamicsNames.size) { index ->
+                            val isActive = currentDynamics == dynamicsValues[index]
+                            FilterChip(
+                                selected = isActive,
+                                onClick = {
+                                    currentDynamics = dynamicsValues[index]
+                                    playbackManager.updateDynamicsPreset(dynamicsValues[index])
+                                },
+                                label = { Text(dynamicsNames[index]) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = if (hasBlurBackground && currentSong != null) (if (useCustomControlsColor) activePrimary else Color.White.copy(alpha = 0.35f)) else (if (useCustomControlsColor) activePrimary else MaterialTheme.colorScheme.primaryContainer),
+                                    selectedLabelColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                    containerColor = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    labelColor = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                modifier = Modifier.bounceClick()
+                            )
+                        }
                     }
                 }
 

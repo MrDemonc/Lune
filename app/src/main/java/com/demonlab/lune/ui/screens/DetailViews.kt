@@ -2,6 +2,7 @@ package com.demonlab.lune.ui.screens
 
 import android.os.Vibrator
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.animation.*
@@ -42,7 +44,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.demonlab.lune.R
 import com.demonlab.lune.data.Playlist
+import com.demonlab.lune.tools.CategoryCoverManager
 import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.tools.PlaylistCoverManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.AppBlurBackdrop
@@ -57,6 +61,9 @@ import kotlinx.coroutines.isActive
 import kotlin.random.Random
 import com.demonlab.lune.ui.playlist.PlaylistOptionsAndRename
 import com.demonlab.lune.ui.sheets.AddSongsToPlaylistDialog
+import com.demonlab.lune.ui.sheets.EditCategoryCoversSheet
+import com.demonlab.lune.ui.sheets.EditPlaylistSheet
+import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.utils.formatLongDuration
 import com.demonlab.lune.ui.utils.triggerLightVibration
 import com.demonlab.lune.ui.utils.rememberReorderableState
@@ -147,12 +154,31 @@ fun PlaylistDetailView(
         }
     }
 
-    val allCovers = remember(songs) {
+    val currentPlaylist = viewModel.playlists.find { it.id == playlist.id } ?: playlist
+    var showEditPlaylistSheet by remember { mutableStateOf(false) }
+
+    if (showEditPlaylistSheet) {
+        EditPlaylistSheet(
+            playlist = currentPlaylist,
+            viewModel = viewModel,
+            onDismiss = { showEditPlaylistSheet = false }
+        )
+    }
+
+    val customCovers = remember(currentPlaylist.customCovers) {
+        PlaylistCoverManager.parseCovers(currentPlaylist.customCovers)
+    }
+
+    val songCovers = remember(songs) {
         songs.groupBy { song ->
             song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
         }.values.mapNotNull { group ->
             group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
         }
+    }
+
+    val allCovers = remember(customCovers, songCovers) {
+        if (customCovers.isNotEmpty()) customCovers else songCovers
     }
 
     var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
@@ -184,7 +210,7 @@ fun PlaylistDetailView(
         isDarkTheme = isDarkTheme,
         currentSong = playbackManager.currentSong
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
             LazyColumn(
                 state = listState,
@@ -526,11 +552,76 @@ fun PlaylistDetailView(
                     }
                 }
             }
+
+            // Top Buttons: Back (top-left) & Edit (top-right)
+            val topBtnBg = if (hasBlurBackground) {
+                if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.65f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
+            }
+            val topBtnTint = if (hasBlurBackground) {
+                if (isDarkTheme) Color.White else Color(0xFF141316)
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .graphicsLayer {
+                        alpha = headerAlpha
+                        translationY = -(1f - headerAlpha) * 24.dp.toPx()
+                    },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = onBack,
+                    enabled = headerAlpha > 0.05f,
+                    shape = CircleShape,
+                    color = topBtnBg,
+                    border = null,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cancel),
+                            tint = topBtnTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = { showEditPlaylistSheet = true },
+                    enabled = headerAlpha > 0.05f,
+                    shape = CircleShape,
+                    color = topBtnBg,
+                    border = null,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_playlist),
+                            tint = topBtnTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
 
         val playlistsCategory = stringResource(R.string.playlists)
         PlaylistOptionsAndRename(
-            playlist = if (showPlaylistOptions) playlist else null,
+            playlist = if (showPlaylistOptions) currentPlaylist else null,
             playlists = viewModel.playlists,
             viewModel = viewModel,
             onDismissRequest = { showPlaylistOptions = false },
@@ -637,7 +728,8 @@ fun AlbumDetailView(
     isDarkTheme: Boolean = false,
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0,
-    isArtistView: Boolean = album.artist.isEmpty()
+    isArtistView: Boolean = album.artist.isEmpty(),
+    category: String = "ALBUMS"
 ) {
     val context = LocalContext.current
     val playbackManager = PlaybackManager.getInstance(context)
@@ -650,6 +742,12 @@ fun AlbumDetailView(
     val stretchProgress = remember { Animatable(0f) }
 
     var selectedAlbumName by remember(album.id) { mutableStateOf<String?>(null) }
+    var showEditCoversSheet by remember { mutableStateOf(false) }
+
+    val categoryUpdates by CategoryCoverManager.updates.collectAsState()
+    val customCovers = remember(album.name, category, categoryUpdates) {
+        CategoryCoverManager.getCustomCovers(context, category, album.name)
+    }
 
     val artistAlbums = remember(songs, isArtistView) {
         if (!isArtistView) {
@@ -729,13 +827,17 @@ fun AlbumDetailView(
         }
     })
 
-    val allCovers = remember(songs, album) {
+    val defaultCovers = remember(songs, album) {
         val list = if (songs.isNotEmpty()) songs else album.songs
         list.groupBy { song ->
             song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
         }.values.mapNotNull { group ->
             group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
         }
+    }
+
+    val allCovers = remember(customCovers, defaultCovers) {
+        if (customCovers.isNotEmpty()) customCovers else defaultCovers
     }
 
     var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
@@ -770,12 +872,22 @@ fun AlbumDetailView(
         }
     }
 
+    if (showEditCoversSheet) {
+        EditCategoryCoversSheet(
+            category = category,
+            itemKey = album.name,
+            title = album.name,
+            defaultCovers = defaultCovers,
+            onDismiss = { showEditCoversSheet = false }
+        )
+    }
+
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
         isDarkTheme = isDarkTheme,
         currentSong = playbackManager.currentSong
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
             
             LazyColumn(
                 state = listState,
@@ -1185,48 +1297,119 @@ fun AlbumDetailView(
                     }
                 }
             }
-        }
 
-        val targetIndex = remember(sortedSongs, currentlyPlayingId) {
-            val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
-            if (idx != -1) idx + 1 else -1
-        }
+            val targetIndex = remember(sortedSongs, currentlyPlayingId) {
+                val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
+                if (idx != -1) idx + 1 else -1
+            }
 
-        LaunchedEffect(scrollToCurrentTrigger.value) {
-            if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.fastSmoothScrollToItem(targetIndex)
-                scrollToCurrentTrigger.value = 0
+            LaunchedEffect(scrollToCurrentTrigger.value) {
+                if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                    listState.fastSmoothScrollToItem(targetIndex)
+                    scrollToCurrentTrigger.value = 0
+                }
+            }
+
+            FastScrollbar(
+                listState = listState,
+                items = sortedSongs,
+                headerItemCount = 1,
+                itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
+                hasBlurBackground = hasBlurBackground,
+                useCustomControlsColor = useCustomControlsColor,
+                controlsColorPalette = controlsColorPalette,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(bottom = bottomPadding)
+            )
+
+            val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
+            ScrollToTopPill(
+                visible = isScrollToTopVisible.value,
+                onClick = {
+                    scope.launch {
+                        listState.fastSmoothScrollToItem(0)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = bottomPadding + 14.dp),
+                hasBlurBackground = hasBlurBackground,
+                isDarkTheme = isDarkTheme,
+                customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
+            )
+
+            // Top Buttons: Back (top-left) & Edit (top-right)
+            val topBtnBg = if (hasBlurBackground) {
+                if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.65f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
+            }
+            val topBtnTint = if (hasBlurBackground) {
+                if (isDarkTheme) Color.White else Color(0xFF141316)
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .graphicsLayer {
+                        alpha = headerAlpha
+                        translationY = -(1f - headerAlpha) * 24.dp.toPx()
+                    },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = {
+                        if (selectedAlbumName != null) {
+                            selectedAlbumName = null
+                        } else {
+                            onBack()
+                        }
+                    },
+                    enabled = headerAlpha > 0.05f,
+                    shape = CircleShape,
+                    color = topBtnBg,
+                    border = null,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cancel),
+                            tint = topBtnTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = { showEditCoversSheet = true },
+                    enabled = headerAlpha > 0.05f,
+                    shape = CircleShape,
+                    color = topBtnBg,
+                    border = null,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_covers),
+                            tint = topBtnTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
-
-        FastScrollbar(
-            listState = listState,
-            items = sortedSongs,
-            headerItemCount = 1,
-            itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
-            hasBlurBackground = hasBlurBackground,
-            useCustomControlsColor = useCustomControlsColor,
-            controlsColorPalette = controlsColorPalette,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(bottom = bottomPadding)
-        )
-
-        val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
-        ScrollToTopPill(
-            visible = isScrollToTopVisible.value,
-            onClick = {
-                scope.launch {
-                    listState.fastSmoothScrollToItem(0)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = bottomPadding + 14.dp),
-            hasBlurBackground = hasBlurBackground,
-            isDarkTheme = isDarkTheme,
-            customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
-        )
     }
 }
 
@@ -1366,14 +1549,22 @@ fun FolderDetailView(
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0
 ) {
-    val playbackManager = PlaybackManager.getInstance(LocalContext.current)
-    val settingsManager = SettingsManager.getInstance(LocalContext.current)
-    val vibrator = LocalContext.current.getSystemService(Vibrator::class.java)!!
+    val context = LocalContext.current
+    val playbackManager = PlaybackManager.getInstance(context)
+    val settingsManager = SettingsManager.getInstance(context)
+    val vibrator = context.getSystemService(Vibrator::class.java)!!
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val isPlaying = playbackManager.isPlaying
     val activeControlsPrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
     val stretchProgress = remember { Animatable(0f) }
+
+    var showEditCoversSheet by remember { mutableStateOf(false) }
+
+    val categoryUpdates by CategoryCoverManager.updates.collectAsState()
+    val customCovers = remember(folderName, categoryUpdates) {
+        CategoryCoverManager.getCustomCovers(context, "FOLDERS", folderName)
+    }
 
     val sortedSongs = remember(songs, sortOption, isSortAscending) {
         playbackManager.getSortedList(songs, sortOption, isSortAscending)
@@ -1397,12 +1588,16 @@ fun FolderDetailView(
         }
     }
 
-    val allCovers = remember(songs) {
+    val defaultCovers = remember(songs) {
         songs.groupBy { song ->
             song.coverUrl ?: song.albumArtUri?.toString() ?: song.albumId.takeIf { it > 0 } ?: song.uri
         }.values.mapNotNull { group ->
             group.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri ?: it.uri }
         }
+    }
+
+    val allCovers = remember(customCovers, defaultCovers) {
+        if (customCovers.isNotEmpty()) customCovers else defaultCovers
     }
 
     var currentCoverIndex by remember(allCovers) { mutableIntStateOf(0) }
@@ -1432,12 +1627,22 @@ fun FolderDetailView(
     val folderId = folderName.hashCode().toLong()
     val isCurrentFolderPlaying = playbackManager.activePlaylistId == folderId && playbackManager.activeCategory == "FOLDERS"
 
+    if (showEditCoversSheet) {
+        EditCategoryCoversSheet(
+            category = "FOLDERS",
+            itemKey = folderName,
+            title = folderName,
+            defaultCovers = defaultCovers,
+            onDismiss = { showEditCoversSheet = false }
+        )
+    }
+
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
         isDarkTheme = isDarkTheme,
         currentSong = playbackManager.currentSong
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
             LazyColumn(
                 state = listState,
@@ -1754,46 +1959,112 @@ fun FolderDetailView(
                     }
                 }
             }
-        }
-        val targetIndex = remember(sortedSongs, currentlyPlayingId) {
-            val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
-            if (idx != -1) idx + 1 else -1
-        }
 
-        LaunchedEffect(scrollToCurrentTrigger.value) {
-            if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
-                listState.fastSmoothScrollToItem(targetIndex)
-                scrollToCurrentTrigger.value = 0
+            val targetIndex = remember(sortedSongs, currentlyPlayingId) {
+                val idx = sortedSongs.indexOfFirst { it.id == currentlyPlayingId }
+                if (idx != -1) idx + 1 else -1
+            }
+
+            LaunchedEffect(scrollToCurrentTrigger.value) {
+                if (targetIndex != -1 && scrollToCurrentTrigger.value > 0) {
+                    listState.fastSmoothScrollToItem(targetIndex)
+                    scrollToCurrentTrigger.value = 0
+                }
+            }
+
+            FastScrollbar(
+                listState = listState,
+                items = sortedSongs,
+                headerItemCount = 1,
+                itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
+                hasBlurBackground = hasBlurBackground,
+                useCustomControlsColor = useCustomControlsColor,
+                controlsColorPalette = controlsColorPalette,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(bottom = bottomPadding)
+            )
+
+            val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
+            ScrollToTopPill(
+                visible = isScrollToTopVisible.value,
+                onClick = {
+                    scope.launch {
+                        listState.fastSmoothScrollToItem(0)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = bottomPadding + 14.dp),
+                hasBlurBackground = hasBlurBackground,
+                isDarkTheme = isDarkTheme,
+                customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
+            )
+
+            // Top Buttons: Back (top-left) & Edit (top-right)
+            val topBtnBg = if (hasBlurBackground) {
+                if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.65f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
+            }
+            val topBtnTint = if (hasBlurBackground) {
+                if (isDarkTheme) Color.White else Color(0xFF141316)
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .graphicsLayer {
+                        alpha = headerAlpha
+                        translationY = -(1f - headerAlpha) * 24.dp.toPx()
+                    },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    onClick = onBack,
+                    enabled = headerAlpha > 0.05f,
+                    shape = CircleShape,
+                    color = topBtnBg,
+                    border = null,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cancel),
+                            tint = topBtnTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = { showEditCoversSheet = true },
+                    enabled = headerAlpha > 0.05f,
+                    shape = CircleShape,
+                    color = topBtnBg,
+                    border = null,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .bounceClick()
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_covers),
+                            tint = topBtnTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
-
-        FastScrollbar(
-            listState = listState,
-            items = sortedSongs,
-            headerItemCount = 1,
-            itemKeyOrLetter = { if (sortOption == "ALPHABETICAL") it.title else "" },
-            hasBlurBackground = hasBlurBackground,
-            useCustomControlsColor = useCustomControlsColor,
-            controlsColorPalette = controlsColorPalette,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(bottom = bottomPadding)
-        )
-
-        val isScrollToTopVisible = rememberScrollToTopVisibility(listState, settingsManager.isScrollToTopEnabled)
-        ScrollToTopPill(
-            visible = isScrollToTopVisible.value,
-            onClick = {
-                scope.launch {
-                    listState.fastSmoothScrollToItem(0)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = bottomPadding + 14.dp),
-            hasBlurBackground = hasBlurBackground,
-            isDarkTheme = isDarkTheme,
-            customActiveColor = if (useCustomControlsColor) activeControlsPrimary else null
-        )
     }
 }

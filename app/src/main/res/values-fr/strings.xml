@@ -519,4 +519,15 @@
     <string name="font_delete_confirm_title">Supprimer la police</string>
     <string name="font_delete_confirm_message">Voulez-vous vraiment supprimer \"%s\" ?</string>
     <string name="font_deleted">Police supprimée</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Modifier la playlist</string>
+    <string name="custom_covers">Pochettes personnalisées</string>
+    <string name="add_from_gallery">Galerie</string>
+    <string name="add_from_files">Fichiers</string>
+    <string name="covers_rotating_notice">Plusieurs pochettes alternent automatiquement</string>
+    <string name="using_song_covers">Utilisation des pochettes des morceaux de cette playlist</string>
+    <string name="restore_default_covers">Restaurer les pochettes par défaut</string>
+    <string name="edit_covers">Modifier les pochettes</string>
+    <string name="using_default_covers">Utilisation des pochettes originales des morceaux</string>
 </resources>

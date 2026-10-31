@@ -17,7 +17,8 @@ data class SongOverride(
 data class Playlist(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val customCovers: String? = null
 )
 
 @Entity(
@@ -133,10 +134,11 @@ interface PlaybackStatsDao {
 
 @Database(
     entities = [SongOverride::class, Playlist::class, PlaylistSong::class, PlaybackStats::class],
-    version = 7,
+    version = 8,
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
-        AutoMigration(from = 6, to = 7)
+        AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8)
     ],
     exportSchema = true
 )

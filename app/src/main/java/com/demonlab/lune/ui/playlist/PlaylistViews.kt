@@ -75,7 +75,7 @@ fun PlaylistPreviewCovers(
 ) {
     var covers by remember { mutableStateOf<List<String?>>(emptyList()) }
 
-    LaunchedEffect(playlistId, viewModel.playlistMappings) {
+    LaunchedEffect(playlistId, viewModel.playlistMappings, viewModel.playlists) {
         viewModel.getPlaylistPreviewCovers(playlistId) {
             covers = it
         }
@@ -380,25 +380,43 @@ private fun PlaylistCard(
         playlistSongs.sumOf { it.duration }
     }
 
-    val songsWithCover = remember(playlistSongs) {
-        playlistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
+    val customCovers = remember(playlist.customCovers) {
+        com.demonlab.lune.tools.PlaylistCoverManager.parseCovers(playlist.customCovers)
     }
 
-    var currentCoverIndex by remember(playlist.id, songsWithCover.size) {
-        mutableIntStateOf(if (songsWithCover.isNotEmpty()) kotlin.random.Random.nextInt(songsWithCover.size) else 0)
+    val songsWithCover = remember(playlistSongs, customCovers) {
+        if (customCovers.isNotEmpty()) {
+            emptyList()
+        } else {
+            playlistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
+        }
     }
 
-    LaunchedEffect(playlist.id, songsWithCover) {
-        if (songsWithCover.size > 1) {
+    val availableCovers: List<Any?> = remember(customCovers, songsWithCover, playlistSongs) {
+        if (customCovers.isNotEmpty()) {
+            customCovers
+        } else if (songsWithCover.isNotEmpty()) {
+            songsWithCover.map { it.coverUrl ?: it.albumArtUri }
+        } else {
+            listOfNotNull(playlistSongs.firstOrNull()?.let { it.coverUrl ?: it.albumArtUri })
+        }
+    }
+
+    var currentCoverIndex by remember(playlist.id, availableCovers.size) {
+        mutableIntStateOf(if (availableCovers.isNotEmpty()) kotlin.random.Random.nextInt(availableCovers.size) else 0)
+    }
+
+    LaunchedEffect(playlist.id, availableCovers) {
+        if (availableCovers.size > 1) {
             while (true) {
                 delay(6000)
-                currentCoverIndex = (currentCoverIndex + 1) % songsWithCover.size
+                currentCoverIndex = (currentCoverIndex + 1) % availableCovers.size
             }
         }
     }
 
-    val activeCoverSong = remember(songsWithCover, currentCoverIndex) {
-        songsWithCover.getOrNull(currentCoverIndex) ?: playlistSongs.firstOrNull()
+    val activeCoverObj = remember(availableCovers, currentCoverIndex) {
+        availableCovers.getOrNull(currentCoverIndex)
     }
 
     val gradientColors = remember(playlist.id) {
@@ -429,7 +447,7 @@ private fun PlaylistCard(
                     .height(125.dp)
                     .background(Brush.horizontalGradient(gradientColors))
             ) {
-                val coverObj = activeCoverSong?.coverUrl ?: activeCoverSong?.albumArtUri
+                val coverObj = activeCoverObj
                 if (coverObj != null) {
                     Crossfade(
                         targetState = coverObj,
@@ -695,65 +713,17 @@ fun PlaylistOptionsAndRename(
 ) {
     if (playlist == null) return
     val currentPlaylist = playlists.find { it.id == playlist.id } ?: playlist
-    var showRenameDialog by remember { mutableStateOf(false) }
+    var showEditSheet by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    val blurColors = rememberBlurSheetColors()
 
-    if (showRenameDialog) {
-        var newName by remember { mutableStateOf(currentPlaylist.name) }
-        val textFieldColors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = blurColors.textColor,
-            unfocusedTextColor = blurColors.textColor,
-            focusedBorderColor = blurColors.primaryTint,
-            unfocusedBorderColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outline,
-            focusedLabelColor = blurColors.primaryTint,
-            unfocusedLabelColor = blurColors.textSecondaryColor
-        )
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = false },
-            containerColor = blurColors.containerColor,
-            title = { 
-                Text(
-                    stringResource(R.string.edit_playlist_name),
-                    fontWeight = FontWeight.Bold,
-                    color = blurColors.textColor
-                ) 
-            },
-            text = {
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = textFieldColors
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (newName.isNotBlank()) {
-                            viewModel.renamePlaylist(currentPlaylist.id, newName.trim())
-                        }
-                        showRenameDialog = false
-                        onDismissRequest()
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = blurColors.primaryTint,
-                        contentColor = if (blurColors.hasBlur && blurColors.isDark) Color.Black else Color.White
-                    ),
-                    modifier = Modifier.bounceClick()
-                ) {
-                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRenameDialog = false }, modifier = Modifier.bounceClick()) {
-                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
-                }
-            },
-            shape = RoundedCornerShape(28.dp)
+    if (showEditSheet) {
+        com.demonlab.lune.ui.sheets.EditPlaylistSheet(
+            playlist = currentPlaylist,
+            viewModel = viewModel,
+            onDismiss = {
+                showEditSheet = false
+                onDismissRequest()
+            }
         )
     }
 
@@ -768,12 +738,12 @@ fun PlaylistOptionsAndRename(
         )
     }
 
-    if (!showRenameDialog && !showDeleteConfirm) {
+    if (!showEditSheet && !showDeleteConfirm) {
         PlaylistOptionsSheet(
             playlist = currentPlaylist,
             viewModel = viewModel,
             onDismissRequest = onDismissRequest,
-            onRenameClick = { showRenameDialog = true },
+            onRenameClick = { showEditSheet = true },
             onDeleteClick = { showDeleteConfirm = true },
             onAddSongsClick = onAddSongsClick
         )
@@ -917,7 +887,7 @@ fun PlaylistOptionsSheet(
                         modifier = Modifier.clickable { onRenameClick() },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     ) {
-                        Text(stringResource(R.string.edit_name), color = blurColors.textColor)
+                        Text(stringResource(R.string.edit_playlist), color = blurColors.textColor)
                     }
                 }
                 

@@ -515,4 +515,15 @@
     <string name="font_delete_confirm_title">حذف فونت</string>
     <string name="font_delete_confirm_message">آیا مطمئن هستید که می‌خواهید \"%s\" را حذف کنید؟</string>
     <string name="font_deleted">فونت حذف شد</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">ویرایش پلی‌لیست</string>
+    <string name="custom_covers">کاورهای سفارشی</string>
+    <string name="add_from_gallery">گالری</string>
+    <string name="add_from_files">فایل‌ها</string>
+    <string name="covers_rotating_notice">چند کاور به طور خودکار تغییر می‌کنند</string>
+    <string name="using_song_covers">استفاده از کاور آهنگ‌های این پلی‌لیست</string>
+    <string name="restore_default_covers">بازگردانی کاورهای پیش‌فرض</string>
+    <string name="edit_covers">ویرایش کاورها</string>
+    <string name="using_default_covers">استفاده از کاورهای اصلی آهنگ‌ها</string>
 </resources>

@@ -1,70 +1,67 @@
 package com.demonlab.lune.audio
 
-import android.media.audiofx.DynamicsProcessing
+import android.media.audiofx.AudioEffect
 import android.os.Build
-import java.lang.reflect.Constructor
 
 class DynamicsEffect {
-    private var dynamics: DynamicsProcessing? = null
-    private var secondaryDynamics: DynamicsProcessing? = null
+    private var dynamics: AudioEffect? = null
+    private var secondaryDynamics: AudioEffect? = null
     private var currentPreset: Int = 0
 
     fun setup(sessionId: Int, isSecondary: Boolean, preset: Int) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
         release(isSecondary)
         currentPreset = preset
         try {
-            val d = createDynamics(sessionId)
+            val d = createDynamics(sessionId) ?: return
             if (isSecondary) {
                 secondaryDynamics = d
             } else {
                 dynamics = d
             }
             setPresetOnEffect(d, preset)
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
-    private fun createDynamics(sessionId: Int): DynamicsProcessing {
+    private fun createDynamics(sessionId: Int): AudioEffect? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
         return try {
-            if (Build.VERSION.SDK_INT >= 28) {
-                val ctor = DynamicsProcessing::class.java.getConstructor(Int::class.java)
-                @Suppress("DEPRECATION")
-                ctor.newInstance(sessionId) as DynamicsProcessing
-            } else {
-                val ctor = DynamicsProcessing::class.java.getConstructor(Int::class.java, Int::class.java)
-                @Suppress("DEPRECATION")
-                ctor.newInstance(0, sessionId) as DynamicsProcessing
-            }
-        } catch (e: Exception) {
-            throw RuntimeException("Cannot create DynamicsProcessing", e)
+            val clazz = Class.forName("android.media.audiofx.DynamicsProcessing")
+            val ctor = clazz.getConstructor(Int::class.java)
+            ctor.newInstance(sessionId) as? AudioEffect
+        } catch (t: Throwable) {
+            null
         }
     }
 
     fun setPreset(preset: Int) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
         currentPreset = preset
         dynamics?.let { setPresetOnEffect(it, preset) }
         secondaryDynamics?.let { setPresetOnEffect(it, preset) }
     }
 
-    private fun setPresetOnEffect(d: DynamicsProcessing, preset: Int) {
+    private fun setPresetOnEffect(d: AudioEffect, preset: Int) {
         if (preset == 0) {
             d.enabled = false
             return
         }
         try {
-            val getChannel = DynamicsProcessing::class.java.getMethod("getChannel", Int::class.java)
-            val channel = getChannel.invoke(d, 0)
+            val getChannel = d::class.java.getMethod("getChannel", Int::class.java)
+            val channel = getChannel.invoke(d, 0) ?: return
 
             val getMbc = channel::class.java.getMethod("getMbc")
-            val mbc = getMbc.invoke(channel)
+            val mbc = getMbc.invoke(channel) ?: return
 
             val setMbcEnabled = mbc::class.java.getMethod("setEnabled", Boolean::class.java)
             val getBandCount = mbc::class.java.getMethod("getBandCount")
-            val setBand = mbc::class.java.getMethod("setBand", Int::class.java, DynamicsProcessing.MbcBand::class.java)
+            val mbcBandClass = Class.forName("android.media.audiofx.DynamicsProcessing\$MbcBand")
+            val setBand = mbc::class.java.getMethod("setBand", Int::class.java, mbcBandClass)
 
             val bandCount = getBandCount.invoke(mbc) as Int
-            val mbcBandCtor = DynamicsProcessing.MbcBand::class.java.getConstructor(
+            val mbcBandCtor = mbcBandClass.getConstructor(
                 Boolean::class.java, Float::class.java, Float::class.java, Float::class.java,
                 Float::class.java, Float::class.java, Float::class.java, Float::class.java,
                 Float::class.java, Float::class.java, Float::class.java
@@ -119,32 +116,44 @@ class DynamicsEffect {
             setInputGain.invoke(channel, inputGain)
             setOutputGain.invoke(channel, makeUpGain)
             d.enabled = true
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     fun handover() {
-        dynamics?.release()
+        try {
+            dynamics?.release()
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
         dynamics = secondaryDynamics
         secondaryDynamics = null
     }
 
     fun release(isSecondary: Boolean = false) {
-        if (isSecondary) {
-            secondaryDynamics?.release()
-            secondaryDynamics = null
-        } else {
-            dynamics?.release()
-            dynamics = null
+        try {
+            if (isSecondary) {
+                secondaryDynamics?.release()
+                secondaryDynamics = null
+            } else {
+                dynamics?.release()
+                dynamics = null
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     fun releaseAll() {
-        dynamics?.release()
-        dynamics = null
-        secondaryDynamics?.release()
-        secondaryDynamics = null
+        try {
+            dynamics?.release()
+            dynamics = null
+            secondaryDynamics?.release()
+            secondaryDynamics = null
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
     }
 
     companion object {

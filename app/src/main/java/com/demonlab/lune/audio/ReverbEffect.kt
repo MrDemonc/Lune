@@ -29,8 +29,8 @@ class ReverbEffect {
                         reverb = r
                     }
                     return
-                } catch (e: Exception) {
-                    Log.w(tag, "EnvironmentalReverb not supported, falling back to PresetReverb: ${e.message}")
+                } catch (t: Throwable) {
+                    Log.w(tag, "EnvironmentalReverb not supported, falling back to PresetReverb: ${t.message}")
                 }
             }
             val r = PresetReverb(0, sessionId).apply {
@@ -42,32 +42,36 @@ class ReverbEffect {
             } else {
                 reverbLegacy = r
             }
-        } catch (e: Exception) {
-            Log.e(tag, "Failed to create reverb effect", e)
+        } catch (t: Throwable) {
+            Log.e(tag, "Failed to create reverb effect", t)
         }
     }
 
     fun setPreset(preset: Int) {
-        currentPreset = preset
-        val enabled = preset != 0
-        if (Build.VERSION.SDK_INT >= 31) {
-            reverb?.let {
-                it.applyPreset(preset)
-                it.enabled = enabled
+        try {
+            currentPreset = preset
+            val enabled = preset != 0
+            if (Build.VERSION.SDK_INT >= 31) {
+                reverb?.let {
+                    it.applyPreset(preset)
+                    it.enabled = enabled
+                }
+                secondaryReverb?.let {
+                    it.applyPreset(preset)
+                    it.enabled = enabled
+                }
+            } else {
+                reverbLegacy?.let {
+                    it.setPreset(preset.toShort())
+                    it.enabled = enabled
+                }
+                secondaryReverbLegacy?.let {
+                    it.setPreset(preset.toShort())
+                    it.enabled = enabled
+                }
             }
-            secondaryReverb?.let {
-                it.applyPreset(preset)
-                it.enabled = enabled
-            }
-        } else {
-            reverbLegacy?.let {
-                it.setPreset(preset.toShort())
-                it.enabled = enabled
-            }
-            secondaryReverbLegacy?.let {
-                it.setPreset(preset.toShort())
-                it.enabled = enabled
-            }
+        } catch (t: Throwable) {
+            Log.e(tag, "Failed to set reverb preset", t)
         }
     }
 
@@ -119,40 +123,52 @@ class ReverbEffect {
     }
 
     fun handover() {
-        if (Build.VERSION.SDK_INT >= 31) {
-            reverb?.release()
-            reverb = secondaryReverb
-            secondaryReverb = null
-        } else {
-            reverbLegacy?.release()
-            reverbLegacy = secondaryReverbLegacy
-            secondaryReverbLegacy = null
+        try {
+            if (Build.VERSION.SDK_INT >= 31) {
+                reverb?.release()
+                reverb = secondaryReverb
+                secondaryReverb = null
+            } else {
+                reverbLegacy?.release()
+                reverbLegacy = secondaryReverbLegacy
+                secondaryReverbLegacy = null
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     fun release(isSecondary: Boolean = false) {
-        if (isSecondary) {
-            secondaryReverbLegacy?.release()
-            secondaryReverbLegacy = null
-            secondaryReverb?.release()
-            secondaryReverb = null
-        } else {
-            reverbLegacy?.release()
-            reverbLegacy = null
-            reverb?.release()
-            reverb = null
+        try {
+            if (isSecondary) {
+                secondaryReverbLegacy?.release()
+                secondaryReverbLegacy = null
+                secondaryReverb?.release()
+                secondaryReverb = null
+            } else {
+                reverbLegacy?.release()
+                reverbLegacy = null
+                reverb?.release()
+                reverb = null
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     fun releaseAll() {
-        reverbLegacy?.release()
-        reverbLegacy = null
-        reverb?.release()
-        reverb = null
-        secondaryReverbLegacy?.release()
-        secondaryReverbLegacy = null
-        secondaryReverb?.release()
-        secondaryReverb = null
+        try {
+            reverbLegacy?.release()
+            reverbLegacy = null
+            reverb?.release()
+            reverb = null
+            secondaryReverbLegacy?.release()
+            secondaryReverbLegacy = null
+            secondaryReverb?.release()
+            secondaryReverb = null
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
     }
 
     companion object {

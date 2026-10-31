@@ -519,4 +519,15 @@
     <string name="font_delete_confirm_title">Удалить шрифт</string>
     <string name="font_delete_confirm_message">Вы уверены, что хотите удалить \"%s\"?</string>
     <string name="font_deleted">Шрифт удалён</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Изменить плейлист</string>
+    <string name="custom_covers">Пользовательские обложки</string>
+    <string name="add_from_gallery">Галерея</string>
+    <string name="add_from_files">Файлы</string>
+    <string name="covers_rotating_notice">Несколько обложек сменяются автоматически</string>
+    <string name="using_song_covers">Используются обложки треков из этого плейлиста</string>
+    <string name="restore_default_covers">Восстановить обложки по умолчанию</string>
+    <string name="edit_covers">Изменить обложки</string>
+    <string name="using_default_covers">Используются оригинальные обложки песен</string>
 </resources>

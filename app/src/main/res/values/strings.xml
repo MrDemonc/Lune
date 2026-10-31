@@ -522,4 +522,15 @@
     <string name="font_delete_confirm_title">Delete font</string>
     <string name="font_delete_confirm_message">Are you sure you want to delete \"%s\"?</string>
     <string name="font_deleted">Font deleted</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Edit Playlist</string>
+    <string name="custom_covers">Custom Covers</string>
+    <string name="add_from_gallery">Gallery</string>
+    <string name="add_from_files">Files</string>
+    <string name="covers_rotating_notice">Multiple covers rotate automatically</string>
+    <string name="using_song_covers">Using covers from songs in this playlist</string>
+    <string name="restore_default_covers">Restore default covers</string>
+    <string name="edit_covers">Edit Covers</string>
+    <string name="using_default_covers">Using original song covers</string>
 </resources>

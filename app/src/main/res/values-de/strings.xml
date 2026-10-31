@@ -516,4 +516,15 @@
     <string name="font_delete_confirm_title">Schriftart löschen</string>
     <string name="font_delete_confirm_message">Möchten Sie \"%s\" wirklich löschen?</string>
     <string name="font_deleted">Schriftart gelöscht</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Playlist bearbeiten</string>
+    <string name="custom_covers">Eigene Cover</string>
+    <string name="add_from_gallery">Galerie</string>
+    <string name="add_from_files">Dateien</string>
+    <string name="covers_rotating_notice">Mehrere Cover wechseln automatisch</string>
+    <string name="using_song_covers">Cover der Titel dieser Playlist werden verwendet</string>
+    <string name="restore_default_covers">Standard-Cover wiederherstellen</string>
+    <string name="edit_covers">Cover bearbeiten</string>
+    <string name="using_default_covers">Originale Song-Cover werden verwendet</string>
 </resources>

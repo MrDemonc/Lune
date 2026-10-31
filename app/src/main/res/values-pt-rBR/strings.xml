@@ -519,4 +519,15 @@
     <string name="font_delete_confirm_title">Excluir fonte</string>
     <string name="font_delete_confirm_message">Tem certeza de que deseja excluir \"%s\"?</string>
     <string name="font_deleted">Fonte excluída</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Editar playlist</string>
+    <string name="custom_covers">Capas personalizadas</string>
+    <string name="add_from_gallery">Galeria</string>
+    <string name="add_from_files">Arquivos</string>
+    <string name="covers_rotating_notice">Várias capas alternam automaticamente</string>
+    <string name="using_song_covers">Usando capas das músicas desta playlist</string>
+    <string name="restore_default_covers">Restaurar capas padrão</string>
+    <string name="edit_covers">Editar capas</string>
+    <string name="using_default_covers">Usando as capas originais das músicas</string>
 </resources>

@@ -150,6 +150,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.collectAsState
+import com.demonlab.lune.tools.CategoryCoverManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
@@ -706,6 +707,7 @@ fun MainScreen(
     var folderHierarchyMode by remember { mutableStateOf(settingsManager.folderHierarchyMode) }
     var tracksViewStyle by remember { mutableIntStateOf(settingsManager.tracksViewStyle) }
     var showSectionHeaders by remember { mutableStateOf(settingsManager.showSectionHeaders) }
+    val categoryCoverUpdates by CategoryCoverManager.updates.collectAsState()
 
     val pagerState = rememberPagerState(
         pageCount = { folders.size },
@@ -1468,7 +1470,8 @@ fun MainScreen(
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
                                             customActiveColor = listActiveControlsColor,
-                                            activePlaylistId = currentSong?.album?.hashCode()?.toLong()
+                                            activePlaylistId = currentSong?.album?.hashCode()?.toLong(),
+                                            category = "ALBUMS"
                                         )
                                     } else {
                                         AlbumStackedCarousel(
@@ -1526,7 +1529,8 @@ fun MainScreen(
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
                                             customActiveColor = listActiveControlsColor,
-                                            activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
+                                            activePlaylistId = currentSong?.artist?.hashCode()?.toLong(),
+                                            category = "ARTISTS"
                                         )
                                     } else {
                                         AlbumStackedCarousel(
@@ -1586,7 +1590,8 @@ fun MainScreen(
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
                                             customActiveColor = listActiveControlsColor,
-                                            activePlaylistId = null
+                                            activePlaylistId = null,
+                                            category = "GENRES"
                                         )
                                     } else {
                                         AlbumStackedCarousel(
@@ -1902,10 +1907,22 @@ fun MainScreen(
                                                     }
                                                 },
                                                 leadingContent = {
+                                                    val folderCustomCovers = remember(entry.name, categoryCoverUpdates) {
+                                                        CategoryCoverManager.getCustomCovers(context, "FOLDERS", entry.name)
+                                                    }
                                                     Box(contentAlignment = Alignment.Center) {
                                                         Surface(shape = CircleShape, color = folderIconBg, modifier = Modifier.size(56.dp)) {
-                                                            Box(contentAlignment = Alignment.Center) {
-                                                                Icon(Icons.Default.Folder, contentDescription = null, tint = folderIconTint, modifier = Modifier.size(24.dp))
+                                                            if (folderCustomCovers.isNotEmpty()) {
+                                                                AsyncImage(
+                                                                    model = folderCustomCovers.first(),
+                                                                    contentDescription = null,
+                                                                    contentScale = ContentScale.Crop,
+                                                                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                                                                )
+                                                            } else {
+                                                                Box(contentAlignment = Alignment.Center) {
+                                                                    Icon(Icons.Default.Folder, contentDescription = null, tint = folderIconTint, modifier = Modifier.size(24.dp))
+                                                                }
                                                             }
                                                         }
                                                         if (isPlaying) {
@@ -2224,8 +2241,9 @@ fun MainScreen(
             }
             
             lastPlaylist?.let { playListRender ->
+                val currentRenderPlaylist = musicViewModel.playlists.find { it.id == playListRender.id } ?: playListRender
                 PlaylistDetailView(
-                    playlist = playListRender,
+                    playlist = currentRenderPlaylist,
                     songs = playlistSongs,
                     sortOption = activeSortOption,
                     isSortAscending = activeIsSortAscending,
@@ -2303,6 +2321,7 @@ fun MainScreen(
                     }
                 }
                 val songsToDisplay = if (albumSongs.isNotEmpty()) albumSongs else albumRender.songs
+                val currentCategory = if (selectedFolder == "GENRES") "GENRES" else if (selectedFolder == "ARTISTS") "ARTISTS" else "ALBUMS"
                 AlbumDetailView(
                     album = albumRender,
                     songs = songsToDisplay,
@@ -2310,8 +2329,7 @@ fun MainScreen(
                     isSortAscending = activeIsSortAscending,
                     onBack = { selectedAlbum = null },
                     onSongClick = { song, sortedList ->
-                        val cat = if (selectedFolder == "GENRES") "GENRES" else if (selectedFolder == "ARTISTS") "ARTISTS" else "ALBUMS"
-                        playbackManager.play(song, sortedList, albumRender.id, category = cat)
+                        playbackManager.play(song, sortedList, albumRender.id, category = currentCategory)
                         onCurrentSongChange(song)
                         onIsPlayingChange(true)
                     },
@@ -2332,7 +2350,8 @@ fun MainScreen(
                     isDarkTheme = isDarkThemeMini,
                     useCustomControlsColor = useCustomControlsColor,
                     controlsColorPalette = controlsColorPalette,
-                    isArtistView = (if (selectedFolder == "GENRES") "GENRES" else if (selectedFolder == "ARTISTS") "ARTISTS" else "ALBUMS") == "ARTISTS" || (!isAlbumView && albumRender.artist.isEmpty() && selectedFolder != "GENRES")
+                    isArtistView = currentCategory == "ARTISTS" || (!isAlbumView && albumRender.artist.isEmpty() && selectedFolder != "GENRES"),
+                    category = currentCategory
                 )
             }
         }

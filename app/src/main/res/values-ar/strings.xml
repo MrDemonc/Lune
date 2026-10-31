@@ -517,4 +517,15 @@
     <string name="font_delete_confirm_title">حذف الخط</string>
     <string name="font_delete_confirm_message">هل أنت متأكد من رغبتك في حذف \"%s\"؟</string>
     <string name="font_deleted">تم حذف الخط</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">تعديل قائمة التشغيل</string>
+    <string name="custom_covers">أغلفة مخصصة</string>
+    <string name="add_from_gallery">المعرض</string>
+    <string name="add_from_files">الملفات</string>
+    <string name="covers_rotating_notice">الأغلفة المتعددة تدور تلقائياً</string>
+    <string name="using_song_covers">استخدام أغلفة الأغاني في قائمة التشغيل هذه</string>
+    <string name="restore_default_covers">استعادة الأغلفة الافتراضية</string>
+    <string name="edit_covers">تعديل الأغلفة</string>
+    <string name="using_default_covers">استخدام أغلفة الأغاني الأصلية</string>
 </resources>

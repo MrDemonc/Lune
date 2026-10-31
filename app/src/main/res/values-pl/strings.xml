@@ -520,4 +520,15 @@
     <string name="font_delete_confirm_title">Usuń czcionkę</string>
     <string name="font_delete_confirm_message">Czy na pewno chcesz usunąć \"%s\"?</string>
     <string name="font_deleted">Czcionka została usunięta</string>
+
+    <!-- Playlist Edit Sheet -->
+    <string name="edit_playlist">Edytuj playlistę</string>
+    <string name="custom_covers">Własne okładki</string>
+    <string name="add_from_gallery">Galeria</string>
+    <string name="add_from_files">Pliki</string>
+    <string name="covers_rotating_notice">Wiele okładek zmienia się automatycznie</string>
+    <string name="using_song_covers">Używanie okładek z utworów tej playlisty</string>
+    <string name="restore_default_covers">Przywróć domyślne okładki</string>
+    <string name="edit_covers">Edytuj okładki</string>
+    <string name="using_default_covers">Używanie oryginalnych okładek utworów</string>
 </resources>

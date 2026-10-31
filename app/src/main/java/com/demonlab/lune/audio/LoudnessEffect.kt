@@ -20,42 +20,62 @@ class LoudnessEffect {
             } else {
                 enhancer = e
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     fun setEnabled(enabled: Boolean) {
-        enhancer?.enabled = enabled
-        secondaryEnhancer?.enabled = enabled
+        try {
+            enhancer?.enabled = enabled
+            secondaryEnhancer?.enabled = enabled
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
     }
 
     fun setTargetGain(gain: Int) {
-        targetGain = gain
-        enhancer?.setTargetGain(gain)
-        secondaryEnhancer?.setTargetGain(gain)
+        try {
+            targetGain = gain
+            enhancer?.setTargetGain(gain)
+            secondaryEnhancer?.setTargetGain(gain)
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
     }
 
     fun handover() {
-        enhancer?.release()
+        try {
+            enhancer?.release()
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
         enhancer = secondaryEnhancer
         secondaryEnhancer = null
     }
 
     fun release(isSecondary: Boolean = false) {
-        if (isSecondary) {
-            secondaryEnhancer?.release()
-            secondaryEnhancer = null
-        } else {
-            enhancer?.release()
-            enhancer = null
+        try {
+            if (isSecondary) {
+                secondaryEnhancer?.release()
+                secondaryEnhancer = null
+            } else {
+                enhancer?.release()
+                enhancer = null
+            }
+        } catch (t: Throwable) {
+            t.printStackTrace()
         }
     }
 
     fun releaseAll() {
-        enhancer?.release()
-        enhancer = null
-        secondaryEnhancer?.release()
-        secondaryEnhancer = null
+        try {
+            enhancer?.release()
+            enhancer = null
+            secondaryEnhancer?.release()
+            secondaryEnhancer = null
+        } catch (t: Throwable) {
+            t.printStackTrace()
+        }
     }
 }

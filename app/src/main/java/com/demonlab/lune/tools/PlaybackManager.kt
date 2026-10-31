@@ -52,7 +52,7 @@ class PlaybackManager private constructor(private val context: Context) {
     var activeCategory by mutableStateOf<String?>(settings.activeCategory)
         private set
     var activePlaylistName by mutableStateOf<String?>(null)
-        private set
+        internal set
     private var shuffledIndices: List<Int> = emptyList()
     private var currentShufflePosition: Int = -1
     
