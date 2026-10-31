@@ -1388,7 +1388,7 @@ class MusicService : MediaLibraryService() {
         }
         val request = ImageRequest.Builder(this)
             .data(artUri)
-            .size(512, 512)
+            .size(1024, 1024)
             .allowHardware(false)
             .build()
 
@@ -1421,7 +1421,7 @@ class MusicService : MediaLibraryService() {
                     }
                     android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size, boundsOpts)
                     var inSample = 1
-                    while (boundsOpts.outWidth / (inSample * 2) >= 512 && boundsOpts.outHeight / (inSample * 2) >= 512) {
+                    while (boundsOpts.outWidth / (inSample * 2) >= 1024 && boundsOpts.outHeight / (inSample * 2) >= 1024) {
                         inSample *= 2
                     }
                     val decodeOpts = android.graphics.BitmapFactory.Options().apply {
@@ -1968,7 +1968,7 @@ class MusicService : MediaLibraryService() {
     private fun bitmapToSafeByteArray(bitmap: Bitmap?): ByteArray? {
         if (bitmap == null) return null
         return try {
-            val maxDim = 320
+            val maxDim = 1024
             val scaled = if (bitmap.width > maxDim || bitmap.height > maxDim) {
                 val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
                 val targetW = if (ratio >= 1f) maxDim else (maxDim * ratio).toInt().coerceAtLeast(1)
@@ -1977,12 +1977,36 @@ class MusicService : MediaLibraryService() {
             } else {
                 bitmap
             }
-            val stream = java.io.ByteArrayOutputStream()
-            scaled.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+
+            // Adaptive compression: start at 88% quality, reduce quality if necessary to guarantee
+            // staying within safe Binder parcel limits (< 256 KB)
+            var quality = 88
+            var bytes: ByteArray
+            while (true) {
+                val stream = java.io.ByteArrayOutputStream()
+                scaled.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+                bytes = stream.toByteArray()
+                if (bytes.size <= 256 * 1024 || quality <= 50) {
+                    break
+                }
+                quality -= 8
+            }
+
+            if (bytes.size > 256 * 1024) {
+                val fallbackDim = 720
+                val fallbackBmp = Bitmap.createScaledBitmap(scaled, fallbackDim, fallbackDim, true)
+                val stream = java.io.ByteArrayOutputStream()
+                fallbackBmp.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+                bytes = stream.toByteArray()
+                if (fallbackBmp != scaled) {
+                    fallbackBmp.recycle()
+                }
+            }
+
             if (scaled != bitmap) {
                 scaled.recycle()
             }
-            stream.toByteArray()
+            bytes
         } catch (_: Exception) {
             null
         }
@@ -2056,10 +2080,11 @@ class MusicService : MediaLibraryService() {
         }
 
         if (art != null) {
-            val scaled = if (art.width > 512 || art.height > 512) {
+            val maxNotificationDim = 1024
+            val scaled = if (art.width > maxNotificationDim || art.height > maxNotificationDim) {
                 val ratio = art.width.toFloat() / art.height.toFloat()
-                val targetW = if (ratio >= 1f) 512 else (512 * ratio).toInt().coerceAtLeast(1)
-                val targetH = if (ratio >= 1f) (512 / ratio).toInt().coerceAtLeast(1) else 512
+                val targetW = if (ratio >= 1f) maxNotificationDim else (maxNotificationDim * ratio).toInt().coerceAtLeast(1)
+                val targetH = if (ratio >= 1f) (maxNotificationDim / ratio).toInt().coerceAtLeast(1) else maxNotificationDim
                 try {
                     Bitmap.createScaledBitmap(art, targetW, targetH, true)
                 } catch (_: Exception) {

@@ -82,7 +82,7 @@ class LuneAudioPlayerAdapter(
                 .setArtworkUri(artUri)
                 .setIsPlayable(true)
 
-            currentArtworkData?.takeIf { it.size <= 256 * 1024 }?.let {
+            currentArtworkData?.takeIf { it.size <= 384 * 1024 }?.let {
                 metadataBuilder.setArtworkData(it, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
             }
 
