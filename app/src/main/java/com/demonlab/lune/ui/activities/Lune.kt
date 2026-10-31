@@ -39,6 +39,9 @@ import com.demonlab.lune.R
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -649,15 +652,29 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottomPadding = if (!isPlayerExpanded) {
-        if (currentSong != null && !settingsManager.isMiniPlayerMinimized) {
-            bottomInset + 160.dp
-        } else {
-            bottomInset + 86.dp
-        }
+    val bottomPadding = if (currentSong != null && !settingsManager.isMiniPlayerMinimized) {
+        bottomInset + 160.dp
     } else {
-        0.dp
+        bottomInset + 86.dp
     }
+    var miniCoverBounds by remember { mutableStateOf<Rect?>(null) }
+    val playerExpansionFraction = remember { Animatable(if (isPlayerExpanded) 1f else 0f) }
+
+    LaunchedEffect(isPlayerExpanded) {
+        val target = if (isPlayerExpanded) 1f else 0f
+        if (playerExpansionFraction.targetValue != target) {
+            val spec = if (target == 1f) {
+                tween<Float>(durationMillis = 380, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))
+            } else {
+                tween<Float>(durationMillis = 320, easing = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f))
+            }
+            playerExpansionFraction.animateTo(
+                targetValue = target,
+                animationSpec = spec
+            )
+        }
+    }
+    val expansionProgress = playerExpansionFraction.value
     val sTabResume = stringResource(R.string.tab_resume)
     val sTabMixes = stringResource(R.string.tab_mixes)
     val sTabAll = stringResource(R.string.tab_all)
@@ -2224,7 +2241,7 @@ fun MainScreen(
 
         // com.demonlab.lune.data.Playlist Detail Overlay
         AnimatedVisibility(
-            visible = selectedPlaylist != null && !isPlayerExpanded,
+            visible = selectedPlaylist != null,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.fillMaxSize()
@@ -2277,7 +2294,7 @@ fun MainScreen(
 
         // Album Detail Overlay
         AnimatedVisibility(
-            visible = selectedAlbum != null && !isPlayerExpanded,
+            visible = selectedAlbum != null,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.fillMaxSize()
@@ -2358,7 +2375,7 @@ fun MainScreen(
 
         // com.demonlab.lune.data.Folder Detail Overlay
         AnimatedVisibility(
-            visible = selectedFolderItem != null && !isPlayerExpanded,
+            visible = selectedFolderItem != null,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.fillMaxSize()
@@ -2409,7 +2426,17 @@ fun MainScreen(
         // Mini Player
 
         // Bottom Controls (Unified Pill + Mini Player)
-        if (!isPlayerExpanded) {
+        val isMiniPlayerVisible = expansionProgress < 1f
+        if (isMiniPlayerVisible) {
+            val miniAlpha = (1f - (expansionProgress * 3.2f)).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = miniAlpha
+                    }
+            ) {
             AnimatedContent(
                 targetState = currentSong != null,
                 transitionSpec = {
@@ -2441,7 +2468,6 @@ fun MainScreen(
                     }
                 },
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
                 label = "bottomContainerTransition"
             ) { hasSong ->
@@ -2514,7 +2540,8 @@ fun MainScreen(
                                     isDarkTheme = isDarkThemeMini,
                                     isPlaying = isPlaying,
                                     onRestore = { settingsManager.isMiniPlayerMinimized = false },
-                                    onExpandPlayer = { onIsPlayerExpandedChange(true) }
+                                    onExpandPlayer = { onIsPlayerExpandedChange(true) },
+                                    onCoverPositioned = { bounds -> if (expansionProgress <= 0.05f) miniCoverBounds = bounds }
                                 )
                             }
                         } else {
@@ -2584,15 +2611,15 @@ fun MainScreen(
                                                 vibrator.triggerLightVibration()
                                             }
                                             if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                                            onIsPlayingChange(!isPlaying)
+                                             onIsPlayingChange(!isPlaying)
                                         },
                                         onExpand = { onIsPlayerExpandedChange(true) },
                                         onPrevious = playPrevious,
                                         onNext = playNext,
                                         onSearchClick = { showSearchScreen = true },
                                         onScrollToCurrent = if (isCurrentPlaybackListViewed) { { scrollToCurrentTrigger.value++ } } else null,
-
-                                        onMinimize = { settingsManager.isMiniPlayerMinimized = true }
+                                        onMinimize = { settingsManager.isMiniPlayerMinimized = true },
+                                        onCoverPositioned = { bounds -> if (expansionProgress <= 0.05f) miniCoverBounds = bounds }
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -2660,71 +2687,68 @@ fun MainScreen(
                 }
             }
         }
+    }
 
         // Full Player
-        AnimatedVisibility(
-            visible = isPlayerExpanded,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it })
-        ) {
-            val song = currentSong
-            if (song != null) {
-                FullPlayer(
-                    song = song,
-                    isPlaying = isPlaying,
-                    progress = playbackProgress,
-                    onProgressChange = { newProgress -> 
-                        onPlaybackProgressChange(newProgress)
-                        playbackManager.seekTo(newProgress)
-                    },
-                    onTogglePlay = { 
-                        if (settingsManager.isHapticVibrationEnabled) {
-                            vibrator.triggerLightVibration()
-                        }
-                        if (isPlaying) playbackManager.pause() else playbackManager.resume()
-                        onIsPlayingChange(!isPlaying)
-                    },
-                    onMinimize = { onIsPlayerExpandedChange(false) },
-                    onNext = playNext,
-                    onPrevious = playPrevious,
-                    onRefreshSongs = onRefreshSongs,
-                    onSyncFavorite = { songId, isFav -> musicViewModel.syncFavoriteStatusInMemory(songId, isFav) },
-                    showWaveform = playbackManager.isFullPlayerVisualizerEnabled,
-                    onToggleWaveform = {}, // Not used anymore as we have settings sheet
-                    coverShape = coverShape,
-                    coverScale = coverScale,
-                    coverSpin = coverSpin,
-                    coverVinylEffect = coverVinylEffect,
-                    controlsIconStyle = controlsIconStyle,
-                    isControlsFilled = isControlsFilled,
-                    useCustomControlsColor = useCustomControlsColor,
-                    controlsColorPalette = controlsColorPalette,
-                    onShowLyrics = {
-                        val intent = Intent(context, LyricsActivity::class.java)
-                        context.startActivity(intent)
-                    },
-                    onRequestAudioPermission = onRequestAudioPermission,
-                    onArtistClick = { artistName ->
-                        val artistSongs = visibleSongs.filter { it.artist.trim().equals(artistName.trim(), ignoreCase = true) }
-                        val artistAlbum = Album(
-                            id = artistName.hashCode().toLong(),
-                            name = artistName,
-                            artist = "",
-                            albumArtUri = artistSongs.firstOrNull()?.albumArtUri,
-                            coverUrl = artistSongs.firstOrNull()?.coverUrl,
-                            songs = artistSongs.sortedBy { it.title }
-                        )
-                        selectedAlbum = artistAlbum
-                        isAlbumView = false
-                        onIsPlayerExpandedChange(false)
-                        onSelectedFolderChange("ARTISTS")
+        val isFullPlayerVisible = isPlayerExpanded || expansionProgress > 0f
+        if (isFullPlayerVisible && currentSong != null) {
+            FullPlayer(
+                song = currentSong,
+                isPlaying = isPlaying,
+                progress = playbackProgress,
+                onProgressChange = { newProgress -> 
+                    onPlaybackProgressChange(newProgress)
+                    playbackManager.seekTo(newProgress)
+                },
+                onTogglePlay = { 
+                    if (settingsManager.isHapticVibrationEnabled) {
+                        vibrator.triggerLightVibration()
                     }
-                )
-            }
+                    if (isPlaying) playbackManager.pause() else playbackManager.resume()
+                    onIsPlayingChange(!isPlaying)
+                },
+                onMinimize = { onIsPlayerExpandedChange(false) },
+                onNext = playNext,
+                onPrevious = playPrevious,
+                onRefreshSongs = onRefreshSongs,
+                onSyncFavorite = { songId, isFav -> musicViewModel.syncFavoriteStatusInMemory(songId, isFav) },
+                showWaveform = playbackManager.isFullPlayerVisualizerEnabled,
+                onToggleWaveform = {}, // Not used anymore as we have settings sheet
+                coverShape = coverShape,
+                coverScale = coverScale,
+                coverSpin = coverSpin,
+                coverVinylEffect = coverVinylEffect,
+                controlsIconStyle = controlsIconStyle,
+                isControlsFilled = isControlsFilled,
+                useCustomControlsColor = useCustomControlsColor,
+                controlsColorPalette = controlsColorPalette,
+                onShowLyrics = {
+                    val intent = Intent(context, LyricsActivity::class.java)
+                    context.startActivity(intent)
+                },
+                onRequestAudioPermission = onRequestAudioPermission,
+                onArtistClick = { artistName ->
+                    val artistSongs = visibleSongs.filter { it.artist.trim().equals(artistName.trim(), ignoreCase = true) }
+                    val artistAlbum = Album(
+                        id = artistName.hashCode().toLong(),
+                        name = artistName,
+                        artist = "",
+                        albumArtUri = artistSongs.firstOrNull()?.albumArtUri,
+                        coverUrl = artistSongs.firstOrNull()?.coverUrl,
+                        songs = artistSongs.sortedBy { it.title }
+                    )
+                    selectedAlbum = artistAlbum
+                    isAlbumView = false
+                    onIsPlayerExpandedChange(false)
+                    onSelectedFolderChange("ARTISTS")
+                },
+                expansionFraction = expansionProgress,
+                miniCoverBounds = miniCoverBounds
+            )
         }
     }
 
-    if (isPlayerExpanded) {
+    if (isPlayerExpanded || expansionProgress > 0f) {
         BackHandler {
             onIsPlayerExpandedChange(false)
         }

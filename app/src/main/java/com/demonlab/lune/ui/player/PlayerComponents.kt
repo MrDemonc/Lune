@@ -41,7 +41,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.cos
@@ -739,7 +743,9 @@ fun FullPlayer(
     controlsColorPalette: Int,
     onShowLyrics: () -> Unit,
     onRequestAudioPermission: () -> Unit,
-    onArtistClick: ((String) -> Unit)? = null
+    onArtistClick: ((String) -> Unit)? = null,
+    expansionFraction: Float = 1f,
+    miniCoverBounds: Rect? = null
 ) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
@@ -997,9 +1003,7 @@ fun FullPlayer(
     }
 
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+        modifier = Modifier.fillMaxSize()
     ) {
         val isMultiWindow = activity?.isInMultiWindowMode == true
         val isDeviceLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -1009,43 +1013,89 @@ fun FullPlayer(
                                (maxHeight < 560.dp && maxWidth < 380.dp)
         val isLandscape = if (isFloatingWindow) (maxWidth > maxHeight) else isDeviceLandscape
         val isCompact = isFloatingWindow
+
+        val bgAlpha = expansionFraction.coerceIn(0f, 1f)
+        val density = LocalDensity.current
+        val screenWidthPx = with(density) { maxWidth.toPx() }
+        val screenHeightPx = with(density) { maxHeight.toPx() }
+
+        val topBarProgress = ((expansionFraction - 0.50f) / 0.45f).coerceIn(0f, 1f)
+        val topBarAlpha = topBarProgress
+        val topBarOffsetY = (1f - topBarProgress) * with(density) { 16.dp.toPx() }
+
+        // Staggered cascade for controls: Header -> Slider -> Play Controls -> Bottom Options
+        val headerProgress = ((expansionFraction - 0.58f) / 0.38f).coerceIn(0f, 1f)
+        val headerAlpha = headerProgress
+        val headerOffsetY = (1f - headerProgress) * with(density) { 26.dp.toPx() }
+
+        val sliderProgress = ((expansionFraction - 0.63f) / 0.34f).coerceIn(0f, 1f)
+        val sliderAlpha = sliderProgress
+        val sliderOffsetY = (1f - sliderProgress) * with(density) { 32.dp.toPx() }
+
+        val playControlsProgress = ((expansionFraction - 0.67f) / 0.30f).coerceIn(0f, 1f)
+        val playControlsAlpha = playControlsProgress
+        val playControlsOffsetY = (1f - playControlsProgress) * with(density) { 36.dp.toPx() }
+
+        val optionsProgress = ((expansionFraction - 0.70f) / 0.28f).coerceIn(0f, 1f)
+        val optionsAlpha = optionsProgress
+        val optionsOffsetY = (1f - optionsProgress) * with(density) { 40.dp.toPx() }
+
+        // Surface base background fading with expansionFraction
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .graphicsLayer { alpha = bgAlpha }
+        )
+
         if (!isCinematic && hasBlurBackground) {
-            Crossfade(
-                targetState = song.toArtwork(),
-                animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
-                label = "FullPlayerBlurCrossfade"
-            ) { targetSong ->
-                val blurRequest = remember(targetSong.id, targetSong.coverUrl) {
-                    ImageRequest.Builder(context)
-                        .data(targetSong.coverUrl ?: targetSong.uri)
-                        .size(200, 200)
-                        .fallback(R.drawable.ic_artwork_fallback)
-                        .error(R.drawable.ic_artwork_fallback)
-                        .build()
-                }
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AsyncImage(
-                        model = blurRequest,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .blur(40.dp)
-                            .alpha(if (isDarkTheme) 0.2f else 0.35f),
-                        contentScale = ContentScale.Crop
-                    )
-                    if (!isDarkTheme) {
-                        Box(
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = bgAlpha }
+            ) {
+                Crossfade(
+                    targetState = song.toArtwork(),
+                    animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
+                    label = "FullPlayerBlurCrossfade"
+                ) { targetSong ->
+                    val blurRequest = remember(targetSong.id, targetSong.coverUrl) {
+                        ImageRequest.Builder(context)
+                            .data(targetSong.coverUrl ?: targetSong.uri)
+                            .size(200, 200)
+                            .fallback(R.drawable.ic_artwork_fallback)
+                            .error(R.drawable.ic_artwork_fallback)
+                            .build()
+                    }
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AsyncImage(
+                            model = blurRequest,
+                            contentDescription = null,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.28f))
+                                .blur(40.dp)
+                                .alpha(if (isDarkTheme) 0.2f else 0.35f),
+                            contentScale = ContentScale.Crop
                         )
+                        if (!isDarkTheme) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.28f))
+                            )
+                        }
                     }
                 }
             }
         }
 
         if (isCinematic) {
-            val cinematicTransform: @Composable (Modifier) -> Modifier = { mod ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = bgAlpha }
+            ) {
+                val cinematicTransform: @Composable (Modifier) -> Modifier = { mod ->
                 mod.clipToBounds().graphicsLayer {
                     val dim = size.width.coerceAtMost(size.height)
                     translationX = orbitX * dim
@@ -1165,6 +1215,7 @@ fun FullPlayer(
                 )
             }
         }
+    }
 
         val dynamicPrimaryColor = if (useCustomControlsColor && controlsColorPalette != 0) {
             when (controlsColorPalette) {
@@ -1282,7 +1333,11 @@ fun FullPlayer(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = if (isFloatingWindow) 6.dp else if (isLandscape) 8.dp else 16.dp),
+                        .padding(bottom = if (isFloatingWindow) 6.dp else if (isLandscape) 8.dp else 16.dp)
+                        .graphicsLayer {
+                            alpha = topBarAlpha
+                            translationY = -topBarOffsetY
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Add to Playlist button: Material 3 Expressive rounded square container
@@ -1395,107 +1450,237 @@ fun FullPlayer(
                     }
                 }
 
+                var fullCoverBounds by remember { mutableStateOf<Rect?>(null) }
+
+                val fallbackFullBounds = remember(screenWidthPx, screenHeightPx, isLandscape) {
+                    if (isLandscape) {
+                        val fullDim = minOf(screenWidthPx / 2f, screenHeightPx - with(density) { 32.dp.toPx() })
+                        val fullLeft = with(density) { 48.dp.toPx() }
+                        val fullTop = (screenHeightPx - fullDim) / 2f
+                        Rect(fullLeft, fullTop, fullLeft + fullDim, fullTop + fullDim)
+                    } else {
+                        val fullW = screenWidthPx - with(density) { 48.dp.toPx() }
+                        val fullLeft = with(density) { 24.dp.toPx() }
+                        val fullTop = with(density) { 104.dp.toPx() }
+                        Rect(fullLeft, fullTop, fullLeft + fullW, fullTop + fullW)
+                    }
+                }
+
+                val fallbackMiniBounds = remember(screenWidthPx, screenHeightPx, settingsManager.isMiniPlayerMinimized) {
+                    val miniW = with(density) { 70.dp.toPx() }
+                    val miniRight = screenWidthPx - with(density) { 14.dp.toPx() }
+                    val miniBottomOffset = if (settingsManager.isMiniPlayerMinimized) 86.dp else 142.dp
+                    val miniBottom = screenHeightPx - with(density) { miniBottomOffset.toPx() }
+                    Rect(miniRight - miniW, miniBottom - miniW, miniRight, miniBottom)
+                }
+
+                val activeMiniBounds = miniCoverBounds ?: fallbackMiniBounds
+                val activeFullBounds = fullCoverBounds ?: fallbackFullBounds
+
+                val isExpandingOrCollapsing = expansionFraction < 1f
+                val currentCoverScale: Float
+                val currentCoverTransX: Float
+                val currentCoverTransY: Float
+
+                if (isExpandingOrCollapsing && activeFullBounds.width > 0 && activeMiniBounds.width > 0) {
+                    val startScale = activeMiniBounds.width / activeFullBounds.width
+                    currentCoverScale = lerp(startScale, 1f, expansionFraction)
+
+                    val startCenterX = activeMiniBounds.center.x
+                    val startCenterY = activeMiniBounds.center.y
+                    val targetCenterX = activeFullBounds.center.x
+                    val targetCenterY = activeFullBounds.center.y
+
+                    val currentCenterX = lerp(startCenterX, targetCenterX, expansionFraction)
+                    val currentCenterY = lerp(startCenterY, targetCenterY, expansionFraction)
+
+                    currentCoverTransX = currentCenterX - targetCenterX
+                    currentCoverTransY = currentCenterY - targetCenterY
+                } else {
+                    currentCoverScale = 1f
+                    currentCoverTransX = 0f
+                    currentCoverTransY = 0f
+                }
+
                 val coverContent: @Composable (Modifier) -> Unit = { mod ->
                     if (isCinematic) {
-                        Box(modifier = mod)
+                        if (isExpandingOrCollapsing) {
+                            Box(
+                                modifier = mod
+                                    .zIndex(10f)
+                                    .onGloballyPositioned { coords ->
+                                        val bounds = coords.boundsInRoot()
+                                        if (bounds.width > 0 && bounds.height > 0) {
+                                            if (fullCoverBounds == null || expansionFraction >= 0.99f) {
+                                                fullCoverBounds = bounds
+                                            }
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            scaleX = currentCoverScale
+                                            scaleY = currentCoverScale
+                                            translationX = currentCoverTransX
+                                            translationY = currentCoverTransY
+                                            alpha = (1f - expansionFraction * 1.5f).coerceIn(0f, 1f)
+                                            shape = CircleShape
+                                            clip = true
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        modifier = Modifier.fillMaxSize(),
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        tonalElevation = 4.dp
+                                    ) {
+                                        SongCoverImage(
+                                            coverUrl = song.coverUrl ?: song.uri,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            shape = CircleShape,
+                                            iconScale = 0.68f
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Box(modifier = mod)
+                        }
                     } else {
-                        val activeShape = when (coverShape) {
-                            1 -> RoundedCornerShape(0.dp)
-                            2 -> CircleShape
-                            else -> RoundedCornerShape(if (isFloatingWindow) 18.dp else 28.dp)
+                        val baseRadiusPx = when (coverShape) {
+                            1 -> 0f
+                            2 -> activeFullBounds.width / 2f
+                            else -> with(density) { (if (isFloatingWindow) 18.dp else 28.dp).toPx() }
+                        }
+                        val currentRadiusPx = if (isExpandingOrCollapsing) {
+                            lerp(activeFullBounds.width / 2f, baseRadiusPx, expansionFraction)
+                        } else {
+                            baseRadiusPx
+                        }
+                        val activeShape = remember(currentRadiusPx) {
+                            RoundedCornerShape(with(density) { currentRadiusPx.toDp() })
                         }
                         val glowProgress = favoriteGlowAnim.value
 
                         Box(
-                            modifier = mod,
+                            modifier = mod
+                                .zIndex(if (isExpandingOrCollapsing) 10f else 0f)
+                                .onGloballyPositioned { coords ->
+                                    val bounds = coords.boundsInRoot()
+                                    if (bounds.width > 0 && bounds.height > 0) {
+                                        if (fullCoverBounds == null || expansionFraction >= 0.99f) {
+                                            fullCoverBounds = bounds
+                                        }
+                                    }
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .graphicsLayer {
-                                        scaleX = coverBounceScale.value
-                                        scaleY = coverBounceScale.value
+                                        scaleX = currentCoverScale
+                                        scaleY = currentCoverScale
+                                        translationX = currentCoverTransX
+                                        translationY = currentCoverTransY
+                                        shape = activeShape
+                                        clip = isExpandingOrCollapsing
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Resplandor difuminado con degradé adaptado al Dynamic Color y forma de la carátula
-                                if (glowProgress > 0.001f) {
-                                    Canvas(
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        val maxSpreadPx = (if (isFloatingWindow) 12.dp else 18.dp).toPx()
-                                        val spreadPx = maxSpreadPx * glowProgress
-                                        if (spreadPx <= 0.5f) return@Canvas
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            scaleX = coverBounceScale.value
+                                            scaleY = coverBounceScale.value
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // Resplandor difuminado con degradé adaptado al Dynamic Color y forma de la carátula
+                                    if (glowProgress > 0.001f) {
+                                        Canvas(
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            val maxSpreadPx = (if (isFloatingWindow) 12.dp else 18.dp).toPx()
+                                            val spreadPx = maxSpreadPx * glowProgress
+                                            if (spreadPx <= 0.5f) return@Canvas
 
-                                        val baseRadius = when (coverShape) {
-                                            1 -> 0f
-                                            2 -> size.minDimension / 2f
-                                            else -> (if (isFloatingWindow) 18.dp else 28.dp).toPx()
-                                        }
+                                            val baseRadius = when (coverShape) {
+                                                1 -> 0f
+                                                2 -> size.minDimension / 2f
+                                                else -> (if (isFloatingWindow) 18.dp else 28.dp).toPx()
+                                            }
 
-                                        val maxAlpha = 0.85f * glowProgress
+                                            val maxAlpha = 0.85f * glowProgress
 
-                                        // Base sólida justo detrás del borde de la carátula para evitar fisuras subpíxel
-                                        drawRoundRect(
-                                            color = favoriteGlowColor.copy(alpha = maxAlpha),
-                                            topLeft = Offset.Zero,
-                                            size = size,
-                                            cornerRadius = CornerRadius(baseRadius, baseRadius)
-                                        )
+                                            // Base sólida justo detrás del borde de la carátula para evitar fisuras subpíxel
+                                            drawRoundRect(
+                                                color = favoriteGlowColor.copy(alpha = maxAlpha),
+                                                topLeft = Offset.Zero,
+                                                size = size,
+                                                cornerRadius = CornerRadius(baseRadius, baseRadius)
+                                            )
 
-                                        // Trazos concéntricos con decaimiento cuadrático para un degradé y difuminado continuo
-                                        val steps = 24
-                                        val stepPx = spreadPx / steps
-                                        val strokeWidth = stepPx * 1.75f
+                                            // Trazos concéntricos con decaimiento cuadrático para un degradé y difuminado continuo
+                                            val steps = 24
+                                            val stepPx = spreadPx / steps
+                                            val strokeWidth = stepPx * 1.75f
 
-                                        for (i in 0 until steps) {
-                                            val t = i.toFloat() / steps
-                                            val d = t * spreadPx
-                                            val falloff = (1.0f - t).toDouble().pow(2.0).toFloat()
-                                            val alpha = (maxAlpha * falloff).coerceIn(0f, 1f)
+                                            for (i in 0 until steps) {
+                                                val t = i.toFloat() / steps
+                                                val d = t * spreadPx
+                                                val falloff = (1.0f - t).toDouble().pow(2.0).toFloat()
+                                                val alpha = (maxAlpha * falloff).coerceIn(0f, 1f)
 
-                                            if (alpha > 0.002f) {
-                                                val cornerRadius = if (baseRadius > 0f) baseRadius + d else 0f
-                                                drawRoundRect(
-                                                    color = favoriteGlowColor.copy(alpha = alpha),
-                                                    topLeft = Offset(-d, -d),
-                                                    size = Size(size.width + 2 * d, size.height + 2 * d),
-                                                    cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                                                    style = Stroke(width = strokeWidth)
-                                                )
+                                                if (alpha > 0.002f) {
+                                                    val cornerRadius = if (baseRadius > 0f) baseRadius + d else 0f
+                                                    drawRoundRect(
+                                                        color = favoriteGlowColor.copy(alpha = alpha),
+                                                        topLeft = Offset(-d, -d),
+                                                        size = Size(size.width + 2 * d, size.height + 2 * d),
+                                                        cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                                                        style = Stroke(width = strokeWidth)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
-                                }
 
-                                Crossfade(
-                                    targetState = song.toArtwork(),
-                                    animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
-                                    label = "FullPlayerCoverCrossfade"
-                                ) { targetSong ->
-                                    if (coverShape == 2 && coverVinylEffect) {
-                                        VinylRecordAsyncCover(
-                                            model = targetSong.coverUrl ?: targetSong.uri,
-                                            rotation = if (coverSpin && isPlaying) spinRotation else 0f,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    } else {
-                                        Surface(
-                                            shape = activeShape,
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                            tonalElevation = 8.dp
-                                        ) {
-                                            SongCoverImage(
-                                                coverUrl = targetSong.coverUrl ?: targetSong.uri,
-                                                contentDescription = null,
-                                                modifier = Modifier.fillMaxSize(),
-                                                shape = activeShape,
-                                                iconScale = 0.68f
+                                    Crossfade(
+                                        targetState = song.toArtwork(),
+                                        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+                                        label = "FullPlayerCoverCrossfade"
+                                    ) { targetSong ->
+                                        if (coverShape == 2 && coverVinylEffect) {
+                                            VinylRecordAsyncCover(
+                                                model = targetSong.coverUrl ?: targetSong.uri,
+                                                rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                                                modifier = Modifier.fillMaxSize()
                                             )
+                                        } else {
+                                            Surface(
+                                                shape = activeShape,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                                tonalElevation = if (isExpandingOrCollapsing) 4.dp else 8.dp,
+                                                shadowElevation = if (isExpandingOrCollapsing) 0.dp else 6.dp
+                                            ) {
+                                                SongCoverImage(
+                                                    coverUrl = targetSong.coverUrl ?: targetSong.uri,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    shape = activeShape,
+                                                    iconScale = 0.68f
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -1516,7 +1701,7 @@ fun FullPlayer(
                             .size(maxCoverDim)
                             .scale(coverScale)
                             .songSwipeGestures(
-                                enabled = isGesturesEnabled,
+                                enabled = isGesturesEnabled && expansionFraction >= 0.95f,
                                 onNext = handleNext,
                                 onPrevious = handlePrevious
                             )
@@ -1529,7 +1714,7 @@ fun FullPlayer(
                             .aspectRatio(1f, matchHeightConstraintsFirst = true)
                             .scale(coverScale)
                             .songSwipeGestures(
-                                enabled = isGesturesEnabled,
+                                enabled = isGesturesEnabled && expansionFraction >= 0.95f,
                                 onNext = handleNext,
                                 onPrevious = handlePrevious
                             )
@@ -1539,7 +1724,7 @@ fun FullPlayer(
                             .aspectRatio(1f)
                             .scale(coverScale)
                             .songSwipeGestures(
-                                enabled = isGesturesEnabled,
+                                enabled = isGesturesEnabled && expansionFraction >= 0.95f,
                                 onNext = handleNext,
                                 onPrevious = handlePrevious
                             )
@@ -1556,7 +1741,13 @@ fun FullPlayer(
             val activePrimary = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = headerVertPadding),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = headerVertPadding)
+                    .graphicsLayer {
+                        alpha = headerAlpha
+                        translationY = headerOffsetY
+                    },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1656,7 +1847,14 @@ fun FullPlayer(
                 }
             }
 
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = sliderAlpha
+                        translationY = sliderOffsetY
+                    }
+            ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -1835,7 +2033,11 @@ fun FullPlayer(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(playRowHeight),
+                    .height(playRowHeight)
+                    .graphicsLayer {
+                        alpha = playControlsAlpha
+                        translationY = playControlsOffsetY
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Surface(
@@ -1981,7 +2183,11 @@ fun FullPlayer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = if (isFloatingWindow) 2.dp else 8.dp),
+                    .padding(horizontal = if (isFloatingWindow) 2.dp else 8.dp)
+                    .graphicsLayer {
+                        alpha = optionsAlpha
+                        translationY = optionsOffsetY
+                    },
                 horizontalArrangement = Arrangement.spacedBy(if (isFloatingWindow) 4.dp else 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -2044,7 +2250,8 @@ fun FullPlayer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(swipeUpAction, onMinimize) {
+                .pointerInput(swipeUpAction, onMinimize, expansionFraction >= 0.95f) {
+                    if (expansionFraction < 0.95f) return@pointerInput
                     val threshold = if (isFloatingWindow) 60.dp.toPx() else 110.dp.toPx()
                     var totalDragX = 0f
                     var totalDragY = 0f
@@ -2115,7 +2322,7 @@ fun FullPlayer(
                         .align(Alignment.BottomCenter)
                         .height(if (isFloatingWindow) 48.dp else 80.dp)
                         .fillMaxWidth()
-                        .alpha(0.6f),
+                        .alpha(0.6f * optionsAlpha),
                     magnitudes = effectiveVisualizerData,
                     color = if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary
                 )
@@ -2417,7 +2624,8 @@ fun MiniPlayer(
     onNext: () -> Unit,
     onSearchClick: (() -> Unit)? = null,
     onScrollToCurrent: (() -> Unit)? = null,
-    onMinimize: (() -> Unit)? = null
+    onMinimize: (() -> Unit)? = null,
+    onCoverPositioned: ((Rect) -> Unit)? = null
 ) {
     val infiniteSpinTransition = rememberInfiniteTransition(label = "MiniPlayerSpin")
     val spinRotation by infiniteSpinTransition.animateFloat(
@@ -2621,6 +2829,12 @@ fun MiniPlayer(
         Box(
             modifier = Modifier
                 .size(70.dp)
+                .onGloballyPositioned { coordinates ->
+                    val bounds = coordinates.boundsInRoot()
+                    if (bounds.width > 0 && bounds.height > 0) {
+                        onCoverPositioned?.invoke(bounds)
+                    }
+                }
                 .bounceClick(),
             contentAlignment = Alignment.Center
         ) {
@@ -2681,6 +2895,7 @@ fun MiniPlayerMinimized(
     isPlaying: Boolean = false,
     onRestore: () -> Unit,
     onExpandPlayer: (() -> Unit)? = null,
+    onCoverPositioned: ((Rect) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -2778,7 +2993,12 @@ fun MiniPlayerMinimized(
     )
 
     Box(
-        modifier = modifier,
+        modifier = modifier.onGloballyPositioned { coordinates ->
+            val bounds = coordinates.boundsInRoot()
+            if (bounds.width > 0 && bounds.height > 0) {
+                onCoverPositioned?.invoke(bounds)
+            }
+        },
         contentAlignment = Alignment.Center
     ) {
         Surface(
