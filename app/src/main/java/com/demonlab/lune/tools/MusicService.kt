@@ -57,7 +57,6 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 
 @OptIn(UnstableApi::class, ExperimentalCoroutinesApi::class)
-@Suppress("DEPRECATION")
 class MusicService : MediaLibraryService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
         ensureMediaSession()
@@ -309,12 +308,20 @@ class MusicService : MediaLibraryService() {
                 .build().also { audioFocusRequest = it }
             audioManager.requestAudioFocus(request)
         } else {
-            @Suppress("DEPRECATION")
-            audioManager.requestAudioFocus(
-                audioFocusListener,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN
-            )
+            runCatching {
+                val method = AudioManager::class.java.getMethod(
+                    "requestAudioFocus",
+                    AudioManager.OnAudioFocusChangeListener::class.java,
+                    Int::class.javaPrimitiveType,
+                    Int::class.javaPrimitiveType
+                )
+                method.invoke(
+                    audioManager,
+                    audioFocusListener,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN
+                ) as? Int
+            }.getOrNull() ?: AudioManager.AUDIOFOCUS_REQUEST_FAILED
         }
 
         return when (result) {
@@ -342,8 +349,13 @@ class MusicService : MediaLibraryService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
         } else {
-            @Suppress("DEPRECATION")
-            audioManager.abandonAudioFocus(audioFocusListener)
+            runCatching {
+                val method = AudioManager::class.java.getMethod(
+                    "abandonAudioFocus",
+                    AudioManager.OnAudioFocusChangeListener::class.java
+                )
+                method.invoke(audioManager, audioFocusListener)
+            }
         }
     }
 
@@ -474,12 +486,7 @@ class MusicService : MediaLibraryService() {
                 pm.updatePlayingState(false)
                 pm.savePlaybackState(wasPlaying = false)
                 stopWidgetUpdateTimer()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                } else {
-                    @Suppress("DEPRECATION")
-                    stopForeground(true)
-                }
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 try {
                     val notificationManager = getSystemService(NotificationManager::class.java)
                     notificationManager?.cancel(1)
@@ -523,12 +530,7 @@ class MusicService : MediaLibraryService() {
             pm.updatePlayingState(false)
             pm.savePlaybackState(wasPlaying = false)
             stopWidgetUpdateTimer()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
@@ -788,12 +790,11 @@ class MusicService : MediaLibraryService() {
             controllerInfo: MediaSession.ControllerInfo,
             intent: Intent
         ): Boolean {
-            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-            }
+            val keyEvent = androidx.core.content.IntentCompat.getParcelableExtra(
+                intent,
+                Intent.EXTRA_KEY_EVENT,
+                KeyEvent::class.java
+            )
             if (keyEvent != null && handleMediaKeyEvent(keyEvent)) {
                 return true
             }
@@ -1445,12 +1446,7 @@ class MusicService : MediaLibraryService() {
             isNotificationDismissed = true
             abandonAudioFocus()
             releaseWakeLock()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
@@ -1623,12 +1619,7 @@ class MusicService : MediaLibraryService() {
         pauseTimeoutJob = serviceScope.launch {
             delay(PAUSE_TIMEOUT_MS)
             isNotificationDismissed = true
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
@@ -1811,11 +1802,16 @@ class MusicService : MediaLibraryService() {
             }
 
             try {
-                val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
-                val globalLyrics = File(musicDir, "Lyrics")
-                if (globalLyrics.isDirectory) {
-                    possibleLrcFiles.add(File(globalLyrics, "$baseName.lrc"))
-                    possibleLrcFiles.add(File(globalLyrics, "$baseName.LRC"))
+                val musicDir = runCatching {
+                    Environment::class.java.getMethod("getExternalStoragePublicDirectory", String::class.java)
+                        .invoke(null, Environment.DIRECTORY_MUSIC) as? File
+                }.getOrNull()
+                if (musicDir != null) {
+                    val globalLyrics = File(musicDir, "Lyrics")
+                    if (globalLyrics.isDirectory) {
+                        possibleLrcFiles.add(File(globalLyrics, "$baseName.lrc"))
+                        possibleLrcFiles.add(File(globalLyrics, "$baseName.LRC"))
+                    }
                 }
             } catch (_: Exception) {}
 

@@ -123,7 +123,6 @@ class WidgetCustomizationActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("DEPRECATION")
 @Composable
 fun WidgetCustomizationScreen(
     onBack: () -> Unit,

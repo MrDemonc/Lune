@@ -70,35 +70,25 @@ data class StorageInfo(val name: String, val path: String, val isPrimary: Boolea
 
 fun getStorageVolumes(context: android.content.Context): List<StorageInfo> {
     val volumes = mutableListOf<StorageInfo>()
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        val storageManager = context.getSystemService(android.content.Context.STORAGE_SERVICE) as StorageManager
-        for (volume in storageManager.storageVolumes) {
-            val dir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                volume.directory
-            } else {
-                @Suppress("DEPRECATION")
-                if (volume.isPrimary) {
-                    android.os.Environment.getExternalStorageDirectory()
-                } else {
-                    try {
-                        val method = volume.javaClass.getMethod("getPath")
-                        File(method.invoke(volume) as String)
-                    } catch (_: Exception) { null }
-                }
-            }
-            dir?.let {
-                val name = volume.getDescription(context)
-                volumes.add(StorageInfo(name, it.absolutePath, volume.isPrimary))
+    val storageManager = context.getSystemService(android.content.Context.STORAGE_SERVICE) as StorageManager
+    for (volume in storageManager.storageVolumes) {
+        val dir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            volume.directory
+        } else {
+            try {
+                val method = volume.javaClass.getMethod("getPath")
+                File(method.invoke(volume) as String)
+            } catch (_: Exception) {
+                runCatching {
+                    val method = android.os.Environment::class.java.getMethod("getExternalStorageDirectory")
+                    method.invoke(null) as? File
+                }.getOrNull()
             }
         }
-    } else {
-        @Suppress("DEPRECATION")
-        val primary = android.os.Environment.getExternalStorageDirectory()
-        volumes.add(StorageInfo(
-            context.getString(if (primary.exists()) R.string.internal_storage else R.string.sd_card),
-            primary.absolutePath,
-            true
-        ))
+        dir?.let {
+            val name = volume.getDescription(context)
+            volumes.add(StorageInfo(name, it.absolutePath, volume.isPrimary))
+        }
     }
     return volumes
 }

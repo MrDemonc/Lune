@@ -202,9 +202,13 @@ fun LuneTheme(
                 ctx = ctx.baseContext
             }
             val window = dialogWindow ?: activity?.window
-            @Suppress("DEPRECATION")
             window?.let { win ->
-                win.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (Build.VERSION.SDK_INT < 35) {
+                    runCatching {
+                        win.javaClass.getMethod("setNavigationBarColor", Int::class.javaPrimitiveType)
+                            .invoke(win, android.graphics.Color.TRANSPARENT)
+                    }
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     win.isNavigationBarContrastEnforced = false
                 }

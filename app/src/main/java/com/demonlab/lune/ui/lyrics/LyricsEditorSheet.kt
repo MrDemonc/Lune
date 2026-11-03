@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
-import android.view.WindowManager
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import coil.compose.AsyncImage
@@ -237,8 +236,10 @@ fun LyricsEditorSheet(
             var parent = view.parent
             while (parent != null) {
                 if (parent is DialogWindowProvider) {
-                    @Suppress("DEPRECATION")
-                    parent.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+                    androidx.core.view.WindowCompat.setDecorFitsSystemWindows(parent.window, false)
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                        parent.window.setSoftInputMode(0x10)
+                    }
                     break
                 }
                 parent = parent.parent

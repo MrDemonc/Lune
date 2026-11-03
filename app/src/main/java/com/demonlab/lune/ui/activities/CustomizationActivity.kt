@@ -111,7 +111,6 @@ class CustomizationActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Suppress("DEPRECATION")
 @Composable
 fun CustomizationScreen(
     onBack: () -> Unit,

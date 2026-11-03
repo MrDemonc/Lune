@@ -135,9 +135,13 @@ fun AppBlurBackdrop(
                 ctx = ctx.baseContext
             }
             val targetWindow = dialogWindow ?: activity?.window
-            @Suppress("DEPRECATION")
             targetWindow?.let { window ->
-                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (Build.VERSION.SDK_INT < 35) {
+                    runCatching {
+                        window.javaClass.getMethod("setNavigationBarColor", Int::class.javaPrimitiveType)
+                            .invoke(window, android.graphics.Color.TRANSPARENT)
+                    }
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     window.isNavigationBarContrastEnforced = false
                 }
