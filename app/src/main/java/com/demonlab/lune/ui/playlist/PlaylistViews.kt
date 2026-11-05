@@ -444,7 +444,7 @@ private fun PlaylistCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(125.dp)
+                    .aspectRatio(1f)
                     .background(Brush.horizontalGradient(gradientColors))
             ) {
                 val coverObj = activeCoverObj
