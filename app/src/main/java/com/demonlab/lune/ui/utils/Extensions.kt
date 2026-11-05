@@ -38,6 +38,8 @@ import kotlin.math.sin
 fun Vibrator.triggerLightVibration() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         this.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        this.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
     } else {
         @Suppress("DEPRECATION")
         this.vibrate(20)

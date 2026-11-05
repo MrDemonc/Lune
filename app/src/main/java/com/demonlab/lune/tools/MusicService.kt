@@ -474,12 +474,7 @@ class MusicService : MediaLibraryService() {
                 pm.updatePlayingState(false)
                 pm.savePlaybackState(wasPlaying = false)
                 stopWidgetUpdateTimer()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                } else {
-                    @Suppress("DEPRECATION")
-                    stopForeground(true)
-                }
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 try {
                     val notificationManager = getSystemService(NotificationManager::class.java)
                     notificationManager?.cancel(1)
@@ -523,12 +518,7 @@ class MusicService : MediaLibraryService() {
             pm.updatePlayingState(false)
             pm.savePlaybackState(wasPlaying = false)
             stopWidgetUpdateTimer()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
@@ -788,12 +778,11 @@ class MusicService : MediaLibraryService() {
             controllerInfo: MediaSession.ControllerInfo,
             intent: Intent
         ): Boolean {
-            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-            }
+            val keyEvent = androidx.core.content.IntentCompat.getParcelableExtra(
+                intent,
+                Intent.EXTRA_KEY_EVENT,
+                KeyEvent::class.java
+            )
             if (keyEvent != null && handleMediaKeyEvent(keyEvent)) {
                 return true
             }
@@ -1445,12 +1434,7 @@ class MusicService : MediaLibraryService() {
             isNotificationDismissed = true
             abandonAudioFocus()
             releaseWakeLock()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)
@@ -1623,12 +1607,7 @@ class MusicService : MediaLibraryService() {
         pauseTimeoutJob = serviceScope.launch {
             delay(PAUSE_TIMEOUT_MS)
             isNotificationDismissed = true
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                stopForeground(android.app.Service.STOP_FOREGROUND_REMOVE)
-            } else {
-                @Suppress("DEPRECATION")
-                stopForeground(true)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager?.cancel(1)

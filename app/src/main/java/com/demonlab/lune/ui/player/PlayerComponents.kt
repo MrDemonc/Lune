@@ -126,6 +126,7 @@ import com.demonlab.lune.ui.utils.MaterialExpressiveScallopShape
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.utils.formatDuration
 import com.demonlab.lune.ui.utils.songSwipeGestures
+import com.demonlab.lune.ui.utils.triggerLightVibration
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import java.io.File
 import kotlin.math.abs
@@ -2964,14 +2965,7 @@ fun MiniPlayerMinimized(
 
                 if (clampedOffset <= -50f && !hasVibrated) {
                     hasVibrated = true
-                    vibrator?.let {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            it.vibrate(VibrationEffect.createOneShot(28, VibrationEffect.DEFAULT_AMPLITUDE))
-                        } else {
-                            @Suppress("DEPRECATION")
-                            it.vibrate(28)
-                        }
-                    }
+                    vibrator?.triggerLightVibration()
                 }
 
                 coroutineScope.launch {
