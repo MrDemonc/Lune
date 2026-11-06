@@ -288,8 +288,13 @@ fun AudioQualityBadges(
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     enableScroll: Boolean = false,
-    customActiveColor: Color? = null
+    customActiveColor: Color? = null,
+    isGradientEnabled: Boolean = false
 ) {
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
+    val isGradientActive = isGradientEnabled || settingsManager.isPlayerGradientBackgroundEnabled
+
     val format = song.format.uppercase().ifEmpty {
         song.path.substringAfterLast('.', "").uppercase().ifEmpty { "AUDIO" }
     }
@@ -319,24 +324,76 @@ fun AudioQualityBadges(
     val dynamicPrimary = customActiveColor ?: MaterialTheme.colorScheme.primary
 
     val tierBg = when {
-        isHiRes -> if (useBlurControls) Color(0xFFFFB300).copy(alpha = 0.28f) else Color(0xFFFFB300).copy(alpha = 0.20f)
-        isHiFi -> if (useBlurControls) dynamicPrimary.copy(alpha = 0.24f) else dynamicPrimary.copy(alpha = 0.16f)
-        else -> if (useBlurControls) Color.White.copy(alpha = 0.18f) else dynamicPrimary.copy(alpha = 0.12f)
+        isHiRes -> {
+            if (!isDarkTheme) {
+                Color(0xFF241A00).copy(alpha = if (isGradientActive || useBlurControls) 0.88f else 0.82f)
+            } else {
+                if (useBlurControls) Color(0xFFFFB300).copy(alpha = 0.28f)
+                else if (isGradientActive) Color(0xFF261D00).copy(alpha = 0.75f)
+                else Color(0xFFFFB300).copy(alpha = 0.20f)
+            }
+        }
+        isHiFi -> {
+            if (useBlurControls) {
+                if (isDarkTheme) dynamicPrimary.copy(alpha = 0.24f) else dynamicPrimary.copy(alpha = 0.18f)
+            } else if (isGradientActive) {
+                if (isDarkTheme) dynamicPrimary.copy(alpha = 0.28f) else dynamicPrimary.copy(alpha = 0.18f)
+            } else {
+                dynamicPrimary.copy(alpha = 0.16f)
+            }
+        }
+        else -> {
+            if (useBlurControls) {
+                if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f)
+            } else if (isGradientActive) {
+                if (isDarkTheme) Color.White.copy(alpha = 0.18f) else dynamicPrimary.copy(alpha = 0.14f)
+            } else {
+                dynamicPrimary.copy(alpha = 0.12f)
+            }
+        }
+    }
+
+    val tierBorder: BorderStroke? = when {
+        isHiRes -> BorderStroke(
+            1.dp,
+            Brush.horizontalGradient(listOf(Color(0xFFFFD54F), Color(0xFFFFA000)))
+        )
+        isHiFi -> BorderStroke(1.dp, dynamicPrimary.copy(alpha = 0.35f))
+        else -> BorderStroke(0.8.dp, if (useBlurControls && isDarkTheme) Color.White.copy(alpha = 0.25f) else dynamicPrimary.copy(alpha = 0.25f))
     }
 
     val tierColor = when {
-        isHiRes -> Color(0xFFFFC107)
+        isHiRes -> if (!isDarkTheme) Color(0xFFFFD54F) else Color(0xFFFFC107)
         isHiFi -> dynamicPrimary
-        else -> if (useBlurControls) Color.White else dynamicPrimary
+        else -> if (useBlurControls && isDarkTheme) Color.White else dynamicPrimary
     }
 
-    val badgeBg = if (useBlurControls) {
-        if (isDarkTheme) Color.Black.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.35f)
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+    val badgeBorder: BorderStroke? = when {
+        useBlurControls -> BorderStroke(0.8.dp, if (isDarkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f))
+        isGradientActive -> BorderStroke(1.dp, if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.12f))
+        else -> BorderStroke(0.8.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
     }
 
-    val badgeTextColor = if (useBlurControls) Color.White else MaterialTheme.colorScheme.onSurface
+    val badgeBg = when {
+        useBlurControls -> if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.65f)
+        isGradientActive -> {
+            if (isDarkTheme) Color.Black.copy(alpha = 0.45f)
+            else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        }
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+    }
+
+    val badgeTextColor = when {
+        useBlurControls -> if (isDarkTheme) Color.White else Color(0xFF1C1B1F)
+        isGradientActive -> if (isDarkTheme) Color.White else MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    val specsTextColor = when {
+        useBlurControls -> if (isDarkTheme) Color.White.copy(alpha = 0.85f) else Color(0xFF1C1B1F).copy(alpha = 0.85f)
+        isGradientActive -> if (isDarkTheme) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
     val sampleRateStr = effectiveSampleRate?.let {
         if (it % 1000 == 0) "${it / 1000} kHz" else "${String.format(java.util.Locale.US, "%.1f", it / 1000f)} kHz"
@@ -355,7 +412,8 @@ fun AudioQualityBadges(
         if (tierName != null) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = tierBg
+                color = tierBg,
+                border = tierBorder
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -382,7 +440,8 @@ fun AudioQualityBadges(
 
         Surface(
             shape = RoundedCornerShape(percent = 50),
-            color = badgeBg
+            color = badgeBg,
+            border = badgeBorder
         ) {
             Text(
                 text = format,
@@ -396,13 +455,14 @@ fun AudioQualityBadges(
         if (specsText != null) {
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = badgeBg
+                color = badgeBg,
+                border = badgeBorder
             ) {
                 Text(
                     text = specsText,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (useBlurControls) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = specsTextColor,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
@@ -453,7 +513,8 @@ fun UnifiedMarqueeHeader(
     onAudioBadgesClick: () -> Unit,
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
-    customActiveColor: Color? = null
+    customActiveColor: Color? = null,
+    isGradientEnabled: Boolean = false
 ) {
     key(song.id) {
         var marqueeOffset by remember(song.id) { mutableFloatStateOf(0f) }
@@ -555,7 +616,8 @@ fun UnifiedMarqueeHeader(
                         onClick = onAudioBadgesClick,
                         horizontalAlignment = Alignment.Start,
                         enableScroll = false,
-                        customActiveColor = customActiveColor
+                        customActiveColor = customActiveColor,
+                        isGradientEnabled = isGradientEnabled
                     )
                 }
             }
@@ -1803,7 +1865,8 @@ fun FullPlayer(
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = if (isFloatingWindow) 6.dp else 12.dp),
-                        customActiveColor = if (useCustomControlsColor) activePrimary else null
+                        customActiveColor = if (useCustomControlsColor) activePrimary else null,
+                        isGradientEnabled = isGradientEnabled
                     )
                 }
 

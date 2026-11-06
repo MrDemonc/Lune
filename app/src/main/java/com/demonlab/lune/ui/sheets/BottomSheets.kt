@@ -2199,7 +2199,7 @@ fun AudioDetailsBottomSheet(
     }
 
     val qualityColor = when {
-        isHiRes -> Color(0xFFFFB300)
+        isHiRes -> if (blurColors.isDark) Color(0xFFFFB300) else Color(0xFFB26A00)
         isHiFi -> if (blurColors.useCustomControlsColor) blurColors.primaryTint else MaterialTheme.colorScheme.primary
         else -> if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
     }

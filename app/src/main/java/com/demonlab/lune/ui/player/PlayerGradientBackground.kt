@@ -371,9 +371,10 @@ fun PlayerGradientBackground(
                 drawRect(
                     brush = Brush.verticalGradient(
                         0.00f to surfaceColor.copy(alpha = 0.20f * alpha),
-                        0.50f to Color.Transparent,
-                        0.80f to surfaceColor.copy(alpha = 0.35f * alpha),
-                        1.00f to surfaceColor.copy(alpha = 0.65f * alpha)
+                        0.45f to surfaceColor.copy(alpha = 0.12f * alpha),
+                        0.65f to surfaceColor.copy(alpha = 0.20f * alpha),
+                        0.80f to surfaceColor.copy(alpha = 0.40f * alpha),
+                        1.00f to surfaceColor.copy(alpha = 0.70f * alpha)
                     )
                 )
             }
