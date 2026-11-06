@@ -531,4 +531,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Zu Künstler gehen</string>
     <string name="go_to_album">Zu Album gehen</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Player-Hintergrund</string>
+    <string name="player_gradient_background">Dynamischer Farbverlauf-Hintergrund</string>
+    <string name="player_gradient_background_desc">Verschwommene Umgebungsverläufe basierend auf dem aktuellen Cover anzeigen</string>
 </resources>

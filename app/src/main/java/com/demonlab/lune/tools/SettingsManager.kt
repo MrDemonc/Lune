@@ -495,6 +495,14 @@ class SettingsManager(context: Context) {
             prefs.edit().putInt("progress_bar_style", value).apply()
         }
 
+    private val _isPlayerGradientBackgroundEnabled = mutableStateOf(prefs.getBoolean("is_player_gradient_background_enabled", false))
+    var isPlayerGradientBackgroundEnabled: Boolean
+        get() = _isPlayerGradientBackgroundEnabled.value
+        set(value) {
+            _isPlayerGradientBackgroundEnabled.value = value
+            prefs.edit().putBoolean("is_player_gradient_background_enabled", value).apply()
+        }
+
     var playbackSpeed: Float
         get() = prefs.getFloat("playback_speed", 1.0f)
         set(value) = prefs.edit().putFloat("playback_speed", value).apply()

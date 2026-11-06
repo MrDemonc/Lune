@@ -534,4 +534,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Перейти к исполнителю</string>
     <string name="go_to_album">Перейти к альбому</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Фон плеера</string>
+    <string name="player_gradient_background">Динамический градиентный фон</string>
+    <string name="player_gradient_background_desc">Отображать размытые фоновые градиенты на основе обложки текущего трека</string>
 </resources>

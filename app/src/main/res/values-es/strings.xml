@@ -538,4 +538,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Ir al artista</string>
     <string name="go_to_album">Ir al álbum</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Fondo del reproductor</string>
+    <string name="player_gradient_background">Fondo de gradientes dinámicos</string>
+    <string name="player_gradient_background_desc">Muestra gradientes ambientales difuminados con los colores del cover actual</string>
 </resources>

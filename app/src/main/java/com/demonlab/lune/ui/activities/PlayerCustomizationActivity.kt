@@ -36,6 +36,8 @@ import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.ui.components.AppBlurBackdrop
 import com.demonlab.lune.ui.components.BouncySwitch
+import com.demonlab.lune.ui.player.PlayerGradientBackground
+import com.demonlab.lune.ui.player.rememberCoverPalette
 import com.demonlab.lune.ui.player.ReusableSkipIcon
 import com.demonlab.lune.ui.theme.LuneTheme
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
@@ -115,6 +117,7 @@ fun PlayerCustomizationScreen(
     var isControlsFilled by remember { mutableStateOf(settingsManager.isControlsFilled) }
     var useCustomControlsColor by remember { mutableStateOf(settingsManager.useCustomControlsColor) }
     var controlsColorPalette by remember { mutableIntStateOf(settingsManager.controlsColorPalette) }
+    var isPlayerGradientBackgroundEnabled by remember { mutableStateOf(settingsManager.isPlayerGradientBackgroundEnabled) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -210,10 +213,20 @@ fun PlayerCustomizationScreen(
                     color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     border = BorderStroke(1.dp, if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        if (isPlayerGradientBackgroundEnabled) {
+                            val previewPalette = rememberCoverPalette(song = currentSong, isDarkTheme = isDarkTheme)
+                            PlayerGradientBackground(
+                                colors = previewPalette,
+                                hasBlurBackground = hasBlurBackground,
+                                isDarkTheme = isDarkTheme,
+                                modifier = Modifier.matchParentSize()
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                         Text(
                             text = stringResource(R.string.cover_preview),
                             style = MaterialTheme.typography.labelMedium,
@@ -514,6 +527,7 @@ fun PlayerCustomizationScreen(
                         Spacer(modifier = Modifier.height(10.dp))
                     }
                 }
+            }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -1090,6 +1104,34 @@ fun PlayerCustomizationScreen(
                             }
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Section: Player Background
+                SettingsSection(title = stringResource(R.string.player_background_title)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.player_gradient_background),
+                        supportingText = stringResource(R.string.player_gradient_background_desc),
+                        icon = Icons.Default.AutoAwesome,
+                        position = SectionPosition.SINGLE,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = isPlayerGradientBackgroundEnabled,
+                                onCheckedChange = {
+                                    isPlayerGradientBackgroundEnabled = it
+                                    settingsManager.isPlayerGradientBackgroundEnabled = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isPlayerGradientBackgroundEnabled) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

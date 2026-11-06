@@ -537,4 +537,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Go to Artist</string>
     <string name="go_to_album">Go to Album</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Player Background</string>
+    <string name="player_gradient_background">Dynamic gradient background</string>
+    <string name="player_gradient_background_desc">Display blurred ambient gradients based on current song artwork</string>
 </resources>

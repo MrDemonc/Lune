@@ -370,6 +370,7 @@ class Lune : AppCompatActivity() {
             var isControlsFilled by remember { mutableStateOf(settingsManager.isControlsFilled) }
             var useCustomControlsColor by remember { mutableStateOf(settingsManager.useCustomControlsColor) }
             var controlsColorPalette by remember { mutableIntStateOf(settingsManager.controlsColorPalette) }
+            var isPlayerGradientBackgroundEnabled by remember { mutableStateOf(settingsManager.isPlayerGradientBackgroundEnabled) }
 
             LaunchedEffect(currentSong, isPlayerExpanded) {
                 if (currentSong == null && isPlayerExpanded) {
@@ -437,6 +438,7 @@ class Lune : AppCompatActivity() {
                         isControlsFilled = settingsManager.isControlsFilled
                         useCustomControlsColor = settingsManager.useCustomControlsColor
                         controlsColorPalette = settingsManager.controlsColorPalette
+                        isPlayerGradientBackgroundEnabled = settingsManager.isPlayerGradientBackgroundEnabled
                         isSectionCustomizationEnabled = settingsManager.isSectionCustomizationEnabled
                         hiddenSectionTabs = settingsManager.hiddenSectionTabs
                         showAiSection = settingsManager.showAiSection
@@ -588,6 +590,7 @@ class Lune : AppCompatActivity() {
                     isControlsFilled = isControlsFilled,
                     useCustomControlsColor = useCustomControlsColor,
                     controlsColorPalette = controlsColorPalette,
+                    isPlayerGradientBackgroundEnabled = isPlayerGradientBackgroundEnabled,
                     onRequestAudioPermission = { recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO) }
                 )
 
@@ -648,6 +651,7 @@ fun MainScreen(
     isControlsFilled: Boolean,
     useCustomControlsColor: Boolean,
     controlsColorPalette: Int,
+    isPlayerGradientBackgroundEnabled: Boolean = false,
     onRequestAudioPermission: () -> Unit
 ) {
     val context = LocalContext.current
@@ -2722,6 +2726,7 @@ fun MainScreen(
                 isControlsFilled = isControlsFilled,
                 useCustomControlsColor = useCustomControlsColor,
                 controlsColorPalette = controlsColorPalette,
+                isPlayerGradientBackgroundEnabled = isPlayerGradientBackgroundEnabled,
                 onShowLyrics = {
                     val intent = Intent(context, LyricsActivity::class.java)
                     context.startActivity(intent)

@@ -532,4 +532,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">前往艺术家</string>
     <string name="go_to_album">前往专辑</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">播放器背景</string>
+    <string name="player_gradient_background">动态渐变背景</string>
+    <string name="player_gradient_background_desc">根据当前歌曲封面显示模糊的环境渐变背景</string>
 </resources>

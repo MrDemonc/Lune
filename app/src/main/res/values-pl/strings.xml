@@ -535,4 +535,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Przejdź do wykonawcy</string>
     <string name="go_to_album">Przejdź do albumu</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Tło odtwarzacza</string>
+    <string name="player_gradient_background">Dynamiczne tło gradientowe</string>
+    <string name="player_gradient_background_desc">Wyświetlaj rozmyte gradienty otoczenia oparte na okładce bieżącego utworu</string>
 </resources>

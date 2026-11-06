@@ -534,4 +534,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Aller à l\'artiste</string>
     <string name="go_to_album">Aller à l\'album</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Arrière-plan du lecteur</string>
+    <string name="player_gradient_background">Arrière-plan en dégradés dynamiques</string>
+    <string name="player_gradient_background_desc">Afficher des dégradés ambiants floutés basés sur la pochette du morceau actuel</string>
 </resources>

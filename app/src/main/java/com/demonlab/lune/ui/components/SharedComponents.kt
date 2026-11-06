@@ -1553,6 +1553,10 @@ fun BouncySwitch(
         else -> isSystemDark
     }
     val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+    val isBlackThemeActive = (settingsManager.useCustomColors && settingsManager.customColorPalette == 6) ||
+        (settingsManager.useCustomControlsColor && settingsManager.controlsColorPalette == 6) ||
+        (isDarkTheme && MaterialTheme.colorScheme.primary == Color(0xFFE6E6E6)) ||
+        (!isDarkTheme && MaterialTheme.colorScheme.primary == Color(0xFF141316))
 
     val switchColors = colors ?: if (hasBlurBackground) {
         if (isDarkTheme) {
@@ -1594,11 +1598,53 @@ fun BouncySwitch(
                 disabledUncheckedIconColor = Color.White.copy(alpha = 0.3f)
             )
         }
+    } else if (isBlackThemeActive) {
+        if (isDarkTheme) {
+            SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFF141316),
+                checkedTrackColor = Color(0xFFE6E6E6),
+                checkedBorderColor = Color(0xFFE6E6E6),
+                checkedIconColor = Color.White,
+                uncheckedThumbColor = Color.White.copy(alpha = 0.85f),
+                uncheckedTrackColor = Color(0xFF18181C),
+                uncheckedBorderColor = Color.White.copy(alpha = 0.40f),
+                uncheckedIconColor = Color(0xFF141316),
+                disabledCheckedThumbColor = Color(0xFF141316).copy(alpha = 0.4f),
+                disabledCheckedTrackColor = Color(0xFFE6E6E6).copy(alpha = 0.25f),
+                disabledCheckedBorderColor = Color(0xFFE6E6E6).copy(alpha = 0.25f),
+                disabledCheckedIconColor = Color.White.copy(alpha = 0.4f),
+                disabledUncheckedThumbColor = Color.White.copy(alpha = 0.35f),
+                disabledUncheckedTrackColor = Color(0xFF18181C).copy(alpha = 0.10f),
+                disabledUncheckedBorderColor = Color.White.copy(alpha = 0.15f),
+                disabledUncheckedIconColor = Color(0xFF141316).copy(alpha = 0.3f)
+            )
+        } else {
+            SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF141316),
+                checkedBorderColor = Color(0xFF141316),
+                checkedIconColor = Color(0xFF141316),
+                uncheckedThumbColor = Color(0xFF141316).copy(alpha = 0.85f),
+                uncheckedTrackColor = Color(0xFFE2E2E6),
+                uncheckedBorderColor = Color(0xFF141316).copy(alpha = 0.35f),
+                uncheckedIconColor = Color.White,
+                disabledCheckedThumbColor = Color.White.copy(alpha = 0.4f),
+                disabledCheckedTrackColor = Color(0xFF141316).copy(alpha = 0.25f),
+                disabledCheckedBorderColor = Color(0xFF141316).copy(alpha = 0.25f),
+                disabledCheckedIconColor = Color(0xFF141316).copy(alpha = 0.4f),
+                disabledUncheckedThumbColor = Color(0xFF141316).copy(alpha = 0.35f),
+                disabledUncheckedTrackColor = Color(0xFFE2E2E6).copy(alpha = 0.10f),
+                disabledUncheckedBorderColor = Color(0xFF141316).copy(alpha = 0.15f),
+                disabledUncheckedIconColor = Color.White.copy(alpha = 0.3f)
+            )
+        }
     } else {
+        val prim = MaterialTheme.colorScheme.primary
         SwitchDefaults.colors(
-            checkedIconColor = Color.White,
-            checkedThumbColor = MaterialTheme.colorScheme.primary,
-            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+            checkedIconColor = if (prim.luminance() > 0.45f) Color(0xFF141316) else Color.White,
+            checkedThumbColor = prim,
+            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+            uncheckedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.40f)
         )
     }
 

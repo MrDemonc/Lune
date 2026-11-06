@@ -534,4 +534,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">Ir para o artista</string>
     <string name="go_to_album">Ir para o álbum</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">Plano de fundo do player</string>
+    <string name="player_gradient_background">Plano de fundo de gradientes dinâmicos</string>
+    <string name="player_gradient_background_desc">Exibir gradientes ambientes desfocados com as cores da capa atual</string>
 </resources>

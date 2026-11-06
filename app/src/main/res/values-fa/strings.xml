@@ -530,4 +530,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">رفتن به هنرمند</string>
     <string name="go_to_album">رفتن به آلبوم</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">پس‌زمینه پخش‌کننده</string>
+    <string name="player_gradient_background">پس‌زمینه گرادیان پویا</string>
+    <string name="player_gradient_background_desc">نمایش گرادیان‌های محو محیطی بر اساس کاور آهنگ فعلی</string>
 </resources>

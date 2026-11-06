@@ -532,4 +532,9 @@
     <!-- Navigation Bottom Sheet -->
     <string name="go_to_artist">الانتقال إلى الفنان</string>
     <string name="go_to_album">الانتقال إلى الألبوم</string>
+
+    <!-- Player Gradient Background -->
+    <string name="player_background_title">خلفية المشغل</string>
+    <string name="player_gradient_background">خلفية تدرجات ديناميكية</string>
+    <string name="player_gradient_background_desc">عرض تدرجات ضبابية محيطية مستخرجة من غلاف الأغنية الحالية</string>
 </resources>

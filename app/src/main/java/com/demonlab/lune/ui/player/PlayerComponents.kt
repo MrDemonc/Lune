@@ -748,6 +748,7 @@ fun FullPlayer(
     onRequestAudioPermission: () -> Unit,
     onArtistClick: ((String) -> Unit)? = null,
     onAlbumClick: ((String) -> Unit)? = null,
+    isPlayerGradientBackgroundEnabled: Boolean = false,
     expansionFraction: Float = 1f,
     miniCoverBounds: Rect? = null
 ) {
@@ -876,6 +877,8 @@ fun FullPlayer(
         (if (isCinematic) settingsManager.isBlurCinematicMode
         else if (isDarkTheme) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
     val useBlurControls = hasBlurBackground && settingsManager.isBlurControlsEnabled
+    val isGradientEnabled = isPlayerGradientBackgroundEnabled || settingsManager.isPlayerGradientBackgroundEnabled
+    val coverPalette = rememberCoverPalette(song = song, isDarkTheme = isDarkTheme)
 
     val blurContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.35f)
     val blurPlayContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.70f) else Color.Black.copy(alpha = 0.50f)
@@ -1091,6 +1094,22 @@ fun FullPlayer(
                         }
                     }
                 }
+            }
+        }
+
+        if (!isCinematic && isGradientEnabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = bgAlpha }
+            ) {
+                PlayerGradientBackground(
+                    colors = coverPalette,
+                    hasBlurBackground = hasBlurBackground,
+                    isDarkTheme = isDarkTheme,
+                    alpha = 1f,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
 
