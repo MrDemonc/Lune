@@ -533,4 +533,8 @@
     <string name="restore_default_covers">Restore default covers</string>
     <string name="edit_covers">Edit Covers</string>
     <string name="using_default_covers">Using original song covers</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">Go to Artist</string>
+    <string name="go_to_album">Go to Album</string>
 </resources>

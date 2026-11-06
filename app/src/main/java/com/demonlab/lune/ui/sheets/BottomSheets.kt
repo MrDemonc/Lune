@@ -64,6 +64,7 @@ import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import com.demonlab.lune.tools.CategoryCoverManager
 import com.demonlab.lune.ui.activities.EqualizerActivity
 import com.demonlab.lune.ui.utils.rememberReorderableState
 import com.demonlab.lune.ui.utils.reorderable
@@ -2378,6 +2379,242 @@ private fun AudioDetailItem(
                     tint = blurColors.textSecondaryColor,
                     modifier = Modifier.size(16.dp)
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoToArtistOrAlbumBottomSheet(
+    song: Song,
+    onDismiss: () -> Unit,
+    onGoToArtist: (String) -> Unit,
+    onGoToAlbum: (String) -> Unit
+) {
+    val blurColors = rememberBlurSheetColors(song)
+    val context = LocalContext.current
+
+    val customArtistCovers = remember(song.artist) {
+        CategoryCoverManager.getCustomCovers(context, "ARTISTS", song.artist)
+    }
+    val artistCover = customArtistCovers.firstOrNull() ?: song.coverUrl ?: song.albumArtUri
+    val albumCover = song.coverUrl ?: song.albumArtUri
+
+    val displayArtist = song.artist.trim().let { if (it.isEmpty() || it.equals("<unknown>", ignoreCase = true)) stringResource(R.string.unknown_artist) else it }
+    val displayAlbum = song.album.trim().let { if (it.isEmpty() || it.equals("<unknown>", ignoreCase = true)) stringResource(R.string.unknown_album) else it }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = blurColors.containerColor,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = null,
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = song,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BottomSheetDefaults.DragHandle(
+                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Song Header Preview
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SongCoverImage(
+                        coverUrl = albumCover,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = song.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "$displayArtist • $displayAlbum",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = blurColors.textSecondaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Option 1: Go to Artist
+                Surface(
+                    onClick = {
+                        onDismiss()
+                        onGoToArtist(song.artist)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .bounceClick(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = blurColors.itemContainerColor,
+                    border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            if (artistCover != null) {
+                                SongCoverImage(
+                                    coverUrl = artistCover,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    shape = CircleShape
+                                )
+                            } else {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.go_to_artist),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = blurColors.textColor
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = displayArtist,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = blurColors.textSecondaryColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            tint = blurColors.textSecondaryColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                // Option 2: Go to Album
+                Surface(
+                    onClick = {
+                        onDismiss()
+                        onGoToAlbum(song.album)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .bounceClick(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = blurColors.itemContainerColor,
+                    border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            if (albumCover != null) {
+                                SongCoverImage(
+                                    coverUrl = albumCover,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            } else {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Album,
+                                        contentDescription = null,
+                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.go_to_album),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = blurColors.textColor
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = displayAlbum,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = blurColors.textSecondaryColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                            contentDescription = null,
+                            tint = blurColors.textSecondaryColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
         }
     }

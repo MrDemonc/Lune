@@ -534,4 +534,8 @@
     <string name="restore_default_covers">Restaurar carátulas por defecto</string>
     <string name="edit_covers">Editar carátulas</string>
     <string name="using_default_covers">Usando las carátulas originales de las canciones</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">Ir al artista</string>
+    <string name="go_to_album">Ir al álbum</string>
 </resources>

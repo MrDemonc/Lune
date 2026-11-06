@@ -118,6 +118,7 @@ import com.demonlab.lune.ui.activities.EqualizerActivity
 import com.demonlab.lune.ui.sheets.AddToPlaylistDialog
 import com.demonlab.lune.ui.sheets.AudioDetailsBottomSheet
 import com.demonlab.lune.ui.sheets.CustomRepeatDialog
+import com.demonlab.lune.ui.sheets.GoToArtistOrAlbumBottomSheet
 import com.demonlab.lune.ui.sheets.PlayerOptionsBottomSheet
 import com.demonlab.lune.ui.sheets.QueueBottomSheet
 import com.demonlab.lune.ui.sheets.VisualizerSettingsBottomSheet
@@ -745,6 +746,7 @@ fun FullPlayer(
     onShowLyrics: () -> Unit,
     onRequestAudioPermission: () -> Unit,
     onArtistClick: ((String) -> Unit)? = null,
+    onAlbumClick: ((String) -> Unit)? = null,
     expansionFraction: Float = 1f,
     miniCoverBounds: Rect? = null
 ) {
@@ -824,6 +826,7 @@ fun FullPlayer(
     var showAddToPlaylistInPlayer by remember { mutableStateOf(false) }
     var showVisualizerSettings by remember { mutableStateOf(false) }
     var showCustomRepeatDialog by remember { mutableStateOf(false) }
+    var showArtistOrAlbumSheet by remember { mutableStateOf(false) }
 
 
     val density = LocalDensity.current
@@ -1763,7 +1766,13 @@ fun FullPlayer(
                         runtimeSampleRate = runtimeSampleRate,
                         runtimeBitDepth = runtimeBitDepth,
                         runtimeBitrate = runtimeBitrate,
-                        onArtistClick = onArtistClick,
+                        onArtistClick = {
+                            if (onAlbumClick != null) {
+                                showArtistOrAlbumSheet = true
+                            } else {
+                                onArtistClick?.invoke(it)
+                            }
+                        },
                         onAudioBadgesClick = { showAudioDetailsSheet = true },
                         isCompact = isFloatingWindow,
                         modifier = Modifier
@@ -2466,6 +2475,21 @@ fun FullPlayer(
                 playbackManager = playbackManager,
                 currentSong = song,
                 onDismiss = { showCustomRepeatDialog = false }
+            )
+        }
+
+        if (showArtistOrAlbumSheet) {
+            GoToArtistOrAlbumBottomSheet(
+                song = song,
+                onDismiss = { showArtistOrAlbumSheet = false },
+                onGoToArtist = { artistName ->
+                    showArtistOrAlbumSheet = false
+                    onArtistClick?.invoke(artistName)
+                },
+                onGoToAlbum = { albumName ->
+                    showArtistOrAlbumSheet = false
+                    onAlbumClick?.invoke(albumName)
+                }
             )
         }
     }
