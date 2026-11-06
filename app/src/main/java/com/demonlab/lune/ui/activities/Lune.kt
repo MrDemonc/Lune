@@ -3233,7 +3233,7 @@ fun UnifiedHeaderPill(
     val onSelected = if (hasBlurBackground) {
         Color.White
     } else if (useCustomControlsColor) {
-        Color.White
+        if (selectedBg.luminance() > 0.45f) Color(0xFF141316) else Color.White
     } else if (isDark) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {

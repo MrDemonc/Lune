@@ -531,4 +531,8 @@
     <string name="restore_default_covers">Przywróć domyślne okładki</string>
     <string name="edit_covers">Edytuj okładki</string>
     <string name="using_default_covers">Używanie oryginalnych okładek utworów</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">Przejdź do wykonawcy</string>
+    <string name="go_to_album">Przejdź do albumu</string>
 </resources>

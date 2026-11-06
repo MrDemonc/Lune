@@ -118,7 +118,7 @@ fun SongOptionsBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Row(
@@ -360,7 +360,7 @@ fun SortBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Text(
@@ -569,7 +569,7 @@ fun EqBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Row(
@@ -910,7 +910,7 @@ fun QueueBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Text(
@@ -1249,7 +1249,7 @@ fun PlayerOptionsBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -1515,7 +1515,7 @@ fun VisualizerSettingsBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Text(
@@ -1640,7 +1640,7 @@ fun EditSongBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Row(
@@ -2230,7 +2230,7 @@ fun AudioDetailsBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -2430,7 +2430,7 @@ fun GoToArtistOrAlbumBottomSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     BottomSheetDefaults.DragHandle(
-                        color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.3f)) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 

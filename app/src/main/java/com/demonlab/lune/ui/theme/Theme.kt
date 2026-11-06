@@ -92,6 +92,30 @@ private val WarmAmberDark = darkColorScheme(
     tertiary = Color(0xFFB7CDA6)
 )
 
+// 6. Black / Monochrome
+private val PureBlackLight = lightColorScheme(
+    primary = Color(0xFF141316),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE2E2E6),
+    onPrimaryContainer = Color(0xFF141316),
+    secondary = Color(0xFF4A494E),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE8E7EC),
+    onSecondaryContainer = Color(0xFF19181B),
+    tertiary = Color(0xFF605E64)
+)
+private val PureBlackDark = darkColorScheme(
+    primary = Color(0xFFE6E6E6),
+    onPrimary = Color(0xFF141316),
+    primaryContainer = Color(0xFF2E2E32),
+    onPrimaryContainer = Color(0xFFE6E6E6),
+    secondary = Color(0xFFC7C6CA),
+    onSecondary = Color(0xFF1A1A1C),
+    secondaryContainer = Color(0xFF3B3A3E),
+    onSecondaryContainer = Color(0xFFE5E4E8),
+    tertiary = Color(0xFFDCDAE0)
+)
+
 @Composable
 fun getControlsPrimaryColor(
     useCustomControlsColor: Boolean,
@@ -106,6 +130,7 @@ fun getControlsPrimaryColor(
         3 -> if (darkTheme) Color(0xFF99CCEA) else Color(0xFF2E6580)
         4 -> if (darkTheme) Color(0xFFD6BAFF) else Color(0xFF6E568F)
         5 -> if (darkTheme) Color(0xFFFCBC43) else Color(0xFF7F5700)
+        6 -> if (darkTheme) Color(0xFFE6E6E6) else Color(0xFF141316)
         else -> MaterialTheme.colorScheme.primary
     }
 }
@@ -142,6 +167,7 @@ fun LuneTheme(
                     3 -> OceanBreezeDark
                     4 -> LavenderMistDark
                     5 -> WarmAmberDark
+                    6 -> PureBlackDark
                     else -> DarkColorScheme
                 }
             } else {
@@ -151,6 +177,7 @@ fun LuneTheme(
                     3 -> OceanBreezeLight
                     4 -> LavenderMistLight
                     5 -> WarmAmberLight
+                    6 -> PureBlackLight
                     else -> LightColorScheme
                 }
             }

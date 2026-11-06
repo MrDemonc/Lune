@@ -414,13 +414,14 @@ fun CustomizationScreen(
                                     2 to Color(0xFF386B52),
                                     3 to Color(0xFF2E6580),
                                     4 to Color(0xFF6E568F),
-                                    5 to Color(0xFF7F5700)
+                                    5 to Color(0xFF7F5700),
+                                    6 to (if (isDarkTheme) Color(0xFF1E1E22) else Color(0xFF141316))
                                 )
                                 palettes.forEach { (index, color) ->
                                     val isSelected = customColorPalette == index
                                     Box(
                                         modifier = Modifier
-                                            .size(48.dp)
+                                            .size(40.dp)
                                             .clip(CircleShape)
                                             .bounceClick()
                                             .clickable { onPaletteChanged(index) },
@@ -433,6 +434,10 @@ fun CustomizationScreen(
                                             border = if (isSelected) androidx.compose.foundation.BorderStroke(
                                                 3.dp,
                                                 if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                            ) else if (index == 6) androidx.compose.foundation.BorderStroke(
+                                                1.5.dp,
+                                                if (hasBlurBackground) Color.White.copy(alpha = 0.45f)
+                                                else (if (isDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.20f))
                                             ) else null
                                         ) {
                                             if (isSelected) {
@@ -444,7 +449,7 @@ fun CustomizationScreen(
                                                         Icons.Default.Brush,
                                                         contentDescription = null,
                                                         tint = Color.White,
-                                                        modifier = Modifier.size(24.dp)
+                                                        modifier = Modifier.size(20.dp)
                                                     )
                                                 }
                                             }

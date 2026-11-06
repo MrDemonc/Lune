@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.luminance
 import androidx.core.graphics.ColorUtils
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -1228,27 +1229,32 @@ fun FullPlayer(
                 3 -> if (isDarkTheme) Color(0xFF99CCEA) else Color(0xFF2E6580)
                 4 -> if (isDarkTheme) Color(0xFFE8B5D9) else Color(0xFF854B75)
                 5 -> if (isDarkTheme) Color(0xFFFCBC43) else Color(0xFF825500)
+                6 -> if (isDarkTheme) Color(0xFFE6E6E6) else Color(0xFF141316)
                 else -> MaterialTheme.colorScheme.primary
             }
         } else {
             MaterialTheme.colorScheme.primary
         }
 
-        val favoriteGlowColor = remember(dynamicPrimaryColor, isDarkTheme) {
-            val hsl = FloatArray(3)
-            ColorUtils.colorToHSL(dynamicPrimaryColor.toArgb(), hsl)
-            if (isDarkTheme) {
-                // En modo oscuro: evitar que sea muy claro o deslavado (Tone 80)
-                // Reducimos la luminosidad a un tono medio y potenciamos la saturación para un resplandor rico y saturado
-                hsl[1] = hsl[1].coerceAtLeast(0.85f)
-                hsl[2] = 0.55f
+        val favoriteGlowColor = remember(dynamicPrimaryColor, isDarkTheme, controlsColorPalette) {
+            if (useCustomControlsColor && controlsColorPalette == 6) {
+                if (isDarkTheme) Color(0xFFE6E6E6) else Color(0xFF555555)
             } else {
-                // En modo claro: evitar que sea muy oscuro o parezca una sombra sucia (Tone 40)
-                // Elevamos la luminosidad para que se perciba como luz brillante y colorida
-                hsl[1] = hsl[1].coerceAtLeast(0.75f)
-                hsl[2] = 0.62f
+                val hsl = FloatArray(3)
+                ColorUtils.colorToHSL(dynamicPrimaryColor.toArgb(), hsl)
+                if (isDarkTheme) {
+                    // En modo oscuro: evitar que sea muy claro o deslavado (Tone 80)
+                    // Reducimos la luminosidad a un tono medio y potenciamos la saturación para un resplandor rico y saturado
+                    hsl[1] = hsl[1].coerceAtLeast(0.85f)
+                    hsl[2] = 0.55f
+                } else {
+                    // En modo claro: evitar que sea muy oscuro o parezca una sombra sucia (Tone 40)
+                    // Elevamos la luminosidad para que se perciba como luz brillante y colorida
+                    hsl[1] = hsl[1].coerceAtLeast(0.75f)
+                    hsl[2] = 0.62f
+                }
+                Color(ColorUtils.HSLToColor(hsl))
             }
-            Color(ColorUtils.HSLToColor(hsl))
         }
 
         val playingFromHeaderColor = if (hasBlurBackground) {
@@ -1995,7 +2001,7 @@ fun FullPlayer(
             val playIconTint = if (useBlurControls) {
                 Color.White
             } else if (useCustomControlsColor) {
-                Color.White
+                if (activePrimary.luminance() > 0.45f) Color(0xFF141316) else Color.White
             } else {
                 MaterialTheme.colorScheme.onPrimary
             }

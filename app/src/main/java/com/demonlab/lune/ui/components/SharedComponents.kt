@@ -209,18 +209,22 @@ fun rememberBlurSheetColors(currentSong: Song? = null): BlurSheetColors {
     val hasBlur = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
     val useCustomControlsColor = settingsManager.useCustomControlsColor
     val controlsColorPalette = settingsManager.controlsColorPalette
-    val primaryTint = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette)
+    val primaryTint = getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette, isDarkTheme)
 
     return if (hasBlur) {
         BlurSheetColors(
             hasBlur = true,
             isDark = isDarkTheme,
             containerColor = Color.Transparent,
-            itemContainerColor = Color.White.copy(alpha = 0.12f),
-            textColor = Color.White,
-            textSecondaryColor = Color.White.copy(alpha = 0.70f),
-            primaryTint = if (useCustomControlsColor) primaryTint else Color.White,
-            itemBorderColor = Color.White.copy(alpha = 0.08f),
+            itemContainerColor = if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.07f),
+            textColor = if (isDarkTheme) Color.White else Color(0xFF141316),
+            textSecondaryColor = if (isDarkTheme) Color.White.copy(alpha = 0.70f) else Color(0xFF141316).copy(alpha = 0.65f),
+            primaryTint = if (useCustomControlsColor) {
+                if (controlsColorPalette == 6) {
+                    if (isDarkTheme) Color.White else Color(0xFF141316)
+                } else primaryTint
+            } else (if (isDarkTheme) Color.White else MaterialTheme.colorScheme.primary),
+            itemBorderColor = if (isDarkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.08f),
             useCustomControlsColor = useCustomControlsColor,
             controlsColorPalette = controlsColorPalette
         )

@@ -530,4 +530,8 @@
     <string name="restore_default_covers">Restaurer les pochettes par défaut</string>
     <string name="edit_covers">Modifier les pochettes</string>
     <string name="using_default_covers">Utilisation des pochettes originales des morceaux</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">Aller à l\'artiste</string>
+    <string name="go_to_album">Aller à l\'album</string>
 </resources>

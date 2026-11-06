@@ -528,4 +528,8 @@
     <string name="restore_default_covers">استعادة الأغلفة الافتراضية</string>
     <string name="edit_covers">تعديل الأغلفة</string>
     <string name="using_default_covers">استخدام أغلفة الأغاني الأصلية</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">الانتقال إلى الفنان</string>
+    <string name="go_to_album">الانتقال إلى الألبوم</string>
 </resources>

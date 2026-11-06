@@ -527,4 +527,8 @@
     <string name="restore_default_covers">Standard-Cover wiederherstellen</string>
     <string name="edit_covers">Cover bearbeiten</string>
     <string name="using_default_covers">Originale Song-Cover werden verwendet</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">Zu Künstler gehen</string>
+    <string name="go_to_album">Zu Album gehen</string>
 </resources>

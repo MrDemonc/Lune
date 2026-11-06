@@ -530,4 +530,8 @@
     <string name="restore_default_covers">Restaurar capas padrão</string>
     <string name="edit_covers">Editar capas</string>
     <string name="using_default_covers">Usando as capas originais das músicas</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">Ir para o artista</string>
+    <string name="go_to_album">Ir para o álbum</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -392,7 +393,7 @@ fun PlayerCustomizationScreen(
                         }
 
                         val previewPlayTint = if (useCustomControlsColor) {
-                            Color.White
+                            if (activePrimary.luminance() > 0.45f) Color(0xFF141316) else Color.White
                         } else if (hasBlurBackground) {
                             Color.Black
                         } else {
@@ -1048,15 +1049,26 @@ fun PlayerCustomizationScreen(
                                         2 to Color(0xFF386B52), // Sage Green
                                         3 to Color(0xFF2E6580), // Ocean Breeze
                                         4 to Color(0xFF6E568F), // Lavender Mist
-                                        5 to Color(0xFF7F5700)  // Warm Amber
+                                        5 to Color(0xFF7F5700), // Warm Amber
+                                        6 to (if (isDarkTheme) Color(0xFF1E1E22) else Color(0xFF141316)) // Black
                                     )
                                     palettes.forEach { (index, color) ->
                                         val isSelected = controlsColorPalette == index
                                         Box(
                                             modifier = Modifier
-                                                .size(40.dp)
+                                                .size(38.dp)
                                                 .clip(CircleShape)
                                                 .background(color)
+                                                .then(
+                                                    if (index == 6 && !isSelected) {
+                                                        Modifier.border(
+                                                            1.5.dp,
+                                                            if (hasBlurBackground) Color.White.copy(alpha = 0.45f)
+                                                            else (if (isDarkTheme) Color.White.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.20f)),
+                                                            CircleShape
+                                                        )
+                                                    } else Modifier
+                                                )
                                                 .bounceClick()
                                                 .clickable {
                                                     controlsColorPalette = index

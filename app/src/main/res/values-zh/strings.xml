@@ -528,4 +528,8 @@
     <string name="restore_default_covers">恢复默认封面</string>
     <string name="edit_covers">编辑封面</string>
     <string name="using_default_covers">使用原歌曲封面</string>
+
+    <!-- Navigation Bottom Sheet -->
+    <string name="go_to_artist">前往艺术家</string>
+    <string name="go_to_album">前往专辑</string>
 </resources>
