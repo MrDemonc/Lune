@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.compose.material3.*
@@ -389,6 +390,24 @@ fun SettingsScreen(
                         icon = Icons.Default.Language,
                         position = SectionPosition.LAST,
                         onClick = { showLanguageDialog = true }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Hidden Songs Section
+                SettingsSection(title = stringResource(R.string.hidden_songs)) {
+                    val hiddenCount = settingsManager.hiddenSongIds.size
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.hidden_songs),
+                        supportingText = if (hiddenCount > 0) {
+                            stringResource(R.string.hidden_songs_count, hiddenCount)
+                        } else {
+                            stringResource(R.string.hidden_songs_desc)
+                        },
+                        icon = Icons.Default.VisibilityOff,
+                        position = SectionPosition.SINGLE,
+                        onClick = { context.startActivity(Intent(context, HiddenSongsActivity::class.java)) }
                     )
                 }
 

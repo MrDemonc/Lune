@@ -536,4 +536,18 @@
     <string name="player_background_title">پس‌زمینه پخش‌کننده</string>
     <string name="player_gradient_background">پس‌زمینه گرادیان پویا</string>
     <string name="player_gradient_background_desc">نمایش گرادیان‌های محو محیطی بر اساس کاور آهنگ فعلی</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">پنهان کردن از کتابخانه</string>
+    <string name="hide_song_desc">این آهنگ بدون حذف از دستگاه، از کتابخانه و پیشنهادات پنهان می‌شود. می‌توانید هر زمان آن را از تنظیمات بازیابی کنید.</string>
+    <string name="hide">پنهان کردن</string>
+    <string name="song_hidden_success">آهنگ از کتابخانه پنهان شد</string>
+    <string name="hidden_songs">آهنگ‌های پنهان‌شده</string>
+    <string name="hidden_songs_desc">مدیریت و بازیابی آهنگ‌های پنهان‌شده از کتابخانه</string>
+    <string name="hidden_songs_count">%d آهنگ پنهان‌شده</string>
+    <string name="no_hidden_songs">هیچ آهنگ پنهان‌شده‌ای وجود ندارد</string>
+    <string name="no_hidden_songs_desc">آهنگ‌هایی که از کتابخانه پنهان می‌کنید اینجا نمایش داده می‌شوند تا بتوانید آن‌ها را بازیابی کنید</string>
+    <string name="restore_all">بازیابی همه</string>
+    <string name="song_restored_success">\"%s\" به کتابخانه بازیابی شد</string>
+    <string name="all_songs_restored">همه آهنگ‌ها به کتابخانه بازیابی شدند</string>
 </resources>

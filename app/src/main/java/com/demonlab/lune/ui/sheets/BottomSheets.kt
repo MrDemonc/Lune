@@ -85,7 +85,8 @@ fun SongOptionsBottomSheet(
     onDismiss: () -> Unit,
     onAddToPlaylistClick: () -> Unit,
     onEditMetadataClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onHideClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val playbackManager = remember { PlaybackManager.getInstance(context) }
@@ -261,6 +262,51 @@ fun SongOptionsBottomSheet(
                         }
                     ) {
                         Text(stringResource(R.string.edit_information), color = blurColors.textColor)
+                    }
+                }
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 1.dp)
+                        .bounceClick(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = blurColors.itemContainerColor,
+                    border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
+                ) {
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        leadingContent = {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.VisibilityOff,
+                                        contentDescription = null,
+                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.clickable {
+                            onDismiss()
+                            if (onHideClick != null) {
+                                onHideClick()
+                            } else {
+                                val sm = SettingsManager.getInstance(context)
+                                sm.hideSong(song)
+                                if (playbackManager.currentSong?.id == song.id) {
+                                    playbackManager.playNextFromService(startPlayback = playbackManager.isPlaying)
+                                }
+                                playbackManager.removeFromQueue(song.id)
+                                Toast.makeText(context, context.getString(R.string.song_hidden_success), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.hide_from_library), color = blurColors.textColor)
                     }
                 }
                 Surface(

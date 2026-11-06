@@ -541,4 +541,18 @@
     <string name="player_background_title">Tło odtwarzacza</string>
     <string name="player_gradient_background">Dynamiczne tło gradientowe</string>
     <string name="player_gradient_background_desc">Wyświetlaj rozmyte gradienty otoczenia oparte na okładce bieżącego utworu</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Ukryj z biblioteki</string>
+    <string name="hide_song_desc">Ten utwór zostanie ukryty w Twojej bibliotece i rekomendacjach bez usuwania go z urządzenia. Możesz go przywrócić w dowolnym momencie w Ustawieniach.</string>
+    <string name="hide">Ukryj</string>
+    <string name="song_hidden_success">Utwór ukryty z biblioteki</string>
+    <string name="hidden_songs">Ukryte utwory</string>
+    <string name="hidden_songs_desc">Zarządzaj i przywracaj utwory ukryte w bibliotece</string>
+    <string name="hidden_songs_count">%d ukrytych utworów</string>
+    <string name="no_hidden_songs">Brak ukrytych utworów</string>
+    <string name="no_hidden_songs_desc">Ukryte w bibliotece utwory pojawią się tutaj, aby można było je przywrócić</string>
+    <string name="restore_all">Przywróć wszystkie</string>
+    <string name="song_restored_success">\"%s\" przywrócono do biblioteki</string>
+    <string name="all_songs_restored">Wszystkie utwory przywrócone do biblioteki</string>
 </resources>

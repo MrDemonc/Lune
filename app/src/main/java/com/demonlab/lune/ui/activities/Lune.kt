@@ -316,7 +316,9 @@ class Lune : AppCompatActivity() {
                 return@setContent
             }
 
-            val rawAllSongs = musicViewModel.filteredSongs
+            val rawAllSongs = remember(musicViewModel.filteredSongs, settingsManager.hiddenSongIds, settingsManager.hiddenSongPaths) {
+                musicViewModel.filteredSongs
+            }
             val initialFolder = remember {
                 val savedDefault = settingsManager.defaultSectionTab
                 if (savedDefault.isNotEmpty()) savedDefault else TAB_RESUME
@@ -717,6 +719,8 @@ fun MainScreen(
     val coroutineScope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var songToDelete by remember { mutableStateOf<Song?>(null) }
+    var showHideDialog by remember { mutableStateOf(false) }
+    var songToHide by remember { mutableStateOf<Song?>(null) }
     var undoSecondsRemaining by remember { mutableIntStateOf(0) }
     var undoProgress by remember { mutableFloatStateOf(1f) }
     var selectedPlaylist by remember { mutableStateOf<com.demonlab.lune.data.Playlist?>(null) }
@@ -2911,6 +2915,10 @@ fun MainScreen(
             onDeleteClick = {
                 songToDelete = optionsSong
                 showDeleteDialog = true
+            },
+            onHideClick = {
+                songToHide = optionsSong
+                showHideDialog = true
             }
         )
     }
@@ -3042,6 +3050,51 @@ fun MainScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }, modifier = Modifier.bounceClick()) {
+                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                }
+            }
+        )
+    }
+
+    if (showHideDialog && songToHide != null) {
+        val blurColors = rememberBlurSheetColors()
+        AlertDialog(
+            onDismissRequest = { showHideDialog = false },
+            containerColor = blurColors.containerColor,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    stringResource(R.string.hide_from_library),
+                    fontWeight = FontWeight.Bold,
+                    color = blurColors.textColor
+                )
+            },
+            text = {
+                Text(
+                    stringResource(R.string.hide_song_desc),
+                    color = blurColors.textSecondaryColor
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val song = songToHide!!
+                        showHideDialog = false
+
+                        if (currentSong?.id == song.id) {
+                            playbackManager.playNextFromService(startPlayback = isPlaying)
+                        }
+                        playbackManager.removeFromQueue(song.id)
+                        settingsManager.hideSong(song)
+                        Toast.makeText(context, context.getString(R.string.song_hidden_success), Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.bounceClick()
+                ) {
+                    Text(stringResource(R.string.hide), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showHideDialog = false }, modifier = Modifier.bounceClick()) {
                     Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
                 }
             }

@@ -540,4 +540,18 @@
     <string name="player_background_title">Arrière-plan du lecteur</string>
     <string name="player_gradient_background">Arrière-plan en dégradés dynamiques</string>
     <string name="player_gradient_background_desc">Afficher des dégradés ambiants floutés basés sur la pochette du morceau actuel</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Masquer de la bibliothèque</string>
+    <string name="hide_song_desc">Ce morceau sera masqué de votre bibliothèque et de vos recommandations sans être supprimé de votre appareil. Vous pouvez le restaurer à tout moment dans les Paramètres.</string>
+    <string name="hide">Masquer</string>
+    <string name="song_hidden_success">Morceau masqué de la bibliothèque</string>
+    <string name="hidden_songs">Morceaux masqués</string>
+    <string name="hidden_songs_desc">Gérer et restaurer les morceaux masqués de la bibliothèque</string>
+    <string name="hidden_songs_count">%d morceaux masqués</string>
+    <string name="no_hidden_songs">Aucun morceau masqué</string>
+    <string name="no_hidden_songs_desc">Les morceaux masqués de la bibliothèque apparaîtront ici pour que vous puissiez les restaurer</string>
+    <string name="restore_all">Tout restaurer</string>
+    <string name="song_restored_success">\"%s\" restauré dans la bibliothèque</string>
+    <string name="all_songs_restored">Tous les morceaux ont été restaurés dans la bibliothèque</string>
 </resources>

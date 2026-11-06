@@ -537,4 +537,18 @@
     <string name="player_background_title">Player-Hintergrund</string>
     <string name="player_gradient_background">Dynamischer Farbverlauf-Hintergrund</string>
     <string name="player_gradient_background_desc">Verschwommene Umgebungsverläufe basierend auf dem aktuellen Cover anzeigen</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Aus Bibliothek ausblenden</string>
+    <string name="hide_song_desc">Dieser Titel wird aus Ihrer Bibliothek und den Empfehlungen ausgeblendet, ohne vom Gerät gelöscht zu werden. Sie können ihn jederzeit in den Einstellungen wiederherstellen.</string>
+    <string name="hide">Ausblenden</string>
+    <string name="song_hidden_success">Titel aus Bibliothek ausgeblendet</string>
+    <string name="hidden_songs">Ausgeblendete Titel</string>
+    <string name="hidden_songs_desc">Aus der Bibliothek entfernte Titel verwalten und wiederherstellen</string>
+    <string name="hidden_songs_count">%d ausgeblendete Titel</string>
+    <string name="no_hidden_songs">Keine ausgeblendeten Titel</string>
+    <string name="no_hidden_songs_desc">Titel, die Sie aus der Bibliothek ausblenden, werden hier angezeigt, damit Sie sie wiederherstellen können</string>
+    <string name="restore_all">Alle wiederherstellen</string>
+    <string name="song_restored_success">\"%s\" in Bibliothek wiederhergestellt</string>
+    <string name="all_songs_restored">Alle Titel wurden in der Bibliothek wiederhergestellt</string>
 </resources>

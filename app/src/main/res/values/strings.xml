@@ -543,4 +543,18 @@
     <string name="player_background_title">Player Background</string>
     <string name="player_gradient_background">Dynamic gradient background</string>
     <string name="player_gradient_background_desc">Display blurred ambient gradients based on current song artwork</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Hide from library</string>
+    <string name="hide_song_desc">This song will be hidden from your library and recommendations without deleting it from your device. You can restore it anytime in Settings.</string>
+    <string name="hide">Hide</string>
+    <string name="song_hidden_success">Song hidden from library</string>
+    <string name="hidden_songs">Hidden Songs</string>
+    <string name="hidden_songs_desc">Manage and restore songs removed from your library</string>
+    <string name="hidden_songs_count">%d hidden songs</string>
+    <string name="no_hidden_songs">No hidden songs</string>
+    <string name="no_hidden_songs_desc">Songs you hide from the library will appear here so you can restore them</string>
+    <string name="restore_all">Restore all</string>
+    <string name="song_restored_success">\"%s\" restored to library</string>
+    <string name="all_songs_restored">All songs restored to library</string>
 </resources>

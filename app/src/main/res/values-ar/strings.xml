@@ -538,4 +538,18 @@
     <string name="player_background_title">خلفية المشغل</string>
     <string name="player_gradient_background">خلفية تدرجات ديناميكية</string>
     <string name="player_gradient_background_desc">عرض تدرجات ضبابية محيطية مستخرجة من غلاف الأغنية الحالية</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">إخفاء من المكتبة</string>
+    <string name="hide_song_desc">سيتم إخفاء هذه الأغنية من مكتبتك والتوصيات دون حذفها من جهازك. يمكنك استعادتها في أي وقت من الإعدادات.</string>
+    <string name="hide">إخفاء</string>
+    <string name="song_hidden_success">تم إخفاء الأغنية من المكتبة</string>
+    <string name="hidden_songs">الأغاني المخفية</string>
+    <string name="hidden_songs_desc">إدارة واستعادة الأغاني المخفية من مكتبتك</string>
+    <string name="hidden_songs_count">%d أغاني مخفية</string>
+    <string name="no_hidden_songs">لا توجد أغاني مخفية</string>
+    <string name="no_hidden_songs_desc">ستظهر الأغاني التي تخفيها من المكتبة هنا حتى تتمكن من استعادتها</string>
+    <string name="restore_all">استعادة الكل</string>
+    <string name="song_restored_success">تمت استعادة \"%s\" إلى المكتبة</string>
+    <string name="all_songs_restored">تمت استعادة جميع الأغاني إلى المكتبة</string>
 </resources>

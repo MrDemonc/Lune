@@ -544,4 +544,18 @@
     <string name="player_background_title">Fondo del reproductor</string>
     <string name="player_gradient_background">Fondo de gradientes dinámicos</string>
     <string name="player_gradient_background_desc">Muestra gradientes ambientales difuminados con los colores del cover actual</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Ocultar de la biblioteca</string>
+    <string name="hide_song_desc">Esta canción se ocultará de tu biblioteca y recomendaciones sin eliminarse de tu dispositivo. Podrás restaurarla en cualquier momento desde Configuración.</string>
+    <string name="hide">Ocultar</string>
+    <string name="song_hidden_success">Canción oculta de la biblioteca</string>
+    <string name="hidden_songs">Canciones ocultas</string>
+    <string name="hidden_songs_desc">Administra y restaura canciones ocultadas de la biblioteca</string>
+    <string name="hidden_songs_count">%d canciones ocultas</string>
+    <string name="no_hidden_songs">No hay canciones ocultas</string>
+    <string name="no_hidden_songs_desc">Las canciones que ocultes de la biblioteca aparecerán aquí para que puedas restaurarlas</string>
+    <string name="restore_all">Restaurar todas</string>
+    <string name="song_restored_success">\"%s\" restaurada a la biblioteca</string>
+    <string name="all_songs_restored">Todas las canciones han sido restauradas a la biblioteca</string>
 </resources>

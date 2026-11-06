@@ -538,4 +538,18 @@
     <string name="player_background_title">播放器背景</string>
     <string name="player_gradient_background">动态渐变背景</string>
     <string name="player_gradient_background_desc">根据当前歌曲封面显示模糊的环境渐变背景</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">从曲库中隐藏</string>
+    <string name="hide_song_desc">此歌曲将从曲库和推荐中隐藏，但不会从设备中删除。你可以随时在设置中恢复。</string>
+    <string name="hide">隐藏</string>
+    <string name="song_hidden_success">已从曲库中隐藏该歌曲</string>
+    <string name="hidden_songs">已隐藏的歌曲</string>
+    <string name="hidden_songs_desc">管理并恢复从曲库中隐藏的歌曲</string>
+    <string name="hidden_songs_count">%d 首隐藏歌曲</string>
+    <string name="no_hidden_songs">没有隐藏的歌曲</string>
+    <string name="no_hidden_songs_desc">你从曲库隐藏的歌曲将显示在此处，以便你恢复</string>
+    <string name="restore_all">全部恢复</string>
+    <string name="song_restored_success">已恢复 \"%s\" 到曲库</string>
+    <string name="all_songs_restored">所有歌曲均已恢复到曲库</string>
 </resources>

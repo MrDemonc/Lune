@@ -37,7 +37,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     val visuallyDeletedIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
     val filteredSongs: List<Song>
-        get() = allSongs.filter { it.id !in visuallyDeletedIds }
+        get() {
+            val settings = SettingsManager.getInstance(getApplication())
+            val hiddenIds = settings.hiddenSongIds
+            val hiddenPaths = settings.hiddenSongPaths
+            return allSongs.filter { song ->
+                song.id !in visuallyDeletedIds &&
+                song.id.toString() !in hiddenIds &&
+                (song.path.isBlank() || song.path !in hiddenPaths)
+            }
+        }
 
     var isLoading by mutableStateOf(false)
         private set
@@ -71,7 +80,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (cached.isNotEmpty() && allSongs.isEmpty()) {
                 allSongs = cached
-                updateRandomResumeArtists(cached)
+                updateRandomResumeArtists(filteredSongs)
             } else if (allSongs.isEmpty()) {
                 isLoading = true
             }
@@ -87,7 +96,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val refreshed = musicProvider.refreshLibrary()
             if (refreshed.isNotEmpty()) {
                 allSongs = refreshed
-                updateRandomResumeArtists(refreshed, force = false)
+                updateRandomResumeArtists(filteredSongs, force = false)
             }
             isLoading = false
         }
@@ -127,7 +136,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             if (synced != allSongs) {
                 allSongs = synced
             }
-            updateRandomResumeArtists(synced)
+            updateRandomResumeArtists(filteredSongs)
         } else {
             // If sync returned empty but we already had songs, don't clear the list.
             // This prevents the "no songs" bug when permissions or MediaStore fail temporarily.
@@ -367,7 +376,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val ids = withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getSongIdsForPlaylist(playlistId)
             }
-            val songMap = allSongs.associateBy { it.id }
+            val songMap = filteredSongs.associateBy { it.id }
             callback(ids.mapNotNull { songMap[it] })
         }
     }
@@ -376,7 +385,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val songIds = playlistMappings.filter { it.playlistId == playlistId }
             .sortedWith(compareBy({ it.position }, { it.addedAt }))
             .map { it.songId }
-        val songMap = allSongs.associateBy { it.id }
+        val songMap = filteredSongs.associateBy { it.id }
         return songIds.mapNotNull { songMap[it] }
     }
 

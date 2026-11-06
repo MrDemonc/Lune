@@ -31,6 +31,63 @@ class SettingsManager(context: Context) {
         get() = prefs.getStringSet("hidden_folders", emptySet()) ?: emptySet()
         set(value) = prefs.edit().putStringSet("hidden_folders", value).apply()
 
+    private val _hiddenSongIds = mutableStateOf(prefs.getStringSet("hidden_song_ids", emptySet()) ?: emptySet())
+    var hiddenSongIds: Set<String>
+        get() = _hiddenSongIds.value
+        set(value) {
+            _hiddenSongIds.value = value
+            prefs.edit().putStringSet("hidden_song_ids", value).apply()
+        }
+
+    private val _hiddenSongPaths = mutableStateOf(prefs.getStringSet("hidden_song_paths", emptySet()) ?: emptySet())
+    var hiddenSongPaths: Set<String>
+        get() = _hiddenSongPaths.value
+        set(value) {
+            _hiddenSongPaths.value = value
+            prefs.edit().putStringSet("hidden_song_paths", value).apply()
+        }
+
+    fun hideSong(song: Song) {
+        val ids = hiddenSongIds.toMutableSet()
+        ids.add(song.id.toString())
+        hiddenSongIds = ids
+
+        if (song.path.isNotBlank()) {
+            val paths = hiddenSongPaths.toMutableSet()
+            paths.add(song.path)
+            hiddenSongPaths = paths
+        }
+    }
+
+    fun unhideSong(song: Song) {
+        val ids = hiddenSongIds.toMutableSet()
+        ids.remove(song.id.toString())
+        hiddenSongIds = ids
+
+        if (song.path.isNotBlank()) {
+            val paths = hiddenSongPaths.toMutableSet()
+            paths.remove(song.path)
+            hiddenSongPaths = paths
+        }
+    }
+
+    fun restoreAllHiddenSongs() {
+        hiddenSongIds = emptySet()
+        hiddenSongPaths = emptySet()
+    }
+
+    fun isSongHidden(song: Song): Boolean {
+        if (hiddenSongIds.contains(song.id.toString())) return true
+        if (song.path.isNotBlank() && hiddenSongPaths.contains(song.path)) return true
+        return false
+    }
+
+    fun isSongHidden(songId: Long, songPath: String = ""): Boolean {
+        if (hiddenSongIds.contains(songId.toString())) return true
+        if (songPath.isNotBlank() && hiddenSongPaths.contains(songPath)) return true
+        return false
+    }
+
     // Deprecated: used for backward compatibility if needed, but we use hiddenFolders now
     var showWhatsappAudio: Boolean
         get() = !hiddenFolders.contains("WhatsApp Audio")

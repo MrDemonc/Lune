@@ -540,4 +540,18 @@
     <string name="player_background_title">Plano de fundo do player</string>
     <string name="player_gradient_background">Plano de fundo de gradientes dinâmicos</string>
     <string name="player_gradient_background_desc">Exibir gradientes ambientes desfocados com as cores da capa atual</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Ocultar da biblioteca</string>
+    <string name="hide_song_desc">Esta música será ocultada da sua biblioteca e recomendações sem ser excluída do dispositivo. Você pode restaurá-la a qualquer momento nas Configurações.</string>
+    <string name="hide">Ocultar</string>
+    <string name="song_hidden_success">Música ocultada da biblioteca</string>
+    <string name="hidden_songs">Músicas ocultadas</string>
+    <string name="hidden_songs_desc">Gerencie e restaure músicas removidas da biblioteca</string>
+    <string name="hidden_songs_count">%d músicas ocultadas</string>
+    <string name="no_hidden_songs">Nenhuma música ocultada</string>
+    <string name="no_hidden_songs_desc">As músicas que você ocultar da biblioteca aparecerão aqui para serem restauradas</string>
+    <string name="restore_all">Restaurar todas</string>
+    <string name="song_restored_success">\"%s\" restaurada para a biblioteca</string>
+    <string name="all_songs_restored">Todas as músicas foram restauradas para a biblioteca</string>
 </resources>

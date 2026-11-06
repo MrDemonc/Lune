@@ -540,4 +540,18 @@
     <string name="player_background_title">Фон плеера</string>
     <string name="player_gradient_background">Динамический градиентный фон</string>
     <string name="player_gradient_background_desc">Отображать размытые фоновые градиенты на основе обложки текущего трека</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Скрыть из медиатеки</string>
+    <string name="hide_song_desc">Этот трек будет скрыт из вашей медиатеки и рекомендаций без удаления с устройства. Вы можете восстановить его в любое время в Настройках.</string>
+    <string name="hide">Скрыть</string>
+    <string name="song_hidden_success">Трек скрыт из медиатеки</string>
+    <string name="hidden_songs">Скрытые треки</string>
+    <string name="hidden_songs_desc">Управление и восстановление скрытых треков</string>
+    <string name="hidden_songs_count">%d скрытых треков</string>
+    <string name="no_hidden_songs">Нет скрытых треков</string>
+    <string name="no_hidden_songs_desc">Скрытые из медиатеки треки появятся здесь, чтобы вы могли их восстановить</string>
+    <string name="restore_all">Восстановить все</string>
+    <string name="song_restored_success">Трек \"%s\" восстановлен в медиатеку</string>
+    <string name="all_songs_restored">Все треки восстановлены в медиатеку</string>
 </resources>
