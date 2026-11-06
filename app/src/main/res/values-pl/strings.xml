@@ -460,6 +460,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Szybkie odtwarzanie</string>
+    <string name="use_quick_player_desc">Odtwarzaj pliki audio z zewnętrznych aplikacji w pływającym oknie zamiast w pełnej aplikacji</string>
     <string name="open_in_lune">Otwórz w Lune</string>
     <string name="close">Zamknij</string>
     <string name="cd_open_in_lune">Otwórz w Lune</string>

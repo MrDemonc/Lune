@@ -441,6 +441,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Reprodução rápida</string>
+    <string name="use_quick_player_desc">Reproduzir arquivos de áudio de aplicativos externos em uma prévia flutuante em vez do aplicativo completo</string>
     <string name="open_in_lune">Abrir no Lune</string>
     <string name="close">Fechar</string>
     <string name="cd_open_in_lune">Abrir no Lune</string>

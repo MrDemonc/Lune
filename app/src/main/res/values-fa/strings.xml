@@ -437,6 +437,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">پخش سریع</string>
+    <string name="use_quick_player_desc">پخش فایل‌های صوتی از برنامه‌های خارجی در یک پنجره پیش‌نمایش شناور به جای برنامه کامل</string>
     <string name="open_in_lune">باز کردن در Lune</string>
     <string name="close">بستن</string>
     <string name="cd_open_in_lune">باز کردن در Lune</string>

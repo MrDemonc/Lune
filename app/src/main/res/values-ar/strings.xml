@@ -439,6 +439,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">تشغيل سريع</string>
+    <string name="use_quick_player_desc">تشغيل الملفات الصوتية من التطبيقات الخارجية في نافذة معاينة عائمة بدلاً من التطبيق الكامل</string>
     <string name="open_in_lune">فتح في Lune</string>
     <string name="close">إغلاق</string>
     <string name="cd_open_in_lune">فتح في Lune</string>

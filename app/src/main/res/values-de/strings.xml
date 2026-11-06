@@ -438,6 +438,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Schnellwiedergabe</string>
+    <string name="use_quick_player_desc">Audiodateien aus externen Apps in einer schwebenden Vorschau statt in der vollständigen App abspielen</string>
     <string name="open_in_lune">In Lune öffnen</string>
     <string name="close">Schließen</string>
     <string name="cd_open_in_lune">In Lune öffnen</string>

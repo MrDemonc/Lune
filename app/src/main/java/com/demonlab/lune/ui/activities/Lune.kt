@@ -168,6 +168,7 @@ import com.demonlab.lune.tools.MusicProvider
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -213,18 +214,30 @@ class Lune : AppCompatActivity() {
             val uri = intent.data ?: intent.clipData?.let { if (it.itemCount > 0) it.getItemAt(0).uri else null }
             if (uri != null) {
                 try {
+                    grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+                try {
                     contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 } catch (_: Exception) {}
-                val song = SongResolver.resolveSongFromUri(this, uri)
-                if (song != null) {
-                    val resolved = SongResolver.resolvePlaybackQueue(this, song)
-                    PlaybackManager.getInstance(this).play(
-                        resolved.song,
-                        resolved.queue,
-                        resolved.playlistId,
-                        category = resolved.playlistName
-                    )
-                    pendingExpandPlayer.value = true
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val song = SongResolver.resolveSongFromUri(this@Lune, uri)
+                        if (song != null) {
+                            val resolved = SongResolver.resolvePlaybackQueue(this@Lune, song)
+                            withContext(Dispatchers.Main) {
+                                PlaybackManager.getInstance(this@Lune).play(
+                                    resolved.song,
+                                    resolved.queue,
+                                    resolved.playlistId,
+                                    playlistName = resolved.playlistName,
+                                    category = resolved.playlistName
+                                )
+                                pendingExpandPlayer.value = true
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }

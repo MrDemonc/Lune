@@ -495,8 +495,9 @@ class MusicService : MediaLibraryService() {
             }
             else -> {
                 val currentOrPending = currentSong() ?: pm.currentSong ?: pm.pendingPlaySong
-                if (currentOrPending != null && isPlaying()) {
-                    showNotification(currentOrPending, true)
+                if (currentOrPending != null) {
+                    isNotificationDismissed = false
+                    showNotification(currentOrPending, isPlaying(), keepForeground = true)
                 }
             }
         }
@@ -936,6 +937,8 @@ class MusicService : MediaLibraryService() {
         }
     }
 
+    private var currentAssetFileDescriptor: android.content.res.AssetFileDescriptor? = null
+
     private fun setPlayerDataSource(player: MediaPlayer, song: Song): Boolean {
         try {
             player.setDataSource(applicationContext, song.uri)
@@ -946,8 +949,15 @@ class MusicService : MediaLibraryService() {
 
         if (song.uri.scheme == "content") {
             try {
-                applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")?.use { afd ->
-                    player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                val afd = applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")
+                if (afd != null) {
+                    try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+                    currentAssetFileDescriptor = afd
+                    if (afd.declaredLength < 0) {
+                        player.setDataSource(afd.fileDescriptor)
+                    } else {
+                        player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.declaredLength)
+                    }
                     return true
                 }
             } catch (e: Throwable) {
@@ -1002,6 +1012,8 @@ class MusicService : MediaLibraryService() {
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
+        try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+        currentAssetFileDescriptor = null
         secondaryPlayer?.setOnCompletionListener(null)
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
@@ -1638,6 +1650,8 @@ class MusicService : MediaLibraryService() {
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
+        try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+        currentAssetFileDescriptor = null
         secondaryPlayer?.setOnCompletionListener(null)
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
@@ -2214,6 +2228,8 @@ class MusicService : MediaLibraryService() {
             t.printStackTrace()
         }
         mediaPlayer?.release()
+        try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+        currentAssetFileDescriptor = null
         secondaryPlayer?.release()
         mediaSession?.let {
             try {

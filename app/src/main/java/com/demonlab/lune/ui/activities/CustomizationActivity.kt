@@ -148,6 +148,7 @@ fun CustomizationScreen(
     var crossfadeDurationSeconds by remember { mutableStateOf(settingsManager.crossfadeDurationSeconds) }
     var seamlessLooping by remember { mutableStateOf(settingsManager.seamlessLooping) }
     var isScrollToTopEnabled by remember { mutableStateOf(settingsManager.isScrollToTopEnabled) }
+    var useQuickPlayer by remember { mutableStateOf(settingsManager.useQuickPlayer) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -589,6 +590,29 @@ fun CustomizationScreen(
                             thumbContent = {
                                 Icon(
                                     imageVector = if (isCinematicEnabled) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.quick_player),
+                    supportingText = stringResource(R.string.use_quick_player_desc),
+                    icon = Icons.Default.Speed,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = useQuickPlayer,
+                            onCheckedChange = {
+                                useQuickPlayer = it
+                                settingsManager.useQuickPlayer = it
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (useQuickPlayer) Icons.Default.Check else Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )

@@ -460,6 +460,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Quick Play</string>
+    <string name="use_quick_player_desc">Play audio files from external apps in a floating preview instead of opening the full app</string>
     <string name="open_in_lune">Open in Lune</string>
     <string name="close">Close</string>
     <string name="cd_open_in_lune">Open in Lune</string>

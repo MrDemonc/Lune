@@ -441,6 +441,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Быстрое воспроизведение</string>
+    <string name="use_quick_player_desc">Воспроизводить аудиофайлы из сторонних приложений во всплывающем окне вместо полного приложения</string>
     <string name="open_in_lune">Открыть в Lune</string>
     <string name="close">Закрыть</string>
     <string name="cd_open_in_lune">Открыть в Lune</string>

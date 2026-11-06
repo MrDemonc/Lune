@@ -503,6 +503,14 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_player_gradient_background_enabled", value).apply()
         }
 
+    private val _useQuickPlayer = mutableStateOf(prefs.getBoolean("use_quick_player", true))
+    var useQuickPlayer: Boolean
+        get() = _useQuickPlayer.value
+        set(value) {
+            _useQuickPlayer.value = value
+            prefs.edit().putBoolean("use_quick_player", value).apply()
+        }
+
     var playbackSpeed: Float
         get() = prefs.getFloat("playback_speed", 1.0f)
         set(value) = prefs.edit().putFloat("playback_speed", value).apply()

@@ -101,22 +101,26 @@ object SongResolver {
         val nameWithoutExt = fileName.substringBeforeLast(".")
         val extension = fileName.substringAfterLast(".", "").lowercase()
 
+        var resolvedPath: String = if (uri.scheme == "file") uri.path ?: "" else ""
+        if (resolvedPath.isEmpty() && uri.scheme == "content") {
+            try {
+                context.contentResolver.query(uri, arrayOf(MediaStore.Audio.Media.DATA), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+                        if (idx != -1) {
+                            val path = cursor.getString(idx)
+                            if (!path.isNullOrBlank()) resolvedPath = path
+                        }
+                    }
+                }
+            } catch (_: Throwable) {}
+        }
+
         // Jaudiotagger fallback for formats where MediaMetadataRetriever fails (especially WAV, DSF)
         // or where title/artist/album are missing
         if (title.isNullOrBlank() || artist.isNullOrBlank() || album.isNullOrBlank() || extension == "wav") {
             try {
-                var fileToRead: File? = if (uri.scheme == "file" && !uri.path.isNullOrBlank()) File(uri.path!!) else null
-                if (fileToRead == null && uri.scheme == "content") {
-                    context.contentResolver.query(uri, arrayOf(MediaStore.Audio.Media.DATA), null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
-                            if (idx != -1) {
-                                val path = cursor.getString(idx)
-                                if (!path.isNullOrBlank()) fileToRead = File(path)
-                            }
-                        }
-                    }
-                }
+                val fileToRead: File? = if (resolvedPath.isNotBlank()) File(resolvedPath) else null
                 if (fileToRead != null && fileToRead.exists() && fileToRead.canRead()) {
                     val audioFile = org.jaudiotagger.audio.AudioFileIO.read(fileToRead)
                     val tag = audioFile.tag
@@ -151,7 +155,7 @@ object SongResolver {
         val finalArtist = if (!artist.isNullOrBlank()) CharsetUtils.sanitizeText(artist) else context.getString(R.string.unknown_artist)
         val finalAlbum = if (!album.isNullOrBlank()) CharsetUtils.sanitizeText(album) else context.getString(R.string.unknown_album)
 
-        val filePath = if (uri.scheme == "file") uri.path ?: "" else ""
+        val filePath = resolvedPath
         val folderName = if (filePath.isNotBlank()) {
             filePath.substringBeforeLast("/").substringAfterLast("/").ifEmpty { "Downloads" }
         } else {
@@ -206,32 +210,34 @@ object SongResolver {
         )
     }
 
-    fun resolveSiblingSongs(context: Context, currentSong: Song): List<Song> {
+    fun resolveSiblingSongs(context: Context, currentSong: Song, cachedSongs: List<Song> = emptyList()): List<Song> {
         if (currentSong.path.isNotBlank()) {
             val file = File(currentSong.path)
             val parent = file.parentFile
             if (parent != null && parent.isDirectory && parent.canRead()) {
-                val audioExtensions = setOf("mp3", "flac", "wav", "m4a", "ogg", "opus", "aac", "wma", "alac")
+                val audioExtensions = setOf("mp3", "flac", "wav", "m4a", "ogg", "opus", "aac", "wma", "alac", "dsf", "dff")
                 val files = parent.listFiles { f ->
                     f.isFile && f.extension.lowercase() in audioExtensions
                 }?.sortedBy { it.name } ?: emptyList()
 
                 if (files.size > 1) {
+                    val unknownArtist = context.getString(R.string.unknown_artist)
+                    val unknownAlbum = context.getString(R.string.unknown_album)
                     return files.map { f ->
                         if (f.absolutePath == file.absolutePath) {
                             currentSong
                         } else {
-                            val uri = Uri.fromFile(f)
-                            resolveSongFromUri(context, uri) ?: Song(
-                                id = -abs(uri.toString().hashCode().toLong().let { if (it == 0L) 1L else it }),
+                            val cached = cachedSongs.find { it.path == f.absolutePath }
+                            cached ?: Song(
+                                id = -abs(f.absolutePath.hashCode().toLong().let { if (it == 0L) 1L else it }),
                                 albumId = -1L,
                                 title = f.nameWithoutExtension,
-                                artist = context.getString(R.string.unknown_artist),
-                                album = context.getString(R.string.unknown_album),
+                                artist = unknownArtist,
+                                album = unknownAlbum,
                                 duration = 0L,
-                                uri = uri,
+                                uri = Uri.fromFile(f),
                                 path = f.absolutePath,
-                                albumArtUri = uri,
+                                albumArtUri = Uri.fromFile(f),
                                 folderName = parent.name,
                                 format = f.extension.uppercase()
                             )
@@ -254,11 +260,14 @@ object SongResolver {
         val provider = MusicProvider(context)
         val cachedSongs = runCatching { provider.getCachedSongs() }.getOrDefault(emptyList())
 
+        val unknownArtist = context.getString(R.string.unknown_artist)
         val inLibrarySong = cachedSongs.find {
             it.id == currentSong.id ||
             it.uri == currentSong.uri ||
             (currentSong.path.isNotBlank() && it.path == currentSong.path) ||
-            (it.title.equals(currentSong.title, ignoreCase = true) && it.artist.equals(currentSong.artist, ignoreCase = true))
+            (currentSong.title.isNotBlank() && !currentSong.title.equals(unknownArtist, ignoreCase = true) &&
+             currentSong.artist.isNotBlank() && !currentSong.artist.equals(unknownArtist, ignoreCase = true) &&
+             it.title.equals(currentSong.title, ignoreCase = true) && it.artist.equals(currentSong.artist, ignoreCase = true))
         }
 
         if (inLibrarySong != null && cachedSongs.isNotEmpty()) {
@@ -270,7 +279,7 @@ object SongResolver {
             )
         }
 
-        val siblings = resolveSiblingSongs(context, currentSong)
+        val siblings = resolveSiblingSongs(context, currentSong, cachedSongs)
         return ResolvedPlayback(
             song = currentSong,
             queue = siblings,

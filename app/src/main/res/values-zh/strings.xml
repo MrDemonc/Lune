@@ -455,6 +455,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">快捷播放</string>
+    <string name="use_quick_player_desc">在悬浮小窗中播放外部音频文件，而不是打开完整应用</string>
     <string name="open_in_lune">在 Lune 中打开</string>
     <string name="close">关闭</string>
     <string name="cd_open_in_lune">在 Lune 中打开</string>
