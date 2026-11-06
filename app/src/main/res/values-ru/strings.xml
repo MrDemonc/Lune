@@ -558,4 +558,8 @@
     <string name="default_album_sorting">Порядок альбомов по умолчанию</string>
     <string name="default_artist_sorting">Порядок артистов по умолчанию</string>
     <string name="default_playlist_sorting">Порядок плейлистов по умолчанию</string>
+    <string name="filter_duration_title">Исключить короткие аудиофайлы</string>
+    <string name="filter_duration_off">Выкл</string>
+    <string name="option_filter_short_audios">Фильтр</string>
+    <string name="filter_duration_description">Исключайте очень короткие аудиофайлы (голосовые сообщения, рингтоны и звуковые эффекты) из медиатеки и очередей воспроизведения.</string>
 </resources>

@@ -41,10 +41,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val settings = SettingsManager.getInstance(getApplication())
             val hiddenIds = settings.hiddenSongIds
             val hiddenPaths = settings.hiddenSongPaths
+            val filterDurationEnabled = settings.isFilterDurationEnabled
+            val minDurationMs = if (filterDurationEnabled) settings.filterMinDurationSeconds * 1000L else 0L
+
             return allSongs.filter { song ->
                 song.id !in visuallyDeletedIds &&
                 song.id.toString() !in hiddenIds &&
-                (song.path.isBlank() || song.path !in hiddenPaths)
+                (song.path.isBlank() || song.path !in hiddenPaths) &&
+                (!filterDurationEnabled || song.duration >= minDurationMs)
             }
         }
 

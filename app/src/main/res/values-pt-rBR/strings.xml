@@ -558,4 +558,8 @@
     <string name="default_album_sorting">Ordem padrão dos álbuns</string>
     <string name="default_artist_sorting">Ordem padrão dos artistas</string>
     <string name="default_playlist_sorting">Ordem padrão das playlists</string>
+    <string name="filter_duration_title">Excluir áudios curtos</string>
+    <string name="filter_duration_off">Off</string>
+    <string name="option_filter_short_audios">Filtro</string>
+    <string name="filter_duration_description">Exclua arquivos de áudio muito curtos (como mensagens de voz, toques e efeitos sonoros) da sua biblioteca e filas de reprodução.</string>
 </resources>

@@ -562,4 +562,8 @@
     <string name="default_album_sorting">Orden por defecto de álbumes</string>
     <string name="default_artist_sorting">Orden por defecto de artistas</string>
     <string name="default_playlist_sorting">Orden por defecto de listas</string>
+    <string name="filter_duration_title">Excluir audios cortos</string>
+    <string name="filter_duration_off">Off</string>
+    <string name="option_filter_short_audios">Filtro</string>
+    <string name="filter_duration_description">Excluye audios muy cortos (como notas de voz, tonos y efectos de sonido) de tu biblioteca y colas de reproducción.</string>
 </resources>

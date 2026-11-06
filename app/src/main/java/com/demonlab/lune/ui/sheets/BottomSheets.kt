@@ -12,8 +12,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -1262,7 +1264,7 @@ fun QueueBottomSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlayerOptionsBottomSheet(
     playbackManager: PlaybackManager,
@@ -1278,6 +1280,7 @@ fun PlayerOptionsBottomSheet(
     val currentSong = playbackManager.currentSong
     val blurColors = rememberBlurSheetColors(currentSong)
     val context = LocalContext.current
+    val settingsManager = remember { SettingsManager.getInstance(context) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1294,6 +1297,7 @@ fun PlayerOptionsBottomSheet(
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             var showCustomTimerDialog by remember { mutableStateOf(false) }
+            var showFilterDurationDialog by remember { mutableStateOf(false) }
 
             if (showCustomTimerDialog) {
                 CustomSleepTimerDialog(
@@ -1303,6 +1307,15 @@ fun PlayerOptionsBottomSheet(
                     onSetTimer = { minutes ->
                         playbackManager.setCustomSleepTimer(minutes)
                     }
+                )
+            }
+
+            if (showFilterDurationDialog) {
+                FilterDurationDialog(
+                    currentSong = currentSong,
+                    settingsManager = settingsManager,
+                    onDismiss = { showFilterDurationDialog = false },
+                    onRefreshSongs = onRefreshSongs
                 )
             }
 
@@ -1436,6 +1449,113 @@ fun PlayerOptionsBottomSheet(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Music Sleep Timer Bar
+                var timerMinutes by remember { mutableIntStateOf(playbackManager.sleepTimerMinutes) }
+                LaunchedEffect(playbackManager.sleepTimerMinutes) {
+                    timerMinutes = playbackManager.sleepTimerMinutes
+                }
+
+                val isTimerActive = timerMinutes > 0
+                val timerSliderState = remember {
+                    SliderState((timerMinutes / 120f).coerceIn(0f, 1f))
+                }
+                LaunchedEffect(timerMinutes) {
+                    timerSliderState.value = (timerMinutes / 120f).coerceIn(0f, 1f)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .bounceClick(0.92f)
+                            .clip(CircleShape)
+                            .combinedClickable(
+                                onClick = {
+                                    playbackManager.toggleSleepTimer()
+                                },
+                                onLongClick = {
+                                    showCustomTimerDialog = true
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isTimerActive) Icons.Default.Bedtime else Icons.Default.BedtimeOff,
+                            contentDescription = stringResource(R.string.option_timer),
+                            tint = if (isTimerActive) {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White else blurColors.primaryTint) else MaterialTheme.colorScheme.primary
+                            } else {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.38f) else Color.Black.copy(alpha = 0.35f)) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                            },
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Slider(
+                        state = timerSliderState,
+                        onValueChange = { newValue ->
+                            val rawMinutes = (newValue * 120f).roundToInt()
+                            val minutes = ((rawMinutes / 5f).roundToInt() * 5).coerceIn(0, 120)
+                            timerMinutes = minutes
+                            playbackManager.setCustomSleepTimer(minutes)
+                        },
+                        thumb = { _ -> },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp),
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = if (isTimerActive) {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White else blurColors.primaryTint) else MaterialTheme.colorScheme.primary
+                            } else {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                            },
+                            inactiveTrackColor = if (isTimerActive) {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.3f) else blurColors.primaryTint.copy(alpha = 0.2f)) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            } else {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                            }
+                        )
+                    )
+
+                    Box(
+                        modifier = Modifier.width(48.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        Text(
+                            text = if (isTimerActive) {
+                                if (timerMinutes >= 60) {
+                                    val h = timerMinutes / 60
+                                    val m = timerMinutes % 60
+                                    if (m == 0) "${h}h" else "${h}h${m}m"
+                                } else {
+                                    "${timerMinutes}m"
+                                }
+                            } else {
+                                stringResource(R.string.filter_duration_off)
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isTimerActive) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isTimerActive) {
+                                if (blurColors.hasBlur) blurColors.textSecondaryColor else MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.38f) else Color.Black.copy(alpha = 0.35f)) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                            },
+                            textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 // Playback Speed Bar
                 val speedSteps = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
                 Surface(
@@ -1483,21 +1603,25 @@ fun PlayerOptionsBottomSheet(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Dedicated audio options row: Timer, Crossfade, Automix, Visualizer, Share
+                // Dedicated audio options row: Filter, Crossfade, Automix, Visualizer, Share
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    // 1. Timer
+                    // 1. Filter Short Audios (Excluir audios cortos)
                     Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         OptionButton(
-                            icon = Icons.Default.Timer,
-                            label = if (playbackManager.sleepTimerMinutes > 0) "${playbackManager.sleepTimerMinutes}m" else stringResource(R.string.option_timer),
-                            active = playbackManager.sleepTimerMinutes > 0,
-                            onClick = { playbackManager.toggleSleepTimer() },
-                            onLongClick = { showCustomTimerDialog = true }
+                            icon = Icons.Default.FilterAlt,
+                            label = if (settingsManager.isFilterDurationEnabled && settingsManager.filterMinDurationSeconds > 0) {
+                                "${settingsManager.filterMinDurationSeconds}s"
+                            } else {
+                                stringResource(R.string.option_filter_short_audios)
+                            },
+                            active = settingsManager.isFilterDurationEnabled,
+                            onClick = { showFilterDurationDialog = true },
+                            onLongClick = { showFilterDurationDialog = true }
                         )
                     }
 
@@ -2076,6 +2200,241 @@ fun CustomSleepTimerDialog(
                             Text(
                                 text = if (selectedMinutes == 0) stringResource(R.string.timer_turn_off) else stringResource(R.string.timer_set),
                                 fontWeight = FontWeight.SemiBold,
+                                color = if (blurColors.hasBlur) Color.Black else Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Suppress("DEPRECATION")
+@Composable
+fun FilterDurationDialog(
+    currentSong: Song? = null,
+    settingsManager: SettingsManager,
+    onDismiss: () -> Unit,
+    onRefreshSongs: (() -> Unit)? = null
+) {
+    val blurColors = rememberBlurSheetColors(currentSong)
+    var isEnabled by remember { mutableStateOf(settingsManager.isFilterDurationEnabled) }
+    var selectedSeconds by remember {
+        mutableIntStateOf(if (settingsManager.filterMinDurationSeconds > 0) settingsManager.filterMinDurationSeconds else 30)
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = currentSong,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 380.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Surface(
+                color = Color.Transparent,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.FilterAlt,
+                                contentDescription = null,
+                                tint = blurColors.primaryTint,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = stringResource(R.string.filter_duration_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.filter_duration_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = blurColors.textSecondaryColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Expressive duration badge
+                    val offLabel = stringResource(R.string.filter_duration_off)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isEnabled && selectedSeconds > 0) {
+                            if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        } else blurColors.itemContainerColor,
+                        modifier = Modifier.padding(bottom = 14.dp)
+                    ) {
+                        Text(
+                            text = if (isEnabled && selectedSeconds > 0) {
+                                if (selectedSeconds >= 60) "1m" else "< ${selectedSeconds}s"
+                            } else offLabel,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isEnabled && selectedSeconds > 0) blurColors.primaryTint else blurColors.textSecondaryColor,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    // Quick preset chips row
+                    val presets = listOf(0, 10, 20, 30, 45, 60)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(presets) { preset ->
+                            val isSelected = (preset == 0 && (!isEnabled || selectedSeconds == 0)) ||
+                                    (isEnabled && selectedSeconds == preset && preset > 0)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    if (preset == 0) {
+                                        isEnabled = false
+                                    } else {
+                                        isEnabled = true
+                                        selectedSeconds = preset
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = if (preset == 0) offLabel else if (preset >= 60) "1m" else "${preset}s",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = blurColors.itemContainerColor,
+                                    labelColor = blurColors.textSecondaryColor
+                                ),
+                                modifier = Modifier.bounceClick()
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Stepper + Slider
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        FilledTonalIconButton(
+                            onClick = {
+                                val next = (selectedSeconds - 5).coerceAtLeast(0)
+                                if (next == 0) {
+                                    isEnabled = false
+                                }
+                                selectedSeconds = next
+                            },
+                            enabled = isEnabled && selectedSeconds > 0,
+                            modifier = Modifier.size(44.dp).bounceClick(),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = null)
+                        }
+
+                        Slider(
+                            value = if (isEnabled) selectedSeconds.toFloat() else 0f,
+                            onValueChange = {
+                                val rounded = it.roundToInt().coerceIn(0, 60)
+                                selectedSeconds = rounded
+                                isEnabled = rounded > 0
+                            },
+                            valueRange = 0f..60f,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = blurColors.primaryTint,
+                                activeTrackColor = blurColors.primaryTint,
+                                inactiveTrackColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHighest
+                            )
+                        )
+
+                        FilledTonalIconButton(
+                            onClick = {
+                                isEnabled = true
+                                selectedSeconds = (selectedSeconds + 5).coerceAtMost(60)
+                            },
+                            enabled = selectedSeconds < 60,
+                            modifier = Modifier.size(44.dp).bounceClick(),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Button(
+                            onClick = {
+                                settingsManager.isFilterDurationEnabled = isEnabled && selectedSeconds > 0
+                                if (selectedSeconds > 0) {
+                                    settingsManager.filterMinDurationSeconds = selectedSeconds
+                                }
+                                onRefreshSongs?.invoke()
+                                onDismiss()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = blurColors.primaryTint,
+                                contentColor = if (blurColors.hasBlur) Color.Black else Color.White
+                            ),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(
+                                stringResource(R.string.save),
+                                fontWeight = FontWeight.Bold,
                                 color = if (blurColors.hasBlur) Color.Black else Color.White
                             )
                         }

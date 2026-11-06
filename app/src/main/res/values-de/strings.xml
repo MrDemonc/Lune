@@ -555,4 +555,8 @@
     <string name="default_album_sorting">Standard-Albenreihenfolge</string>
     <string name="default_artist_sorting">Standard-Interpretenreihenfolge</string>
     <string name="default_playlist_sorting">Standard-Playlistreihenfolge</string>
+    <string name="filter_duration_title">Kurze Audiodateien ausschließen</string>
+    <string name="filter_duration_off">Aus</string>
+    <string name="option_filter_short_audios">Filter</string>
+    <string name="filter_duration_description">Schließen Sie sehr kurze Audiodateien (wie Sprachmemos, Klingeltöne und Soundeffekte) aus Ihrer Bibliothek und Wiedergabewarteschlange aus.</string>
 </resources>

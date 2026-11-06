@@ -3,6 +3,7 @@ package com.demonlab.lune.tools
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.font.FontFamily
 import com.demonlab.lune.ui.theme.quicksand
@@ -85,6 +86,34 @@ class SettingsManager(context: Context) {
     fun isSongHidden(songId: Long, songPath: String = ""): Boolean {
         if (hiddenSongIds.contains(songId.toString())) return true
         if (songPath.isNotBlank() && hiddenSongPaths.contains(songPath)) return true
+        return false
+    }
+
+    private val _isFilterDurationEnabled = mutableStateOf(prefs.getBoolean("is_filter_duration_enabled", false))
+    var isFilterDurationEnabled: Boolean
+        get() = _isFilterDurationEnabled.value
+        set(value) {
+            _isFilterDurationEnabled.value = value
+            prefs.edit().putBoolean("is_filter_duration_enabled", value).apply()
+        }
+
+    private val _filterMinDurationSeconds = mutableIntStateOf(prefs.getInt("filter_min_duration_seconds", 30))
+    var filterMinDurationSeconds: Int
+        get() = _filterMinDurationSeconds.intValue
+        set(value) {
+            _filterMinDurationSeconds.intValue = value
+            prefs.edit().putInt("filter_min_duration_seconds", value).apply()
+        }
+
+    fun isSongFiltered(song: Song): Boolean {
+        if (isSongHidden(song)) return true
+        if (isFilterDurationEnabled && song.duration < filterMinDurationSeconds * 1000L) return true
+        return false
+    }
+
+    fun isSongFiltered(songId: Long, songPath: String = "", duration: Long = 0L): Boolean {
+        if (isSongHidden(songId, songPath)) return true
+        if (isFilterDurationEnabled && duration > 0L && duration < filterMinDurationSeconds * 1000L) return true
         return false
     }
 

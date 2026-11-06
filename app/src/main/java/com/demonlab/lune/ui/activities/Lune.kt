@@ -318,7 +318,13 @@ class Lune : AppCompatActivity() {
                 return@setContent
             }
 
-            val rawAllSongs = remember(musicViewModel.filteredSongs, settingsManager.hiddenSongIds, settingsManager.hiddenSongPaths) {
+            val rawAllSongs = remember(
+                musicViewModel.filteredSongs,
+                settingsManager.hiddenSongIds,
+                settingsManager.hiddenSongPaths,
+                settingsManager.isFilterDurationEnabled,
+                settingsManager.filterMinDurationSeconds
+            ) {
                 musicViewModel.filteredSongs
             }
             val initialFolder = remember {
