@@ -223,7 +223,7 @@ fun rememberBlurSheetColors(currentSong: Song? = null): BlurSheetColors {
                 if (controlsColorPalette == 6) {
                     if (isDarkTheme) Color.White else Color(0xFF141316)
                 } else primaryTint
-            } else (if (isDarkTheme) Color.White else MaterialTheme.colorScheme.primary),
+            } else (if (isDarkTheme) Color.White else Color(0xFF141316)),
             itemBorderColor = if (isDarkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.08f),
             useCustomControlsColor = useCustomControlsColor,
             controlsColorPalette = controlsColorPalette
@@ -1347,13 +1347,16 @@ fun OptionButton(
 ) {
     val haptic = LocalHapticFeedback.current
     val blurColors = rememberBlurSheetColors()
+    val isDark = blurColors.isDark
     val activeBg = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary
-    val inactiveBg = if (blurColors.hasBlur) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val activeTint = if (blurColors.hasBlur) (if (blurColors.isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onPrimary
-    val inactiveTint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-    val labelColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val inactiveBg = if (blurColors.hasBlur) {
+        if (isDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+    val activeTint = if (blurColors.hasBlur) (if (isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onPrimary
+    val inactiveTint = if (blurColors.hasBlur) (if (isDark) Color.White else Color(0xFF141316)) else MaterialTheme.colorScheme.onSecondaryContainer
+    val labelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onSurfaceVariant
     val sublabelBg = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primaryContainer
-    val sublabelColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+    val sublabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

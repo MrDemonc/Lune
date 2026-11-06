@@ -93,9 +93,52 @@ fun SongOptionsBottomSheet(
     val isPlayingOrLoaded = playbackManager.currentSong != null
     val targetSong = playbackManager.currentSong ?: song
     val blurColors = rememberBlurSheetColors(targetSong)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+
+    val iconTint = if (blurColors.hasBlur) {
+        blurColors.primaryTint
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
+    val iconBgColor = if (blurColors.hasBlur) {
+        if (blurColors.isDark) {
+            Color.White.copy(alpha = 0.18f)
+        } else {
+            if (blurColors.useCustomControlsColor && blurColors.controlsColorPalette != 6) {
+                blurColors.primaryTint.copy(alpha = 0.15f)
+            } else {
+                Color.Black.copy(alpha = 0.08f)
+            }
+        }
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val deleteIconTint = if (blurColors.hasBlur) {
+        if (blurColors.isDark) Color.White else MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
+
+    val deleteIconBg = if (blurColors.hasBlur) {
+        if (blurColors.isDark) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+    } else {
+        MaterialTheme.colorScheme.errorContainer
+    }
+
+    val deleteTextColor = if (blurColors.hasBlur) {
+        if (blurColors.isDark) Color.White else MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.error
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
@@ -112,6 +155,7 @@ fun SongOptionsBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 8.dp)
             ) {
                 Box(
@@ -170,14 +214,14 @@ fun SongOptionsBottomSheet(
                             leadingContent = {
                                 Surface(
                                     shape = CircleShape,
-                                    color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                    color = iconBgColor,
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             Icons.AutoMirrored.Filled.QueueMusic,
                                             contentDescription = null,
-                                            tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            tint = iconTint,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -208,14 +252,14 @@ fun SongOptionsBottomSheet(
                         leadingContent = {
                             Surface(
                                 shape = CircleShape,
-                                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                color = iconBgColor,
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         Icons.AutoMirrored.Filled.PlaylistAdd,
                                         contentDescription = null,
-                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        tint = iconTint,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -243,14 +287,14 @@ fun SongOptionsBottomSheet(
                         leadingContent = {
                             Surface(
                                 shape = CircleShape,
-                                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                color = iconBgColor,
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         Icons.Default.Edit,
                                         contentDescription = null,
-                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        tint = iconTint,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -278,14 +322,14 @@ fun SongOptionsBottomSheet(
                         leadingContent = {
                             Surface(
                                 shape = CircleShape,
-                                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                color = iconBgColor,
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         Icons.Default.VisibilityOff,
                                         contentDescription = null,
-                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        tint = iconTint,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -323,14 +367,14 @@ fun SongOptionsBottomSheet(
                         leadingContent = {
                             Surface(
                                 shape = CircleShape,
-                                color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.errorContainer,
+                                color = deleteIconBg,
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         Icons.Default.Delete,
                                         contentDescription = null,
-                                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onErrorContainer,
+                                        tint = deleteIconTint,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -341,10 +385,10 @@ fun SongOptionsBottomSheet(
                             onDeleteClick()
                         }
                     ) {
-                        Text(stringResource(R.string.delete_song), color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.delete_song), color = deleteTextColor)
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -1310,7 +1354,7 @@ fun PlayerOptionsBottomSheet(
                     Icon(
                         imageVector = playbackManager.currentOutputIcon,
                         contentDescription = null,
-                        tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                        tint = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White else blurColors.primaryTint) else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1318,7 +1362,7 @@ fun PlayerOptionsBottomSheet(
                         text = playbackManager.currentOutputName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurface
+                        color = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -1349,7 +1393,7 @@ fun PlayerOptionsBottomSheet(
                         Icon(
                             imageVector = volumeIcon,
                             contentDescription = playbackManager.currentOutputName,
-                            tint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
+                            tint = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White else blurColors.textColor) else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -1372,8 +1416,8 @@ fun PlayerOptionsBottomSheet(
                             .weight(1f)
                             .padding(horizontal = 4.dp),
                         colors = SliderDefaults.colors(
-                            activeTrackColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            activeTrackColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White else blurColors.primaryTint) else MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.3f) else blurColors.primaryTint.copy(alpha = 0.2f)) else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         )
                     )
 
@@ -1384,7 +1428,7 @@ fun PlayerOptionsBottomSheet(
                         Text(
                             text = "${(sliderValue * 100).toInt()}%",
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (blurColors.hasBlur) blurColors.textSecondaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.End
                         )
                     }
@@ -1396,7 +1440,7 @@ fun PlayerOptionsBottomSheet(
                 val speedSteps = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
                 Surface(
                     shape = CircleShape,
-                    color = if (blurColors.hasBlur) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                    color = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)) else MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 6.dp)
@@ -1417,12 +1461,12 @@ fun PlayerOptionsBottomSheet(
                                 },
                                 shape = CircleShape,
                                 color = if (isSelected) {
-                                    if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.primary
+                                    if (blurColors.hasBlur) (if (blurColors.isDark) Color.White else blurColors.primaryTint) else MaterialTheme.colorScheme.primary
                                 } else Color.Transparent,
                                 contentColor = if (isSelected) {
-                                    if (blurColors.hasBlur) Color.Black.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onPrimary
+                                    if (blurColors.hasBlur) (if (blurColors.isDark) Color.Black.copy(alpha = 0.75f) else Color.White) else MaterialTheme.colorScheme.onPrimary
                                 } else {
-                                    if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                    if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {

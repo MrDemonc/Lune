@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -80,7 +81,6 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
         else -> isSystemDark
     }
     val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
-    val blurColors = rememberBlurSheetColors(currentSong)
 
     var cachedSongs by remember { mutableStateOf<List<Song>>(emptyList()) }
 
@@ -94,13 +94,16 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
         cachedSongs.filter { settingsManager.isSongHidden(it) }
     }
 
+    val backdropSong = currentSong ?: hiddenSongs.firstOrNull()
+    val blurColors = rememberBlurSheetColors(backdropSong)
+
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
         isDarkTheme = isDarkTheme,
-        currentSong = currentSong
+        currentSong = backdropSong
     ) {
         Scaffold(
-            containerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+            containerColor = if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface,
             topBar = {
                 LargeTopAppBar(
                     title = {
@@ -108,7 +111,7 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                             stringResource(R.string.hidden_songs),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.headlineLarge,
-                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                            color = if (hasBlurBackground) blurColors.textColor else MaterialTheme.colorScheme.primary
                         )
                     },
                     navigationIcon = {
@@ -118,14 +121,14 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.08f)) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = stringResource(R.string.cd_back),
-                                        tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary,
+                                        tint = if (hasBlurBackground) blurColors.textColor else MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -145,21 +148,21 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                                     imageVector = Icons.Default.Restore,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                                    tint = if (hasBlurBackground) blurColors.primaryTint else MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     stringResource(R.string.restore_all),
                                     fontWeight = FontWeight.Bold,
-                                    color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.primary
+                                    color = if (hasBlurBackground) blurColors.primaryTint else MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
-                        scrolledContainerColor = if (hasBlurBackground && currentSong != null) Color.Transparent else MaterialTheme.colorScheme.surface,
-                        titleContentColor = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                        scrolledContainerColor = if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface,
+                        titleContentColor = if (hasBlurBackground) blurColors.textColor else MaterialTheme.colorScheme.onSurface
                     )
                 )
             }
@@ -178,7 +181,7 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.06f)) else MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier.size(80.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -186,7 +189,7 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                                     imageVector = Icons.Default.VisibilityOff,
                                     contentDescription = null,
                                     modifier = Modifier.size(40.dp),
-                                    tint = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = if (hasBlurBackground) blurColors.textSecondaryColor else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -195,13 +198,13 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                             text = stringResource(R.string.no_hidden_songs),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (hasBlurBackground && currentSong != null) Color.White else MaterialTheme.colorScheme.onSurface
+                            color = if (hasBlurBackground) blurColors.textColor else MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = stringResource(R.string.no_hidden_songs_desc),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (hasBlurBackground && currentSong != null) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (hasBlurBackground) blurColors.textSecondaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -219,6 +222,7 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             color = if (hasBlurBackground) blurColors.itemContainerColor else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = if (hasBlurBackground) blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) } else null,
                             tonalElevation = if (hasBlurBackground) 0.dp else 2.dp
                         ) {
                             ListItem(
@@ -251,6 +255,12 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                                         },
                                         shape = RoundedCornerShape(12.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        colors = if (hasBlurBackground) {
+                                            ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = if (isDarkTheme) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f),
+                                                contentColor = blurColors.textColor
+                                            )
+                                        } else ButtonDefaults.filledTonalButtonColors(),
                                         modifier = Modifier.bounceClick()
                                     ) {
                                         Icon(

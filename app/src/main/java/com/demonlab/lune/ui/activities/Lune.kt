@@ -158,6 +158,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -2976,129 +2978,201 @@ fun MainScreen(
     }
 
     if (showDeleteDialog && songToDelete != null) {
-        val blurColors = rememberBlurSheetColors()
-        AlertDialog(
+        val targetSong = songToDelete!!
+        val blurColors = rememberBlurSheetColors(targetSong)
+
+        Dialog(
             onDismissRequest = { showDeleteDialog = false },
-            containerColor = blurColors.containerColor,
-            shape = RoundedCornerShape(28.dp),
-            title = { 
-                Text(
-                    stringResource(R.string.delete_song),
-                    fontWeight = FontWeight.Bold,
-                    color = blurColors.textColor
-                ) 
-            },
-            text = { 
-                Text(
-                    stringResource(R.string.delete_song_warning),
-                    color = blurColors.textSecondaryColor
-                ) 
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val song = songToDelete!!
-                        showDeleteDialog = false
-                        
-                        // Fix: If current song is deleted, skip to next (respect pause state)
-                        if (currentSong?.id == song.id) {
-                            playbackManager.playNextFromService(startPlayback = isPlaying)
-                        }
-                        
-                        musicViewModel.prepareDeleteSong(song)
-                        coroutineScope.launch {
-                            val totalTime = 8000L
-                            val startTime = System.currentTimeMillis()
-                            
-                            val timerJob = launch {
-                                while (System.currentTimeMillis() - startTime < totalTime) {
-                                    val elapsed = System.currentTimeMillis() - startTime
-                                    undoProgress = 1f - (elapsed.toFloat() / totalTime)
-                                    undoSecondsRemaining = ((totalTime - elapsed) / 1000).toInt() + 1
-                                    kotlinx.coroutines.delay(50)
-                                }
-                                undoProgress = 0f
-                                undoSecondsRemaining = 0
-                            }
-                            
-                            val result = snackbarHostState.showSnackbar(
-                                message = context.getString(R.string.song_deleted),
-                                actionLabel = context.getString(R.string.restore_music),
-                                duration = SnackbarDuration.Indefinite
-                            )
-                            
-                            timerJob.cancel()
-                            
-                            if (result == SnackbarResult.ActionPerformed) {
-                                musicViewModel.undoDeleteSong(song)
-                            } else {
-                                musicViewModel.deleteSongPermanently(song.id, song.path, song.uri)
-                            }
-                        }
-                        
-                        // Auto-dismiss indefinite snackbar after 8s
-                        coroutineScope.launch {
-                             kotlinx.coroutines.delay(8000)
-                             snackbarHostState.currentSnackbarData?.dismiss()
-                        }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier.bounceClick()
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AppBlurBackdrop(
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark,
+                currentSong = targetSong,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 400.dp),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Surface(
+                    color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }, modifier = Modifier.bounceClick()) {
-                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.delete_song),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.delete_song_warning),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = blurColors.textSecondaryColor
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showDeleteDialog = false },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.cancel),
+                                    color = blurColors.textSecondaryColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    val song = targetSong
+                                    showDeleteDialog = false
+                                    
+                                    // Fix: If current song is deleted, skip to next (respect pause state)
+                                    if (currentSong?.id == song.id) {
+                                        playbackManager.playNextFromService(startPlayback = isPlaying)
+                                    }
+                                    
+                                    musicViewModel.prepareDeleteSong(song)
+                                    coroutineScope.launch {
+                                        val totalTime = 8000L
+                                        val startTime = System.currentTimeMillis()
+                                        
+                                        val timerJob = launch {
+                                            while (System.currentTimeMillis() - startTime < totalTime) {
+                                                val elapsed = System.currentTimeMillis() - startTime
+                                                undoProgress = 1f - (elapsed.toFloat() / totalTime)
+                                                undoSecondsRemaining = ((totalTime - elapsed) / 1000).toInt() + 1
+                                                kotlinx.coroutines.delay(50)
+                                            }
+                                            undoProgress = 0f
+                                            undoSecondsRemaining = 0
+                                        }
+                                        
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = context.getString(R.string.song_deleted),
+                                            actionLabel = context.getString(R.string.restore_music),
+                                            duration = SnackbarDuration.Indefinite
+                                        )
+                                        
+                                        timerJob.cancel()
+                                        
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            musicViewModel.undoDeleteSong(song)
+                                        } else {
+                                            musicViewModel.deleteSongPermanently(song.id, song.path, song.uri)
+                                        }
+                                    }
+                                    
+                                    // Auto-dismiss indefinite snackbar after 8s
+                                    coroutineScope.launch {
+                                         kotlinx.coroutines.delay(8000)
+                                         snackbarHostState.currentSnackbarData?.dismiss()
+                                    }
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 
     if (showHideDialog && songToHide != null) {
-        val blurColors = rememberBlurSheetColors()
-        AlertDialog(
-            onDismissRequest = { showHideDialog = false },
-            containerColor = blurColors.containerColor,
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Text(
-                    stringResource(R.string.hide_from_library),
-                    fontWeight = FontWeight.Bold,
-                    color = blurColors.textColor
-                )
-            },
-            text = {
-                Text(
-                    stringResource(R.string.hide_song_desc),
-                    color = blurColors.textSecondaryColor
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val song = songToHide!!
-                        showHideDialog = false
+        val targetSong = songToHide!!
+        val blurColors = rememberBlurSheetColors(targetSong)
 
-                        if (currentSong?.id == song.id) {
-                            playbackManager.playNextFromService(startPlayback = isPlaying)
-                        }
-                        playbackManager.removeFromQueue(song.id)
-                        settingsManager.hideSong(song)
-                        Toast.makeText(context, context.getString(R.string.song_hidden_success), Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.bounceClick()
+        Dialog(
+            onDismissRequest = { showHideDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AppBlurBackdrop(
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark,
+                currentSong = targetSong,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 400.dp),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Surface(
+                    color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.hide), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showHideDialog = false }, modifier = Modifier.bounceClick()) {
-                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.hide_from_library),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.hide_song_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = blurColors.textSecondaryColor
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showHideDialog = false },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.cancel),
+                                    color = blurColors.textSecondaryColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    val song = targetSong
+                                    showHideDialog = false
+
+                                    if (currentSong?.id == song.id) {
+                                        playbackManager.playNextFromService(startPlayback = isPlaying)
+                                    }
+                                    playbackManager.removeFromQueue(song.id)
+                                    settingsManager.hideSong(song)
+                                    Toast.makeText(context, context.getString(R.string.song_hidden_success), Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.hide),
+                                    fontWeight = FontWeight.Bold,
+                                    color = blurColors.primaryTint
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 
     if (showMainAddToPlaylistDialog && optionsSong != null) {
