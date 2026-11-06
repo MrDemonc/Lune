@@ -554,4 +554,8 @@
     <string name="restore_all">Tout restaurer</string>
     <string name="song_restored_success">\"%s\" restauré dans la bibliothèque</string>
     <string name="all_songs_restored">Tous les morceaux ont été restaurés dans la bibliothèque</string>
+    <string name="default_sorting">Tri par défaut</string>
+    <string name="default_album_sorting">Ordre par défaut des albums</string>
+    <string name="default_artist_sorting">Ordre par défaut des artistes</string>
+    <string name="default_playlist_sorting">Ordre par défaut des playlists</string>
 </resources>

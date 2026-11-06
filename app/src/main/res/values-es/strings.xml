@@ -558,4 +558,8 @@
     <string name="restore_all">Restaurar todas</string>
     <string name="song_restored_success">\"%s\" restaurada a la biblioteca</string>
     <string name="all_songs_restored">Todas las canciones han sido restauradas a la biblioteca</string>
+    <string name="default_sorting">Orden predeterminado</string>
+    <string name="default_album_sorting">Orden por defecto de álbumes</string>
+    <string name="default_artist_sorting">Orden por defecto de artistas</string>
+    <string name="default_playlist_sorting">Orden por defecto de listas</string>
 </resources>

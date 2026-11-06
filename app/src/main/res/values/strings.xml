@@ -557,4 +557,8 @@
     <string name="restore_all">Restore all</string>
     <string name="song_restored_success">\"%s\" restored to library</string>
     <string name="all_songs_restored">All songs restored to library</string>
+    <string name="default_sorting">Default Sorting</string>
+    <string name="default_album_sorting">Albums default order</string>
+    <string name="default_artist_sorting">Artists default order</string>
+    <string name="default_playlist_sorting">Playlists default order</string>
 </resources>

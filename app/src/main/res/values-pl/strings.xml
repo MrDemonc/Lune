@@ -555,4 +555,8 @@
     <string name="restore_all">Przywróć wszystkie</string>
     <string name="song_restored_success">\"%s\" przywrócono do biblioteki</string>
     <string name="all_songs_restored">Wszystkie utwory przywrócone do biblioteki</string>
+    <string name="default_sorting">Domyślne sortowanie</string>
+    <string name="default_album_sorting">Domyślna kolejność albumów</string>
+    <string name="default_artist_sorting">Domyślna kolejność wykonawców</string>
+    <string name="default_playlist_sorting">Domyślna kolejność playlist</string>
 </resources>

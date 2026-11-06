@@ -550,4 +550,8 @@
     <string name="restore_all">بازیابی همه</string>
     <string name="song_restored_success">\"%s\" به کتابخانه بازیابی شد</string>
     <string name="all_songs_restored">همه آهنگ‌ها به کتابخانه بازیابی شدند</string>
+    <string name="default_sorting">مرتب‌سازی پیش‌فرض</string>
+    <string name="default_album_sorting">ترتیب پیش‌فرض آلبوم‌ها</string>
+    <string name="default_artist_sorting">ترتیب پیش‌فرض هنرمندان</string>
+    <string name="default_playlist_sorting">ترتیب پیش‌فرض لیست‌های پخش</string>
 </resources>

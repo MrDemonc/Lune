@@ -137,8 +137,26 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("sort_option", "ALPHABETICAL") ?: "ALPHABETICAL"
         set(value) = prefs.edit().putString("sort_option", value).apply()
 
+    var defaultAlbumSortOption: String
+        get() = prefs.getString("default_album_sort_option", "TRACK_NUMBER") ?: "TRACK_NUMBER"
+        set(value) = prefs.edit().putString("default_album_sort_option", value).apply()
+
+    var defaultArtistSortOption: String
+        get() = prefs.getString("default_artist_sort_option", "ALPHABETICAL") ?: "ALPHABETICAL"
+        set(value) = prefs.edit().putString("default_artist_sort_option", value).apply()
+
+    var defaultPlaylistSortOption: String
+        get() = prefs.getString("default_playlist_sort_option", "CUSTOM") ?: "CUSTOM"
+        set(value) = prefs.edit().putString("default_playlist_sort_option", value).apply()
+
     fun getSortOption(key: String): String {
-        return prefs.getString("sort_option_$key", sortOption) ?: sortOption
+        val defaultOpt = when {
+            key.startsWith("album_") -> defaultAlbumSortOption
+            key.startsWith("artist_") -> defaultArtistSortOption
+            key.startsWith("playlist_") -> defaultPlaylistSortOption
+            else -> sortOption
+        }
+        return prefs.getString("sort_option_$key", defaultOpt) ?: defaultOpt
     }
 
     fun setSortOption(key: String, option: String) {
@@ -206,7 +224,11 @@ class SettingsManager(context: Context) {
         set(value) = prefs.edit().putBoolean("is_sort_ascending", value).apply()
 
     fun getIsSortAscending(key: String): Boolean {
-        return prefs.getBoolean("is_sort_ascending_$key", isSortAscending)
+        val defaultAscending = when {
+            key.startsWith("album_") -> true
+            else -> isSortAscending
+        }
+        return prefs.getBoolean("is_sort_ascending_$key", defaultAscending)
     }
 
     fun setIsSortAscending(key: String, ascending: Boolean) {

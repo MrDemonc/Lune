@@ -90,7 +90,7 @@ fun AddSongsToPlaylistDialog(
             "ALBUM" -> compareBy<Song> { it.album.lowercase(java.util.Locale.getDefault()) }.thenBy { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             "DATE_ADDED" -> compareBy<Song> { it.dateAdded }
             "DURATION" -> compareBy<Song> { it.duration }
-            "TRACK_NUMBER" -> compareBy<Song> { it.trackNumber }
+            "TRACK_NUMBER" -> compareBy<Song> { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             else -> compareBy<Song> { it.title.lowercase(java.util.Locale.getDefault()) }
         }
         if (isSortAscending) {

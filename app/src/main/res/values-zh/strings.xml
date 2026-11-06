@@ -552,4 +552,8 @@
     <string name="restore_all">全部恢复</string>
     <string name="song_restored_success">已恢复 \"%s\" 到曲库</string>
     <string name="all_songs_restored">所有歌曲均已恢复到曲库</string>
+    <string name="default_sorting">默认排序</string>
+    <string name="default_album_sorting">专辑默认排序</string>
+    <string name="default_artist_sorting">艺术家默认排序</string>
+    <string name="default_playlist_sorting">播放列表默认排序</string>
 </resources>

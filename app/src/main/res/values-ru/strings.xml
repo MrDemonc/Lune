@@ -554,4 +554,8 @@
     <string name="restore_all">Восстановить все</string>
     <string name="song_restored_success">Трек \"%s\" восстановлен в медиатеку</string>
     <string name="all_songs_restored">Все треки восстановлены в медиатеку</string>
+    <string name="default_sorting">Сортировка по умолчанию</string>
+    <string name="default_album_sorting">Порядок альбомов по умолчанию</string>
+    <string name="default_artist_sorting">Порядок артистов по умолчанию</string>
+    <string name="default_playlist_sorting">Порядок плейлистов по умолчанию</string>
 </resources>

@@ -552,4 +552,8 @@
     <string name="restore_all">استعادة الكل</string>
     <string name="song_restored_success">تمت استعادة \"%s\" إلى المكتبة</string>
     <string name="all_songs_restored">تمت استعادة جميع الأغاني إلى المكتبة</string>
+    <string name="default_sorting">الترتيب الافتراضي</string>
+    <string name="default_album_sorting">الترتيب الافتراضي للألبومات</string>
+    <string name="default_artist_sorting">الترتيب الافتراضي للفنانين</string>
+    <string name="default_playlist_sorting">الترتيب الافتراضي لقوائم التشغيل</string>
 </resources>

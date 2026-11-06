@@ -786,10 +786,14 @@ fun MainScreen(
             else -> selectedFolder.hashCode().toLong()
         }
     }
-    val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum, selectedFolderItem) {
+    val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum, selectedFolderItem, isAlbumView) {
         when {
             selectedPlaylist != null -> "playlist_${selectedPlaylist?.id}"
-            selectedAlbum != null -> "album_${selectedAlbum?.name}"
+            selectedAlbum != null -> {
+                if (isAlbumView) "album_${selectedAlbum?.name}"
+                else if (selectedFolder == "GENRES") "genre_${selectedAlbum?.name}"
+                else "artist_${selectedAlbum?.name}"
+            }
             selectedFolderItem != null -> "folder_item_$selectedFolderItem"
             else -> "folder_$selectedFolder"
         }
@@ -1505,7 +1509,7 @@ fun MainScreen(
                                     if (viewStyle == 0) {
                                         AlbumGrid(
                                             albums = albumsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = true },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
@@ -1516,7 +1520,7 @@ fun MainScreen(
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = albumsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = true },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = currentSong?.album?.hashCode()?.toLong()
@@ -1564,7 +1568,7 @@ fun MainScreen(
                                     if (viewStyle == 0) {
                                         AlbumGrid(
                                             albums = artistsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
@@ -1575,7 +1579,7 @@ fun MainScreen(
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = artistsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
@@ -1625,7 +1629,7 @@ fun MainScreen(
                                     if (viewStyle == 0) {
                                         AlbumGrid(
                                             albums = genresList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
@@ -1636,7 +1640,7 @@ fun MainScreen(
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = genresList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = null
@@ -2835,7 +2839,7 @@ fun MainScreen(
             },
             onNavigateToAlbum = { album ->
                 selectedAlbum = album
-                isAlbumView = album.artist.isNotEmpty()
+                isAlbumView = true
                 showSearchScreen = false
                 onSelectedFolderChange("ALBUMS")
             },

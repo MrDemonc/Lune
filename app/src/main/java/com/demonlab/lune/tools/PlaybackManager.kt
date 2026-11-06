@@ -1045,7 +1045,7 @@ class PlaybackManager private constructor(private val context: Context) {
             "ALBUM" -> if (caseSensitive) compareBy<Song> { it.album }.thenBy { it.trackNumber }.thenBy { it.title } else compareBy<Song> { it.album.lowercase(java.util.Locale.getDefault()) }.thenBy { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             "DURATION" -> compareBy<Song> { it.duration }
             "DATE_ADDED" -> compareBy<Song> { it.dateAdded }
-            "TRACK_NUMBER" -> compareBy<Song> { it.trackNumber }
+            "TRACK_NUMBER" -> if (caseSensitive) compareBy<Song> { it.trackNumber }.thenBy { it.title } else compareBy<Song> { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             else -> if (caseSensitive) compareBy<Song> { it.title } else compareBy<Song> { it.title.lowercase(java.util.Locale.getDefault()) }
         }
         

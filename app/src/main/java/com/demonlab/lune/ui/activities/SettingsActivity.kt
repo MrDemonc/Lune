@@ -15,6 +15,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
@@ -126,6 +129,40 @@ fun SettingsScreen(
     val musicProvider = remember { MusicProvider(context) }
     var autoSyncBackupUri by remember { mutableStateOf(settingsManager.autoSyncBackupUri) }
     var isAutoSyncEnabled by remember { mutableStateOf(settingsManager.isAutoSyncBackupEnabled) }
+
+    var defaultAlbumSort by remember { mutableStateOf(settingsManager.defaultAlbumSortOption) }
+    var defaultArtistSort by remember { mutableStateOf(settingsManager.defaultArtistSortOption) }
+    var defaultPlaylistSort by remember { mutableStateOf(settingsManager.defaultPlaylistSortOption) }
+
+    var showAlbumSortDialog by remember { mutableStateOf(false) }
+    var showArtistSortDialog by remember { mutableStateOf(false) }
+    var showPlaylistSortDialog by remember { mutableStateOf(false) }
+
+    val albumSortOptions = remember {
+        listOf(
+            "TRACK_NUMBER" to R.string.sort_track_number,
+            "ALPHABETICAL" to R.string.sort_alphabetical,
+            "DATE_ADDED" to R.string.sort_date_added,
+            "DURATION" to R.string.sort_duration
+        )
+    }
+    val artistSortOptions = remember {
+        listOf(
+            "ALPHABETICAL" to R.string.sort_alphabetical,
+            "ALBUM" to R.string.sort_album,
+            "DATE_ADDED" to R.string.sort_date_added,
+            "DURATION" to R.string.sort_duration
+        )
+    }
+    val playlistSortOptions = remember {
+        listOf(
+            "CUSTOM" to R.string.sort_custom,
+            "ALPHABETICAL" to R.string.sort_alphabetical,
+            "DATE_ADDED" to R.string.sort_date_added,
+            "TRACK_NUMBER" to R.string.sort_track_number,
+            "DURATION" to R.string.sort_duration
+        )
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -244,6 +281,51 @@ fun SettingsScreen(
                 }
             },
             shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showAlbumSortDialog) {
+        SortOptionDialog(
+            title = stringResource(R.string.default_album_sorting),
+            currentOption = defaultAlbumSort,
+            options = albumSortOptions,
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            onOptionSelected = {
+                defaultAlbumSort = it
+                settingsManager.defaultAlbumSortOption = it
+            },
+            onDismiss = { showAlbumSortDialog = false }
+        )
+    }
+
+    if (showArtistSortDialog) {
+        SortOptionDialog(
+            title = stringResource(R.string.default_artist_sorting),
+            currentOption = defaultArtistSort,
+            options = artistSortOptions,
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            onOptionSelected = {
+                defaultArtistSort = it
+                settingsManager.defaultArtistSortOption = it
+            },
+            onDismiss = { showArtistSortDialog = false }
+        )
+    }
+
+    if (showPlaylistSortDialog) {
+        SortOptionDialog(
+            title = stringResource(R.string.default_playlist_sorting),
+            currentOption = defaultPlaylistSort,
+            options = playlistSortOptions,
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme,
+            onOptionSelected = {
+                defaultPlaylistSort = it
+                settingsManager.defaultPlaylistSortOption = it
+            },
+            onDismiss = { showPlaylistSortDialog = false }
         )
     }
 
@@ -408,6 +490,33 @@ fun SettingsScreen(
                         icon = Icons.Default.VisibilityOff,
                         position = SectionPosition.SINGLE,
                         onClick = { context.startActivity(Intent(context, HiddenSongsActivity::class.java)) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Default Sorting Section
+                SettingsSection(title = stringResource(R.string.default_sorting)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.default_album_sorting),
+                        supportingText = getSortOptionLabel(defaultAlbumSort),
+                        icon = Icons.Default.Album,
+                        position = SectionPosition.FIRST,
+                        onClick = { showAlbumSortDialog = true }
+                    )
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.default_artist_sorting),
+                        supportingText = getSortOptionLabel(defaultArtistSort),
+                        icon = Icons.Default.Person,
+                        position = SectionPosition.MIDDLE,
+                        onClick = { showArtistSortDialog = true }
+                    )
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.default_playlist_sorting),
+                        supportingText = getSortOptionLabel(defaultPlaylistSort),
+                        icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+                        position = SectionPosition.LAST,
+                        onClick = { showPlaylistSortDialog = true }
                     )
                 }
 
@@ -695,5 +804,92 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SortOptionDialog(
+    title: String,
+    currentOption: String,
+    options: List<Pair<String, Int>>,
+    hasBlurBackground: Boolean,
+    isDarkTheme: Boolean,
+    onOptionSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val dialogContainerColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val dialogTitleColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White else Color(0xFF141316)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val textColor = if (hasBlurBackground) {
+        if (isDarkTheme) Color.White else Color(0xFF141316)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        containerColor = dialogContainerColor,
+        shape = RoundedCornerShape(28.dp),
+        title = {
+            Text(
+                title,
+                color = dialogTitleColor,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                options.forEach { (key, stringResId) ->
+                    val isSelected = currentOption == key
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onOptionSelected(key)
+                                onDismiss()
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = if (hasBlurBackground) (if (isDarkTheme) Color.White else MaterialTheme.colorScheme.primary) else MaterialTheme.colorScheme.primary,
+                                unselectedColor = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.4f)) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            stringResource(stringResId),
+                            color = textColor,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun getSortOptionLabel(option: String): String {
+    return when (option) {
+        "TRACK_NUMBER" -> stringResource(R.string.sort_track_number)
+        "ALPHABETICAL" -> stringResource(R.string.sort_alphabetical)
+        "ARTIST" -> stringResource(R.string.sort_artist)
+        "ALBUM" -> stringResource(R.string.sort_album)
+        "DURATION" -> stringResource(R.string.sort_duration)
+        "DATE_ADDED" -> stringResource(R.string.sort_date_added)
+        "CUSTOM" -> stringResource(R.string.sort_custom)
+        else -> stringResource(R.string.sort_alphabetical)
     }
 }
