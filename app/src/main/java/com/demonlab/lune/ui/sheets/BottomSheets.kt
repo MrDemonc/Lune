@@ -144,6 +144,7 @@ fun SongOptionsBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -151,7 +152,8 @@ fun SongOptionsBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = targetSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             Column(
                 modifier = Modifier
@@ -432,6 +434,7 @@ fun SortBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -439,7 +442,8 @@ fun SortBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             Column(
                 modifier = Modifier
@@ -637,6 +641,7 @@ fun EqBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -644,7 +649,8 @@ fun EqBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             Column(
                 modifier = Modifier
@@ -980,6 +986,7 @@ fun QueueBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         val activePlaylist = playbackManager.activePlaylist
@@ -989,7 +996,8 @@ fun QueueBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             Column(
                 modifier = Modifier
@@ -1287,6 +1295,7 @@ fun PlayerOptionsBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -1294,7 +1303,8 @@ fun PlayerOptionsBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             var showCustomTimerDialog by remember { mutableStateOf(false) }
             var showFilterDurationDialog by remember { mutableStateOf(false) }
@@ -1715,7 +1725,8 @@ fun VisualizerSettingsBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             Column(
                 modifier = Modifier
@@ -1833,7 +1844,8 @@ fun EditSongBottomSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             val screenHeight = LocalConfiguration.current.screenHeightDp.dp
             val isSmallHeight = screenHeight < 680.dp
@@ -1973,6 +1985,17 @@ fun EditSongBottomSheet(
 
                 Spacer(modifier = Modifier.height(if (isSmallHeight) 20.dp else 32.dp))
 
+                val saveButtonBg = if (blurColors.hasBlur) {
+                    blurColors.primaryTint
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+                val saveButtonText = if (blurColors.hasBlur) {
+                    if (blurColors.isDark) Color.Black else Color.White
+                } else {
+                    MaterialTheme.colorScheme.onPrimary
+                }
+
                 Button(
                     onClick = { onSave(title, artist, album, genre, selectedCoverUri) },
                     modifier = Modifier
@@ -1981,20 +2004,20 @@ fun EditSongBottomSheet(
                         .bounceClick(),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = blurColors.primaryTint,
-                        contentColor = if (blurColors.hasBlur) Color.Black else Color.White
+                        containerColor = saveButtonBg,
+                        contentColor = saveButtonText
                     )
                 ) {
                     Icon(
                         Icons.Default.Save,
                         contentDescription = null,
-                        tint = if (blurColors.hasBlur) Color.Black else Color.White
+                        tint = saveButtonText
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.save_changes),
                         fontWeight = FontWeight.Bold,
-                        color = if (blurColors.hasBlur) Color.Black else Color.White
+                        color = saveButtonText
                     )
                 }
             }
@@ -2027,7 +2050,8 @@ fun CustomSleepTimerDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .widthIn(max = 380.dp),
-            shape = RoundedCornerShape(28.dp)
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
         ) {
             Surface(
                 color = Color.Transparent,
@@ -2185,6 +2209,17 @@ fun CustomSleepTimerDialog(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
+                        val saveButtonBg = if (blurColors.hasBlur) {
+                            blurColors.primaryTint
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        val saveButtonText = if (blurColors.hasBlur) {
+                            if (blurColors.isDark) Color.Black else Color.White
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
+                        }
+
                         Button(
                             onClick = {
                                 onSetTimer(selectedMinutes)
@@ -2192,15 +2227,15 @@ fun CustomSleepTimerDialog(
                             },
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = blurColors.primaryTint,
-                                contentColor = if (blurColors.hasBlur) Color.Black else Color.White
+                                containerColor = saveButtonBg,
+                                contentColor = saveButtonText
                             ),
                             modifier = Modifier.bounceClick()
                         ) {
                             Text(
                                 text = if (selectedMinutes == 0) stringResource(R.string.timer_turn_off) else stringResource(R.string.timer_set),
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (blurColors.hasBlur) Color.Black else Color.White
+                                color = saveButtonText
                             )
                         }
                     }
@@ -2236,7 +2271,8 @@ fun FilterDurationDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .widthIn(max = 380.dp),
-            shape = RoundedCornerShape(28.dp)
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
         ) {
             Surface(
                 color = Color.Transparent,
@@ -2347,6 +2383,11 @@ fun FilterDurationDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    val tonalBtnColors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = if (blurColors.hasBlur) blurColors.itemContainerColor else MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+
                     // Stepper + Slider
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2363,7 +2404,8 @@ fun FilterDurationDialog(
                             },
                             enabled = isEnabled && selectedSeconds > 0,
                             modifier = Modifier.size(44.dp).bounceClick(),
-                            shape = CircleShape
+                            shape = CircleShape,
+                            colors = tonalBtnColors
                         ) {
                             Icon(Icons.Default.Remove, contentDescription = null)
                         }
@@ -2382,7 +2424,7 @@ fun FilterDurationDialog(
                             colors = SliderDefaults.colors(
                                 thumbColor = blurColors.primaryTint,
                                 activeTrackColor = blurColors.primaryTint,
-                                inactiveTrackColor = if (blurColors.hasBlur) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHighest
+                                inactiveTrackColor = if (blurColors.hasBlur) (if (blurColors.isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.12f)) else MaterialTheme.colorScheme.surfaceContainerHighest
                             )
                         )
 
@@ -2393,7 +2435,8 @@ fun FilterDurationDialog(
                             },
                             enabled = selectedSeconds < 60,
                             modifier = Modifier.size(44.dp).bounceClick(),
-                            shape = CircleShape
+                            shape = CircleShape,
+                            colors = tonalBtnColors
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                         }
@@ -2416,6 +2459,17 @@ fun FilterDurationDialog(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
+                        val saveButtonBg = if (blurColors.hasBlur) {
+                            blurColors.primaryTint
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        val saveButtonText = if (blurColors.hasBlur) {
+                            if (blurColors.isDark) Color.Black else Color.White
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
+                        }
+
                         Button(
                             onClick = {
                                 settingsManager.isFilterDurationEnabled = isEnabled && selectedSeconds > 0
@@ -2427,15 +2481,15 @@ fun FilterDurationDialog(
                             },
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = blurColors.primaryTint,
-                                contentColor = if (blurColors.hasBlur) Color.Black else Color.White
+                                containerColor = saveButtonBg,
+                                contentColor = saveButtonText
                             ),
                             modifier = Modifier.bounceClick()
                         ) {
                             Text(
                                 stringResource(R.string.save),
                                 fontWeight = FontWeight.Bold,
-                                color = if (blurColors.hasBlur) Color.Black else Color.White
+                                color = saveButtonText
                             )
                         }
                     }
@@ -2466,7 +2520,8 @@ fun CustomRepeatDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .widthIn(max = 380.dp),
-            shape = RoundedCornerShape(28.dp)
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
         ) {
             Surface(
                 color = Color.Transparent,
@@ -2584,6 +2639,17 @@ fun CustomRepeatDialog(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
+                        val saveButtonBg = if (blurColors.hasBlur) {
+                            blurColors.primaryTint
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        val saveButtonText = if (blurColors.hasBlur) {
+                            if (blurColors.isDark) Color.Black else Color.White
+                        } else {
+                            MaterialTheme.colorScheme.onPrimary
+                        }
+
                         Button(
                             onClick = {
                                 playbackManager.applyRepeatMode(selectedMode)
@@ -2591,15 +2657,15 @@ fun CustomRepeatDialog(
                             },
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = blurColors.primaryTint,
-                                contentColor = if (blurColors.hasBlur) Color.Black else Color.White
+                                containerColor = saveButtonBg,
+                                contentColor = saveButtonText
                             ),
                             modifier = Modifier.bounceClick()
                         ) {
                             Text(
                                 text = stringResource(R.string.ok),
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (blurColors.hasBlur) Color.Black else Color.White
+                                color = saveButtonText
                             )
                         }
                     }
@@ -2658,6 +2724,7 @@ fun AudioDetailsBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -2858,6 +2925,7 @@ fun GoToArtistOrAlbumBottomSheet(
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(

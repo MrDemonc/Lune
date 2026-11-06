@@ -150,7 +150,8 @@ fun AddSongsToPlaylistDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .heightIn(max = 620.dp),
-            shape = RoundedCornerShape(28.dp)
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
         ) {
             Surface(
                 color = Color.Transparent,
@@ -664,7 +665,8 @@ fun AddToPlaylistDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .widthIn(max = 400.dp),
-            shape = RoundedCornerShape(28.dp)
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
         ) {
             Surface(
                 color = Color.Transparent,
@@ -854,7 +856,8 @@ fun CreatePlaylistDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .widthIn(max = 380.dp),
-            shape = RoundedCornerShape(28.dp)
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
         ) {
             Surface(
                 color = Color.Transparent,

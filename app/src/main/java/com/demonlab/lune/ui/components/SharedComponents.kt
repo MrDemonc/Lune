@@ -110,6 +110,7 @@ fun AppBlurBackdrop(
     currentSong: Song? = null,
     modifier: Modifier = Modifier,
     shape: androidx.compose.ui.graphics.Shape = androidx.compose.ui.graphics.RectangleShape,
+    isSheet: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val context = LocalContext.current
@@ -142,13 +143,13 @@ fun AppBlurBackdrop(
                     window.isNavigationBarContrastEnforced = false
                 }
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-                val useLightIcons = isDarkTheme || hasBlurBackground
+                val useLightIcons = if (isSheet) isDarkTheme else (isDarkTheme || hasBlurBackground)
                 insetsController.isAppearanceLightNavigationBars = !useLightIcons
             }
         }
     }
-    val baseBgColor = if (isDarkTheme) Color(0xFF141416) else MaterialTheme.colorScheme.surface
-    val fallbackBlurBg = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)
+    val baseBgColor = if (isDarkTheme) Color(0xFF141416) else if (isSheet) Color.White else MaterialTheme.colorScheme.surface
+    val fallbackBlurBg = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else if (isSheet) Color(0xFFF7F7FA).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)
     Box(
         modifier = modifier
             .clip(shape)
@@ -159,7 +160,7 @@ fun AppBlurBackdrop(
                 modifier = Modifier
                     .matchParentSize()
                     .blur(80.dp)
-                    .alpha(if (isDarkTheme) 0.35f else 0.45f)
+                    .alpha(if (isDarkTheme) 0.35f else if (isSheet) 0.60f else 0.45f)
             ) {
                 val req = remember(currentSong.id, currentSong.coverUrl) {
                     coil.request.ImageRequest.Builder(context)
@@ -174,10 +175,15 @@ fun AppBlurBackdrop(
                     contentScale = ContentScale.Crop
                 )
             }
+            val overlayColor = if (isDarkTheme) {
+                Color.Black.copy(alpha = 0.50f)
+            } else {
+                if (isSheet) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.20f)
+            }
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(Color.Black.copy(alpha = if (isDarkTheme) 0.50f else 0.20f))
+                    .background(overlayColor)
             )
         }
         content()

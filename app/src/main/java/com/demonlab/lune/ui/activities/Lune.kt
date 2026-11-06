@@ -2243,6 +2243,7 @@ fun MainScreen(
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 containerColor = blurColors.containerColor,
                 dragHandle = null,
+                scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
                 contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
             ) {
                 AppBlurBackdrop(
@@ -2250,7 +2251,8 @@ fun MainScreen(
                     isDarkTheme = blurColors.isDark,
                     currentSong = currentSong,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    isSheet = true
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
                         Box(
@@ -3003,7 +3005,8 @@ fun MainScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .widthIn(max = 400.dp),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(28.dp),
+                isSheet = true
             ) {
                 Surface(
                     color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -3118,7 +3121,8 @@ fun MainScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .widthIn(max = 400.dp),
-                shape = RoundedCornerShape(28.dp)
+                shape = RoundedCornerShape(28.dp),
+                isSheet = true
             ) {
                 Surface(
                     color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -3201,6 +3205,7 @@ fun MainScreen(
             containerColor = blurColors.containerColor,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             dragHandle = null,
+            scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
             contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
         ) {
             AppBlurBackdrop(
@@ -3208,7 +3213,8 @@ fun MainScreen(
                 isDarkTheme = blurColors.isDark,
                 currentSong = currentSong,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                isSheet = true
             ) {
                 Column(
                     modifier = Modifier
