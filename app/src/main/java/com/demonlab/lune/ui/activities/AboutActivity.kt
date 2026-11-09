@@ -12,7 +12,12 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalCafe
@@ -33,20 +41,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.demonlab.lune.BuildConfig
 import com.demonlab.lune.R
-import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.tools.SettingsManager
+import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.AppBlurBackdrop
+import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import com.demonlab.lune.ui.theme.LuneTheme
+import com.demonlab.lune.ui.theme.quicksand
 import com.demonlab.lune.ui.utils.bounceClick
-import androidx.compose.ui.platform.LocalUriHandler
 
 class AboutActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -316,7 +331,8 @@ fun AboutScreen() {
                     DonateDialog(
                         onDismiss = { showDonateDialog = false },
                         hasBlurBackground = hasBlurBackground,
-                        isDarkTheme = isDarkTheme
+                        isDarkTheme = isDarkTheme,
+                        currentSong = currentSong
                     )
                 }
 
@@ -470,125 +486,303 @@ fun MaterialTheme.secondary濃(alpha: Float): Color {
     return colorScheme.secondary.copy(alpha = alpha)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DonateDialog(
     onDismiss: () -> Unit,
     hasBlurBackground: Boolean = false,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    currentSong: Song? = null
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val song = currentSong ?: remember { PlaybackManager.getInstance(context).currentSong }
+    val blurColors = rememberBlurSheetColors(song)
     var showMonero by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
-        containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
-        title = {
-            Text(
-                text = stringResource(R.string.donate_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = song,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 420.dp),
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
+        ) {
+            Surface(
+                color = Color.Transparent,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Button(
-                    onClick = { uriHandler.openUri("https://paypal.me/TommyZambrano") },
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .bounceClick(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
-                        contentColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
-                    )
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.LocalCafe,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.paypal), fontWeight = FontWeight.Bold)
-                }
-
-                Button(
-                    onClick = { showMonero = !showMonero },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .bounceClick(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.MonetizationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.monero), fontWeight = FontWeight.SemiBold)
-                }
-
-                if (showMonero) {
+                    // Header Badge
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth()
+                        shape = CircleShape,
+                        color = if (blurColors.hasBlur) {
+                            blurColors.primaryTint.copy(alpha = 0.2f)
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = null,
+                                tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = stringResource(R.string.donate_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = quicksand,
+                        color = blurColors.textColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = stringResource(R.string.donate_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = blurColors.textSecondaryColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // PayPal Option Card
+                    Surface(
+                        onClick = { uriHandler.openUri("https://paypal.me/TommyZambrano") },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (blurColors.hasBlur) {
+                            blurColors.itemContainerColor
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .bounceClick()
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = stringResource(R.string.monero_address),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (hasBlurBackground) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(
-                                onClick = {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    val clip = ClipData.newPlainText("Monero Address", context.getString(R.string.monero_address))
-                                    clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
+                            Surface(
+                                shape = CircleShape,
+                                color = if (blurColors.hasBlur) {
+                                    blurColors.primaryTint.copy(alpha = 0.2f)
+                                } else {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                                 },
-                                modifier = Modifier.bounceClick()
+                                modifier = Modifier.size(42.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.ContentCopy,
-                                    contentDescription = stringResource(R.string.copied),
-                                    tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Filled.LocalCafe,
+                                        contentDescription = null,
+                                        tint = blurColors.primaryTint,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.paypal),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = blurColors.textColor
                                 )
+                                Text(
+                                    text = "paypal.me/TommyZambrano",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = blurColors.textSecondaryColor
+                                )
+                            }
+
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = null,
+                                tint = blurColors.textSecondaryColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Monero Option Card (Expandable)
+                    Surface(
+                        onClick = { showMonero = !showMonero },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (blurColors.hasBlur) {
+                            blurColors.itemContainerColor
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .bounceClick()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (blurColors.hasBlur) {
+                                        blurColors.primaryTint.copy(alpha = 0.2f)
+                                    } else {
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                    },
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Filled.MonetizationOn,
+                                            contentDescription = null,
+                                            tint = blurColors.primaryTint,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(14.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.monero),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = blurColors.textColor
+                                    )
+                                    Text(
+                                        text = "XMR Crypto",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = blurColors.textSecondaryColor
+                                    )
+                                }
+
+                                Icon(
+                                    imageVector = if (showMonero) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = null,
+                                    tint = blurColors.textSecondaryColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            AnimatedVisibility(
+                                visible = showMonero,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = if (blurColors.hasBlur) {
+                                            if (blurColors.isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.monero_address),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = blurColors.textColor,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 3,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            IconButton(
+                                                onClick = {
+                                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                    val clip = ClipData.newPlainText("Monero Address", context.getString(R.string.monero_address))
+                                                    clipboard.setPrimaryClip(clip)
+                                                    Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
+                                                },
+                                                modifier = Modifier.bounceClick()
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.ContentCopy,
+                                                    contentDescription = stringResource(R.string.copied),
+                                                    tint = blurColors.primaryTint
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Cancel / Close button
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .bounceClick(),
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (blurColors.hasBlur) {
+                                blurColors.itemContainerColor
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                            contentColor = blurColors.textColor
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.cancel),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
             }
-        },
-        confirmButton = {
-            FilledTonalButton(
-                onClick = onDismiss,
-                shape = CircleShape,
-                modifier = Modifier.bounceClick(),
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Text(stringResource(R.string.cancel), fontWeight = FontWeight.Bold)
-            }
         }
-    )
+    }
 }

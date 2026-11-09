@@ -335,7 +335,8 @@ fun SettingsScreen(
         DonateDialog(
             onDismiss = { showDonateDialog = false },
             hasBlurBackground = hasBlurBackground,
-            isDarkTheme = isDarkTheme
+            isDarkTheme = isDarkTheme,
+            currentSong = currentSong
         )
     }
 
