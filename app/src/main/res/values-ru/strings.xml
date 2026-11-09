@@ -25,6 +25,21 @@
     <string name="bass_label">EXTRA BASS</string>
     <string name="spatial_audio_label">Объёмный звук</string>
     <string name="loudness_label">Громкость</string>
+    <string name="volume_boost_title">Экстра-усиление громкости</string>
+    <string name="volume_boost_desc">Усиление звука сверх максимального предела телефона</string>
+    <string name="volume_boost_enable_switch">Превысить предел громкости</string>
+    <string name="volume_boost_warning_off">Эта опция усиливает звук выше стандартного предела 100%. Прослушивание на чрезмерной громкости может привести к необратимой потере слуха или повреждению динамиков. Используйте с осторожностью.</string>
+    <string name="volume_boost_level_safe_title">Безопасное усиление (от +0 до +10 дБ)</string>
+    <string name="volume_boost_level_safe_desc">Безопасный уровень. Рекомендуется для тихих записей без искажений.</string>
+    <string name="volume_boost_level_med_title">Умеренное усиление (от +11 до +20 дБ)</string>
+    <string name="volume_boost_level_med_desc">Внимание: Может вызывать искажения в динамиках и утомление при использовании наушников.</string>
+    <string name="volume_boost_level_high_title">Экстремальное усиление! (от +21 до +30 дБ)</string>
+    <string name="volume_boost_level_high_desc">Опасно! Длительное использование может привести к повреждению слуха и выходу динамиков из строя.</string>
+    <string name="section_equalizer">Эквалайзер</string>
+    <string name="section_audio_effects">Аудиоэффекты</string>
+    <string name="section_volume_gain">Громкость и усиление</string>
+    <string name="section_balance_tuning">Баланс и тональность</string>
+    <string name="section_dynamics_processing">Динамическая обработка</string>
     <string name="reverb_label">Reverb</string>
     <string name="balance_label">Баланс</string>
     <string name="balance_reset">Сбросить баланс</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">Сохранить изменения</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Продолжить</string>
+    <string name="tab_home">Главная</string>
+    <string name="tab_resume">Главная</string>
     <string name="tab_mixes">ИИ-миксы</string>
     <string name="tab_genres">Жанры</string>
 

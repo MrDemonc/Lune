@@ -30,7 +30,7 @@ import com.demonlab.lune.ui.screens.resume.ArtistAlbumsSectionData
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 
 @Composable
-fun ResumeScreen(
+fun HomeScreen(
     viewModel: MusicViewModel,
     allSongs: List<Song>,
     allPlaylists: List<Playlist>,
@@ -357,3 +357,45 @@ fun ResumeScreen(
         }
     }
 }
+
+@Composable
+@Deprecated("Use HomeScreen instead", ReplaceWith("HomeScreen(viewModel, allSongs, allPlaylists, bottomPadding, currentSong, isPlaying, playbackProgress, hasBlurBackground, isDarkTheme, useCustomControlsColor, controlsColorPalette, onSongClick, onPlaylistClick, onArtistClick, onAlbumClick, onGenreClick, onExpandPlayer, onPlayToggle)"))
+fun ResumeScreen(
+    viewModel: MusicViewModel,
+    allSongs: List<Song>,
+    allPlaylists: List<Playlist>,
+    bottomPadding: Dp,
+    currentSong: Song?,
+    isPlaying: Boolean,
+    playbackProgress: Float = 0f,
+    hasBlurBackground: Boolean = false,
+    isDarkTheme: Boolean = false,
+    useCustomControlsColor: Boolean = false,
+    controlsColorPalette: Int = 0,
+    onSongClick: (Song, List<Song>) -> Unit,
+    onPlaylistClick: (Playlist) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (Album) -> Unit = {},
+    onGenreClick: (String) -> Unit,
+    onExpandPlayer: () -> Unit,
+    onPlayToggle: () -> Unit,
+) = HomeScreen(
+    viewModel = viewModel,
+    allSongs = allSongs,
+    allPlaylists = allPlaylists,
+    bottomPadding = bottomPadding,
+    currentSong = currentSong,
+    isPlaying = isPlaying,
+    playbackProgress = playbackProgress,
+    hasBlurBackground = hasBlurBackground,
+    isDarkTheme = isDarkTheme,
+    useCustomControlsColor = useCustomControlsColor,
+    controlsColorPalette = controlsColorPalette,
+    onSongClick = onSongClick,
+    onPlaylistClick = onPlaylistClick,
+    onArtistClick = onArtistClick,
+    onAlbumClick = onAlbumClick,
+    onGenreClick = onGenreClick,
+    onExpandPlayer = onExpandPlayer,
+    onPlayToggle = onPlayToggle
+)

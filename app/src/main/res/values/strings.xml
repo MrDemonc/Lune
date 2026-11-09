@@ -24,6 +24,21 @@
     <string name="bass_label">EXTRA BASS</string>
     <string name="spatial_audio_label">Spatial Audio</string>
     <string name="loudness_label">Loudness</string>
+    <string name="volume_boost_title">Extra Volume Boost</string>
+    <string name="volume_boost_desc">Amplify audio beyond phone\'s maximum limit</string>
+    <string name="volume_boost_enable_switch">Exceed volume limit</string>
+    <string name="volume_boost_warning_off">This option amplifies audio above your phone\'s standard 100% volume limit. Listening at excessive volumes can cause permanent hearing damage or blow your device\'s speakers. Use with caution.</string>
+    <string name="volume_boost_level_safe_title">Safe Boost (+0 dB to +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Safe level. Recommended for quietly recorded tracks without distortion.</string>
+    <string name="volume_boost_level_med_title">Moderate Boost (+11 dB to +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Caution: May cause slight speaker distortion and ear fatigue with headphones.</string>
+    <string name="volume_boost_level_high_title">Extreme Boost! (+21 dB to +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Danger! Prolonged use at this level can permanently damage hearing and blow speakers.</string>
+    <string name="section_equalizer">Equalizer</string>
+    <string name="section_audio_effects">Audio Effects</string>
+    <string name="section_volume_gain">Volume &amp; Gain</string>
+    <string name="section_balance_tuning">Balance &amp; Pitch</string>
+    <string name="section_dynamics_processing">Dynamics Processing</string>
     <string name="reverb_label">Reverb</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Reset balance</string>
@@ -49,7 +64,8 @@
     <string name="save_changes">Save Changes</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Resume</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_resume">Home</string>
     <string name="tab_mixes">Mixes AI</string>
     <string name="tab_genres">Genres</string>
 

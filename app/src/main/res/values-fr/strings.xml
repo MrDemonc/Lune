@@ -25,6 +25,21 @@
     <string name="bass_label">EXTRA BASSES</string>
     <string name="spatial_audio_label">Audio Spatial</string>
     <string name="loudness_label">Loudness</string>
+    <string name="volume_boost_title">Amplificateur de volume</string>
+    <string name="volume_boost_desc">Amplifie le son au-delà de la limite maximale du téléphone</string>
+    <string name="volume_boost_enable_switch">Dépasser la limite de volume</string>
+    <string name="volume_boost_warning_off">Cette option amplifie le son au-delà de la limite standard de 100%. Une écoute prolongée à volume excessif peut causer des lésions auditives permanentes ou endommager les haut-parleurs. À utiliser avec précaution.</string>
+    <string name="volume_boost_level_safe_title">Boost modéré (+0 dB à +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Niveau sûr. Recommandé pour les pistes enregistrées à faible volume sans distorsion.</string>
+    <string name="volume_boost_level_med_title">Boost intermédiaire (+11 dB à +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Attention : Peut causer une légère distorsion des haut-parleurs et une fatigue auditive.</string>
+    <string name="volume_boost_level_high_title">Boost extrême ! (+21 dB à +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Danger ! Une écoute prolongée à ce niveau peut causer des dommages auditifs irréversibles.</string>
+    <string name="section_equalizer">Égaliseur</string>
+    <string name="section_audio_effects">Effets audio</string>
+    <string name="section_volume_gain">Volume et gain</string>
+    <string name="section_balance_tuning">Balance et tonalité</string>
+    <string name="section_dynamics_processing">Traitement dynamique</string>
     <string name="reverb_label">Reverb</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Réinitialiser la balance</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">Enregistrer les modifications</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Résumé</string>
+    <string name="tab_home">Accueil</string>
+    <string name="tab_resume">Accueil</string>
     <string name="tab_mixes">Mix IA</string>
     <string name="tab_genres">Genres</string>
 

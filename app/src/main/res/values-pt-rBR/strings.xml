@@ -25,6 +25,21 @@
     <string name="bass_label">GRAVES EXTRA</string>
     <string name="spatial_audio_label">Áudio Espacial</string>
     <string name="loudness_label">Sonoridade</string>
+    <string name="volume_boost_title">Aumento de volume extra</string>
+    <string name="volume_boost_desc">Amplifique o áudio além do limite máximo do telefone</string>
+    <string name="volume_boost_enable_switch">Superar limite de volume</string>
+    <string name="volume_boost_warning_off">Esta opção amplifica o áudio acima do limite de 100% do telefone. Ouvir em volumes excessivos pode causar perda auditiva permanente ou danificar os alto-falantes. Use com cuidado.</string>
+    <string name="volume_boost_level_safe_title">Aumento suave (+0 dB a +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Nível seguro. Recomendado para faixas gravadas em volume baixo sem distorção.</string>
+    <string name="volume_boost_level_med_title">Aumento moderado (+11 dB a +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Cuidado: Pode causar leve distorção nos alto-falantes e fadiga com fones de ouvido.</string>
+    <string name="volume_boost_level_high_title">Aumento extremo! (+21 dB a +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Perigo! O uso prolongado neste nível pode causar perda auditiva permanente e queimar alto-falantes.</string>
+    <string name="section_equalizer">Equalizador</string>
+    <string name="section_audio_effects">Efeitos de áudio</string>
+    <string name="section_volume_gain">Volume e ganho</string>
+    <string name="section_balance_tuning">Balanço e afinação</string>
+    <string name="section_dynamics_processing">Processamento dinâmico</string>
     <string name="reverb_label">Reverb</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Redefinir balanço</string>
@@ -50,6 +65,7 @@
     <string name="save_changes">Salvar Alterações</string>
  
     <!-- Library Tabs -->
+    <string name="tab_home">Início</string>
     <string name="tab_resume">Início</string>
     <string name="tab_mixes">Mixes IA</string>
     <string name="tab_genres">Gêneros</string>

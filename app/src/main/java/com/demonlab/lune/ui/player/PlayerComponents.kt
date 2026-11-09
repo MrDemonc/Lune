@@ -1024,7 +1024,7 @@ fun FullPlayer(
             !playbackManager.activePlaylistName.isNullOrBlank() -> playbackManager.activePlaylistName!!
             playbackManager.activeCategory == "ALL" -> context.getString(R.string.tab_all)
             playbackManager.activeCategory == "FAVORITES" -> context.getString(R.string.tab_favorites)
-            playbackManager.activeCategory == "RESUME" -> context.getString(R.string.tab_resume)
+            playbackManager.activeCategory == "HOME" || playbackManager.activeCategory == "RESUME" -> context.getString(R.string.tab_home)
             playbackManager.activeCategory == "ALBUMS" -> song.album.ifBlank { context.getString(R.string.tab_albums_real) }
             playbackManager.activeCategory == "ARTISTS" -> song.artist.ifBlank { context.getString(R.string.tab_artists) }
             playbackManager.activeCategory == "FOLDERS" -> song.folderName.ifBlank { context.getString(R.string.tab_folders) }

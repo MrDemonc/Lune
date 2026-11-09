@@ -24,6 +24,21 @@
     <string name="bass_label">جهير إضافي (EXTRA BASS)</string>
     <string name="spatial_audio_label">صوت مكاني</string>
     <string name="loudness_label">جهارة الصوت</string>
+    <string name="volume_boost_title">تضخيم الصوت الإضافي</string>
+    <string name="volume_boost_desc">تضخيم الصوت بما يتجاوز الحد الأقصى للهاتف</string>
+    <string name="volume_boost_enable_switch">تجاوز حد الصوت</string>
+    <string name="volume_boost_warning_off">يتيح هذا الخيار تضخيم الصوت بما يتجاوز حد 100% القياسي. الاستماع بمستويات صوت عالية قد يسبب ضرراً دائماً في السمع أو تلف مكبرات الصوت. استخدمه بحذر.</string>
+    <string name="volume_boost_level_safe_title">زيادة آمنة (+0 dB إلى +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">مستوى آمن. موصى به للمقاطع ذات الصوت المنخفض بدون تشويش.</string>
+    <string name="volume_boost_level_med_title">زيادة متوسطة (+11 dB إلى +20 dB)</string>
+    <string name="volume_boost_level_med_desc">تنبيه: قد يحدث تشويش خفيف في مكبرات الصوت وإرهاق عند استخدام السماعات.</string>
+    <string name="volume_boost_level_high_title">تضخيم فائق الخطورة! (+21 dB إلى +30 dB)</string>
+    <string name="volume_boost_level_high_desc">خطر! الاستخدام المطول قد يسبب تلفاً دائماً للسمع وتعطل مكبرات الصوت.</string>
+    <string name="section_equalizer">معادل الصوت</string>
+    <string name="section_audio_effects">مؤثرات الصوت</string>
+    <string name="section_volume_gain">مستوى الصوت والتضخيم</string>
+    <string name="section_balance_tuning">التوازن والطبقة</string>
+    <string name="section_dynamics_processing">معالجة الديناميكيات</string>
     <string name="reverb_label">صدى</string>
     <string name="balance_label">توازن</string>
     <string name="balance_reset">إعادة ضبط التوازن</string>
@@ -49,7 +64,8 @@
     <string name="save_changes">حفظ التغييرات</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">متابعة</string>
+    <string name="tab_home">الرئيسية</string>
+    <string name="tab_resume">الرئيسية</string>
     <string name="tab_mixes">خلطات AI</string>
     <string name="tab_genres">الأنواع</string>
 

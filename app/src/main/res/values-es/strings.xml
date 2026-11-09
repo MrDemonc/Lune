@@ -25,6 +25,21 @@
     <string name="bass_label">EXTRA BASS</string>
     <string name="spatial_audio_label">Audio Espacial</string>
     <string name="loudness_label">Sonoridad</string>
+    <string name="volume_boost_title">Aumento de volumen extra</string>
+    <string name="volume_boost_desc">Amplifica el audio por encima del límite máximo del teléfono</string>
+    <string name="volume_boost_enable_switch">Superar límite de volumen</string>
+    <string name="volume_boost_warning_off">Esta opción amplifica el audio por encima del límite del 100% del teléfono. Escuchar a volúmenes excesivos puede provocar daño auditivo permanente o romper los altavoces del dispositivo. Úsalo con precaución.</string>
+    <string name="volume_boost_level_safe_title">Aumento suave (+0 dB a +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Nivel seguro. Recomendado para pistas con bajo volumen de grabación sin distorsión.</string>
+    <string name="volume_boost_level_med_title">Aumento moderado (+11 dB a +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Precaución: Puede provocar ligera distorsión en altavoces y fatiga auditiva con auriculares.</string>
+    <string name="volume_boost_level_high_title">¡Aumento extremo! (+21 dB a +30 dB)</string>
+    <string name="volume_boost_level_high_desc">¡Peligro! El uso prolongado a este nivel puede causar daño auditivo permanente y sobrecargar los altavoces.</string>
+    <string name="section_equalizer">Ecualizador</string>
+    <string name="section_audio_effects">Efectos de audio</string>
+    <string name="section_volume_gain">Volumen y ganancia</string>
+    <string name="section_balance_tuning">Balance y tono</string>
+    <string name="section_dynamics_processing">Procesador de dinámica</string>
     <string name="reverb_label">Reverb</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Restablecer balance</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">Guardar Cambios</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Resumen</string>
+    <string name="tab_home">Inicio</string>
+    <string name="tab_resume">Inicio</string>
     <string name="tab_mixes">Mixes AI</string>
     <string name="tab_genres">Géneros</string>
 

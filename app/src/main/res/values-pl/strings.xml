@@ -24,6 +24,21 @@
     <string name="bass_label">EXTRA BASS</string>
     <string name="spatial_audio_label">Dźwięk przestrzenny</string>
     <string name="loudness_label">Głośność</string>
+    <string name="volume_boost_title">Dodatkowe wzmocnienie głośności</string>
+    <string name="volume_boost_desc">Wzmacniaj dźwięk powyżej maksymalnego limitu telefonu</string>
+    <string name="volume_boost_enable_switch">Przekrocz limit głośności</string>
+    <string name="volume_boost_warning_off">Ta opcja pozwala wzmocnić dźwięk powyżej standardowego limitu 100%. Słuchanie przy zbyt dużej głośności może trwale uszkodzić słuch lub głośniki. Używaj ostrożnie.</string>
+    <string name="volume_boost_level_safe_title">Bezpieczne wzmocnienie (+0 dB do +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Bezpieczny poziom. Zalecany dla cicho nagranych utworów bez zniekształceń.</string>
+    <string name="volume_boost_level_med_title">Umiarkowane wzmocnienie (+11 dB do +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Ostrożnie: Może powodować lekkie zniekształcenia i zmęczenie słuchu na słuchawkach.</string>
+    <string name="volume_boost_level_high_title">Ekstremalne wzmocnienie! (+21 dB do +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Niebezpieczeństwo! Długotrwałe używanie grozi trwałym uszkodzeniem słuchu i głośników.</string>
+    <string name="section_equalizer">Korektor</string>
+    <string name="section_audio_effects">Efekty dźwiękowe</string>
+    <string name="section_volume_gain">Głośność i wzmocnienie</string>
+    <string name="section_balance_tuning">Balans i ton</string>
+    <string name="section_dynamics_processing">Przetwarzanie dynamiki</string>
     <string name="reverb_label">Pogłos</string>
     <string name="balance_label">Balans</string>
     <string name="balance_reset">Resetuj balans</string>
@@ -49,7 +64,8 @@
     <string name="save_changes">Zapisz zmiany</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Wznów</string>
+    <string name="tab_home">Start</string>
+    <string name="tab_resume">Start</string>
     <string name="tab_mixes">Miksy AI</string>
     <string name="tab_genres">Gatunki</string>
 

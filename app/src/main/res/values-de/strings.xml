@@ -25,6 +25,21 @@
     <string name="bass_label">EXTRA BASS</string>
     <string name="spatial_audio_label">Räumliches Audio</string>
     <string name="loudness_label">Lautstärke</string>
+    <string name="volume_boost_title">Extra-Lautstärke-Boost</string>
+    <string name="volume_boost_desc">Verstärkt das Audio über das Limit des Telefons hinaus</string>
+    <string name="volume_boost_enable_switch">Lautstärkelimit überschreiten</string>
+    <string name="volume_boost_warning_off">Diese Option verstärkt den Ton über das 100%-Limit hinaus. Zu lautes Hören kann das Gehör dauerhaft schädigen oder die Lautsprecher beschädigen. Mit Vorsicht verwenden.</string>
+    <string name="volume_boost_level_safe_title">Sicherer Boost (+0 dB bis +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Sicherer Bereich. Empfohlen für leise aufgenommene Titel ohne Verzerrung.</string>
+    <string name="volume_boost_level_med_title">Moderater Boost (+11 dB bis +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Vorsicht: Kann leichte Lautsprecherverzerrungen und Ermüdung bei Kopfhörern verursachen.</string>
+    <string name="volume_boost_level_high_title">Extremer Boost! (+21 dB bis +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Gefahr! Zu hoher Pegel kann dauerhafte Hörschäden und Lautsprecherschäden verursachen.</string>
+    <string name="section_equalizer">Equalizer</string>
+    <string name="section_audio_effects">Audioeffekte</string>
+    <string name="section_volume_gain">Lautstärke &amp; Verstärkung</string>
+    <string name="section_balance_tuning">Balance &amp; Tonhöhe</string>
+    <string name="section_dynamics_processing">Dynamikprozessor</string>
     <string name="reverb_label">Hall</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Balance zurücksetzen</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">Änderungen speichern</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Übersicht</string>
+    <string name="tab_home">Start</string>
+    <string name="tab_resume">Start</string>
     <string name="tab_mixes">KI-Mixe</string>
     <string name="tab_genres">Genres</string>
 

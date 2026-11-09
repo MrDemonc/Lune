@@ -266,7 +266,8 @@ class Lune : AppCompatActivity() {
             val playbackManager = remember { PlaybackManager.getInstance(context) }
 
             // Stable Tab IDs
-            val TAB_RESUME = "RESUME"
+            val TAB_HOME = "HOME"
+            val TAB_RESUME = "HOME"
             val TAB_MIXES = "MIXES"
             val TAB_ALL = "ALL"
             val TAB_FAVORITES = "FAVORITES"
@@ -276,7 +277,8 @@ class Lune : AppCompatActivity() {
             val TAB_FOLDERS = "FOLDERS"
 
             // LIFTED STRINGS
-            val sTabResume = stringResource(R.string.tab_resume)
+            val sTabHome = stringResource(R.string.tab_home)
+            val sTabResume = sTabHome
             val sTabMixes = stringResource(R.string.tab_mixes)
             val sTabAll = stringResource(R.string.tab_all)
             val sTabFavorites = stringResource(R.string.tab_favorites)
@@ -329,10 +331,14 @@ class Lune : AppCompatActivity() {
             }
             val initialFolder = remember {
                 val savedDefault = settingsManager.defaultSectionTab
-                if (savedDefault.isNotEmpty()) savedDefault else TAB_RESUME
+                val resolved = if (savedDefault == "RESUME") "HOME" else savedDefault
+                if (resolved.isNotEmpty()) resolved else TAB_HOME
             }
             var selectedFolder by rememberSaveable { mutableStateOf(initialFolder) }
-            var defaultSectionTab by remember { mutableStateOf(settingsManager.defaultSectionTab) }
+            var defaultSectionTab by remember {
+                val def = settingsManager.defaultSectionTab
+                mutableStateOf(if (def == "RESUME") "HOME" else def)
+            }
             
             // Handle Shortcut Navigation
             LaunchedEffect(shortcutFolder.value) {
@@ -519,7 +525,7 @@ class Lune : AppCompatActivity() {
             }
             val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs, showAiSection, defaultSectionTab) {
                 val hasFavorites = rawAllSongs.any { it.isFavorite }
-                val base = mutableListOf("RESUME")
+                val base = mutableListOf("HOME")
                 if (showAiSection) base.add("MIXES")
                 base.add("ALL")
                 base.add("PLAYLISTS")
@@ -530,17 +536,18 @@ class Lune : AppCompatActivity() {
                 if (visibleFolders.isNotEmpty()) base.add("FOLDERS")
                 if (isSectionCustomizationEnabled) {
                     base.removeAll(hiddenSectionTabs)
-                    if ("RESUME" !in base && defaultSectionTab != "RESUME") base.add(0, "RESUME")
+                    if ("HOME" !in base && defaultSectionTab != "HOME" && defaultSectionTab != "RESUME") base.add(0, "HOME")
                 }
-                if (defaultSectionTab.isNotEmpty() && defaultSectionTab in base) {
-                    base.remove(defaultSectionTab)
-                    base.add(0, defaultSectionTab)
+                val effectiveDefault = if (defaultSectionTab == "RESUME") "HOME" else defaultSectionTab
+                if (effectiveDefault.isNotEmpty() && effectiveDefault in base) {
+                    base.remove(effectiveDefault)
+                    base.add(0, effectiveDefault)
                 }
                 base
             }
             LaunchedEffect(folders) {
                 if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
-                    selectedFolder = folders.firstOrNull() ?: TAB_RESUME
+                    selectedFolder = folders.firstOrNull() ?: TAB_HOME
                 }
             }
             val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
@@ -548,7 +555,7 @@ class Lune : AppCompatActivity() {
             }
             val filteredSongs = remember(visibleSongs, selectedFolder) {
                 when (selectedFolder) {
-                    TAB_RESUME, TAB_MIXES, TAB_ALL, TAB_ALBUMS, TAB_ARTISTS, "GENRES" -> visibleSongs
+                    TAB_HOME, "RESUME", TAB_MIXES, TAB_ALL, TAB_ALBUMS, TAB_ARTISTS, "GENRES" -> visibleSongs
                     TAB_FAVORITES -> visibleSongs.filter { it.isFavorite }
                     else -> visibleSongs.filter { it.folderName == selectedFolder }
                 }
@@ -702,7 +709,8 @@ fun MainScreen(
         }
     }
     val expansionProgress = playerExpansionFraction.value
-    val sTabResume = stringResource(R.string.tab_resume)
+    val sTabHome = stringResource(R.string.tab_home)
+    val sTabResume = sTabHome
     val sTabMixes = stringResource(R.string.tab_mixes)
     val sTabAll = stringResource(R.string.tab_all)
     val sTabFavorites = stringResource(R.string.tab_favorites)
@@ -787,7 +795,7 @@ fun MainScreen(
 
     val contextId = remember(selectedFolder) {
         when (selectedFolder) {
-            "RESUME", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
+            "HOME", "RESUME", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
             "FAVORITES" -> -200L
             else -> selectedFolder.hashCode().toLong()
         }
@@ -993,7 +1001,7 @@ fun MainScreen(
 
     LaunchedEffect(folders) {
         if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
-            onSelectedFolderChange("RESUME")
+            onSelectedFolderChange("HOME")
         }
         if (isSectionCustomizationEnabled && playbackManager.activeCategory != null && playbackManager.activeCategory !in folders) {
             playbackManager.stopAndClearQueue()
@@ -1360,7 +1368,7 @@ fun MainScreen(
 
                     val pageFilteredSongs = remember(visibleSongs, folder) {
                         when (folder) {
-                            "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> visibleSongs
+                            "HOME", "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> visibleSongs
                             "ARTISTS" -> visibleSongs
                             "GENRES" -> visibleSongs
                             "FAVORITES" -> visibleSongs.filter { it.isFavorite }
@@ -1375,7 +1383,7 @@ fun MainScreen(
 
                     val pageContextId = remember(folder) {
                         when (folder) {
-                            "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> -100L
+                            "HOME", "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> -100L
                             "FAVORITES" -> -200L
                             else -> folder.hashCode().toLong()
                         }
@@ -1383,7 +1391,7 @@ fun MainScreen(
 
                     val pageCurrentScreen = remember(folder, pageFilteredSongs.isEmpty()) {
                         when {
-                            folder == "RESUME" -> "RESUME"
+                            folder == "HOME" || folder == "RESUME" -> "HOME"
                             folder == "MIXES" -> "MIXES"
                             folder == "ALBUMS" -> "ALBUM_GRID"
                             folder == "ARTISTS" -> "ARTIST_GRID"
@@ -1399,8 +1407,8 @@ fun MainScreen(
 
                     when (pageCurrentScreen) {
 
-                        "RESUME" -> {
-                            com.demonlab.lune.ui.screens.ResumeScreen(
+                        "HOME", "RESUME" -> {
+                            com.demonlab.lune.ui.screens.HomeScreen(
                                 viewModel = musicViewModel,
                                 allSongs = pageFilteredSongs,
                                 allPlaylists = musicViewModel.playlists,
@@ -2021,7 +2029,7 @@ fun MainScreen(
                             val isCurrentListPlaying = playbackManager.activePlaylistId == pageContextId && playbackManager.activeCategory == folder
                             var localShuffleState by remember(pageContextId) { mutableStateOf(settingsManager.getPlaylistShuffle(pageContextId)) }
                             val isShuffleActive = if (folder == "ALL" || isCurrentListPlaying) playbackManager.isShuffle else localShuffleState
-                            val hasHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
+                            val hasHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("HOME", "RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
                             val isGridMode = folder == "ALL" && tracksViewStyle == 1
                             val pageMainGridState = remember(folder) { LazyGridState() }
 
@@ -2553,7 +2561,8 @@ fun MainScreen(
                                         useCustomControlsColor = useCustomControlsColor,
                                         controlsColorPalette = controlsColorPalette,
                                         showSearchText = false,
-                                        sTabResume = sTabResume,
+                                        sTabHome = sTabHome,
+                                        sTabResume = sTabHome,
                                         sTabMixes = sTabMixes,
                                         sTabAll = sTabAll,
                                         sTabFavorites = sTabFavorites,
@@ -2613,7 +2622,7 @@ fun MainScreen(
                                             when (currentActiveFolder) {
                                                 "ALL" -> activeCat == "ALL" && activeId == -100L
                                                 "FAVORITES" -> activeCat == "FAVORITES" && activeId == -200L
-                                                "RESUME", "MIXES", "ALBUMS", "ARTISTS", "GENRES", "FOLDERS", "PLAYLISTS" -> false
+                                                "HOME", "RESUME", "MIXES", "ALBUMS", "ARTISTS", "GENRES", "FOLDERS", "PLAYLISTS" -> false
                                                 else -> activeCat == currentActiveFolder && activeId == currentActiveFolder.hashCode().toLong()
                                             }
                                         }
@@ -2676,7 +2685,8 @@ fun MainScreen(
                                         useCustomControlsColor = useCustomControlsColor,
                                         controlsColorPalette = controlsColorPalette,
                                         showSearchText = true,
-                                        sTabResume = sTabResume,
+                                        sTabHome = sTabHome,
+                                        sTabResume = sTabHome,
                                         sTabMixes = sTabMixes,
                                         sTabAll = sTabAll,
                                         sTabFavorites = sTabFavorites,
@@ -2708,7 +2718,8 @@ fun MainScreen(
                             isDarkTheme = isDarkThemeMini,
                             useCustomControlsColor = useCustomControlsColor,
                             controlsColorPalette = controlsColorPalette,
-                            sTabResume = sTabResume,
+                            sTabHome = sTabHome,
+                            sTabResume = sTabHome,
                             sTabMixes = sTabMixes,
                             sTabAll = sTabAll,
                             sTabFavorites = sTabFavorites,
@@ -2842,7 +2853,7 @@ fun MainScreen(
                 playbackManager.play(matchedSongs.first(), matchedSongs, playlistId = -300L, category = "ALL", shuffleMode = shuffleOn)
                 onCurrentSongChange(matchedSongs.first())
                 onIsPlayingChange(true)
-                onSelectedFolderChange("RESUME")
+                onSelectedFolderChange("HOME")
                 showSearchScreen = false
             },
             onNavigateToAlbum = { album ->
@@ -3242,7 +3253,7 @@ fun MainScreen(
                         val isSelected = selectedFolder == folder
                         val isDefaultSection = defaultSectionTab == folder
                         val label = when (folder) {
-                            "RESUME" -> sTabResume
+                            "HOME", "RESUME" -> sTabHome
                             "MIXES" -> sTabMixes
                             "ALL" -> sTabAll
                             "FAVORITES" -> sTabFavorites
@@ -3281,7 +3292,7 @@ fun MainScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         val iconTint = if (isSelected) (if (blurColors.hasBlur && blurColors.isDark) Color.Black else MaterialTheme.colorScheme.onPrimary) else blurColors.textSecondaryColor
                                         when (folder) {
-                                            "RESUME" -> Icon(Icons.Default.History, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "HOME", "RESUME" -> Icon(Icons.Default.Home, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
                                             "MIXES" -> Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
                                             "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
                                             "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
@@ -3356,7 +3367,8 @@ fun UnifiedHeaderPill(
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0,
     showSearchText: Boolean = true,
-    sTabResume: String,
+    sTabHome: String = "",
+    sTabResume: String = sTabHome,
     sTabMixes: String,
     sTabAll: String,
     sTabFavorites: String,
@@ -3498,7 +3510,7 @@ fun UnifiedHeaderPill(
             ) {
                 // LEFT SIDE: Active Section Pill
                 val activeLabel = when(selectedFolder) {
-                    "RESUME" -> sTabResume
+                    "HOME", "RESUME" -> if (sTabHome.isNotBlank()) sTabHome else sTabResume
                     "MIXES" -> sTabMixes
                     "ALL" -> sTabAll
                     "FAVORITES" -> sTabFavorites
@@ -3536,7 +3548,7 @@ fun UnifiedHeaderPill(
                             contentAlignment = Alignment.Center
                         ) {
                             when (selectedFolder) {
-                                "RESUME" -> Icon(Icons.Default.History, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "HOME", "RESUME" -> Icon(Icons.Default.Home, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                                 "MIXES" -> Icon(Icons.Default.AutoAwesome, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                                 "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                                 "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))

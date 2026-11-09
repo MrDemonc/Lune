@@ -24,6 +24,21 @@
     <string name="bass_label">بیسِ کار</string>
     <string name="spatial_audio_label">صدای سه‌بعدی</string>
     <string name="loudness_label">بلندی صدا</string>
+    <string name="volume_boost_title">تقویت صدای اضافی</string>
+    <string name="volume_boost_desc">تقویت صدا فراتر از حد مجاز گوشی</string>
+    <string name="volume_boost_enable_switch">فراتر رفتن از حد صدا</string>
+    <string name="volume_boost_warning_off">این گزینه صدا را بیش از حد معمول ۱۰۰٪ گوشی تقویت می‌کند. گوش دادن با صدای بیش از حد می‌تواند به شنوایی یا بلندگوها آسیب دائمی بزند. با احتیاط استفاده کنید.</string>
+    <string name="volume_boost_level_safe_title">تقویت ایمن (+۰ تا +۱۰ دسی‌بل)</string>
+    <string name="volume_boost_level_safe_desc">سطح ایمن. مناسب برای آهنگ‌های کم‌صدا بدون افت کیفیت.</string>
+    <string name="volume_boost_level_med_title">تقویت متوسط (+۱۱ تا +۲۰ دسی‌بل)</string>
+    <string name="volume_boost_level_med_desc">احتیاط: ممکن است باعث افت کیفیت بلندگو و خستگی گوش با هندزفری شود.</string>
+    <string name="volume_boost_level_high_title">تقویت بسیار شدید! (+۲۱ تا +۳۰ دسی‌بل)</string>
+    <string name="volume_boost_level_high_desc">خطر! استفاده طولانی‌مدت در این سطح می‌تواند باعث افت شنوایی دائمی و سوختن بلندگوها شود.</string>
+    <string name="section_equalizer">اکولایزر</string>
+    <string name="section_audio_effects">افکت‌های صوتی</string>
+    <string name="section_volume_gain">صدا و قدرت</string>
+    <string name="section_balance_tuning">بالانس و تیونینگ</string>
+    <string name="section_dynamics_processing">پردازش داینامیک</string>
     <string name="reverb_label">اکو (Reverb)</string>
     <string name="balance_label">بالانس چپ و راست</string>
     <string name="balance_reset">ریست کردن بالانس</string>
@@ -49,7 +64,8 @@
     <string name="save_changes">سیو کردن تغییرات</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">ادامه</string>
+    <string name="tab_home">خانه</string>
+    <string name="tab_resume">خانه</string>
     <string name="tab_mixes">میکس‌های هوش مصنوعی</string>
     <string name="tab_genres">سبک‌ها</string>
 

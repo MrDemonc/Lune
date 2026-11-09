@@ -1368,17 +1368,22 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun toggleLoudness() {
-        isLoudnessEnabled = !isLoudnessEnabled
-        settings.isLoudnessEnabled = isLoudnessEnabled
-        if (!isLoudnessEnabled) {
-            loudnessGain = 0
-            settings.loudnessGain = 0
+        setLoudnessEnabled(!isLoudnessEnabled)
+    }
+
+    fun setLoudnessEnabled(enabled: Boolean, gain: Int? = null) {
+        isLoudnessEnabled = enabled
+        settings.isLoudnessEnabled = enabled
+        if (!enabled) {
             musicService?.setLoudnessEnabled(false) {
                 musicService?.setLoudnessGain(0)
             }
         } else {
+            val targetGain = gain ?: (if (loudnessGain > 0) loudnessGain else 1000)
+            loudnessGain = targetGain
+            settings.loudnessGain = targetGain
             musicService?.setLoudnessEnabled(true)
-            musicService?.setLoudnessGain(loudnessGain)
+            musicService?.setLoudnessGain(targetGain)
         }
     }
 

@@ -25,6 +25,21 @@
     <string name="bass_label">增强低音</string>
     <string name="spatial_audio_label">空间音频</string>
     <string name="loudness_label">响度</string>
+    <string name="volume_boost_title">额外音量增强</string>
+    <string name="volume_boost_desc">将音频放大至超过手机的最大限制</string>
+    <string name="volume_boost_enable_switch">突破音量限制</string>
+    <string name="volume_boost_warning_off">此选项允许您将声音放大到超过标准的100%限制。音量过大可能会导致永久性听力损伤或损坏设备扬声器。请谨慎使用。</string>
+    <string name="volume_boost_level_safe_title">安全增强 (+0 dB 至 +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">安全级别。推荐用于录音音量较小的音轨，无失真。</string>
+    <string name="volume_boost_level_med_title">中度增强 (+11 dB 至 +20 dB)</string>
+    <string name="volume_boost_level_med_desc">注意：可能会导致扬声器轻微失真并在使用耳机时引起耳朵疲劳。</string>
+    <string name="volume_boost_level_high_title">极限增强！(+21 dB 至 +30 dB)</string>
+    <string name="volume_boost_level_high_desc">危险！在此级别下长时间收听可能会造成永久性听力损伤并损坏扬声器。</string>
+    <string name="section_equalizer">均衡器</string>
+    <string name="section_audio_effects">音频效果</string>
+    <string name="section_volume_gain">音量与增益</string>
+    <string name="section_balance_tuning">平衡与音调</string>
+    <string name="section_dynamics_processing">动态处理</string>
     <string name="reverb_label">混响</string>
     <string name="balance_label">平衡</string>
     <string name="balance_reset">重置平衡</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">保存更改</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">概览</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_resume">首页</string>
     <string name="tab_mixes">AI 混音</string>
     <string name="tab_genres">流派</string>
 
