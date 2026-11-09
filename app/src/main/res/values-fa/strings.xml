@@ -418,6 +418,7 @@
 
     <!-- Donate -->
     <string name="donate_title">یه قهوه مهمونم کن!</string>
+    <string name="donate_desc">از توسعه برنامه Lune حمایت کنید</string>
     <string name="paypal">پی‌پال</string>
     <string name="monero">مونرو (کریپتو)</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -587,4 +588,10 @@
     <string name="app_icon_msg_mono_white">مینیمالیسم خالص. آنقدر درخشان که سایر آیکون‌ها عینک آفتابی نیاز دارند! ☀️</string>
     <string name="app_icon_msg_mono_black">حالت مخفی فعال شد. شیک، مرموز و بهترین دوست نمایشگرهای OLED! 🕶️</string>
     <string name="app_icon_applied">آیکون برنامه به‌روز شد!</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">به‌روزرسانی جدید</string>
+    <string name="update_sheet_subtitle">قابلیت‌های جدید در لونه</string>
+    <string name="update_sheet_version_transition">v%1$s ← v%2$s</string>
+    <string name="update_sheet_dismiss_btn">بزن بریم! 🎸</string>
 </resources>

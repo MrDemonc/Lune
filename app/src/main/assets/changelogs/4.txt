@@ -1,0 +1,3 @@
+- Fix mini player: bug when use buttom navigation bar
+- Optimice buttom favorite logic
+- Update Artists section: add count and grid buttom

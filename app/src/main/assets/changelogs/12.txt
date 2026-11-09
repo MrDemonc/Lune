@@ -1,0 +1,5 @@
+- Updated the sections widget
+- Fixed phantom notifications caused by zombie processes
+- Added new quick-access shortcuts to the full player
+- Fixed crashes caused by AI processes
+- Optimization and minor fixes

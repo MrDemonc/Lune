@@ -422,6 +422,7 @@
 
     <!-- Donate -->
     <string name="donate_title">Поддержать проект</string>
+    <string name="donate_desc">Поддержите разработку приложения Lune</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -591,4 +592,10 @@
     <string name="app_icon_msg_mono_white">Чистый минимализм. Такой яркий, что другим значкам понадобятся солнечные очки! ☀️</string>
     <string name="app_icon_msg_mono_black">Скрытный режим. Элегантный, загадочный и лучший друг OLED-экранов! 🕶️</string>
     <string name="app_icon_applied">Значок приложения обновлён!</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">Новое обновление</string>
+    <string name="update_sheet_subtitle">Что нового в этой версии Lune</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">Погнали! 🎸</string>
 </resources>

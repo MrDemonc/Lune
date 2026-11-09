@@ -1,0 +1,8 @@
+- Add song info option
+- Cinematic mode optimized
+- Blur options in customizations
+- Gesture playback
+- Speed music buttom
+- New options in Lyrics
+- Landscape optimized
+- Minor fixes

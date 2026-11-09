@@ -314,6 +314,8 @@ class Lune : AppCompatActivity() {
                 ) {
                     OnboardingScreen(onStartClick = {
                         settingsManager.isFirstRun = false
+                        settingsManager.lastKnownVersionCode = com.demonlab.lune.BuildConfig.VERSION_CODE
+                        settingsManager.lastKnownVersionName = com.demonlab.lune.BuildConfig.VERSION_NAME
                         showOnboarding = false
                     })
                 }
@@ -740,6 +742,19 @@ fun MainScreen(
     var undoSecondsRemaining by remember { mutableIntStateOf(0) }
     var undoProgress by remember { mutableFloatStateOf(1f) }
     var selectedPlaylist by remember { mutableStateOf<com.demonlab.lune.data.Playlist?>(null) }
+    
+    val currentVersionCode = com.demonlab.lune.BuildConfig.VERSION_CODE
+    val currentVersionName = com.demonlab.lune.BuildConfig.VERSION_NAME
+    val lastVersionCode = settingsManager.lastKnownVersionCode
+    val lastVersionName = settingsManager.lastKnownVersionName
+
+    var showUpdateSheet by remember {
+        mutableStateOf(!settingsManager.isFirstRun && lastVersionCode < currentVersionCode)
+    }
+
+    val updateChangelog = remember(currentVersionCode) {
+        com.demonlab.lune.tools.ChangelogManager.getChangelog(context, currentVersionCode)
+    }
     
     val isDarkThemeMini = when (themeMode) {
         1 -> false
@@ -3350,6 +3365,19 @@ fun MainScreen(
                 }
             }
         }
+    }
+
+    if (showUpdateSheet) {
+        UpdateChangelogSheet(
+            previousVersionName = lastVersionName,
+            currentVersionName = currentVersionName,
+            changelogItems = updateChangelog,
+            onDismiss = {
+                settingsManager.lastKnownVersionCode = currentVersionCode
+                settingsManager.lastKnownVersionName = currentVersionName
+                showUpdateSheet = false
+            }
+        )
     }
 }
 

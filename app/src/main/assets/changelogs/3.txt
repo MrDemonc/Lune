@@ -1,0 +1,6 @@
+- Add haptic vibration in player controls
+- Move Cinematic Player option in Customization settings
+- Add Cover player customization
+- Add Controls player customization
+- Add scroll in music list
+- Add Sort songs option

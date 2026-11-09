@@ -1,0 +1,6 @@
+- Add French Language
+- Fix playlist and artist search results bug
+- Fix cover improvements
+- Add custom color for app
+- Support Android Auto
+- Minor fixes

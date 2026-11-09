@@ -24,6 +24,14 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("is_first_run", true)
         set(value) = prefs.edit().putBoolean("is_first_run", value).apply()
 
+    var lastKnownVersionCode: Int
+        get() = prefs.getInt("last_known_version_code", 0)
+        set(value) = prefs.edit().putInt("last_known_version_code", value).apply()
+
+    var lastKnownVersionName: String
+        get() = prefs.getString("last_known_version_name", "") ?: ""
+        set(value) = prefs.edit().putString("last_known_version_name", value).apply()
+
     var optionsOrder: String
         get() = prefs.getString("options_order", "like,shuffle,repeat,crossfade,automix,timer,eq") ?: "like,shuffle,repeat,crossfade,automix,timer,eq"
         set(value) = prefs.edit().putString("options_order", value).apply()

@@ -1,0 +1,10 @@
+- Re-design miniplayer
+- Added animations in switch
+- New buttoms in music notifications
+- Customize sections bar
+- Update logo app colors
+- Folder hierarchy added
+- Update song info option
+- Playing Now Scroll move in miniplayer
+- Miniplayer minimization support
+- Compact bar options in full player

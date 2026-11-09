@@ -422,6 +422,7 @@
 
     <!-- Donate -->
     <string name="donate_title">Soutenez le Projet</string>
+    <string name="donate_desc">Soutenez le développement de Lune</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -591,4 +592,10 @@
     <string name="app_icon_msg_mono_white">Minimalisme pur. Si éclatant que vos autres icônes auront besoin de lunettes de soleil ! ☀️</string>
     <string name="app_icon_msg_mono_black">Mode furtif activé. Élégant, mystérieux et le meilleur ami des écrans OLED ! 🕶️</string>
     <string name="app_icon_applied">Icône de l\'application mise à jour !</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">Nouvelle mise à jour</string>
+    <string name="update_sheet_subtitle">Découvrez les nouveautés de Lune</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">C\'est parti ! 🎸</string>
 </resources>

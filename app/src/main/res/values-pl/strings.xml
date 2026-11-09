@@ -439,6 +439,7 @@
 
     <!-- Donate -->
     <string name="donate_title">Wesprzyj projekt</string>
+    <string name="donate_desc">Wesprzyj rozwój aplikacji Lune</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -592,4 +593,10 @@
     <string name="app_icon_msg_mono_white">Czysty minimalizm. Tak jasny, że inne ikony będą potrzebować okularów przeciwsłonecznych! ☀️</string>
     <string name="app_icon_msg_mono_black">Tryb cichy aktywny. Elegancki, tajemniczy i najlepszy przyjaciel ekranów OLED! 🕶️</string>
     <string name="app_icon_applied">Zaktualizowano ikonę aplikacji!</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">Nowa aktualizacja</string>
+    <string name="update_sheet_subtitle">Zobacz, co nowego w Lune</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">Dajemy czadu! 🎸</string>
 </resources>

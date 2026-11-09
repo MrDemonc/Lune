@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
@@ -137,6 +138,7 @@ fun SettingsScreen(
     var showAlbumSortDialog by remember { mutableStateOf(false) }
     var showArtistSortDialog by remember { mutableStateOf(false) }
     var showPlaylistSortDialog by remember { mutableStateOf(false) }
+    var showDonateDialog by remember { mutableStateOf(false) }
 
     val albumSortOptions = remember {
         listOf(
@@ -326,6 +328,14 @@ fun SettingsScreen(
                 settingsManager.defaultPlaylistSortOption = it
             },
             onDismiss = { showPlaylistSortDialog = false }
+        )
+    }
+
+    if (showDonateDialog) {
+        DonateDialog(
+            onDismiss = { showDonateDialog = false },
+            hasBlurBackground = hasBlurBackground,
+            isDarkTheme = isDarkTheme
         )
     }
 
@@ -598,9 +608,17 @@ fun SettingsScreen(
                 // About Section
                 SettingsSection(title = stringResource(R.string.about)) {
                     SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.donate_title),
+                        supportingText = stringResource(R.string.donate_desc),
+                        icon = Icons.Default.Favorite,
+                        position = SectionPosition.FIRST,
+                        onClick = { showDonateDialog = true }
+                    )
+
+                    SettingsPreferenceItem(
                         headlineText = stringResource(R.string.about),
                         icon = Icons.Default.Info,
-                        position = SectionPosition.SINGLE,
+                        position = SectionPosition.LAST,
                         onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
                     )
                 }

@@ -1,0 +1,8 @@
+- Redesigned Equalizer with modern Material 3 Expressive cards.
+- Added Volume Boost with hardware loudness enhancement and dynamic safety warnings.
+- Added App Icon switcher (Default, Dynamic Material You, Monochrome White, Monochrome Black).
+- Renamed Summary section to Home/Inicio across the entire app with updated icons.
+- Added direct Support/Donation option to the main Settings screen.
+- Added option to filter out short audio tracks.
+- Added offline update changelog sheet to view new features after updating.
+- Performance improvements, smoother animations, and blur backdrop fixes.

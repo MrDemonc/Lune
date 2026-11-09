@@ -436,6 +436,7 @@
 
     <!-- Donate -->
     <string name="donate_title">支持项目</string>
+    <string name="donate_desc">支持 Lune 的持续开发</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -589,4 +590,10 @@
     <string name="app_icon_msg_mono_white">极致简约。如此明亮，甚至让其他图标都需要戴墨镜！☀️</string>
     <string name="app_icon_msg_mono_black">潜行模式启动。优雅、神秘，OLED 屏幕的最佳拍档！🕶️</string>
     <string name="app_icon_applied">应用图标已更新！</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">全新版本更新</string>
+    <string name="update_sheet_subtitle">快来看看 Lune 的新功能吧</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">摇滚起来！🎸</string>
 </resources>

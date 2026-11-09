@@ -151,6 +151,15 @@ androidComponents {
     }
 }
 
+val copyChangelogs = tasks.register<Copy>("copyChangelogs") {
+    from(rootProject.file("fastlane/metadata/android/en-US/changelog"))
+    into(layout.projectDirectory.dir("src/main/assets/changelogs"))
+}
+
+tasks.named("preBuild") {
+    dependsOn(copyChangelogs)
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)

@@ -1,0 +1,9 @@
+- Re-design buttom and move options
+- Play result list search
+- Fix bug in crossfade
+- Add new option in OnBoarding for folder filters
+- Add Chinese and German languaje
+- Improvement to the "BASS" and "Spacial Audio" options of the equalizer
+- New options in equalizer: Loudness, Balance, Reverd, Pitch and Dynamic Processor
+- Optimize app with R8 build
+- Minor changes and fixes

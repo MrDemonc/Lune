@@ -1,0 +1,11 @@
+- New section bar
+- Fixed song with not cover in metadata
+- Individual artist section
+- New Genres section and metadata edit
+- New design for welcome card and new option for hidden
+- Update widget
+- Added option for play to next
+- 32/64-bit float exclusive mode
+- Click-to-Seek in Lyrics
+- Refresh search song in option settings
+- and more optimizations
