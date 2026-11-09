@@ -579,4 +579,17 @@
     <string name="filter_duration_off">Wył.</string>
     <string name="option_filter_short_audios">Filtr</string>
     <string name="filter_duration_description">Wyklucz bardzo krótkie pliki audio (np. notatki głosowe, dzwonki i efekty dźwiękowe) ze swojej biblioteki i kolejek odtwarzania.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">Ikona aplikacji</string>
+    <string name="app_icon_desc">Wybierz swój ulubiony wygląd ikony Lune na ekranie głównym.</string>
+    <string name="app_icon_default">Domyślna</string>
+    <string name="app_icon_dynamic">Kolor dynamiczny</string>
+    <string name="app_icon_mono_white">Monochromatyczny biały</string>
+    <string name="app_icon_mono_black">Monochromatyczny czarny</string>
+    <string name="app_icon_msg_default">Klasyczny, niepowtarzalny fiolet Lune. Nigdy nie wychodzi z mody! 💜</string>
+    <string name="app_icon_msg_dynamic">Kameleon. Dopasowuje się do tapety jak prawdziwa ikona stylu! 🎨</string>
+    <string name="app_icon_msg_mono_white">Czysty minimalizm. Tak jasny, że inne ikony będą potrzebować okularów przeciwsłonecznych! ☀️</string>
+    <string name="app_icon_msg_mono_black">Tryb cichy aktywny. Elegancki, tajemniczy i najlepszy przyjaciel ekranów OLED! 🕶️</string>
+    <string name="app_icon_applied">Zaktualizowano ikonę aplikacji!</string>
 </resources>

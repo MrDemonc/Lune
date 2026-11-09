@@ -576,4 +576,17 @@
     <string name="filter_duration_off">关闭</string>
     <string name="option_filter_short_audios">过滤</string>
     <string name="filter_duration_description">从您的资料库和播放队列中排除极短的音频文件（例如语音消息、铃声和提示音效）。</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">应用图标</string>
+    <string name="app_icon_desc">为主屏幕上的 Lune 启动器图标选择您喜欢的外观。</string>
+    <string name="app_icon_default">默认</string>
+    <string name="app_icon_dynamic">动态色彩</string>
+    <string name="app_icon_mono_white">单色白底</string>
+    <string name="app_icon_mono_black">单色黑底</string>
+    <string name="app_icon_msg_default">经典而独特的 Lune 紫色。永不过时！💜</string>
+    <string name="app_icon_msg_dynamic">变色龙。与您的壁纸完美契合，如同时尚先锋！🎨</string>
+    <string name="app_icon_msg_mono_white">极致简约。如此明亮，甚至让其他图标都需要戴墨镜！☀️</string>
+    <string name="app_icon_msg_mono_black">潜行模式启动。优雅、神秘，OLED 屏幕的最佳拍档！🕶️</string>
+    <string name="app_icon_applied">应用图标已更新！</string>
 </resources>

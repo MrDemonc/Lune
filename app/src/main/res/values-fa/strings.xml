@@ -574,4 +574,17 @@
     <string name="filter_duration_off">خاموش</string>
     <string name="option_filter_short_audios">فیلتر</string>
     <string name="filter_duration_description">حذف فایل‌های صوتی بسیار کوتاه (مانند یادداشت‌های صوتی، زنگ‌ها و جلوه‌های صوتی) از کتابخانه و صف‌های پخش.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">آیکون برنامه</string>
+    <string name="app_icon_desc">ظاهر مورد علاقه خود را برای آیکون Lune در صفحه اصلی انتخاب کنید.</string>
+    <string name="app_icon_default">پیش‌فرض</string>
+    <string name="app_icon_dynamic">رنگ پویا</string>
+    <string name="app_icon_mono_white">تک‌رنگ سفید</string>
+    <string name="app_icon_mono_black">تک‌رنگ مشکی</string>
+    <string name="app_icon_msg_default">رنگ بنفش اصیل و بی‌نظیر Lune. هرگز قدیمی نمی‌شود! 💜</string>
+    <string name="app_icon_msg_dynamic">مثل آفتاب‌پرست! هماهنگ با تصویر زمینه شما مثل یک نماد مد واقعی. 🎨</string>
+    <string name="app_icon_msg_mono_white">مینیمالیسم خالص. آنقدر درخشان که سایر آیکون‌ها عینک آفتابی نیاز دارند! ☀️</string>
+    <string name="app_icon_msg_mono_black">حالت مخفی فعال شد. شیک، مرموز و بهترین دوست نمایشگرهای OLED! 🕶️</string>
+    <string name="app_icon_applied">آیکون برنامه به‌روز شد!</string>
 </resources>

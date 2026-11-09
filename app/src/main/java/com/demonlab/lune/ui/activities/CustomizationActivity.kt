@@ -42,8 +42,31 @@ import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.filled.Widgets
 
 import com.demonlab.lune.tools.PlaybackManager
+import com.demonlab.lune.tools.AppIconManager
+import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.AppBlurBackdrop
+import com.demonlab.lune.ui.components.rememberBlurSheetColors
 import com.demonlab.lune.ui.utils.bounceClick
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 
 class CustomizationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,6 +162,8 @@ fun CustomizationScreen(
     }
     val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
 
+    var showAppIconDialog by remember { mutableStateOf(false) }
+    var appIconKey by remember { mutableStateOf(AppIconManager.getCurrentIcon(context)) }
     var showCustomTitleDialog by remember { mutableStateOf(false) }
     var customTitle by remember { mutableStateOf(settingsManager.customTitle) }
     var showBitrateSheet by remember { mutableStateOf(false) }
@@ -214,6 +239,20 @@ fun CustomizationScreen(
         )
     }
 
+    if (showAppIconDialog) {
+        AppIconDialog(
+            currentIcon = appIconKey,
+            currentSong = currentSong,
+            onDismiss = { showAppIconDialog = false },
+            onSelectIcon = { newIcon ->
+                appIconKey = newIcon
+                AppIconManager.applyAppIcon(context, newIcon)
+                showAppIconDialog = false
+                Toast.makeText(context, context.getString(R.string.app_icon_applied), Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
         isDarkTheme = isDarkTheme,
@@ -271,10 +310,23 @@ fun CustomizationScreen(
             ) {
             SettingsSection(title = stringResource(R.string.general)) {
                 SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.app_icon_title),
+                    supportingText = when (appIconKey) {
+                        AppIconManager.ICON_DYNAMIC -> stringResource(R.string.app_icon_dynamic)
+                        AppIconManager.ICON_MONO_WHITE -> stringResource(R.string.app_icon_mono_white)
+                        AppIconManager.ICON_MONO_BLACK -> stringResource(R.string.app_icon_mono_black)
+                        else -> stringResource(R.string.app_icon_default)
+                    },
+                    icon = Icons.Default.Apps,
+                    position = SectionPosition.FIRST,
+                    onClick = { showAppIconDialog = true }
+                )
+
+                SettingsPreferenceItem(
                     headlineText = stringResource(R.string.custom_title),
                     supportingText = if (customTitle.isEmpty()) "Lune" else customTitle,
                     icon = Icons.Default.Edit,
-                    position = SectionPosition.FIRST,
+                    position = SectionPosition.MIDDLE,
                     onClick = { showCustomTitleDialog = true }
                 )
 
@@ -886,3 +938,327 @@ fun CustomizationScreen(
     }
 }
 }
+
+@Composable
+fun AppIconDialog(
+    currentIcon: String,
+    currentSong: Song? = null,
+    onDismiss: () -> Unit,
+    onSelectIcon: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val blurColors = rememberBlurSheetColors(currentSong)
+    var selectedIconKey by remember { mutableStateOf(currentIcon) }
+
+    val iconOptions = listOf(
+        IconOptionData(
+            key = AppIconManager.ICON_DEFAULT,
+            nameRes = R.string.app_icon_default,
+            msgRes = R.string.app_icon_msg_default,
+            bgColor = Color(0xFF554492),
+            fgDrawableRes = R.drawable.ic_launcher_foreground,
+            accentColor = Color(0xFF8E7CE6)
+        ),
+        IconOptionData(
+            key = AppIconManager.ICON_DYNAMIC,
+            nameRes = R.string.app_icon_dynamic,
+            msgRes = R.string.app_icon_msg_dynamic,
+            bgColor = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary,
+            fgDrawableRes = R.drawable.ic_launcher_dynamic_foreground,
+            accentColor = blurColors.primaryTint
+        ),
+        IconOptionData(
+            key = AppIconManager.ICON_MONO_WHITE,
+            nameRes = R.string.app_icon_mono_white,
+            msgRes = R.string.app_icon_msg_mono_white,
+            bgColor = Color.White,
+            fgDrawableRes = R.drawable.ic_launcher_mono_white_foreground,
+            accentColor = Color(0xFF78909C)
+        ),
+        IconOptionData(
+            key = AppIconManager.ICON_MONO_BLACK,
+            nameRes = R.string.app_icon_mono_black,
+            msgRes = R.string.app_icon_msg_mono_black,
+            bgColor = Color(0xFF141416),
+            fgDrawableRes = R.drawable.ic_launcher_mono_black_foreground,
+            accentColor = Color(0xFFB0BEC5)
+        )
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        AppBlurBackdrop(
+            hasBlurBackground = blurColors.hasBlur,
+            isDarkTheme = blurColors.isDark,
+            currentSong = currentSong,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 420.dp),
+            shape = RoundedCornerShape(28.dp),
+            isSheet = true
+        ) {
+            Surface(
+                color = Color.Transparent,
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Header Icon
+                    Surface(
+                        shape = CircleShape,
+                        color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Apps,
+                                contentDescription = null,
+                                tint = blurColors.primaryTint,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = stringResource(R.string.app_icon_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = blurColors.textColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = stringResource(R.string.app_icon_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = blurColors.textSecondaryColor,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // 2x2 Grid of Icon Cards
+                    val chunked = iconOptions.chunked(2)
+                    chunked.forEachIndexed { rowIndex, rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            rowItems.forEach { item ->
+                                val isSelected = selectedIconKey == item.key
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isSelected) 1.08f else 1.0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessLow
+                                    ),
+                                    label = "iconScale_${item.key}"
+                                )
+
+                                Surface(
+                                    onClick = { selectedIconKey = item.key },
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (isSelected) {
+                                        if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.22f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    } else {
+                                        blurColors.itemContainerColor
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .graphicsLayer {
+                                            scaleX = scale
+                                            scaleY = scale
+                                        }
+                                        .bounceClick()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 16.dp, horizontal = 12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.TopEnd
+                                        ) {
+                                            // The Icon Preview
+                                            Surface(
+                                                shape = RoundedCornerShape(18.dp),
+                                                color = item.bgColor,
+                                                shadowElevation = if (isSelected) 6.dp else 2.dp,
+                                                border = if (item.key == AppIconManager.ICON_MONO_WHITE) {
+                                                    BorderStroke(1.dp, if (blurColors.isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.12f))
+                                                } else null,
+                                                modifier = Modifier.size(64.dp)
+                                            ) {
+                                                Image(
+                                                    painter = painterResource(item.fgDrawableRes),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            }
+
+                                            // Animated Selection Checkmark
+                                            val checkmarkScale by animateFloatAsState(
+                                                targetValue = if (isSelected) 1f else 0f,
+                                                animationSpec = spring(
+                                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                    stiffness = Spring.StiffnessMedium
+                                                ),
+                                                label = "checkmarkScale_${item.key}"
+                                            )
+
+                                            if (checkmarkScale > 0.01f) {
+                                                Surface(
+                                                    shape = CircleShape,
+                                                    color = blurColors.primaryTint,
+                                                    modifier = Modifier
+                                                        .offset(x = 6.dp, y = (-6).dp)
+                                                        .size(22.dp)
+                                                        .graphicsLayer {
+                                                            scaleX = checkmarkScale
+                                                            scaleY = checkmarkScale
+                                                            alpha = checkmarkScale.coerceIn(0f, 1f)
+                                                        }
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = null,
+                                                            tint = if (blurColors.isDark) Color.Black else Color.White,
+                                                            modifier = Modifier.size(13.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        Text(
+                                            text = stringResource(item.nameRes),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) blurColors.primaryTint else blurColors.textColor,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (rowIndex < chunked.size - 1) {
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Animated Funny Message Bubble
+                    AnimatedContent(
+                        targetState = selectedIconKey,
+                        transitionSpec = {
+                            (slideInVertically(spring(dampingRatio = Spring.DampingRatioLowBouncy)) { it / 3 } + fadeIn(tween(220)))
+                                .togetherWith(slideOutVertically { -it / 3 } + fadeOut(tween(140)))
+                        },
+                        label = "funnyMessageTransition"
+                    ) { key ->
+                        val currentOption = iconOptions.firstOrNull { it.key == key } ?: iconOptions.first()
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = blurColors.itemContainerColor,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = currentOption.accentColor.copy(alpha = 0.16f),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = currentOption.accentColor,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(currentOption.msgRes),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = blurColors.textColor,
+                                    lineHeight = 18.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Dialog Actions (Cancel / Apply)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        val confirmBtnColor = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary
+                        val confirmTextColor = if (blurColors.hasBlur && blurColors.isDark) Color.Black else Color.White
+
+                        Button(
+                            onClick = { onSelectIcon(selectedIconKey) },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = confirmBtnColor,
+                                contentColor = confirmTextColor
+                            ),
+                            modifier = Modifier.bounceClick()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.save),
+                                fontWeight = FontWeight.SemiBold,
+                                color = confirmTextColor
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private data class IconOptionData(
+    val key: String,
+    val nameRes: Int,
+    val msgRes: Int,
+    val bgColor: Color,
+    val fgDrawableRes: Int,
+    val accentColor: Color
+)

@@ -578,4 +578,17 @@
     <string name="filter_duration_off">Désact.</string>
     <string name="option_filter_short_audios">Filtre</string>
     <string name="filter_duration_description">Excluez les fichiers audio très courts (comme les mémos vocaux, sonneries et effets sonores) de votre bibliothèque et files d\'attente.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">Icône de l\'application</string>
+    <string name="app_icon_desc">Choisissez votre style préféré pour l\'icône de Lune sur votre écran d\'accueil.</string>
+    <string name="app_icon_default">Par défaut</string>
+    <string name="app_icon_dynamic">Couleur dynamique</string>
+    <string name="app_icon_mono_white">Monochrome blanc</string>
+    <string name="app_icon_mono_black">Monochrome noir</string>
+    <string name="app_icon_msg_default">Le violet classique et inimitable de Lune. Indémodable ! 💜</string>
+    <string name="app_icon_msg_dynamic">Caméléon. S\'accorde avec votre fond d\'écran comme une icône de mode ! 🎨</string>
+    <string name="app_icon_msg_mono_white">Minimalisme pur. Si éclatant que vos autres icônes auront besoin de lunettes de soleil ! ☀️</string>
+    <string name="app_icon_msg_mono_black">Mode furtif activé. Élégant, mystérieux et le meilleur ami des écrans OLED ! 🕶️</string>
+    <string name="app_icon_applied">Icône de l\'application mise à jour !</string>
 </resources>

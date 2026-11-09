@@ -582,4 +582,17 @@
     <string name="filter_duration_off">Off</string>
     <string name="option_filter_short_audios">Filtro</string>
     <string name="filter_duration_description">Excluye audios muy cortos (como notas de voz, tonos y efectos de sonido) de tu biblioteca y colas de reproducción.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">Icono de la aplicación</string>
+    <string name="app_icon_desc">Elige tu estilo favorito para el icono de Lune en tu pantalla de inicio.</string>
+    <string name="app_icon_default">Predeterminado</string>
+    <string name="app_icon_dynamic">Color dinámico</string>
+    <string name="app_icon_mono_white">Monocromo blanco</string>
+    <string name="app_icon_mono_black">Monocromo negro</string>
+    <string name="app_icon_msg_default">El clásico e inconfundible Lune morado. ¡Nunca pasa de moda! 💜</string>
+    <string name="app_icon_msg_dynamic">Camaleónico. Se viste a juego con tu fondo de pantalla como todo un profesional. 🎨</string>
+    <string name="app_icon_msg_mono_white">Minimalismo puro. Tan brillante que tus otros iconos necesitarán gafas de sol. ☀️</string>
+    <string name="app_icon_msg_mono_black">Modo sigilo activado. Elegante, misterioso y el mejor amigo de las pantallas OLED. 🕶️</string>
+    <string name="app_icon_applied">¡Icono de la aplicación actualizado!</string>
 </resources>

@@ -346,6 +346,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("language", "system") ?: "system"
         set(value) = prefs.edit().putString("language", value).apply()
 
+    var appIcon: String
+        get() = prefs.getString("app_icon", "default") ?: "default"
+        set(value) = prefs.edit().putString("app_icon", value).apply()
+
     var customTitle: String
         get() = prefs.getString("custom_title", "") ?: ""
         set(value) {

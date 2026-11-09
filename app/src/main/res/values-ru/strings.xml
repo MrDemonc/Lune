@@ -578,4 +578,17 @@
     <string name="filter_duration_off">Выкл</string>
     <string name="option_filter_short_audios">Фильтр</string>
     <string name="filter_duration_description">Исключайте очень короткие аудиофайлы (голосовые сообщения, рингтоны и звуковые эффекты) из медиатеки и очередей воспроизведения.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">Значок приложения</string>
+    <string name="app_icon_desc">Выберите свой любимый стиль значка Lune на главном экране.</string>
+    <string name="app_icon_default">По умолчанию</string>
+    <string name="app_icon_dynamic">Динамический цвет</string>
+    <string name="app_icon_mono_white">Монохромный белый</string>
+    <string name="app_icon_mono_black">Монохромный чёрный</string>
+    <string name="app_icon_msg_default">Классический неповторимый фиолетовый Lune. Всегда в тренде! 💜</string>
+    <string name="app_icon_msg_dynamic">Хамелеон. Идеально подстраивается под ваши обои, как икона стиля! 🎨</string>
+    <string name="app_icon_msg_mono_white">Чистый минимализм. Такой яркий, что другим значкам понадобятся солнечные очки! ☀️</string>
+    <string name="app_icon_msg_mono_black">Скрытный режим. Элегантный, загадочный и лучший друг OLED-экранов! 🕶️</string>
+    <string name="app_icon_applied">Значок приложения обновлён!</string>
 </resources>
