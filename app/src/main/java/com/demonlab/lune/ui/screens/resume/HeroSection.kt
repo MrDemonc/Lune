@@ -1,6 +1,8 @@
 package com.demonlab.lune.ui.screens.resume
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -13,26 +15,40 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toPath
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.RoundedPolygon
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.player.ScallopPlayPauseButtonWithProgress
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.utils.bounceClick
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -151,6 +167,155 @@ fun HeroSection(
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private class MorphOutlineShape(
+    private val morph: Morph,
+    private val progress: Float
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val path = Path()
+        // startAngle = 0 ensures canonical orientation without any atan2 cubic-0 alignment jumps
+        morph.toPath(progress, path, 0)
+
+        // Scale proportionally to fill ~94% of the container
+        val scale = minOf(size.width, size.height) * 0.94f
+        val matrix = Matrix()
+        matrix.scale(scale, scale)
+        path.transform(matrix)
+
+        // Center precisely in the box
+        val pathBounds = path.getBounds()
+        val dx = (size.width / 2f) - pathBounds.center.x
+        val dy = (size.height / 2f) - pathBounds.center.y
+        path.translate(Offset(dx, dy))
+
+        return Outline.Generic(path)
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AnimatedTopArtistCover(
+    topArtist: String,
+    topArtistSongs: List<Song>,
+    contentColor: Color,
+    chipBgColor: Color,
+    onClick: (() -> Unit)?
+) {
+    val artistCoverObjects = remember(topArtist, topArtistSongs) {
+        val withCover = topArtistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
+        val uniqueCovers = withCover
+            .mapNotNull { it.coverUrl ?: it.albumArtUri }
+            .distinct()
+        if (uniqueCovers.isNotEmpty()) uniqueCovers else emptyList()
+    }
+
+    val expressivePolygons: List<RoundedPolygon> = remember {
+        listOf(
+            MaterialShapes.Flower,
+            MaterialShapes.Clover4Leaf,
+            MaterialShapes.SoftBurst,
+            MaterialShapes.Pill,
+            MaterialShapes.Sunny,
+            MaterialShapes.Cookie4Sided,
+            MaterialShapes.Oval,
+            MaterialShapes.Heart
+        ).map { it.normalized() }
+    }
+
+    val morphSequence = remember(expressivePolygons) {
+        expressivePolygons.indices.map { i ->
+            Morph(expressivePolygons[i], expressivePolygons[(i + 1) % expressivePolygons.size])
+        }
+    }
+
+    val animProgress = remember(topArtist) { Animatable(0f) }
+    val numCovers = artistCoverObjects.size
+    val numMorphs = morphSequence.size
+
+    LaunchedEffect(topArtist, numMorphs, numCovers) {
+        while (true) {
+            delay(3500L)
+            animProgress.animateTo(
+                targetValue = animProgress.value + 1f,
+                animationSpec = tween(
+                    durationMillis = 1100,
+                    easing = FastOutSlowInEasing
+                )
+            )
+            // Periodic wrap-around to keep numbers bounded
+            if (animProgress.value >= 1000f) {
+                val cycleLength = if (numCovers > 0) numMorphs * numCovers else numMorphs
+                animProgress.snapTo(animProgress.value % cycleLength)
+            }
+        }
+    }
+
+    val totalProgress = animProgress.value
+    val currentStep = totalProgress.toInt()
+    val progress = (totalProgress - currentStep).coerceIn(0f, 1f)
+
+    val currentMorph = morphSequence[currentStep % numMorphs]
+    val currentMorphShape = remember(currentMorph, progress) {
+        MorphOutlineShape(currentMorph, progress)
+    }
+
+    val currentCover = if (numCovers > 0) artistCoverObjects[currentStep % numCovers] else null
+    val nextCover = if (numCovers > 0) artistCoverObjects[(currentStep + 1) % numCovers] else null
+
+    val pulseScale = 1f - 0.04f * kotlin.math.sin(progress * Math.PI.toFloat())
+
+    Box(
+        modifier = Modifier
+            .size(140.dp)
+            .bounceClick()
+            .graphicsLayer {
+                scaleX = pulseScale
+                scaleY = pulseScale
+                shape = currentMorphShape
+                clip = true
+            }
+            .background(chipBgColor)
+            .clickable(enabled = onClick != null) {
+                onClick?.invoke()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        if (currentCover != null) {
+            SongCoverImage(
+                coverUrl = currentCover,
+                shape = RectangleShape,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+        if (nextCover != null && nextCover != currentCover) {
+            SongCoverImage(
+                coverUrl = nextCover,
+                shape = RectangleShape,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = progress
+                    },
+                contentScale = ContentScale.Crop
+            )
+        }
+        if (currentCover == null && nextCover == null) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = contentColor
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TopStatsCardContent(
     topArtist: String,
@@ -164,49 +329,18 @@ private fun TopStatsCardContent(
     onArtistClick: ((String) -> Unit)?,
     onSongClick: ((Song) -> Unit)?
 ) {
-    val artistCoverSong = remember(topArtist, topArtistSongs) {
-        val withCover = topArtistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
-        if (withCover.isNotEmpty()) {
-            withCover.random()
-        } else {
-            topArtistSongs.firstOrNull()
-        }
-    }
-
-    val expressiveShape = MaterialShapes.Flower.toShape()
-
     Row(
         modifier = Modifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left side: Large artist cover in M3 Expressive shape
-        Box(
-            modifier = Modifier
-                .size(140.dp)
-                .clip(expressiveShape)
-                .background(chipBgColor)
-                .clickable(enabled = onArtistClick != null) {
-                    onArtistClick?.invoke(topArtist)
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            val coverObj = artistCoverSong?.coverUrl ?: artistCoverSong?.albumArtUri
-            if (coverObj != null) {
-                SongCoverImage(
-                    coverUrl = coverObj,
-                    shape = expressiveShape,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = contentColor
-                )
-            }
-        }
+        // Left side: Large artist cover in animated morphing M3 Expressive shape with cycling covers
+        AnimatedTopArtistCover(
+            topArtist = topArtist,
+            topArtistSongs = topArtistSongs,
+            contentColor = contentColor,
+            chipBgColor = chipBgColor,
+            onClick = if (onArtistClick != null) { { onArtistClick.invoke(topArtist) } } else null
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
