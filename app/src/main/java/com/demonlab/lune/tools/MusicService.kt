@@ -65,6 +65,7 @@ class MusicService : MediaLibraryService() {
     }
 
     private var lunePlayerAdapter: LuneAudioPlayerAdapter? = null
+    private var activeSong: Song? = null
     private var mediaPlayer: MediaPlayer? = null
     private var secondaryPlayer: MediaPlayer? = null
     private var isCrossfading = false
@@ -994,6 +995,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun playSong(song: Song) {
+        activeSong = song
         crossfadeJob?.cancel()
         crossfadeJob = null
         isNotificationDismissed = false
@@ -1509,6 +1511,8 @@ class MusicService : MediaLibraryService() {
             } else {
                 pm.updatePlayingState(false)
                 updateWidget()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
                 return
             }
         }
@@ -1635,6 +1639,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun restorePlayback(song: Song, positionMs: Long, andPlay: Boolean) {
+        activeSong = song
         crossfadeJob?.cancel()
         crossfadeJob = null
         isCrossfading = false
@@ -1643,6 +1648,8 @@ class MusicService : MediaLibraryService() {
         if (andPlay) {
             requestAudioFocus()
             acquireWakeLock()
+            // Promote service to foreground immediately with the active song
+            showNotification(song, true)
         }
 
         isPlayerPrepared = false
@@ -2063,8 +2070,8 @@ class MusicService : MediaLibraryService() {
         } catch (_: Exception) {}
     }
 
-    private fun currentSong(): Song? {
-        return PlaybackManager.getInstance(this).currentSong
+    fun currentSong(): Song? {
+        return activeSong ?: PlaybackManager.getInstance(this).currentSong
     }
 
     private fun showNotification(song: Song, isPlaying: Boolean, art: android.graphics.Bitmap? = null, keepForeground: Boolean = false) {
@@ -2203,6 +2210,7 @@ class MusicService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        activeSong = null
         becomingNoisyReceiver?.let { unregisterReceiver(it) }
         effectTransitionJob?.cancel()
         spatialRampJob?.cancel()

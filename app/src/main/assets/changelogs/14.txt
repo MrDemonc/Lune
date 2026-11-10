@@ -1,9 +1,0 @@
-- Fixed an issue where selecting a track would cause it to skip to the next song.
-- Added an option to hide songs without deleting them; they can be restored via the settings.
-- New option to enable a gradient in the full-screen player, available under player customization.
-- Added a new setting to define the default sort order for songs within albums, artists, and playlists.
-- New "black" color option added to custom color settings.
-- Tapping the artist's name in the full-screen player now allows you to navigate to either the artist or the album.
-- New option (accessible via the device button in the full-screen player) to skip tracks with a duration between 10 seconds and 1 minute.
-- New animation for minimizing and maximizing the full-screen player.
-- Fixed bugs reported via GitHub issues.

@@ -151,9 +151,33 @@ androidComponents {
     }
 }
 
-val copyChangelogs = tasks.register<Copy>("copyChangelogs") {
-    from(rootProject.file("fastlane/metadata/android/en-US/changelog"))
-    into(layout.projectDirectory.dir("src/main/assets/changelogs"))
+val copyChangelogs = tasks.register("copyChangelogs") {
+    val changelogDir = rootProject.file("fastlane/metadata/android/en-US/changelog")
+    val assetsChangelogDir = layout.projectDirectory.dir("src/main/assets/changelogs").asFile
+
+    inputs.dir(changelogDir)
+    outputs.dir(assetsChangelogDir)
+
+    doLast {
+        val latestFile = changelogDir.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".txt") }
+            ?.mapNotNull { file ->
+                file.name.removeSuffix(".txt").toIntOrNull()?.let { code -> code to file }
+            }
+            ?.maxByOrNull { it.first }
+            ?.second
+
+        assetsChangelogDir.mkdirs()
+        assetsChangelogDir.listFiles()?.forEach { file ->
+            if (latestFile == null || file.name != latestFile.name) {
+                file.delete()
+            }
+        }
+
+        if (latestFile != null) {
+            latestFile.copyTo(File(assetsChangelogDir, latestFile.name), overwrite = true)
+        }
+    }
 }
 
 tasks.named("preBuild") {

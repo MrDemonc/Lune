@@ -136,6 +136,17 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun restorePlaybackState(songs: List<Song> = emptyList()) {
+        val svc = musicService
+        // If music is already playing or actively loaded in service, NEVER overwrite with old disk state!
+        if (isPlaying || svc?.isPlaying() == true) {
+            stateRestored = true
+            return
+        }
+        if (currentSong != null && svc?.hasPlayer() == true) {
+            stateRestored = true
+            return
+        }
+
         val saved = playbackStateSaver.restore() ?: run {
             stateRestored = true
             return
@@ -168,8 +179,14 @@ class PlaybackManager private constructor(private val context: Context) {
         val plId = saved.playlistId
         val shuffle = if (plId != null) settings.getPlaylistShuffle(plId) else settings.isShuffle
 
-        currentSong = restoredCurrent
-        activePlaylist = finalQueue
+        if (currentSong == null) {
+            currentSong = restoredCurrent
+        }
+        if (activePlaylist.isEmpty()) {
+            activePlaylist = finalQueue
+        } else if (songs.isNotEmpty() && activePlaylist.size <= 1 && restoredSongs.isNotEmpty()) {
+            activePlaylist = finalQueue
+        }
         activePlaylistId = saved.playlistId
         activePlaylistName = saved.playlistName
         queueSections = saved.queueSections
@@ -195,20 +212,24 @@ class PlaybackManager private constructor(private val context: Context) {
 
         frontQueueInsertCount = saved.frontQueueInsertCount
         isQueueFinished = false
-        isPlaying = false
+        if (svc?.isPlaying() == true) {
+            isPlaying = true
+        } else if (!isPlaying) {
+            isPlaying = false
+        }
         stateRestored = true
 
         // If music is already playing in service, do NOT disrupt it
-        if (musicService?.isPlaying() == true || musicService?.hasPlayer() == true) {
+        if (svc?.isPlaying() == true || svc?.hasPlayer() == true) {
             return
         }
 
         // Restore playback position (always paused — user taps play to resume)
         try {
-            if (musicService != null) {
-                musicService?.restorePlayback(restoredCurrent, saved.playbackPositionMs, andPlay = false)
+            if (svc != null) {
+                svc.restorePlayback(currentSong ?: restoredCurrent, saved.playbackPositionMs, andPlay = false)
             } else {
-                pendingRestoreSong = restoredCurrent
+                pendingRestoreSong = currentSong ?: restoredCurrent
                 pendingRestorePosition = saved.playbackPositionMs
                 pendingRestorePlay = false
             }
@@ -307,6 +328,28 @@ class PlaybackManager private constructor(private val context: Context) {
             val binder = service as MusicService.MusicBinder
             musicService = binder.getService()
             isBound = true
+
+            val svc = musicService
+            if (svc != null && (svc.isPlaying() || svc.hasPlayer())) {
+                // If service is already active, cancel any pending restore that would pause or overwrite it
+                pendingRestoreSong = null
+                val svcSong = svc.currentSong()
+                if (svcSong != null) {
+                    currentSong = svcSong
+                }
+                isPlaying = svc.isPlaying()
+                stateRestored = true
+            } else {
+                pendingRestoreSong?.let { song ->
+                    try {
+                        musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
+                    } catch (e: Exception) {
+                        Log.e("PlaybackManager", "Error restoring pending playback: ${e.message}", e)
+                    }
+                    pendingRestoreSong = null
+                }
+            }
+
             pendingPlaySong?.let { 
                 try {
                     musicService?.playSong(it)
@@ -314,14 +357,6 @@ class PlaybackManager private constructor(private val context: Context) {
                     Log.e("PlaybackManager", "Error playing pending song: ${e.message}", e)
                 }
                 pendingPlaySong = null
-            }
-            pendingRestoreSong?.let { song ->
-                try {
-                    musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
-                } catch (e: Exception) {
-                    Log.e("PlaybackManager", "Error restoring pending playback: ${e.message}", e)
-                }
-                pendingRestoreSong = null
             }
         }
 

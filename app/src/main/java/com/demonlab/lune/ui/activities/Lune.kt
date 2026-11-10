@@ -362,9 +362,9 @@ class Lune : AppCompatActivity() {
             LaunchedEffect(musicViewModel.allSongs) {
                 if (musicViewModel.allSongs.isNotEmpty()) {
                     try {
-                        if (!playbackManager.stateRestored) {
+                        if (!playbackManager.stateRestored && !playbackManager.isPlaying && playbackManager.currentSong == null) {
                             playbackManager.restorePlaybackState(musicViewModel.allSongs)
-                        } else if (playbackManager.activePlaylist.size <= 1 && playbackManager.currentSong != null) {
+                        } else if (playbackManager.activePlaylist.size <= 1 && playbackManager.currentSong != null && !playbackManager.isPlaying) {
                             playbackManager.restorePlaybackState(musicViewModel.allSongs)
                         }
                     } catch (e: Exception) {

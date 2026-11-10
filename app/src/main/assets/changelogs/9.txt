@@ -1,4 +1,0 @@
-- Add new option in customization settign for crossfade
-- Add Russian languaje
-- Fix notification music
-- Minor Fixes

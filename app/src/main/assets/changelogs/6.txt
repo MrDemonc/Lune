@@ -1,7 +1,0 @@
-- Optimized add
-- Re-design sections
-- Move possition vizualizer
-- Add favorite buttom in list
-- New section "folders"
-- New funtion in queue for orden list
-- Minor fixes
