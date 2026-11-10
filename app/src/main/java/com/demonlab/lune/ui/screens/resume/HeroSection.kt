@@ -48,7 +48,9 @@ import com.demonlab.lune.ui.components.SongCoverImage
 import com.demonlab.lune.ui.player.ScallopPlayPauseButtonWithProgress
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.utils.bounceClick
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -197,23 +199,8 @@ private class MorphOutlineShape(
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun AnimatedTopArtistCover(
-    topArtist: String,
-    topArtistSongs: List<Song>,
-    contentColor: Color,
-    chipBgColor: Color,
-    onClick: (() -> Unit)?
-) {
-    val artistCoverObjects = remember(topArtist, topArtistSongs) {
-        val withCover = topArtistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
-        val uniqueCovers = withCover
-            .mapNotNull { it.coverUrl ?: it.albumArtUri }
-            .distinct()
-        if (uniqueCovers.isNotEmpty()) uniqueCovers else emptyList()
-    }
-
-    val expressivePolygons: List<RoundedPolygon> = remember {
+private object ExpressiveMorphCache {
+    private val expressivePolygons: List<RoundedPolygon> by lazy {
         listOf(
             MaterialShapes.Flower,
             MaterialShapes.Clover4Leaf,
@@ -226,17 +213,55 @@ private fun AnimatedTopArtistCover(
         ).map { it.normalized() }
     }
 
-    val morphSequence = remember(expressivePolygons) {
-        expressivePolygons.indices.map { i ->
-            Morph(expressivePolygons[i], expressivePolygons[(i + 1) % expressivePolygons.size])
+    @Volatile
+    private var cachedMorphSequence: List<Morph>? = null
+
+    suspend fun getMorphSequence(): List<Morph> {
+        cachedMorphSequence?.let { return it }
+        return withContext(Dispatchers.Default) {
+            cachedMorphSequence ?: run {
+                val polygons = expressivePolygons
+                val sequence = polygons.indices.map { i ->
+                    Morph(polygons[i], polygons[(i + 1) % polygons.size])
+                }
+                cachedMorphSequence = sequence
+                sequence
+            }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AnimatedTopArtistCover(
+    topArtist: String,
+    topArtistSongs: List<Song>,
+    contentColor: Color,
+    chipBgColor: Color,
+    onClick: (() -> Unit)?
+) {
+    val defaultShape = MaterialShapes.Flower.toShape()
+    var morphSequence by remember { mutableStateOf<List<Morph>?>(null) }
+
+    LaunchedEffect(Unit) {
+        morphSequence = ExpressiveMorphCache.getMorphSequence()
+    }
+
+    val artistCoverObjects = remember(topArtist, topArtistSongs) {
+        if (topArtist.isBlank()) return@remember emptyList()
+        val withCover = topArtistSongs.filter { !it.coverUrl.isNullOrEmpty() || it.albumArtUri != null }
+        val uniqueCovers = withCover
+            .mapNotNull { it.coverUrl ?: it.albumArtUri }
+            .distinct()
+        if (uniqueCovers.isNotEmpty()) uniqueCovers else emptyList()
     }
 
     val animProgress = remember(topArtist) { Animatable(0f) }
     val numCovers = artistCoverObjects.size
-    val numMorphs = morphSequence.size
+    val numMorphs = morphSequence?.size ?: 0
 
     LaunchedEffect(topArtist, numMorphs, numCovers) {
+        if (numMorphs == 0) return@LaunchedEffect
         while (true) {
             delay(3500L)
             animProgress.animateTo(
@@ -258,15 +283,20 @@ private fun AnimatedTopArtistCover(
     val currentStep = totalProgress.toInt()
     val progress = (totalProgress - currentStep).coerceIn(0f, 1f)
 
-    val currentMorph = morphSequence[currentStep % numMorphs]
-    val currentMorphShape = remember(currentMorph, progress) {
-        MorphOutlineShape(currentMorph, progress)
-    }
+    val currentMorphShape: Shape = remember(morphSequence, currentStep, progress) {
+        val sequence = morphSequence
+        if (sequence != null && sequence.isNotEmpty()) {
+            val currentMorph = sequence[currentStep % sequence.size]
+            MorphOutlineShape(currentMorph, progress)
+        } else {
+            null
+        }
+    } ?: defaultShape
 
     val currentCover = if (numCovers > 0) artistCoverObjects[currentStep % numCovers] else null
     val nextCover = if (numCovers > 0) artistCoverObjects[(currentStep + 1) % numCovers] else null
 
-    val pulseScale = 1f - 0.04f * kotlin.math.sin(progress * Math.PI.toFloat())
+    val pulseScale = if (progress > 0.001f) 1f - 0.04f * kotlin.math.sin(progress * Math.PI.toFloat()) else 1f
 
     Box(
         modifier = Modifier
@@ -292,7 +322,7 @@ private fun AnimatedTopArtistCover(
                 contentScale = ContentScale.Crop
             )
         }
-        if (nextCover != null && nextCover != currentCover) {
+        if (nextCover != null && nextCover != currentCover && progress > 0.001f) {
             SongCoverImage(
                 coverUrl = nextCover,
                 shape = RectangleShape,
