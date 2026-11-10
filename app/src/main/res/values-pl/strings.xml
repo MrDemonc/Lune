@@ -50,11 +50,11 @@
     <string name="open_queue">Otwórz kolejkę</string>
     
     <!-- EQ Bands -->
-    <string name="band_sub_bass">Sub-bass</string>
+    <string name="band_sub_bass">Głęboki bas</string>
     <string name="band_bass">Bas</string>
     <string name="band_mid">Środek</string>
-    <string name="band_presence">Presence</string>
-    <string name="band_brilliance">Brilliance</string>
+    <string name="band_presence">Wyrazistość</string>
+    <string name="band_brilliance">Sopran</string>
 
     <!-- Metadata Editor -->
     <string name="edit_title">Tytuł</string>
@@ -147,7 +147,7 @@
     <string name="transition_mixing">Miksowanie</string>
     <string name="transition_crossfade">Crossfade</string>
     <string name="crossfade_time">Czas crossfade</string>
-    <string name="crossfade_time_desc">Ustaw czas trwania przejścia płynnego (crossfade)</string>
+    <string name="crossfade_time_desc">Ustaw czas trwania płynnego przejścia</string>
     <string name="unknown_artist">Nieznany wykonawca</string>
     <string name="unknown_song">Nieznany utwór</string>
     <string name="unknown_album">Nieznany album</string>
@@ -516,6 +516,8 @@
     <string name="card_play_count_single">%d odtworzenie</string>
     <string name="card_no_plays">Brak odtworzeń</string>
     <string name="artist_filter_singles">Single</string>
+
+    <!-- Font Customization -->
     <string name="font_customization">Czcionka</string>
     <string name="font_customization_desc">Dostosuj rozmiar czcionki, czcionki systemowe i importuj czcionki TTF/OTF</string>
     <string name="font_size">Rozmiar czcionki</string>
