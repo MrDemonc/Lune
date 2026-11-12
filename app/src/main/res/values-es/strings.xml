@@ -215,6 +215,9 @@
     <string name="edit_name">Editar nombre</string>
     <string name="search">Buscar</string>
     <string name="search_hint">Buscar canciones, artistas o listas...</string>
+    <string name="search_settings">Buscar ajustes…</string>
+    <string name="no_settings_found">No se encontraron ajustes</string>
+    <string name="no_settings_found_desc">Intenta buscar con otros términos</string>
     <string name="delete_playlist">Eliminar Lista</string>
     <string name="delete_playlist_confirm">¿Estás seguro de que deseas eliminar esta lista?</string>
     <string name="delete">Eliminar</string>

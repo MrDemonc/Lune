@@ -19,6 +19,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import com.demonlab.lune.data.Playlist
@@ -737,6 +738,28 @@ fun MainScreen(
     val coroutineScope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var songToDelete by remember { mutableStateOf<Song?>(null) }
+    var pendingDeleteSong by remember { mutableStateOf<Song?>(null) }
+    val deleteLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        val song = pendingDeleteSong
+        if (song != null) {
+            if (result.resultCode == Activity.RESULT_OK) {
+                playbackManager.removeFromQueue(song.id)
+                musicViewModel.confirmDeleteAfterPermission(song) {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.song_deleted),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+            } else {
+                musicViewModel.undoDeleteSong(song)
+            }
+        }
+        pendingDeleteSong = null
+    }
     var showHideDialog by remember { mutableStateOf(false) }
     var songToHide by remember { mutableStateOf<Song?>(null) }
     var undoSecondsRemaining by remember { mutableIntStateOf(0) }
@@ -1180,26 +1203,28 @@ fun MainScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             // Countdown
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    progress = { undoProgress },
-                                    modifier = Modifier.fillMaxSize(),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 2.dp,
-                                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                )
-                                Text(
-                                    text = undoSecondsRemaining.toString(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            if (undoSecondsRemaining > 0) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        progress = { undoProgress },
+                                        modifier = Modifier.fillMaxSize(),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        strokeWidth = 2.dp,
+                                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                    )
+                                    Text(
+                                        text = undoSecondsRemaining.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.width(12.dp))
                             }
-                            
-                            Spacer(modifier = Modifier.width(12.dp))
                             
                             // Message
                             Text(
@@ -3077,47 +3102,28 @@ fun MainScreen(
                                     val song = targetSong
                                     showDeleteDialog = false
                                     
-                                    // Fix: If current song is deleted, skip to next (respect pause state)
+                                    // If current song is deleted, skip to next (respect pause state)
                                     if (currentSong?.id == song.id) {
                                         playbackManager.playNextFromService(startPlayback = isPlaying)
                                     }
                                     
                                     musicViewModel.prepareDeleteSong(song)
-                                    coroutineScope.launch {
-                                        val totalTime = 8000L
-                                        val startTime = System.currentTimeMillis()
-                                        
-                                        val timerJob = launch {
-                                            while (System.currentTimeMillis() - startTime < totalTime) {
-                                                val elapsed = System.currentTimeMillis() - startTime
-                                                undoProgress = 1f - (elapsed.toFloat() / totalTime)
-                                                undoSecondsRemaining = ((totalTime - elapsed) / 1000).toInt() + 1
-                                                kotlinx.coroutines.delay(50)
+                                    musicViewModel.deleteSong(
+                                        song = song,
+                                        onNeedsIntentSender = { intentSender ->
+                                            pendingDeleteSong = song
+                                            deleteLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+                                        },
+                                        onDeleted = {
+                                            playbackManager.removeFromQueue(song.id)
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    message = context.getString(R.string.song_deleted),
+                                                    duration = SnackbarDuration.Short
+                                                )
                                             }
-                                            undoProgress = 0f
-                                            undoSecondsRemaining = 0
                                         }
-                                        
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = context.getString(R.string.song_deleted),
-                                            actionLabel = context.getString(R.string.restore_music),
-                                            duration = SnackbarDuration.Indefinite
-                                        )
-                                        
-                                        timerJob.cancel()
-                                        
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            musicViewModel.undoDeleteSong(song)
-                                        } else {
-                                            musicViewModel.deleteSongPermanently(song.id, song.path, song.uri)
-                                        }
-                                    }
-                                    
-                                    // Auto-dismiss indefinite snackbar after 8s
-                                    coroutineScope.launch {
-                                         kotlinx.coroutines.delay(8000)
-                                         snackbarHostState.currentSnackbarData?.dismiss()
-                                    }
+                                    )
                                 },
                                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                                 modifier = Modifier.bounceClick()
