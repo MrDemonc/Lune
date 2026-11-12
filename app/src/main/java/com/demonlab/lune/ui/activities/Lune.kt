@@ -788,9 +788,7 @@ fun MainScreen(
         (if (isDarkThemeMini) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
     val listActiveControlsColor = if (useCustomControlsColor) getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette) else null
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState(initialHeightOffset = -Float.MAX_VALUE)
-    )
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     
     var showMenu by remember { mutableStateOf(false) }
     var selectedAlbum by remember { mutableStateOf<Album?>(null) }
@@ -1281,7 +1279,7 @@ fun MainScreen(
                     MaterialTheme.colorScheme.primary
                 }
 
-                LargeTopAppBar(
+                TopAppBar(
                     title = { 
                         val customTitle by settingsManager.customTitleFlow.collectAsState()
                         val appDefaultTitle = if (customTitle.isEmpty()) "Lune" else customTitle
