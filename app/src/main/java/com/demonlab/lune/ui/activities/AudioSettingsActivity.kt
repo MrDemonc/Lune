@@ -8,17 +8,21 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -82,9 +86,82 @@ fun AudioSettingsScreen(onBack: () -> Unit) {
     var enableHiFi by remember { mutableStateOf(settingsManager.enableHiFi) }
     var is32BitFloatEnabled by remember { mutableStateOf(settingsManager.is32BitFloatEnabled) }
     var isExclusiveModeEnabled by remember { mutableStateOf(settingsManager.isExclusiveModeEnabled) }
+    var isCrossfade by remember { mutableStateOf(settingsManager.isCrossfade) }
+    var crossfadeDurationSeconds by remember { mutableIntStateOf(settingsManager.crossfadeDurationSeconds) }
+    var seamlessLooping by remember { mutableStateOf(settingsManager.seamlessLooping) }
     var stopOnTaskRemoved by remember { mutableStateOf(settingsManager.stopOnTaskRemoved) }
+    var showCrossfadeDialog by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    if (showCrossfadeDialog) {
+        var tempCrossfade by remember { mutableIntStateOf(crossfadeDurationSeconds) }
+        AlertDialog(
+            onDismissRequest = { showCrossfadeDialog = false },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.crossfade_time),
+                    fontWeight = FontWeight.Bold,
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (tempCrossfade > 0) "${tempCrossfade}s" else stringResource(R.string.disabled),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Slider(
+                        value = tempCrossfade.toFloat(),
+                        onValueChange = { tempCrossfade = it.toInt() },
+                        valueRange = 0f..12f,
+                        steps = 11,
+                        colors = SliderDefaults.colors(
+                            thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                            activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = if (hasBlurBackground) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        crossfadeDurationSeconds = tempCrossfade
+                        settingsManager.crossfadeDurationSeconds = tempCrossfade
+                        val isEnabled = tempCrossfade > 0
+                        isCrossfade = isEnabled
+                        settingsManager.isCrossfade = isEnabled
+                        showCrossfadeDialog = false
+                    },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                        contentColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showCrossfadeDialog = false },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
 
     AppBlurBackdrop(
         hasBlurBackground = hasBlurBackground,
@@ -203,6 +280,38 @@ fun AudioSettingsScreen(onBack: () -> Unit) {
                             thumbContent = {
                                 Icon(
                                     imageVector = if (isExclusiveModeEnabled) Icons.Default.Check else Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                                )
+                            }
+                        )
+                    }
+                )
+
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.crossfade_time),
+                    supportingText = if (crossfadeDurationSeconds > 0) "${crossfadeDurationSeconds}s" else stringResource(R.string.disabled),
+                    icon = Icons.Default.Tune,
+                    position = SectionPosition.MIDDLE,
+                    onClick = { showCrossfadeDialog = true }
+                )
+
+                SettingsPreferenceItem(
+                    headlineText = stringResource(R.string.seamless_looping),
+                    supportingText = stringResource(R.string.seamless_looping_desc),
+                    icon = Icons.Default.AllInclusive,
+                    position = SectionPosition.MIDDLE,
+                    trailingContent = {
+                        BouncySwitch(
+                            checked = seamlessLooping,
+                            onCheckedChange = {
+                                seamlessLooping = it
+                                settingsManager.seamlessLooping = it
+                                playbackManager.updateLoopingState()
+                            },
+                            thumbContent = {
+                                Icon(
+                                    imageVector = if (seamlessLooping) Icons.Default.Check else Icons.Default.Close,
                                     contentDescription = null,
                                     modifier = Modifier.size(SwitchDefaults.IconSize)
                                 )

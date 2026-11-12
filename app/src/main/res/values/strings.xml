@@ -116,6 +116,9 @@
     <string name="rescan_library_success">Library refreshed: %1$d songs found</string>
     <string name="audio_settings">Audio</string>
     <string name="audio_settings_desc">Hi-Fi badge, 32-bit float processing &amp; AAudio output</string>
+    <string name="advanced_audio_settings">Advanced Audio Settings</string>
+    <string name="advanced_audio_settings_desc">Hi-Fi badge, 32-bit float, AAudio mode &amp; crossfade</string>
+    <string name="player_modes_title">Player Modes</string>
     <string name="hifi_badge">Hi-Fi Badge</string>
     <string name="hifi_badge_desc">Show Hi-Fi badge for high resolution lossless audio files</string>
     <string name="audio_32bit_float">32-bit Float Processing</string>
@@ -604,4 +607,17 @@
     <string name="update_sheet_subtitle">Here is what\'s new in Lune</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">Let\'s groove! 🎸</string>
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Theme</string>
+    <string name="theme_mode_title">Theme Mode</string>
+    <string name="privacy_ai_title">Privacy &amp; On-Device AI</string>
+    <string name="reset_ai_habits">Reset AI Learning &amp; Habits</string>
+    <string name="reset_ai_habits_desc">Clear learned listening preferences and mix history</string>
+    <string name="reset_ai_habits_confirm">Are you sure you want to reset all on-device AI recommendations and habit data? This action cannot be undone.</string>
+    <string name="reset_ai_habits_success">AI learning and habits reset successfully</string>
+    <string name="manage_audio_folders">Manage Audio Folders</string>
+    <string name="manage_audio_folders_desc">Select folders to include or exclude from library</string>
+    <string name="system_about">System &amp; About</string>
+    <string name="library_organization">Library &amp; Organization</string>
+    <string name="progress_bar_classic">Classic</string>
 </resources>

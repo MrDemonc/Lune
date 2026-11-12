@@ -84,9 +84,7 @@ fun BlurCustomizationScreen(
     }
     val isBlurEnabled = settingsManager.isBlurEnabled
     val isBlurDarkMode = settingsManager.isBlurDarkMode
-    val isBlurCinematicMode = settingsManager.isBlurCinematicMode
     val isBlurLightMode = settingsManager.isBlurLightMode
-    val isBlurControlsEnabled = settingsManager.isBlurControlsEnabled
     val hasBlurBackground = isBlurEnabled && ((isDarkTheme && isBlurDarkMode) || (!isDarkTheme && isBlurLightMode))
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -230,57 +228,7 @@ fun BlurCustomizationScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            SettingsSection(title = stringResource(R.string.media_player)) {
-                Column {
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.blur_controls),
-                        supportingText = stringResource(R.string.blur_controls_desc),
-                        icon = Icons.Default.ColorLens,
-                        position = SectionPosition.FIRST,
-                        trailingContent = {
-                            BouncySwitch(
-                                checked = isBlurControlsEnabled,
-                                enabled = isBlurEnabled,
-                                onCheckedChange = {
-                                    settingsManager.isBlurControlsEnabled = it
-                                },
-                                thumbContent = {
-                                    Icon(
-                                        imageVector = if (isBlurControlsEnabled) Icons.Default.Check else Icons.Default.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
-                            )
-                        }
-                    )
-
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.blur_cinematic_mode),
-                        supportingText = stringResource(R.string.blur_cinematic_mode_desc),
-                        icon = Icons.Default.AutoAwesome,
-                        position = SectionPosition.LAST,
-                        trailingContent = {
-                            BouncySwitch(
-                                checked = isBlurCinematicMode,
-                                enabled = isBlurEnabled,
-                                onCheckedChange = {
-                                    settingsManager.isBlurCinematicMode = it
-                                },
-                                thumbContent = {
-                                    Icon(
-                                        imageVector = if (isBlurCinematicMode) Icons.Default.Check else Icons.Default.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
-                            )
-                        }
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

@@ -193,6 +193,11 @@
             android:label="@string/general"
             android:theme="@style/Theme.Lune" />
         <activity
+            android:name=".ui.activities.ThemeSettingsActivity"
+            android:exported="false"
+            android:label="@string/theme"
+            android:theme="@style/Theme.Lune" />
+        <activity
             android:name=".ui.activities.PlayerCustomizationActivity"
             android:exported="false"
             android:label="@string/player_customization"

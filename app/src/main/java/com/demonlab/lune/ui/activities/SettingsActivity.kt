@@ -13,9 +13,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CloudDownload
@@ -31,15 +34,16 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -49,8 +53,13 @@ import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -77,11 +86,9 @@ import android.widget.Toast
 import kotlinx.coroutines.launch
 import com.demonlab.lune.tools.PlaylistBackupManager
 import com.demonlab.lune.tools.MusicProvider
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
-import androidx.compose.material.icons.filled.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -89,6 +96,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.demonlab.lune.R
 import com.demonlab.lune.tools.SettingsManager
+import com.demonlab.lune.tools.AppIconManager
 import com.demonlab.lune.BuildConfig
 import com.demonlab.lune.tools.PlaybackManager
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -101,22 +109,23 @@ class SettingsActivity : AppCompatActivity() {
         val settingsManager = SettingsManager.getInstance(this)
         enableEdgeToEdge()
         setContent {
-            val themeMode = settingsManager.themeMode
+            var themeMode by remember { mutableIntStateOf(settingsManager.themeMode) }
             val systemInDarkTheme = isSystemInDarkTheme()
             val targetDarkTheme = when (themeMode) {
                 1 -> false
                 2 -> true
                 else -> systemInDarkTheme
             }
-            
+
             var useCustomColors by remember { mutableStateOf(settingsManager.useCustomColors) }
             var customColorPalette by remember { mutableIntStateOf(settingsManager.customColorPalette) }
             var useAmoledPitchBlack by remember { mutableStateOf(settingsManager.useAmoledPitchBlack) }
-            
+
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
             DisposableEffect(lifecycleOwner) {
                 val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
                     if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                        themeMode = settingsManager.themeMode
                         useCustomColors = settingsManager.useCustomColors
                         customColorPalette = settingsManager.customColorPalette
                         useAmoledPitchBlack = settingsManager.useAmoledPitchBlack
@@ -133,7 +142,11 @@ class SettingsActivity : AppCompatActivity() {
                 useAmoledPitchBlack = useAmoledPitchBlack
             ) {
                 SettingsScreen(
-                    onBack = { finish() }
+                    onBack = { finish() },
+                    onThemeModeChanged = { themeMode = it },
+                    onCustomColorsChanged = { useCustomColors = it },
+                    onPaletteChanged = { customColorPalette = it },
+                    onAmoledChanged = { useAmoledPitchBlack = it }
                 )
             }
         }
@@ -143,32 +156,151 @@ class SettingsActivity : AppCompatActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onThemeModeChanged: ((Int) -> Unit)? = null,
+    onCustomColorsChanged: ((Boolean) -> Unit)? = null,
+    onPaletteChanged: ((Int) -> Unit)? = null,
+    onAmoledChanged: ((Boolean) -> Unit)? = null
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
-    var showWhatsapp by remember { mutableStateOf(settingsManager.showWhatsappAudio) }
-    var keepScreenOn by remember { mutableStateOf(settingsManager.keepScreenOn) }
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
+    val currentSong = playbackManager.currentSong
 
-    var isCinematicEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
-    var showLanguageDialog by remember { mutableStateOf(false) }
-    var showBackupWarning by remember { mutableStateOf(settingsManager.showBackupWarning) }
+    // ─── Section 1: Tema y Apariencia ───
+    var themeMode by remember { mutableIntStateOf(settingsManager.themeMode) }
+    var useAmoledPitchBlack by remember { mutableStateOf(settingsManager.useAmoledPitchBlack) }
+    var useCustomColors by remember { mutableStateOf(settingsManager.useCustomColors) }
+    var customColorPalette by remember { mutableIntStateOf(settingsManager.customColorPalette) }
+    var appIconKey by remember { mutableStateOf(AppIconManager.getCurrentIcon(context)) }
+    var showAppIconDialog by remember { mutableStateOf(false) }
+
+    val isSystemDark = isSystemInDarkTheme()
+    val isDarkTheme = when (themeMode) {
+        1 -> false
+        2 -> true
+        else -> isSystemDark
+    }
+    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
+    val isBlurActive = hasBlurBackground && currentSong != null
+
+    // ─── Section 2: Reproductor (Now Playing) ───
+    var isCinematicPlayerEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
+    var coverShape by remember { mutableIntStateOf(settingsManager.coverShape) }
+    var progressBarStyle by remember { mutableIntStateOf(settingsManager.progressBarStyle) }
+    var isPlayerGradientBackgroundEnabled by remember { mutableStateOf(settingsManager.isPlayerGradientBackgroundEnabled) }
+    var coverSpin by remember { mutableStateOf(settingsManager.coverSpin) }
+    var coverVinylEffect by remember { mutableStateOf(settingsManager.coverVinylEffect) }
+    var useQuickPlayer by remember { mutableStateOf(settingsManager.useQuickPlayer) }
+    var showCoverShapeDialog by remember { mutableStateOf(false) }
+
+    // ─── Section 3: Audio y Reproducción ───
+    var enableHiFi by remember { mutableStateOf(settingsManager.enableHiFi) }
+    var is32BitFloatEnabled by remember { mutableStateOf(settingsManager.is32BitFloatEnabled) }
+    var isExclusiveModeEnabled by remember { mutableStateOf(settingsManager.isExclusiveModeEnabled) }
+    var isCrossfade by remember { mutableStateOf(settingsManager.isCrossfade) }
+    var crossfadeDurationSeconds by remember { mutableIntStateOf(settingsManager.crossfadeDurationSeconds) }
+    var seamlessLooping by remember { mutableStateOf(settingsManager.seamlessLooping) }
+    var keepScreenOn by remember { mutableStateOf(settingsManager.keepScreenOn) }
+    var stopOnTaskRemoved by remember { mutableStateOf(settingsManager.stopOnTaskRemoved) }
+    var showCrossfadeDialog by remember { mutableStateOf(false) }
+
+    // ─── Section 4: Biblioteca y Organización ───
     var isScanningLibrary by remember { mutableStateOf(false) }
-    val currentLanguage = settingsManager.language
-    val scope = rememberCoroutineScope()
+    var defaultAlbumSort by remember { mutableStateOf(settingsManager.defaultAlbumSortOption) }
+    var defaultArtistSort by remember { mutableStateOf(settingsManager.defaultArtistSortOption) }
+    var defaultPlaylistSort by remember { mutableStateOf(settingsManager.defaultPlaylistSortOption) }
+    var isSectionCustomizationEnabled by remember { mutableStateOf(settingsManager.isSectionCustomizationEnabled) }
+    var hiddenSectionTabs by remember { mutableStateOf(settingsManager.hiddenSectionTabs) }
+    var showAlbumSortDialog by remember { mutableStateOf(false) }
+    var showArtistSortDialog by remember { mutableStateOf(false) }
+    var showPlaylistSortDialog by remember { mutableStateOf(false) }
+    var showSectionCustomizationDialog by remember { mutableStateOf(false) }
+
+    // ─── Section 5: Copia de Seguridad y Datos ───
     val backupManager = remember { PlaylistBackupManager(context) }
     val musicProvider = remember { MusicProvider(context) }
     var autoSyncBackupUri by remember { mutableStateOf(settingsManager.autoSyncBackupUri) }
     var isAutoSyncEnabled by remember { mutableStateOf(settingsManager.isAutoSyncBackupEnabled) }
+    var showBackupWarning by remember { mutableStateOf(settingsManager.showBackupWarning) }
 
-    var defaultAlbumSort by remember { mutableStateOf(settingsManager.defaultAlbumSortOption) }
-    var defaultArtistSort by remember { mutableStateOf(settingsManager.defaultArtistSortOption) }
-    var defaultPlaylistSort by remember { mutableStateOf(settingsManager.defaultPlaylistSortOption) }
+    // ─── Section 6: Privacidad e Inteligencia Artificial ───
+    var showAiSection by remember { mutableStateOf(settingsManager.showAiSection) }
+    var showResetAiDialog by remember { mutableStateOf(false) }
 
-    var showAlbumSortDialog by remember { mutableStateOf(false) }
-    var showArtistSortDialog by remember { mutableStateOf(false) }
-    var showPlaylistSortDialog by remember { mutableStateOf(false) }
+    // ─── Section 7: Sistema y Acerca de ───
+    var isHapticVibrationEnabled by remember { mutableStateOf(settingsManager.isHapticVibrationEnabled) }
+    var isScrollToTopEnabled by remember { mutableStateOf(settingsManager.isScrollToTopEnabled) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
     var showDonateDialog by remember { mutableStateOf(false) }
+    val currentLanguage = settingsManager.language
+
+    val scope = rememberCoroutineScope()
+
+    // Sincronización continua de estados al volver de otras pantallas
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                themeMode = settingsManager.themeMode
+                useAmoledPitchBlack = settingsManager.useAmoledPitchBlack
+                useCustomColors = settingsManager.useCustomColors
+                customColorPalette = settingsManager.customColorPalette
+                appIconKey = AppIconManager.getCurrentIcon(context)
+                isCinematicPlayerEnabled = settingsManager.isCinematicPlayerEnabled
+                coverShape = settingsManager.coverShape
+                progressBarStyle = settingsManager.progressBarStyle
+                isPlayerGradientBackgroundEnabled = settingsManager.isPlayerGradientBackgroundEnabled
+                coverSpin = settingsManager.coverSpin
+                coverVinylEffect = settingsManager.coverVinylEffect
+                useQuickPlayer = settingsManager.useQuickPlayer
+                enableHiFi = settingsManager.enableHiFi
+                is32BitFloatEnabled = settingsManager.is32BitFloatEnabled
+                isExclusiveModeEnabled = settingsManager.isExclusiveModeEnabled
+                isCrossfade = settingsManager.isCrossfade
+                crossfadeDurationSeconds = settingsManager.crossfadeDurationSeconds
+                seamlessLooping = settingsManager.seamlessLooping
+                keepScreenOn = settingsManager.keepScreenOn
+                stopOnTaskRemoved = settingsManager.stopOnTaskRemoved
+                defaultAlbumSort = settingsManager.defaultAlbumSortOption
+                defaultArtistSort = settingsManager.defaultArtistSortOption
+                defaultPlaylistSort = settingsManager.defaultPlaylistSortOption
+                isSectionCustomizationEnabled = settingsManager.isSectionCustomizationEnabled
+                hiddenSectionTabs = settingsManager.hiddenSectionTabs
+                autoSyncBackupUri = settingsManager.autoSyncBackupUri
+                isAutoSyncEnabled = settingsManager.isAutoSyncBackupEnabled
+                showAiSection = settingsManager.showAiSection
+                isHapticVibrationEnabled = settingsManager.isHapticVibrationEnabled
+                isScrollToTopEnabled = settingsManager.isScrollToTopEnabled
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Buscador
+    var isSearchActive by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            searchFocusRequester.requestFocus()
+        }
+    }
+
+    BackHandler(enabled = isSearchActive) {
+        isSearchActive = false
+        searchQuery = ""
+    }
+
+    val scrollState = rememberScrollState()
+    LaunchedEffect(searchQuery) {
+        scrollState.scrollTo(0)
+    }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val albumSortOptions = remember {
         listOf(
@@ -238,40 +370,291 @@ fun SettingsScreen(
         }
     }
 
-    val playbackManager = remember { PlaybackManager.getInstance(context) }
-    val currentSong = playbackManager.currentSong
-    val themeMode = settingsManager.themeMode
-    val isSystemDark = isSystemInDarkTheme()
-    val isDarkTheme = when (themeMode) {
-        1 -> false
-        2 -> true
-        else -> isSystemDark
-    }
-    val hasBlurBackground = settingsManager.isBlurEnabled && ((isDarkTheme && settingsManager.isBlurDarkMode) || (!isDarkTheme && settingsManager.isBlurLightMode))
-    val isBlurActive = hasBlurBackground && currentSong != null
+    // ─── Diálogos Modales ───
 
-    var isSearchActive by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    val searchFocusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    LaunchedEffect(isSearchActive) {
-        if (isSearchActive) {
-            searchFocusRequester.requestFocus()
-        }
+    if (showAppIconDialog) {
+        AppIconDialog(
+            currentIcon = appIconKey,
+            currentSong = currentSong,
+            onDismiss = { showAppIconDialog = false },
+            onSelectIcon = { newIcon ->
+                appIconKey = newIcon
+                showAppIconDialog = false
+                AppIconManager.applyAppIcon(context, newIcon)
+                Toast.makeText(context, context.getString(R.string.app_icon_applied), Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
-    BackHandler(enabled = isSearchActive) {
-        isSearchActive = false
-        searchQuery = ""
+    if (showCoverShapeDialog) {
+        AlertDialog(
+            onDismissRequest = { showCoverShapeDialog = false },
+            confirmButton = {},
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.cover_shape_title),
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    val shapes = listOf(
+                        0 to stringResource(R.string.shape_default),
+                        1 to stringResource(R.string.shape_square),
+                        2 to stringResource(R.string.shape_circular)
+                    )
+                    shapes.forEach { (index, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    settingsManager.coverShape = index
+                                    coverShape = index
+                                    showCoverShapeDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = coverShape == index,
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                label,
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
     }
 
-    val scrollState = rememberScrollState()
-    LaunchedEffect(searchQuery) {
-        scrollState.scrollTo(0)
+    if (showCrossfadeDialog) {
+        var tempCrossfade by remember { mutableIntStateOf(crossfadeDurationSeconds) }
+        AlertDialog(
+            onDismissRequest = { showCrossfadeDialog = false },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.crossfade_time),
+                    fontWeight = FontWeight.Bold,
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (tempCrossfade > 0) "${tempCrossfade}s" else stringResource(R.string.disabled),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Slider(
+                        value = tempCrossfade.toFloat(),
+                        onValueChange = { tempCrossfade = it.toInt() },
+                        valueRange = 0f..12f,
+                        steps = 11,
+                        colors = SliderDefaults.colors(
+                            thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                            activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = if (hasBlurBackground) Color.White.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        crossfadeDurationSeconds = tempCrossfade
+                        settingsManager.crossfadeDurationSeconds = tempCrossfade
+                        val isEnabled = tempCrossfade > 0
+                        isCrossfade = isEnabled
+                        settingsManager.isCrossfade = isEnabled
+                        showCrossfadeDialog = false
+                    },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                        contentColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showCrossfadeDialog = false },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    if (showSectionCustomizationDialog) {
+        var tempHiddenTabs by remember { mutableStateOf(hiddenSectionTabs) }
+        val sectionItems = listOf(
+            "ALL" to (stringResource(R.string.tab_all) to Icons.Default.MusicNote),
+            "FAVORITES" to (stringResource(R.string.tab_favorites) to Icons.Default.Favorite),
+            "PLAYLISTS" to (stringResource(R.string.playlists) to Icons.AutoMirrored.Filled.QueueMusic),
+            "ALBUMS" to (stringResource(R.string.tab_albums_real) to Icons.Default.Album),
+            "ARTISTS" to (stringResource(R.string.tab_artists) to Icons.Default.Person),
+            "GENRES" to (stringResource(R.string.tab_genres) to Icons.Default.Category),
+            "FOLDERS" to (stringResource(R.string.tab_folders) to Icons.Default.Folder)
+        )
+
+        AlertDialog(
+            onDismissRequest = { showSectionCustomizationDialog = false },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.section_customization),
+                    fontWeight = FontWeight.Bold,
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    sectionItems.forEach { (key, data) ->
+                        val (label, icon) = data
+                        val isVisible = key !in tempHiddenTabs
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val newSet = tempHiddenTabs.toMutableSet()
+                                    if (isVisible) newSet.add(key) else newSet.remove(key)
+                                    tempHiddenTabs = newSet
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = isVisible,
+                                onCheckedChange = { checked ->
+                                    val newSet = tempHiddenTabs.toMutableSet()
+                                    if (!checked) newSet.add(key) else newSet.remove(key)
+                                    tempHiddenTabs = newSet
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                    checkmarkColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                    uncheckedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                label,
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        hiddenSectionTabs = tempHiddenTabs
+                        settingsManager.hiddenSectionTabs = tempHiddenTabs
+                        settingsManager.isSectionCustomizationEnabled = true
+                        showSectionCustomizationDialog = false
+                    },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                        contentColor = if (hasBlurBackground) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showSectionCustomizationDialog = false },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showResetAiDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetAiDialog = false },
+            containerColor = if (hasBlurBackground) (if (isDarkTheme) Color(0xFF1E1E1E).copy(alpha = 0.95f) else Color(0xFFF5F5F5).copy(alpha = 0.95f)) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = {
+                Text(
+                    stringResource(R.string.reset_ai_habits),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text(
+                    stringResource(R.string.reset_ai_habits_confirm),
+                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        com.demonlab.lune.ai.LuneAiEngine.getInstance(context).resetLearning()
+                        showResetAiDialog = false
+                        Toast.makeText(context, context.getString(R.string.reset_ai_habits_success), Toast.LENGTH_SHORT).show()
+                    },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Text(stringResource(R.string.delete_song).substringBefore(" "), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showResetAiDialog = false },
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (hasBlurBackground) Color.White.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
 
     if (showLanguageDialog) {
         AlertDialog(
@@ -315,7 +698,7 @@ fun SettingsScreen(
                                     showLanguageDialog = false
                                 }
                                 .padding(vertical = 12.dp),
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
                                 selected = currentLanguage == code,
@@ -392,81 +775,325 @@ fun SettingsScreen(
         )
     }
 
-    val generalSectionTitle = stringResource(R.string.general)
-    val hiddenSongsSectionTitle = stringResource(R.string.hidden_songs)
-    val defaultSortingSectionTitle = stringResource(R.string.default_sorting)
-    val backupSectionTitle = stringResource(R.string.backup)
-    val securitySectionTitle = stringResource(R.string.security)
-    val aboutSectionTitle = stringResource(R.string.about)
+    // ─── Títulos de Secciones Unificadas ───
+    val themeSectionTitle = stringResource(R.string.theme)
+    val playerSectionTitle = stringResource(R.string.media_player)
     val audioSettingsSectionTitle = stringResource(R.string.audio_settings)
-    val customizationSectionTitle = stringResource(R.string.customization)
-    val playerSectionTitle = stringResource(R.string.player_customization)
-    val blurSectionTitle = stringResource(R.string.blur)
-    val fontSectionTitle = stringResource(R.string.font_customization)
-    val widgetSectionTitle = stringResource(R.string.widget_customization)
-    val gestureSectionTitle = stringResource(R.string.gesture)
+    val librarySectionTitle = stringResource(R.string.library_organization)
+    val backupSectionTitle = stringResource(R.string.backup)
+    val privacyAiSectionTitle = stringResource(R.string.privacy_ai_title)
+    val systemAboutSectionTitle = stringResource(R.string.system_about)
 
+    // ─── Índice Completo de Búsqueda ───
     val allSearchableSettings = remember(
+        themeMode,
+        useAmoledPitchBlack,
+        useCustomColors,
+        customColorPalette,
+        appIconKey,
+        isCinematicPlayerEnabled,
+        coverShape,
+        progressBarStyle,
+        isPlayerGradientBackgroundEnabled,
+        coverSpin,
+        coverVinylEffect,
+        useQuickPlayer,
+        enableHiFi,
+        is32BitFloatEnabled,
+        isExclusiveModeEnabled,
+        isCrossfade,
+        crossfadeDurationSeconds,
+        seamlessLooping,
         keepScreenOn,
+        stopOnTaskRemoved,
         isScanningLibrary,
-        currentLanguage,
-        settingsManager.hiddenSongIds.size,
         defaultAlbumSort,
         defaultArtistSort,
         defaultPlaylistSort,
+        isSectionCustomizationEnabled,
+        hiddenSectionTabs,
         autoSyncBackupUri,
         isAutoSyncEnabled,
-        generalSectionTitle,
-        hiddenSongsSectionTitle,
-        defaultSortingSectionTitle,
-        backupSectionTitle,
-        securitySectionTitle,
-        aboutSectionTitle,
-        audioSettingsSectionTitle,
-        customizationSectionTitle,
+        showAiSection,
+        isHapticVibrationEnabled,
+        isScrollToTopEnabled,
+        currentLanguage,
+        themeSectionTitle,
         playerSectionTitle,
-        blurSectionTitle,
-        fontSectionTitle,
-        widgetSectionTitle,
-        gestureSectionTitle
+        audioSettingsSectionTitle,
+        librarySectionTitle,
+        backupSectionTitle,
+        privacyAiSectionTitle,
+        systemAboutSectionTitle
     ) {
         val hasExportDestination = !autoSyncBackupUri.isNullOrBlank()
         val hiddenCount = settingsManager.hiddenSongIds.size
 
         listOf(
-            // --- CONFIGURACIONES GENERALES ---
+            // ── 1. TEMA Y APARIENCIA ──
             SearchableSetting(
-                id = "audio_settings",
-                title = context.getString(R.string.audio_settings),
+                id = "theme_mode",
+                title = context.getString(R.string.theme_mode_title),
+                description = when (themeMode) {
+                    1 -> context.getString(R.string.theme_light)
+                    2 -> context.getString(R.string.theme_dark)
+                    else -> context.getString(R.string.theme_auto)
+                },
+                section = themeSectionTitle,
+                icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+                keywords = listOf("tema", "theme", "modo oscuro", "modo claro", "dark", "light", "sistema"),
+                onClick = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "amoled_pitch_black",
+                title = context.getString(R.string.amoled_pitch_black),
+                description = context.getString(R.string.amoled_pitch_black_desc),
+                section = themeSectionTitle,
+                icon = Icons.Default.PhoneAndroid,
+                keywords = listOf("amoled", "pitch black", "negro", "puro", "oscuro", "bateria", "oled"),
+                onClick = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "use_custom_colors",
+                title = context.getString(R.string.use_custom_colors),
+                description = context.getString(R.string.use_custom_colors_desc),
+                section = themeSectionTitle,
+                icon = Icons.Default.Palette,
+                keywords = listOf("colores", "colors", "paleta", "palette", "acento", "accent", "personalizado"),
+                onClick = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "blur",
+                title = context.getString(R.string.blur),
+                description = context.getString(R.string.blur_desc),
+                section = themeSectionTitle,
+                icon = Icons.Default.BlurOn,
+                keywords = listOf("blur", "desenfoque", "efecto blur", "vidrio", "glass", "fondo desenfocado"),
+                onClick = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "font_customization",
+                title = context.getString(R.string.font_customization),
+                description = context.getString(R.string.font_customization_desc),
+                section = themeSectionTitle,
+                icon = Icons.Default.TextFields,
+                keywords = listOf("font", "fuente", "tipografia", "typography", "letras", "tamano"),
+                onClick = { context.startActivity(Intent(context, FontCustomizationActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "app_icon",
+                title = context.getString(R.string.app_icon_title),
+                description = when (appIconKey) {
+                    AppIconManager.ICON_DYNAMIC -> context.getString(R.string.app_icon_dynamic)
+                    AppIconManager.ICON_MONO_WHITE -> context.getString(R.string.app_icon_mono_white)
+                    AppIconManager.ICON_MONO_BLACK -> context.getString(R.string.app_icon_mono_black)
+                    else -> context.getString(R.string.app_icon_default)
+                },
+                section = themeSectionTitle,
+                icon = Icons.Default.Apps,
+                keywords = listOf("icon", "icono", "app icon", "logo", "launcher"),
+                onClick = { showAppIconDialog = true }
+            ),
+
+            // ── 2. REPRODUCTOR (NOW PLAYING) ──
+            SearchableSetting(
+                id = "player_customization",
+                title = context.getString(R.string.player_customization),
+                description = context.getString(R.string.player_customization_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.PlayCircle,
+                keywords = listOf("player", "reproductor", "caratula", "cover", "onda", "waveform", "controles", "personalizar"),
+                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "cinematic_player",
+                title = context.getString(R.string.cinematic_player),
+                description = context.getString(R.string.cinematic_player_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.AutoAwesome,
+                keywords = listOf("cinematic", "cinematico", "pantalla completa", "inmersivo", "capa em tela cheia"),
+                onClick = {
+                    val newVal = !isCinematicPlayerEnabled
+                    isCinematicPlayerEnabled = newVal
+                    settingsManager.isCinematicPlayerEnabled = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "cover_shape",
+                title = context.getString(R.string.cover_shape_title),
+                description = when (coverShape) {
+                    1 -> context.getString(R.string.shape_square)
+                    2 -> context.getString(R.string.shape_circular)
+                    else -> context.getString(R.string.shape_default)
+                },
+                section = playerSectionTitle,
+                icon = Icons.Default.Album,
+                keywords = listOf("cover shape", "forma caratula", "squircle", "cuadrada", "circulo", "redondeada"),
+                onClick = { showCoverShapeDialog = true }
+            ),
+            SearchableSetting(
+                id = "progress_bar_style",
+                title = context.getString(R.string.progress_bar_style_title),
+                description = if (progressBarStyle == 1) context.getString(R.string.progress_bar_wave) else context.getString(R.string.progress_bar_classic),
+                section = playerSectionTitle,
+                icon = Icons.Default.Equalizer,
+                keywords = listOf("progress bar", "barra de progreso", "onda", "wave", "lineal"),
+                onClick = {
+                    val newStyle = if (progressBarStyle == 1) 0 else 1
+                    progressBarStyle = newStyle
+                    settingsManager.progressBarStyle = newStyle
+                }
+            ),
+            SearchableSetting(
+                id = "player_gradient_background",
+                title = context.getString(R.string.player_gradient_background),
+                description = context.getString(R.string.player_gradient_background_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.Palette,
+                keywords = listOf("degradado", "gradient", "fondo reproductor", "ambient", "ambiental", "desfoque"),
+                onClick = {
+                    val newVal = !isPlayerGradientBackgroundEnabled
+                    isPlayerGradientBackgroundEnabled = newVal
+                    settingsManager.isPlayerGradientBackgroundEnabled = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "cover_spin",
+                title = context.getString(R.string.cover_spin),
+                description = context.getString(R.string.cover_spin_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.Refresh,
+                keywords = listOf("girar", "rotar", "spin", "animacion caratula", "disco giratorio"),
+                onClick = {
+                    val newVal = !coverSpin
+                    coverSpin = newVal
+                    settingsManager.coverSpin = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "cover_vinyl",
+                title = context.getString(R.string.cover_vinyl),
+                description = context.getString(R.string.cover_vinyl_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.Album,
+                keywords = listOf("vinilo", "vinyl", "disco vinilo", "anillo vinilo"),
+                onClick = {
+                    val newVal = !coverVinylEffect
+                    coverVinylEffect = newVal
+                    settingsManager.coverVinylEffect = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "quick_player",
+                title = context.getString(R.string.quick_player),
+                description = context.getString(R.string.use_quick_player_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.Speed,
+                keywords = listOf("quick player", "reproductor rapido", "mini", "modal", "flotante"),
+                onClick = {
+                    val newVal = !useQuickPlayer
+                    useQuickPlayer = newVal
+                    settingsManager.useQuickPlayer = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "gesture",
+                title = context.getString(R.string.gesture),
+                description = context.getString(R.string.enable_gestures_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.Gesture,
+                keywords = listOf("gestos", "gesture", "swipe", "deslizar", "mini reproductor"),
+                onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
+            ),
+
+            // ── 3. AUDIO Y REPRODUCCIÓN ──
+            SearchableSetting(
+                id = "equalizer",
+                title = context.getString(R.string.eq_title),
                 description = context.getString(R.string.audio_settings_desc),
-                section = generalSectionTitle,
-                icon = Icons.Default.MusicNote,
-                keywords = listOf("audio", "sound", "sonido", "equalizer", "ecualizador", "eq", "bass", "graves", "volume", "volumen", "gain", "efectos", "effects"),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.Equalizer,
+                keywords = listOf("equalizer", "ecualizador", "eq", "bass", "graves", "presets", "sonido", "audio"),
+                onClick = { context.startActivity(Intent(context, EqualizerActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "advanced_audio_settings",
+                title = context.getString(R.string.advanced_audio_settings),
+                description = context.getString(R.string.advanced_audio_settings_desc),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.Tune,
+                keywords = listOf("audio", "avanzado", "hifi", "32bit", "exclusive", "crossfade", "loop"),
                 onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "hifi_badge",
+                title = context.getString(R.string.hifi_badge),
+                description = context.getString(R.string.hifi_badge_desc),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.HighQuality,
+                keywords = listOf("hifi", "hi-res", "badge", "insignia", "etiqueta", "lossless", "flac"),
+                onClick = {
+                    val newVal = !enableHiFi
+                    enableHiFi = newVal
+                    settingsManager.enableHiFi = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "audio_32bit_float",
+                title = context.getString(R.string.audio_32bit_float),
+                description = context.getString(R.string.audio_32bit_float_desc),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.Equalizer,
+                keywords = listOf("32bit", "32 bits", "float", "flotante", "precision", "dsp"),
+                onClick = {
+                    val newVal = !is32BitFloatEnabled
+                    is32BitFloatEnabled = newVal
+                    settingsManager.is32BitFloatEnabled = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "audio_exclusive_mode",
+                title = context.getString(R.string.audio_exclusive_mode),
+                description = context.getString(R.string.audio_exclusive_mode_desc),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.MusicNote,
+                keywords = listOf("exclusivo", "exclusive", "focus", "enfoque de audio", "aaudio"),
+                onClick = {
+                    val newVal = !isExclusiveModeEnabled
+                    isExclusiveModeEnabled = newVal
+                    settingsManager.isExclusiveModeEnabled = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "crossfade_time",
+                title = context.getString(R.string.crossfade_time),
+                description = if (crossfadeDurationSeconds > 0) "${crossfadeDurationSeconds}s" else context.getString(R.string.disabled),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.Tune,
+                keywords = listOf("crossfade", "transicion", "desvanecer", "fundido", "mezcla"),
+                onClick = { showCrossfadeDialog = true }
+            ),
+            SearchableSetting(
+                id = "seamless_looping",
+                title = context.getString(R.string.seamless_looping),
+                description = context.getString(R.string.seamless_looping_desc),
+                section = audioSettingsSectionTitle,
+                icon = Icons.Default.AllInclusive,
+                keywords = listOf("seamless", "loop", "bucle", "continuo", "gapless", "sin pausas"),
+                onClick = {
+                    val newVal = !seamlessLooping
+                    seamlessLooping = newVal
+                    settingsManager.seamlessLooping = newVal
+                    PlaybackManager.getInstance(context).updateLoopingState()
+                }
             ),
             SearchableSetting(
                 id = "keep_screen_on",
                 title = context.getString(R.string.keep_screen_on),
                 description = context.getString(R.string.keep_screen_on_desc),
-                section = generalSectionTitle,
+                section = audioSettingsSectionTitle,
                 icon = Icons.Default.LightMode,
-                keywords = listOf("screen", "display", "pantalla", "luz", "encendida", "awake", "lock", "bloqueo", "apagar"),
-                trailingContent = {
-                    BouncySwitch(
-                        checked = keepScreenOn,
-                        onCheckedChange = {
-                            keepScreenOn = it
-                            settingsManager.keepScreenOn = it
-                        },
-                        thumbContent = {
-                            Icon(
-                                imageVector = if (keepScreenOn) Icons.Default.Check else Icons.Default.Close,
-                                contentDescription = null,
-                                modifier = Modifier.size(SwitchDefaults.IconSize)
-                            )
-                        }
-                    )
-                },
+                keywords = listOf("screen", "display", "pantalla", "luz", "encendida", "awake"),
                 onClick = {
                     val newVal = !keepScreenOn
                     keepScreenOn = newVal
@@ -474,21 +1101,27 @@ fun SettingsScreen(
                 }
             ),
             SearchableSetting(
+                id = "stop_on_task_removed",
+                title = context.getString(R.string.stop_on_task_removed),
+                description = context.getString(R.string.stop_on_task_removed_desc),
+                section = audioSettingsSectionTitle,
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                keywords = listOf("recientes", "recent apps", "cerrar app", "stop", "detener", "task removed"),
+                onClick = {
+                    val newVal = !stopOnTaskRemoved
+                    stopOnTaskRemoved = newVal
+                    settingsManager.stopOnTaskRemoved = newVal
+                }
+            ),
+
+            // ── 4. BIBLIOTECA Y ORGANIZACIÓN ──
+            SearchableSetting(
                 id = "rescan_library",
                 title = context.getString(R.string.rescan_library),
                 description = context.getString(R.string.rescan_library_desc),
-                section = generalSectionTitle,
+                section = librarySectionTitle,
                 icon = Icons.Default.Sync,
-                keywords = listOf("scan", "escanear", "sync", "sincronizar", "refresh", "actualizar", "library", "biblioteca", "canciones", "songs", "recargar"),
-                trailingContent = if (isScanningLibrary) {
-                    {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary
-                        )
-                    }
-                } else null,
+                keywords = listOf("scan", "escanear", "sync", "sincronizar", "refresh", "actualizar", "biblioteca"),
                 onClick = {
                     if (!isScanningLibrary) {
                         scope.launch {
@@ -505,13 +1138,190 @@ fun SettingsScreen(
                 }
             ),
             SearchableSetting(
-                id = "customization",
-                title = context.getString(R.string.customization),
-                description = context.getString(R.string.customization_desc),
-                section = generalSectionTitle,
-                icon = Icons.Default.Palette,
-                keywords = listOf("theme", "tema", "dark", "oscuro", "light", "claro", "color", "colores", "palette", "paleta", "amoled", "pitch black", "negro", "blur", "desenfoque", "font", "fuente", "lyrics", "letras", "player", "reproductor", "waveform", "forma de onda", "lockscreen", "bloqueo", "art", "caratula", "personalizacion"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
+                id = "manage_audio_folders",
+                title = context.getString(R.string.manage_audio_folders),
+                description = context.getString(R.string.manage_audio_folders_desc),
+                section = librarySectionTitle,
+                icon = Icons.Default.Folder,
+                keywords = listOf("carpetas", "folders", "archivos", "importar", "directorio"),
+                onClick = { context.startActivity(Intent(context, FolderBrowserActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "hidden_songs",
+                title = context.getString(R.string.hidden_songs),
+                description = if (hiddenCount > 0) {
+                    context.getString(R.string.hidden_songs_count, hiddenCount)
+                } else {
+                    context.getString(R.string.hidden_songs_desc)
+                },
+                section = librarySectionTitle,
+                icon = Icons.Default.VisibilityOff,
+                keywords = listOf("ocultas", "hidden", "ocultar", "hide", "unhide", "desocultar"),
+                onClick = { context.startActivity(Intent(context, HiddenSongsActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "sort_album",
+                title = context.getString(R.string.default_album_sorting),
+                description = when (defaultAlbumSort) {
+                    "TRACK_NUMBER" -> context.getString(R.string.sort_track_number)
+                    "ALPHABETICAL" -> context.getString(R.string.sort_alphabetical)
+                    "ARTIST" -> context.getString(R.string.sort_artist)
+                    "ALBUM" -> context.getString(R.string.sort_album)
+                    "DURATION" -> context.getString(R.string.sort_duration)
+                    "DATE_ADDED" -> context.getString(R.string.sort_date_added)
+                    "CUSTOM" -> context.getString(R.string.sort_custom)
+                    else -> context.getString(R.string.sort_alphabetical)
+                },
+                section = librarySectionTitle,
+                icon = Icons.Default.Album,
+                keywords = listOf("album", "albums", "sort", "ordenar", "albumes"),
+                onClick = { showAlbumSortDialog = true }
+            ),
+            SearchableSetting(
+                id = "sort_artist",
+                title = context.getString(R.string.default_artist_sorting),
+                description = when (defaultArtistSort) {
+                    "TRACK_NUMBER" -> context.getString(R.string.sort_track_number)
+                    "ALPHABETICAL" -> context.getString(R.string.sort_alphabetical)
+                    "ARTIST" -> context.getString(R.string.sort_artist)
+                    "ALBUM" -> context.getString(R.string.sort_album)
+                    "DURATION" -> context.getString(R.string.sort_duration)
+                    "DATE_ADDED" -> context.getString(R.string.sort_date_added)
+                    "CUSTOM" -> context.getString(R.string.sort_custom)
+                    else -> context.getString(R.string.sort_alphabetical)
+                },
+                section = librarySectionTitle,
+                icon = Icons.Default.Person,
+                keywords = listOf("artist", "artistas", "sort", "ordenar"),
+                onClick = { showArtistSortDialog = true }
+            ),
+            SearchableSetting(
+                id = "sort_playlist",
+                title = context.getString(R.string.default_playlist_sorting),
+                description = when (defaultPlaylistSort) {
+                    "TRACK_NUMBER" -> context.getString(R.string.sort_track_number)
+                    "ALPHABETICAL" -> context.getString(R.string.sort_alphabetical)
+                    "ARTIST" -> context.getString(R.string.sort_artist)
+                    "ALBUM" -> context.getString(R.string.sort_album)
+                    "DURATION" -> context.getString(R.string.sort_duration)
+                    "DATE_ADDED" -> context.getString(R.string.sort_date_added)
+                    "CUSTOM" -> context.getString(R.string.sort_custom)
+                    else -> context.getString(R.string.sort_alphabetical)
+                },
+                section = librarySectionTitle,
+                icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+                keywords = listOf("playlist", "playlists", "listas", "sort", "ordenar"),
+                onClick = { showPlaylistSortDialog = true }
+            ),
+            SearchableSetting(
+                id = "section_customization",
+                title = context.getString(R.string.section_customization),
+                description = context.getString(R.string.section_customization_desc),
+                section = librarySectionTitle,
+                icon = Icons.Default.ViewAgenda,
+                keywords = listOf("secciones", "sections", "tabs", "pestanas", "ocultar pestanas", "inicio"),
+                onClick = { showSectionCustomizationDialog = true }
+            ),
+
+            // ── 5. COPIA DE SEGURIDAD Y DATOS ──
+            SearchableSetting(
+                id = "export_playlists",
+                title = context.getString(R.string.export_playlists),
+                description = context.getString(R.string.export_playlists_desc),
+                section = backupSectionTitle,
+                icon = Icons.Default.CloudDownload,
+                keywords = listOf("export", "exportar", "backup", "copia", "seguridad", "guardar"),
+                onClick = { exportLauncher.launch("playlists_backup.json") }
+            ),
+            SearchableSetting(
+                id = "import_playlists",
+                title = context.getString(R.string.import_playlists),
+                description = context.getString(R.string.import_playlists_desc),
+                section = backupSectionTitle,
+                icon = Icons.Default.Refresh,
+                keywords = listOf("import", "importar", "restore", "restaurar", "backup", "cargar"),
+                onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
+            ),
+            SearchableSetting(
+                id = "auto_sync_backup",
+                title = context.getString(R.string.auto_sync_backup),
+                description = if (hasExportDestination) {
+                    context.getString(R.string.auto_sync_backup_desc)
+                } else {
+                    context.getString(R.string.auto_sync_requires_export)
+                },
+                section = backupSectionTitle,
+                icon = Icons.Default.Sync,
+                keywords = listOf("auto", "sync", "sincronizacion", "automatica", "backup", "respaldo"),
+                onClick = if (hasExportDestination) {
+                    {
+                        val newVal = !isAutoSyncEnabled
+                        isAutoSyncEnabled = newVal
+                        settingsManager.isAutoSyncBackupEnabled = newVal
+                        if (newVal) backupManager.triggerAutoSync()
+                    }
+                } else null
+            ),
+
+            // ── 6. PRIVACIDAD E INTELIGENCIA ARTIFICIAL ──
+            SearchableSetting(
+                id = "show_ai_section",
+                title = context.getString(R.string.show_ai_section),
+                description = context.getString(R.string.show_ai_section_desc),
+                section = privacyAiSectionTitle,
+                icon = Icons.Default.AutoAwesome,
+                keywords = listOf("ai", "ia", "inteligencia artificial", "recomendaciones", "mezclas", "mixes"),
+                onClick = {
+                    val newVal = !showAiSection
+                    showAiSection = newVal
+                    settingsManager.showAiSection = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "reset_ai_habits",
+                title = context.getString(R.string.reset_ai_habits),
+                description = context.getString(R.string.reset_ai_habits_desc),
+                section = privacyAiSectionTitle,
+                icon = Icons.Default.DeleteForever,
+                keywords = listOf("redefinir", "reset", "restablecer", "habitos", "aprendizaje", "ai", "ia"),
+                onClick = { showResetAiDialog = true }
+            ),
+
+            // ── 7. SISTEMA Y ACERCA DE ──
+            SearchableSetting(
+                id = "haptic_vibration",
+                title = context.getString(R.string.haptic_vibration),
+                description = context.getString(R.string.haptic_vibration_desc),
+                section = systemAboutSectionTitle,
+                icon = Icons.Default.PhoneAndroid,
+                keywords = listOf("vibracion", "vibration", "haptico", "haptic", "tactil"),
+                onClick = {
+                    val newVal = !isHapticVibrationEnabled
+                    isHapticVibrationEnabled = newVal
+                    settingsManager.isHapticVibrationEnabled = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "scroll_to_top_button",
+                title = context.getString(R.string.scroll_to_top_button),
+                description = context.getString(R.string.scroll_to_top_button_desc),
+                section = systemAboutSectionTitle,
+                icon = Icons.Default.KeyboardArrowUp,
+                keywords = listOf("scroll", "arriba", "volver arriba", "boton arriba"),
+                onClick = {
+                    val newVal = !isScrollToTopEnabled
+                    isScrollToTopEnabled = newVal
+                    settingsManager.isScrollToTopEnabled = newVal
+                }
+            ),
+            SearchableSetting(
+                id = "widget_customization",
+                title = context.getString(R.string.widget_customization),
+                description = context.getString(R.string.widget_customization_desc),
+                section = systemAboutSectionTitle,
+                icon = Icons.Default.Widgets,
+                keywords = listOf("widget", "widgets", "pantalla inicio", "home screen"),
+                onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
             ),
             SearchableSetting(
                 id = "language",
@@ -529,637 +1339,36 @@ fun SettingsScreen(
                     "pl" -> context.getString(R.string.lang_polish)
                     else -> context.getString(R.string.lang_system)
                 },
-                section = generalSectionTitle,
+                section = systemAboutSectionTitle,
                 icon = Icons.Default.Language,
-                keywords = listOf("idioma", "language", "lenguaje", "traduccion", "translation", "locale"),
+                keywords = listOf("idioma", "language", "lenguaje", "traduccion"),
                 onClick = { showLanguageDialog = true }
             ),
-
-            // --- SUBCONFIGURACIONES: AJUSTES DE AUDIO ---
-            SearchableSetting(
-                id = "sub_equalizer",
-                title = context.getString(R.string.eq_title),
-                description = context.getString(R.string.audio_settings_desc),
-                section = audioSettingsSectionTitle,
-                parentTitle = audioSettingsSectionTitle,
-                icon = Icons.Default.Equalizer,
-                keywords = listOf("equalizer", "ecualizador", "eq", "bass", "graves", "virtualizer", "sonido", "audio", "presets", "frecuencias", "bandas", "ganancia", "volumen", "tuning"),
-                onClick = { context.startActivity(Intent(context, EqualizerActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_hifi_badge",
-                title = context.getString(R.string.hifi_badge),
-                description = context.getString(R.string.hifi_badge_desc),
-                section = audioSettingsSectionTitle,
-                parentTitle = audioSettingsSectionTitle,
-                icon = Icons.Default.HighQuality,
-                keywords = listOf("hifi", "hi-res", "badge", "insignia", "etiqueta", "calidad", "audio", "lossless", "flac", "dsf", "dff", "alta resolucion"),
-                onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_32bit_float",
-                title = context.getString(R.string.audio_32bit_float),
-                description = context.getString(R.string.audio_32bit_float_desc),
-                section = audioSettingsSectionTitle,
-                parentTitle = audioSettingsSectionTitle,
-                icon = Icons.Default.Equalizer,
-                keywords = listOf("32bit", "32 bits", "float", "flotante", "precision", "procesamiento", "calidad", "dsp", "audio float"),
-                onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_exclusive_mode",
-                title = context.getString(R.string.audio_exclusive_mode),
-                description = context.getString(R.string.audio_exclusive_mode_desc),
-                section = audioSettingsSectionTitle,
-                parentTitle = audioSettingsSectionTitle,
-                icon = Icons.Default.MusicNote,
-                keywords = listOf("exclusivo", "exclusive", "focus", "enfoque de audio", "pausar", "otras apps", "reproduccion exclusiva"),
-                onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_stop_on_task_removed",
-                title = context.getString(R.string.stop_on_task_removed),
-                description = context.getString(R.string.stop_on_task_removed_desc),
-                section = audioSettingsSectionTitle,
-                parentTitle = audioSettingsSectionTitle,
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
-                keywords = listOf("recientes", "recent apps", "cerrar app", "stop", "detener", "segundo plano", "task removed"),
-                onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
-            ),
-
-            // --- SUBCONFIGURACIONES: PERSONALIZACIÓN ---
-            SearchableSetting(
-                id = "sub_app_icon",
-                title = context.getString(R.string.app_icon_title),
-                description = context.getString(R.string.customization_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Apps,
-                keywords = listOf("icon", "icono", "app icon", "logo", "dinamico", "mono", "blanco", "negro", "launcher"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_custom_title",
-                title = context.getString(R.string.custom_title),
-                description = context.getString(R.string.customization_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Edit,
-                keywords = listOf("titulo", "title", "nombre", "texto", "header", "cabecera", "personalizado"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_section_customization",
-                title = context.getString(R.string.section_customization),
-                description = context.getString(R.string.section_customization_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.ViewAgenda,
-                keywords = listOf("secciones", "sections", "tabs", "pestanas", "ocultar pestanas", "mostrar pestanas", "canciones", "listas", "artistas", "albumes"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_use_custom_colors",
-                title = context.getString(R.string.use_custom_colors),
-                description = context.getString(R.string.use_custom_colors_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Palette,
-                keywords = listOf("colores", "colors", "tema", "theme", "acento", "accent", "personalizado", "color dinamico"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_color_palette",
-                title = context.getString(R.string.color_palette),
-                description = context.getString(R.string.use_custom_colors_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Brush,
-                keywords = listOf("paleta", "palette", "preset", "color", "tonos", "morado", "verde", "azul", "rojo", "amarillo"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_amoled_pitch_black",
-                title = context.getString(R.string.amoled_pitch_black),
-                description = context.getString(R.string.amoled_pitch_black_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.PhoneAndroid,
-                keywords = listOf("amoled", "pitch black", "negro", "puro", "oscuro", "bateria", "oled", "pantalla amoled"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_show_ai_section",
-                title = context.getString(R.string.show_ai_section),
-                description = context.getString(R.string.show_ai_section_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.AutoAwesome,
-                keywords = listOf("ai", "ia", "inteligencia artificial", "recomendaciones", "seccion ia", "smart"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_haptic_vibration",
-                title = context.getString(R.string.haptic_vibration),
-                description = context.getString(R.string.haptic_vibration_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.PhoneAndroid,
-                keywords = listOf("vibracion", "vibration", "haptico", "haptic", "tactil", "vibrar", "botones"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_song_info",
-                title = context.getString(R.string.song_info),
-                description = context.getString(R.string.song_info_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.MusicNote,
-                keywords = listOf("bitrate", "info", "informacion pista", "formato", "khz", "kbps", "flac", "calidad", "sample rate"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_cinematic_player",
-                title = context.getString(R.string.cinematic_player),
-                description = context.getString(R.string.cinematic_player_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.AutoAwesome,
-                keywords = listOf("cinematic", "cinematico", "pantalla completa", "inmersivo", "reproductor cinemático"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_quick_player",
-                title = context.getString(R.string.quick_player),
-                description = context.getString(R.string.use_quick_player_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Speed,
-                keywords = listOf("quick player", "reproductor rapido", "mini", "modal", "flotante", "ventana rapida"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_crossfade_time",
-                title = context.getString(R.string.crossfade_time),
-                description = context.getString(R.string.crossfade_time_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Tune,
-                keywords = listOf("crossfade", "transicion", "desvanecer", "fundido", "segundos", "mezcla", "tiempo crossfade"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_seamless_looping",
-                title = context.getString(R.string.seamless_looping),
-                description = context.getString(R.string.seamless_looping_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.AllInclusive,
-                keywords = listOf("seamless", "loop", "bucle", "continuo", "gapless", "repetir cancion", "sin pausas"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_scroll_to_top_button",
-                title = context.getString(R.string.scroll_to_top_button),
-                description = context.getString(R.string.scroll_to_top_button_desc),
-                section = customizationSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.KeyboardArrowUp,
-                keywords = listOf("scroll", "arriba", "volver arriba", "boton arriba", "subir", "desplazamiento"),
-                onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-            ),
-
-            // --- SUBCONFIGURACIONES: REPRODUCTOR ---
-            SearchableSetting(
-                id = "sub_player_customization",
-                title = context.getString(R.string.player_customization),
-                description = context.getString(R.string.player_customization_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Tune,
-                keywords = listOf("player", "reproductor", "diseno", "aspecto", "personalizar reproductor", "interfaz"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_cover_shape",
-                title = context.getString(R.string.cover_shape_title),
-                description = context.getString(R.string.player_customization_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("cover shape", "forma caratula", "redondeada", "cuadrada", "circulo", "vinilo", "borde"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_cover_size",
-                title = context.getString(R.string.cover_size),
-                description = context.getString(R.string.player_customization_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("cover size", "tamano caratula", "pequeno", "mediano", "grande", "escala caratula"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_cover_spin",
-                title = context.getString(R.string.cover_spin),
-                description = context.getString(R.string.cover_spin_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("girar", "rotar", "spin", "animacion", "rotacion caratula", "giratorio"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_cover_vinyl",
-                title = context.getString(R.string.cover_vinyl),
-                description = context.getString(R.string.cover_vinyl_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("vinilo", "vinyl", "textura vinilo", "disco vinilo", "anillo vinilo"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_progress_bar_style",
-                title = context.getString(R.string.progress_bar_style_title),
-                description = context.getString(R.string.player_customization_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Equalizer,
-                keywords = listOf("progress bar", "barra de progreso", "onda", "wave", "lineal", "wavy", "ondulada"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_controls_filled",
-                title = context.getString(R.string.controls_filled),
-                description = context.getString(R.string.controls_filled_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Tune,
-                keywords = listOf("controls", "controles", "relleno", "filled", "iconos relleno", "solido", "botones solidos"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_controls_custom_color",
-                title = context.getString(R.string.controls_custom_color),
-                description = context.getString(R.string.controls_custom_color_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Palette,
-                keywords = listOf("color controles", "custom controls color", "color botones", "paleta controles"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_player_background",
-                title = context.getString(R.string.player_background_title),
-                description = context.getString(R.string.player_gradient_background_desc),
-                section = playerSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Palette,
-                keywords = listOf("degradado", "gradient", "fondo reproductor", "ambient", "ambiental", "blur reproductor"),
-                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
-            ),
-
-            // --- SUBCONFIGURACIONES: EFECTO BLUR ---
-            SearchableSetting(
-                id = "sub_blur_customization",
-                title = context.getString(R.string.blur),
-                description = context.getString(R.string.blur_desc),
-                section = blurSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.BlurOn,
-                keywords = listOf("blur", "desenfoque", "efecto blur", "vidrio", "glass", "fondo desenfocado"),
-                onClick = { context.startActivity(Intent(context, BlurCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_enable_blur",
-                title = context.getString(R.string.enable_blur),
-                description = context.getString(R.string.enable_blur_desc),
-                section = blurSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.BlurOn,
-                keywords = listOf("activar blur", "enable blur", "desenfoque caratula", "fondo desenfocado", "album art blur"),
-                onClick = { context.startActivity(Intent(context, BlurCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_blur_dark_mode",
-                title = context.getString(R.string.blur_dark_mode),
-                description = context.getString(R.string.blur_dark_mode_desc),
-                section = blurSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.PhoneAndroid,
-                keywords = listOf("blur oscuro", "blur dark", "modo oscuro blur", "desenfoque oscuro"),
-                onClick = { context.startActivity(Intent(context, BlurCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_blur_light_mode",
-                title = context.getString(R.string.blur_light_mode),
-                description = context.getString(R.string.blur_light_mode_desc),
-                section = blurSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.LightMode,
-                keywords = listOf("blur claro", "blur light", "modo claro blur", "desenfoque claro"),
-                onClick = { context.startActivity(Intent(context, BlurCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_blur_controls",
-                title = context.getString(R.string.blur_controls),
-                description = context.getString(R.string.blur_controls_desc),
-                section = blurSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Palette,
-                keywords = listOf("blur controls", "controles blur", "armonizar colores", "botones blur"),
-                onClick = { context.startActivity(Intent(context, BlurCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_blur_cinematic_mode",
-                title = context.getString(R.string.blur_cinematic_mode),
-                description = context.getString(R.string.blur_cinematic_mode_desc),
-                section = blurSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.AutoAwesome,
-                keywords = listOf("blur cinematico", "cinematic blur", "desenfoque cinematico", "modo cinematico blur"),
-                onClick = { context.startActivity(Intent(context, BlurCustomizationActivity::class.java)) }
-            ),
-
-            // --- SUBCONFIGURACIONES: FUENTES ---
-            SearchableSetting(
-                id = "sub_font_customization",
-                title = context.getString(R.string.font_customization),
-                description = context.getString(R.string.font_customization_desc),
-                section = fontSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.TextFields,
-                keywords = listOf("font", "fuente", "tipografia", "typography", "letras", "texto"),
-                onClick = { context.startActivity(Intent(context, FontCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_font_size",
-                title = context.getString(R.string.font_size),
-                description = context.getString(R.string.font_customization_desc),
-                section = fontSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.TextFields,
-                keywords = listOf("tamano fuente", "font size", "escalar texto", "grande", "pequeno", "tamano letra"),
-                onClick = { context.startActivity(Intent(context, FontCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_font_import",
-                title = context.getString(R.string.font_import_button),
-                description = context.getString(R.string.font_import_desc),
-                section = fontSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Edit,
-                keywords = listOf("importar fuente", "import font", "ttf", "otf", "archivo fuente", "fuente personalizada"),
-                onClick = { context.startActivity(Intent(context, FontCustomizationActivity::class.java)) }
-            ),
-
-            // --- SUBCONFIGURACIONES: WIDGETS ---
-            SearchableSetting(
-                id = "sub_widget_customization",
-                title = context.getString(R.string.widget_customization),
-                description = context.getString(R.string.widget_customization_desc),
-                section = widgetSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Widgets,
-                keywords = listOf("widget", "widgets", "pantalla inicio", "home screen", "diseno widget"),
-                onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_widget_blur",
-                title = context.getString(R.string.widget_blur),
-                description = context.getString(R.string.widget_blur_desc),
-                section = widgetSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.BlurOn,
-                keywords = listOf("widget blur", "desenfoque widget", "intensidad blur widget", "fondo widget"),
-                onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_widget_solid_bg",
-                title = context.getString(R.string.widget_solid_bg),
-                description = context.getString(R.string.widget_solid_bg_desc),
-                section = widgetSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Palette,
-                keywords = listOf("fondo solido", "solid background", "color solido widget", "fondo widget"),
-                onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_widget_circular_cover",
-                title = context.getString(R.string.widget_circular_cover),
-                description = context.getString(R.string.widget_circular_cover_desc),
-                section = widgetSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("caratula circular", "circular cover widget", "disco widget", "redonda widget"),
-                onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_widget_vinyl_cover",
-                title = context.getString(R.string.widget_vinyl_cover),
-                description = context.getString(R.string.widget_vinyl_cover_desc),
-                section = widgetSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("efecto vinilo widget", "vinyl effect widget", "vinilo widget", "disco vinilo"),
-                onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
-            ),
-
-            // --- SUBCONFIGURACIONES: GESTOS ---
-            SearchableSetting(
-                id = "sub_gesture_customization",
-                title = context.getString(R.string.gesture),
-                description = context.getString(R.string.gesture_desc),
-                section = gestureSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Gesture,
-                keywords = listOf("gestos", "gesture", "swipe", "deslizar", "mini reproductor", "tocar"),
-                onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_enable_gestures",
-                title = context.getString(R.string.enable_gestures),
-                description = context.getString(R.string.enable_gestures_desc),
-                section = gestureSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Gesture,
-                keywords = listOf("activar gestos", "enable gestures", "gestos tactiles", "deslizamiento"),
-                onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
-            ),
-            SearchableSetting(
-                id = "sub_change_gesture",
-                title = context.getString(R.string.change_gesture),
-                description = context.getString(R.string.change_gesture_desc),
-                section = gestureSectionTitle,
-                parentTitle = customizationSectionTitle,
-                icon = Icons.Default.Gesture,
-                keywords = listOf("cambiar gesto", "swipe up", "deslizar arriba", "accion gesto", "mini reproductor"),
-                onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
-            ),
-
-            // --- CANCIONES OCULTAS ---
-            SearchableSetting(
-                id = "hidden_songs",
-                title = context.getString(R.string.hidden_songs),
-                description = if (hiddenCount > 0) {
-                    context.getString(R.string.hidden_songs_count, hiddenCount)
-                } else {
-                    context.getString(R.string.hidden_songs_desc)
-                },
-                section = hiddenSongsSectionTitle,
-                icon = Icons.Default.VisibilityOff,
-                keywords = listOf("ocultas", "hidden", "ocultar", "hide", "unhide", "desocultar", "canciones", "songs"),
-                onClick = { context.startActivity(Intent(context, HiddenSongsActivity::class.java)) }
-            ),
-
-            // --- ORDENAMIENTO PREDETERMINADO ---
-            SearchableSetting(
-                id = "sort_album",
-                title = context.getString(R.string.default_album_sorting),
-                description = when (defaultAlbumSort) {
-                    "TRACK_NUMBER" -> context.getString(R.string.sort_track_number)
-                    "ALPHABETICAL" -> context.getString(R.string.sort_alphabetical)
-                    "ARTIST" -> context.getString(R.string.sort_artist)
-                    "ALBUM" -> context.getString(R.string.sort_album)
-                    "DURATION" -> context.getString(R.string.sort_duration)
-                    "DATE_ADDED" -> context.getString(R.string.sort_date_added)
-                    "CUSTOM" -> context.getString(R.string.sort_custom)
-                    else -> context.getString(R.string.sort_alphabetical)
-                },
-                section = defaultSortingSectionTitle,
-                icon = Icons.Default.Album,
-                keywords = listOf("album", "albums", "albumes", "sort", "orden", "ordenar", "clasificar", "default", "predeterminado"),
-                onClick = { showAlbumSortDialog = true }
-            ),
-            SearchableSetting(
-                id = "sort_artist",
-                title = context.getString(R.string.default_artist_sorting),
-                description = when (defaultArtistSort) {
-                    "TRACK_NUMBER" -> context.getString(R.string.sort_track_number)
-                    "ALPHABETICAL" -> context.getString(R.string.sort_alphabetical)
-                    "ARTIST" -> context.getString(R.string.sort_artist)
-                    "ALBUM" -> context.getString(R.string.sort_album)
-                    "DURATION" -> context.getString(R.string.sort_duration)
-                    "DATE_ADDED" -> context.getString(R.string.sort_date_added)
-                    "CUSTOM" -> context.getString(R.string.sort_custom)
-                    else -> context.getString(R.string.sort_alphabetical)
-                },
-                section = defaultSortingSectionTitle,
-                icon = Icons.Default.Person,
-                keywords = listOf("artist", "artists", "artistas", "sort", "orden", "ordenar", "clasificar", "default", "predeterminado"),
-                onClick = { showArtistSortDialog = true }
-            ),
-            SearchableSetting(
-                id = "sort_playlist",
-                title = context.getString(R.string.default_playlist_sorting),
-                description = when (defaultPlaylistSort) {
-                    "TRACK_NUMBER" -> context.getString(R.string.sort_track_number)
-                    "ALPHABETICAL" -> context.getString(R.string.sort_alphabetical)
-                    "ARTIST" -> context.getString(R.string.sort_artist)
-                    "ALBUM" -> context.getString(R.string.sort_album)
-                    "DURATION" -> context.getString(R.string.sort_duration)
-                    "DATE_ADDED" -> context.getString(R.string.sort_date_added)
-                    "CUSTOM" -> context.getString(R.string.sort_custom)
-                    else -> context.getString(R.string.sort_alphabetical)
-                },
-                section = defaultSortingSectionTitle,
-                icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                keywords = listOf("playlist", "playlists", "listas", "reproduccion", "sort", "orden", "ordenar", "default", "predeterminado"),
-                onClick = { showPlaylistSortDialog = true }
-            ),
-
-            // --- COPIA DE SEGURIDAD ---
-            SearchableSetting(
-                id = "export_playlists",
-                title = context.getString(R.string.export_playlists),
-                description = context.getString(R.string.export_playlists_desc),
-                section = backupSectionTitle,
-                icon = Icons.Default.CloudDownload,
-                keywords = listOf("export", "exportar", "backup", "copia", "seguridad", "save", "guardar", "json", "playlists", "respaldo"),
-                onClick = { exportLauncher.launch("playlists_backup.json") }
-            ),
-            SearchableSetting(
-                id = "import_playlists",
-                title = context.getString(R.string.import_playlists),
-                description = context.getString(R.string.import_playlists_desc),
-                section = backupSectionTitle,
-                icon = Icons.Default.Refresh,
-                keywords = listOf("import", "importar", "restore", "restaurar", "backup", "copia", "cargar", "json", "respaldo"),
-                onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
-            ),
-            SearchableSetting(
-                id = "auto_sync_backup",
-                title = context.getString(R.string.auto_sync_backup),
-                description = if (hasExportDestination) {
-                    context.getString(R.string.auto_sync_backup_desc)
-                } else {
-                    context.getString(R.string.auto_sync_requires_export)
-                },
-                section = backupSectionTitle,
-                icon = Icons.Default.Sync,
-                keywords = listOf("auto", "sync", "sincronizacion", "automatica", "backup", "copia", "automatica", "respaldo"),
-                trailingContent = {
-                    BouncySwitch(
-                        checked = isAutoSyncEnabled && hasExportDestination,
-                        enabled = hasExportDestination,
-                        onCheckedChange = { enabled ->
-                            isAutoSyncEnabled = enabled
-                            settingsManager.isAutoSyncBackupEnabled = enabled
-                            if (enabled) {
-                                backupManager.triggerAutoSync()
-                            }
-                        },
-                        thumbContent = {
-                            Icon(
-                                imageVector = if (isAutoSyncEnabled && hasExportDestination) Icons.Default.Check else Icons.Default.Close,
-                                contentDescription = null,
-                                modifier = Modifier.size(SwitchDefaults.IconSize)
-                            )
-                        }
-                    )
-                },
-                onClick = if (hasExportDestination) {
-                    {
-                        val newVal = !isAutoSyncEnabled
-                        isAutoSyncEnabled = newVal
-                        settingsManager.isAutoSyncBackupEnabled = newVal
-                        if (newVal) {
-                            backupManager.triggerAutoSync()
-                        }
-                    }
-                } else null
-            ),
-
-            // --- SEGURIDAD ---
             SearchableSetting(
                 id = "permissions",
                 title = context.getString(R.string.permissions),
                 description = context.getString(R.string.permissions_desc),
-                section = securitySectionTitle,
+                section = systemAboutSectionTitle,
                 icon = Icons.Default.Security,
-                keywords = listOf("permissions", "permisos", "storage", "almacenamiento", "notifications", "notificaciones", "security", "seguridad", "acceso", "archivos"),
+                keywords = listOf("permissions", "permisos", "storage", "notifications", "security"),
                 onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
             ),
-
-            // --- ACERCA DE ---
             SearchableSetting(
                 id = "donate",
                 title = context.getString(R.string.donate_title),
                 description = context.getString(R.string.donate_desc),
-                section = aboutSectionTitle,
+                section = systemAboutSectionTitle,
                 icon = Icons.Default.Favorite,
-                keywords = listOf("donate", "donar", "donacion", "support", "apoyar", "colaborar", "patreon", "coffee", "dev", "desarrollo"),
+                keywords = listOf("donate", "donar", "donacion", "support", "patreon"),
                 onClick = { showDonateDialog = true }
             ),
             SearchableSetting(
                 id = "about",
                 title = context.getString(R.string.about),
                 description = "Lune v${BuildConfig.VERSION_NAME}",
-                section = aboutSectionTitle,
+                section = systemAboutSectionTitle,
                 icon = Icons.Default.Info,
-                keywords = listOf("about", "acerca", "info", "informacion", "version", "github", "source", "changelog", "cambios", "creditos"),
+                keywords = listOf("about", "acerca", "info", "version", "changelog", "github"),
                 onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
             )
         )
@@ -1289,13 +1498,13 @@ fun SettingsScreen(
                         )
                     } else {
                         LargeTopAppBar(
-                            title = { 
+                            title = {
                                 Text(
                                     stringResource(R.string.settings),
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.headlineLarge,
                                     color = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary
-                                ) 
+                                )
                             },
                             navigationIcon = {
                                 IconButton(
@@ -1309,7 +1518,7 @@ fun SettingsScreen(
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
-                                                Icons.AutoMirrored.Filled.ArrowBack, 
+                                                Icons.AutoMirrored.Filled.ArrowBack,
                                                 contentDescription = stringResource(R.string.cd_back),
                                                 tint = if (isBlurActive) Color.White else MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(24.dp)
@@ -1424,238 +1633,455 @@ fun SettingsScreen(
                         }
                     }
                 } else {
-                    // General Section
-                SettingsSection(title = stringResource(R.string.general)) {
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.audio_settings),
-                        supportingText = stringResource(R.string.audio_settings_desc),
-                        icon = Icons.Default.MusicNote,
-                        position = SectionPosition.FIRST,
-                        onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
-                    )
+                    // ──────────────────────────────────────────────
+                    // 1. TEMA Y APARIENCIA
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = themeSectionTitle) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.theme_mode_title),
+                            supportingText = when (themeMode) {
+                                1 -> stringResource(R.string.theme_light)
+                                2 -> stringResource(R.string.theme_dark)
+                                else -> stringResource(R.string.theme_auto)
+                            },
+                            icon = when (themeMode) {
+                                1 -> Icons.Default.LightMode
+                                2 -> Icons.Default.DarkMode
+                                else -> Icons.Outlined.BrightnessAuto
+                            },
+                            position = SectionPosition.FIRST,
+                            onClick = { context.startActivity(Intent(context, ThemeSettingsActivity::class.java)) }
+                        )
 
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.keep_screen_on),
-                        supportingText = stringResource(R.string.keep_screen_on_desc),
-                        icon = Icons.Default.LightMode,
-                        position = SectionPosition.MIDDLE,
-                        trailingContent = {
-                            BouncySwitch(
-                                checked = keepScreenOn,
-                                onCheckedChange = {
-                                    keepScreenOn = it
-                                    settingsManager.keepScreenOn = it
-                                },
-                                thumbContent = {
-                                    Icon(
-                                        imageVector = if (keepScreenOn) Icons.Default.Check else Icons.Default.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
-                            )
-                        }
-                    )
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.font_customization),
+                            supportingText = stringResource(R.string.font_customization_desc),
+                            icon = Icons.Default.TextFields,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { context.startActivity(Intent(context, FontCustomizationActivity::class.java)) }
+                        )
 
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.rescan_library),
-                        supportingText = stringResource(R.string.rescan_library_desc),
-                        icon = Icons.Default.Sync,
-                        position = SectionPosition.MIDDLE,
-                        trailingContent = if (isScanningLibrary) {
-                            {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.app_icon_title),
+                            supportingText = when (appIconKey) {
+                                AppIconManager.ICON_DYNAMIC -> stringResource(R.string.app_icon_dynamic)
+                                AppIconManager.ICON_MONO_WHITE -> stringResource(R.string.app_icon_mono_white)
+                                AppIconManager.ICON_MONO_BLACK -> stringResource(R.string.app_icon_mono_black)
+                                else -> stringResource(R.string.app_icon_default)
+                            },
+                            icon = Icons.Default.Apps,
+                            position = SectionPosition.LAST,
+                            onClick = { showAppIconDialog = true }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 2. REPRODUCTOR (NOW PLAYING)
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = playerSectionTitle) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.player_customization),
+                            supportingText = stringResource(R.string.player_customization_desc),
+                            icon = Icons.Default.PlayCircle,
+                            position = SectionPosition.FIRST,
+                            onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.gesture),
+                            supportingText = stringResource(R.string.enable_gestures_desc),
+                            icon = Icons.Default.Gesture,
+                            position = SectionPosition.LAST,
+                            onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 3. AUDIO Y REPRODUCCIÓN
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = audioSettingsSectionTitle) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.eq_title),
+                            supportingText = stringResource(R.string.audio_settings_desc),
+                            icon = Icons.Default.Equalizer,
+                            position = SectionPosition.FIRST,
+                            onClick = { context.startActivity(Intent(context, EqualizerActivity::class.java)) }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.advanced_audio_settings),
+                            supportingText = stringResource(R.string.advanced_audio_settings_desc),
+                            icon = Icons.Default.Tune,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.keep_screen_on),
+                            supportingText = stringResource(R.string.keep_screen_on_desc),
+                            icon = Icons.Default.LightMode,
+                            position = SectionPosition.LAST,
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = keepScreenOn,
+                                    onCheckedChange = {
+                                        keepScreenOn = it
+                                        settingsManager.keepScreenOn = it
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (keepScreenOn) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
                                 )
                             }
-                        } else null,
-                        onClick = {
-                            if (!isScanningLibrary) {
-                                scope.launch {
-                                    isScanningLibrary = true
-                                    val songs = musicProvider.refreshLibrary()
-                                    isScanningLibrary = false
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.rescan_library_success, songs.size),
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        }
-                    )
-
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.customization),
-                        supportingText = stringResource(R.string.customization_desc),
-                        icon = Icons.Default.Palette,
-                        position = SectionPosition.MIDDLE,
-                        onClick = { context.startActivity(Intent(context, CustomizationActivity::class.java)) }
-                    )
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.language),
-                        supportingText = when(currentLanguage) {
-                            "en" -> stringResource(R.string.lang_english)
-                            "es" -> stringResource(R.string.lang_spanish)
-                            "pt-BR" -> stringResource(R.string.lang_portuguese)
-                            "fr" -> stringResource(R.string.lang_french)
-                            "zh" -> stringResource(R.string.lang_chinese)
-                            "de" -> stringResource(R.string.lang_german)
-                            "ru" -> stringResource(R.string.lang_russian)
-                            "fa" -> stringResource(R.string.lang_persian)
-                            "ar" -> stringResource(R.string.lang_arabic)
-                            "pl" -> stringResource(R.string.lang_polish)
-                            else -> stringResource(R.string.lang_system)
-                        },
-                        icon = Icons.Default.Language,
-                        position = SectionPosition.LAST,
-                        onClick = { showLanguageDialog = true }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Hidden Songs Section
-                SettingsSection(title = stringResource(R.string.hidden_songs)) {
-                    val hiddenCount = settingsManager.hiddenSongIds.size
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.hidden_songs),
-                        supportingText = if (hiddenCount > 0) {
-                            stringResource(R.string.hidden_songs_count, hiddenCount)
-                        } else {
-                            stringResource(R.string.hidden_songs_desc)
-                        },
-                        icon = Icons.Default.VisibilityOff,
-                        position = SectionPosition.SINGLE,
-                        onClick = { context.startActivity(Intent(context, HiddenSongsActivity::class.java)) }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Default Sorting Section
-                SettingsSection(title = stringResource(R.string.default_sorting)) {
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.default_album_sorting),
-                        supportingText = getSortOptionLabel(defaultAlbumSort),
-                        icon = Icons.Default.Album,
-                        position = SectionPosition.FIRST,
-                        onClick = { showAlbumSortDialog = true }
-                    )
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.default_artist_sorting),
-                        supportingText = getSortOptionLabel(defaultArtistSort),
-                        icon = Icons.Default.Person,
-                        position = SectionPosition.MIDDLE,
-                        onClick = { showArtistSortDialog = true }
-                    )
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.default_playlist_sorting),
-                        supportingText = getSortOptionLabel(defaultPlaylistSort),
-                        icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                        position = SectionPosition.LAST,
-                        onClick = { showPlaylistSortDialog = true }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Backup Section
-                SettingsSection(title = stringResource(R.string.backup)) {
-                    if (showBackupWarning) {
-                        BackupWarningCard(
-                            onDismiss = {
-                                showBackupWarning = false
-                                settingsManager.showBackupWarning = false
-                            }
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.export_playlists),
-                        supportingText = stringResource(R.string.export_playlists_desc),
-                        icon = Icons.Default.CloudDownload,
-                        position = SectionPosition.FIRST,
-                        onClick = { exportLauncher.launch("playlists_backup.json") }
-                    )
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.import_playlists),
-                        supportingText = stringResource(R.string.import_playlists_desc),
-                        icon = Icons.Default.Refresh,
-                        position = SectionPosition.MIDDLE,
-                        onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
-                    )
-                    val hasExportDestination = !autoSyncBackupUri.isNullOrBlank()
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.auto_sync_backup),
-                        supportingText = if (hasExportDestination) {
-                            stringResource(R.string.auto_sync_backup_desc)
-                        } else {
-                            stringResource(R.string.auto_sync_requires_export)
-                        },
-                        icon = Icons.Default.Sync,
-                        position = SectionPosition.LAST,
-                        trailingContent = {
-                            BouncySwitch(
-                                checked = isAutoSyncEnabled && hasExportDestination,
-                                enabled = hasExportDestination,
-                                onCheckedChange = { enabled ->
-                                    isAutoSyncEnabled = enabled
-                                    settingsManager.isAutoSyncBackupEnabled = enabled
-                                    if (enabled) {
-                                        backupManager.triggerAutoSync()
-                                    }
-                                },
-                                thumbContent = {
-                                    Icon(
-                                        imageVector = if (isAutoSyncEnabled && hasExportDestination) Icons.Default.Check else Icons.Default.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 4. BIBLIOTECA Y ORGANIZACIÓN
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = librarySectionTitle) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.rescan_library),
+                            supportingText = stringResource(R.string.rescan_library_desc),
+                            icon = Icons.Default.Sync,
+                            position = SectionPosition.FIRST,
+                            trailingContent = if (isScanningLibrary) {
+                                {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
                                     )
                                 }
+                            } else null,
+                            onClick = {
+                                if (!isScanningLibrary) {
+                                    scope.launch {
+                                        isScanningLibrary = true
+                                        val songs = musicProvider.refreshLibrary()
+                                        isScanningLibrary = false
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.rescan_library_success, songs.size),
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.manage_audio_folders),
+                            supportingText = stringResource(R.string.manage_audio_folders_desc),
+                            icon = Icons.Default.Folder,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { context.startActivity(Intent(context, FolderBrowserActivity::class.java)) }
+                        )
+
+                        val hiddenCount = settingsManager.hiddenSongIds.size
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.hidden_songs),
+                            supportingText = if (hiddenCount > 0) {
+                                stringResource(R.string.hidden_songs_count, hiddenCount)
+                            } else {
+                                stringResource(R.string.hidden_songs_desc)
+                            },
+                            icon = Icons.Default.VisibilityOff,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { context.startActivity(Intent(context, HiddenSongsActivity::class.java)) }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.default_album_sorting),
+                            supportingText = getSortOptionLabel(defaultAlbumSort),
+                            icon = Icons.Default.Album,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { showAlbumSortDialog = true }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.default_artist_sorting),
+                            supportingText = getSortOptionLabel(defaultArtistSort),
+                            icon = Icons.Default.Person,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { showArtistSortDialog = true }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.default_playlist_sorting),
+                            supportingText = getSortOptionLabel(defaultPlaylistSort),
+                            icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { showPlaylistSortDialog = true }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.section_customization),
+                            supportingText = stringResource(R.string.section_customization_desc),
+                            icon = Icons.Default.ViewAgenda,
+                            position = SectionPosition.LAST,
+                            onClick = { showSectionCustomizationDialog = true }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 5. COPIA DE SEGURIDAD Y DATOS
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = backupSectionTitle) {
+                        if (showBackupWarning) {
+                            BackupWarningCard(
+                                onDismiss = {
+                                    showBackupWarning = false
+                                    settingsManager.showBackupWarning = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.export_playlists),
+                            supportingText = stringResource(R.string.export_playlists_desc),
+                            icon = Icons.Default.CloudDownload,
+                            position = SectionPosition.FIRST,
+                            onClick = { exportLauncher.launch("playlists_backup.json") }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.import_playlists),
+                            supportingText = stringResource(R.string.import_playlists_desc),
+                            icon = Icons.Default.Refresh,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }
+                        )
+
+                        val hasExportDestination = !autoSyncBackupUri.isNullOrBlank()
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.auto_sync_backup),
+                            supportingText = if (hasExportDestination) {
+                                stringResource(R.string.auto_sync_backup_desc)
+                            } else {
+                                stringResource(R.string.auto_sync_requires_export)
+                            },
+                            icon = Icons.Default.Sync,
+                            position = SectionPosition.LAST,
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = isAutoSyncEnabled && hasExportDestination,
+                                    enabled = hasExportDestination,
+                                    onCheckedChange = { enabled ->
+                                        isAutoSyncEnabled = enabled
+                                        settingsManager.isAutoSyncBackupEnabled = enabled
+                                        if (enabled) {
+                                            backupManager.triggerAutoSync()
+                                        }
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (isAutoSyncEnabled && hasExportDestination) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 6. PRIVACIDAD E INTELIGENCIA ARTIFICIAL
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = privacyAiSectionTitle) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.show_ai_section),
+                            supportingText = stringResource(R.string.show_ai_section_desc),
+                            icon = Icons.Default.AutoAwesome,
+                            position = SectionPosition.FIRST,
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = showAiSection,
+                                    onCheckedChange = { enabled ->
+                                        showAiSection = enabled
+                                        settingsManager.showAiSection = enabled
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (showAiSection) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
+                        )
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 1.dp)
+                                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp, topStart = 4.dp, topEnd = 4.dp))
+                                .bounceClick()
+                                .clickable { showResetAiDialog = true },
+                            shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp, topStart = 4.dp, topEnd = 4.dp),
+                            color = if (hasBlurBackground) (if (isDarkTheme) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.22f)) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
+                        ) {
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = stringResource(R.string.reset_ai_habits),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        text = stringResource(R.string.reset_ai_habits_desc),
+                                        color = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                leadingContent = {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.DeleteForever,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                             )
                         }
-                    )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 7. SISTEMA Y ACERCA DE
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = systemAboutSectionTitle) {
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.haptic_vibration),
+                            supportingText = stringResource(R.string.haptic_vibration_desc),
+                            icon = Icons.Default.PhoneAndroid,
+                            position = SectionPosition.FIRST,
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = isHapticVibrationEnabled,
+                                    onCheckedChange = {
+                                        isHapticVibrationEnabled = it
+                                        settingsManager.isHapticVibrationEnabled = it
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (isHapticVibrationEnabled) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.scroll_to_top_button),
+                            supportingText = stringResource(R.string.scroll_to_top_button_desc),
+                            icon = Icons.Default.KeyboardArrowUp,
+                            position = SectionPosition.MIDDLE,
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = isScrollToTopEnabled,
+                                    onCheckedChange = {
+                                        isScrollToTopEnabled = it
+                                        settingsManager.isScrollToTopEnabled = it
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (isScrollToTopEnabled) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.widget_customization),
+                            supportingText = stringResource(R.string.widget_customization_desc),
+                            icon = Icons.Default.Widgets,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.language),
+                            supportingText = when (currentLanguage) {
+                                "en" -> stringResource(R.string.lang_english)
+                                "es" -> stringResource(R.string.lang_spanish)
+                                "pt-BR" -> stringResource(R.string.lang_portuguese)
+                                "fr" -> stringResource(R.string.lang_french)
+                                "zh" -> stringResource(R.string.lang_chinese)
+                                "de" -> stringResource(R.string.lang_german)
+                                "ru" -> stringResource(R.string.lang_russian)
+                                "fa" -> stringResource(R.string.lang_persian)
+                                "ar" -> stringResource(R.string.lang_arabic)
+                                "pl" -> stringResource(R.string.lang_polish)
+                                else -> stringResource(R.string.lang_system)
+                            },
+                            icon = Icons.Default.Language,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { showLanguageDialog = true }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.permissions),
+                            supportingText = stringResource(R.string.permissions_desc),
+                            icon = Icons.Default.Security,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.donate_title),
+                            supportingText = stringResource(R.string.donate_desc),
+                            icon = Icons.Default.Favorite,
+                            position = SectionPosition.MIDDLE,
+                            onClick = { showDonateDialog = true }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.about),
+                            supportingText = "Lune v${BuildConfig.VERSION_NAME}",
+                            icon = Icons.Default.Info,
+                            position = SectionPosition.LAST,
+                            onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Security Section
-                SettingsSection(title = stringResource(R.string.security)) {
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.permissions),
-                        supportingText = stringResource(R.string.permissions_desc),
-                        icon = Icons.Default.Security,
-                        position = SectionPosition.SINGLE,
-                        onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // About Section
-                SettingsSection(title = stringResource(R.string.about)) {
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.donate_title),
-                        supportingText = stringResource(R.string.donate_desc),
-                        icon = Icons.Default.Favorite,
-                        position = SectionPosition.FIRST,
-                        onClick = { showDonateDialog = true }
-                    )
-
-                    SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.about),
-                        icon = Icons.Default.Info,
-                        position = SectionPosition.LAST,
-                        onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
-                    )
-                }
+                Spacer(modifier = Modifier.height(32.dp))
             }
-                
-            Spacer(modifier = Modifier.height(32.dp))
-        }
         }
     }
 }
@@ -1815,7 +2241,7 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(24.dp),
         color = cardBg,
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
@@ -1829,9 +2255,9 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
                 tint = iconTint,
                 modifier = Modifier.size(24.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(com.demonlab.lune.R.string.backup_warning_title),
@@ -1846,9 +2272,9 @@ fun BackupWarningCard(onDismiss: () -> Unit) {
                     color = descColor
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
@@ -1918,7 +2344,7 @@ private fun SortOptionDialog(
                                 onDismiss()
                             }
                             .padding(vertical = 12.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = isSelected,

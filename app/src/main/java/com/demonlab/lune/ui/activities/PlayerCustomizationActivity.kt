@@ -118,6 +118,8 @@ fun PlayerCustomizationScreen(
     var useCustomControlsColor by remember { mutableStateOf(settingsManager.useCustomControlsColor) }
     var controlsColorPalette by remember { mutableIntStateOf(settingsManager.controlsColorPalette) }
     var isPlayerGradientBackgroundEnabled by remember { mutableStateOf(settingsManager.isPlayerGradientBackgroundEnabled) }
+    var isCinematicPlayerEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
+    var useQuickPlayer by remember { mutableStateOf(settingsManager.useQuickPlayer) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -1125,6 +1127,57 @@ fun PlayerCustomizationScreen(
                                 thumbContent = {
                                     Icon(
                                         imageVector = if (isPlayerGradientBackgroundEnabled) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Section: Player Modes
+                SettingsSection(title = stringResource(R.string.player_modes_title)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.cinematic_player),
+                        supportingText = stringResource(R.string.cinematic_player_desc),
+                        icon = Icons.Default.AutoAwesome,
+                        position = SectionPosition.FIRST,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = isCinematicPlayerEnabled,
+                                onCheckedChange = {
+                                    isCinematicPlayerEnabled = it
+                                    settingsManager.isCinematicPlayerEnabled = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isCinematicPlayerEnabled) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    )
+
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.quick_player),
+                        supportingText = stringResource(R.string.use_quick_player_desc),
+                        icon = Icons.Default.Speed,
+                        position = SectionPosition.LAST,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = useQuickPlayer,
+                                onCheckedChange = {
+                                    useQuickPlayer = it
+                                    settingsManager.useQuickPlayer = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (useQuickPlayer) Icons.Default.Check else Icons.Default.Close,
                                         contentDescription = null,
                                         modifier = Modifier.size(SwitchDefaults.IconSize)
                                     )

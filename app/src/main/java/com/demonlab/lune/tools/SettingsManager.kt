@@ -437,6 +437,10 @@ class SettingsManager(context: Context) {
         set(value) {
             _isBlurEnabled.value = value
             prefs.edit().putBoolean("is_blur_enabled", value).apply()
+            if (value) {
+                isBlurCinematicMode = true
+                isBlurControlsEnabled = true
+            }
         }
 
     private val _isBlurDarkMode = mutableStateOf(prefs.getBoolean("is_blur_dark_mode", true))
@@ -455,7 +459,7 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_blur_light_mode", value).apply()
         }
 
-    private val _isBlurCinematicMode = mutableStateOf(prefs.getBoolean("is_blur_cinematic_mode", false))
+    private val _isBlurCinematicMode = mutableStateOf(prefs.getBoolean("is_blur_cinematic_mode", true))
     var isBlurCinematicMode: Boolean
         get() = _isBlurCinematicMode.value
         set(value) {
@@ -463,7 +467,7 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_blur_cinematic_mode", value).apply()
         }
 
-    private val _isBlurControlsEnabled = mutableStateOf(prefs.getBoolean("is_blur_controls_enabled", false))
+    private val _isBlurControlsEnabled = mutableStateOf(prefs.getBoolean("is_blur_controls_enabled", true))
     var isBlurControlsEnabled: Boolean
         get() = _isBlurControlsEnabled.value
         set(value) {

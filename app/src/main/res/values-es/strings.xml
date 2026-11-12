@@ -117,6 +117,9 @@
     <string name="rescan_library_success">Biblioteca actualizada: %1$d canciones encontradas</string>
     <string name="audio_settings">Audio</string>
     <string name="audio_settings_desc">Insignia Hi-Fi, procesamiento 32-bit float y modo exclusivo</string>
+    <string name="advanced_audio_settings">Ajustes avanzados de audio</string>
+    <string name="advanced_audio_settings_desc">Insignia Hi-Fi, procesamiento 32-bit float, modo AAudio y crossfade</string>
+    <string name="player_modes_title">Modos del reproductor</string>
     <string name="hifi_badge">Insignia Hi-Fi</string>
     <string name="hifi_badge_desc">Mostrar distintivo Hi-Fi en canciones de alta resolución (lossless)</string>
     <string name="audio_32bit_float">Procesamiento 32-bit Float</string>
@@ -605,4 +608,17 @@
     <string name="update_sheet_subtitle">Mira todo lo que trae la nueva versión de Lune</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">¡A rockear! 🎸</string>
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Tema</string>
+    <string name="theme_mode_title">Modo del tema</string>
+    <string name="privacy_ai_title">Privacidad e IA en el dispositivo</string>
+    <string name="reset_ai_habits">Restablecer aprendizaje de IA y hábitos</string>
+    <string name="reset_ai_habits_desc">Borra las preferencias aprendidas y el historial de mezclas</string>
+    <string name="reset_ai_habits_confirm">¿Seguro que deseas restablecer todas las recomendaciones y hábitos de IA? Esta acción no se puede deshacer.</string>
+    <string name="reset_ai_habits_success">Aprendizaje y hábitos de IA restablecidos con éxito</string>
+    <string name="manage_audio_folders">Gestionar carpetas de audio</string>
+    <string name="manage_audio_folders_desc">Selecciona carpetas para incluir o excluir de la biblioteca</string>
+    <string name="system_about">Sistema y acerca de</string>
+    <string name="library_organization">Biblioteca y organización</string>
+    <string name="progress_bar_classic">Clásico</string>
 </resources>

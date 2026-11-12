@@ -48,6 +48,14 @@ class LuneAiEngine private constructor(private val context: Context) {
         }
     }
 
+    fun resetLearning() {
+        storage.clearAll()
+        _aiMixes.value = emptyList()
+        lastStartedSongId = null
+        lastStartedTimeMs = 0L
+        previousPlayedSongId = null
+    }
+
     // ─────────────────────────────────────────────────────────────
     // 1. TELEMETRY & HABIT LEARNING
     // ─────────────────────────────────────────────────────────────
