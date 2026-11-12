@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Gradient
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -910,7 +912,7 @@ fun SettingsScreen(
                 title = context.getString(R.string.cinematic_player),
                 description = context.getString(R.string.cinematic_player_desc),
                 section = playerSectionTitle,
-                icon = Icons.Default.AutoAwesome,
+                icon = Icons.Default.Movie,
                 keywords = listOf("cinematic", "cinematico", "pantalla completa", "inmersivo", "capa em tela cheia"),
                 onClick = {
                     val newVal = !isCinematicPlayerEnabled
@@ -949,7 +951,7 @@ fun SettingsScreen(
                 title = context.getString(R.string.player_gradient_background),
                 description = context.getString(R.string.player_gradient_background_desc),
                 section = playerSectionTitle,
-                icon = Icons.Default.Palette,
+                icon = Icons.Default.Gradient,
                 keywords = listOf("degradado", "gradient", "fondo reproductor", "ambient", "ambiental", "desfoque"),
                 onClick = {
                     val newVal = !isPlayerGradientBackgroundEnabled
@@ -1003,7 +1005,7 @@ fun SettingsScreen(
                 section = playerSectionTitle,
                 icon = Icons.Default.Gesture,
                 keywords = listOf("gestos", "gesture", "swipe", "deslizar", "mini reproductor"),
-                onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
+                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
             ),
 
             // ── 3. AUDIO Y REPRODUCCIÓN ──
@@ -1690,11 +1692,49 @@ fun SettingsScreen(
                         )
 
                         SettingsPreferenceItem(
-                            headlineText = stringResource(R.string.gesture),
-                            supportingText = stringResource(R.string.enable_gestures_desc),
-                            icon = Icons.Default.Gesture,
+                            headlineText = stringResource(R.string.cinematic_player),
+                            supportingText = stringResource(R.string.cinematic_player_desc),
+                            icon = Icons.Default.Movie,
+                            position = SectionPosition.MIDDLE,
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = isCinematicPlayerEnabled,
+                                    onCheckedChange = {
+                                        isCinematicPlayerEnabled = it
+                                        settingsManager.isCinematicPlayerEnabled = it
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (isCinematicPlayerEnabled) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
+                        )
+
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.player_gradient_background),
+                            supportingText = stringResource(R.string.player_gradient_background_desc),
+                            icon = Icons.Default.Gradient,
                             position = SectionPosition.LAST,
-                            onClick = { context.startActivity(Intent(context, GestureCustomizationActivity::class.java)) }
+                            trailingContent = {
+                                BouncySwitch(
+                                    checked = isPlayerGradientBackgroundEnabled,
+                                    onCheckedChange = {
+                                        isPlayerGradientBackgroundEnabled = it
+                                        settingsManager.isPlayerGradientBackgroundEnabled = it
+                                    },
+                                    thumbContent = {
+                                        Icon(
+                                            imageVector = if (isPlayerGradientBackgroundEnabled) Icons.Default.Check else Icons.Default.Close,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
                         )
                     }
 
@@ -1705,18 +1745,10 @@ fun SettingsScreen(
                     // ──────────────────────────────────────────────
                     SettingsSection(title = audioSettingsSectionTitle) {
                         SettingsPreferenceItem(
-                            headlineText = stringResource(R.string.eq_title),
-                            supportingText = stringResource(R.string.audio_settings_desc),
-                            icon = Icons.Default.Equalizer,
-                            position = SectionPosition.FIRST,
-                            onClick = { context.startActivity(Intent(context, EqualizerActivity::class.java)) }
-                        )
-
-                        SettingsPreferenceItem(
                             headlineText = stringResource(R.string.advanced_audio_settings),
                             supportingText = stringResource(R.string.advanced_audio_settings_desc),
                             icon = Icons.Default.Tune,
-                            position = SectionPosition.MIDDLE,
+                            position = SectionPosition.FIRST,
                             onClick = { context.startActivity(Intent(context, AudioSettingsActivity::class.java)) }
                         )
 

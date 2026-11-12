@@ -118,8 +118,10 @@ fun PlayerCustomizationScreen(
     var useCustomControlsColor by remember { mutableStateOf(settingsManager.useCustomControlsColor) }
     var controlsColorPalette by remember { mutableIntStateOf(settingsManager.controlsColorPalette) }
     var isPlayerGradientBackgroundEnabled by remember { mutableStateOf(settingsManager.isPlayerGradientBackgroundEnabled) }
-    var isCinematicPlayerEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
     var useQuickPlayer by remember { mutableStateOf(settingsManager.useQuickPlayer) }
+    var isGesturesEnabled by remember { mutableStateOf(settingsManager.isGesturesEnabled) }
+    var swipeUpAction by remember { mutableIntStateOf(settingsManager.swipeUpAction) }
+    var showSwipeUpOptions by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -1110,23 +1112,24 @@ fun PlayerCustomizationScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Section: Player Background
-                SettingsSection(title = stringResource(R.string.player_background_title)) {
+                // Section: Gestures
+                SettingsSection(title = stringResource(R.string.gesture)) {
+                    val masterPosition = if (isGesturesEnabled) SectionPosition.FIRST else SectionPosition.SINGLE
                     SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.player_gradient_background),
-                        supportingText = stringResource(R.string.player_gradient_background_desc),
-                        icon = Icons.Default.AutoAwesome,
-                        position = SectionPosition.SINGLE,
+                        headlineText = stringResource(R.string.enable_gestures),
+                        supportingText = stringResource(R.string.enable_gestures_desc),
+                        icon = Icons.Default.Gesture,
+                        position = masterPosition,
                         trailingContent = {
                             BouncySwitch(
-                                checked = isPlayerGradientBackgroundEnabled,
+                                checked = isGesturesEnabled,
                                 onCheckedChange = {
-                                    isPlayerGradientBackgroundEnabled = it
-                                    settingsManager.isPlayerGradientBackgroundEnabled = it
+                                    isGesturesEnabled = it
+                                    settingsManager.isGesturesEnabled = it
                                 },
                                 thumbContent = {
                                     Icon(
-                                        imageVector = if (isPlayerGradientBackgroundEnabled) Icons.Default.Check else Icons.Default.Close,
+                                        imageVector = if (isGesturesEnabled) Icons.Default.Check else Icons.Default.Close,
                                         contentDescription = null,
                                         modifier = Modifier.size(SwitchDefaults.IconSize)
                                     )
@@ -1134,6 +1137,27 @@ fun PlayerCustomizationScreen(
                             )
                         }
                     )
+
+                    AnimatedVisibility(
+                        visible = isGesturesEnabled,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        val actionLabel = when (swipeUpAction) {
+                            1 -> stringResource(R.string.open_queue)
+                            2 -> stringResource(R.string.eq_title)
+                            3 -> stringResource(R.string.add_to_playlist)
+                            4 -> stringResource(R.string.option_share)
+                            else -> stringResource(R.string.disabled)
+                        }
+                        SettingsPreferenceItem(
+                            headlineText = stringResource(R.string.change_gesture),
+                            supportingText = actionLabel,
+                            icon = Icons.Default.SwipeUp,
+                            position = SectionPosition.LAST,
+                            onClick = { showSwipeUpOptions = true }
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1141,33 +1165,10 @@ fun PlayerCustomizationScreen(
                 // Section: Player Modes
                 SettingsSection(title = stringResource(R.string.player_modes_title)) {
                     SettingsPreferenceItem(
-                        headlineText = stringResource(R.string.cinematic_player),
-                        supportingText = stringResource(R.string.cinematic_player_desc),
-                        icon = Icons.Default.AutoAwesome,
-                        position = SectionPosition.FIRST,
-                        trailingContent = {
-                            BouncySwitch(
-                                checked = isCinematicPlayerEnabled,
-                                onCheckedChange = {
-                                    isCinematicPlayerEnabled = it
-                                    settingsManager.isCinematicPlayerEnabled = it
-                                },
-                                thumbContent = {
-                                    Icon(
-                                        imageVector = if (isCinematicPlayerEnabled) Icons.Default.Check else Icons.Default.Close,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SwitchDefaults.IconSize)
-                                    )
-                                }
-                            )
-                        }
-                    )
-
-                    SettingsPreferenceItem(
                         headlineText = stringResource(R.string.quick_player),
                         supportingText = stringResource(R.string.use_quick_player_desc),
                         icon = Icons.Default.Speed,
-                        position = SectionPosition.LAST,
+                        position = SectionPosition.SINGLE,
                         trailingContent = {
                             BouncySwitch(
                                 checked = useQuickPlayer,
@@ -1188,6 +1189,81 @@ fun PlayerCustomizationScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            if (showSwipeUpOptions) {
+                val swipeUpOptions = listOf(
+                    stringResource(R.string.disabled),
+                    stringResource(R.string.open_queue),
+                    stringResource(R.string.eq_title),
+                    stringResource(R.string.add_to_playlist),
+                    stringResource(R.string.option_share)
+                )
+                ModalBottomSheet(
+                    onDismissRequest = { showSwipeUpOptions = false },
+                    containerColor = if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface,
+                    dragHandle = null,
+                    contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
+                ) {
+                    AppBlurBackdrop(
+                        hasBlurBackground = hasBlurBackground,
+                        isDarkTheme = isDarkTheme,
+                        currentSong = currentSong,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .padding(bottom = 24.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BottomSheetDefaults.DragHandle(
+                                    color = if (hasBlurBackground) Color.White.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.change_gesture),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                            )
+                            swipeUpOptions.forEachIndexed { index, title ->
+                                val isSelected = swipeUpAction == index
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            swipeUpAction = index
+                                            settingsManager.swipeUpAction = index
+                                            showSwipeUpOptions = false
+                                        }
+                                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = null,
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
+                                            unselectedColor = if (hasBlurBackground) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = title,
+                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -14,7 +14,7 @@
 
     <string name="general">General</string>
     <string name="cinematic_player">Reproductor Cinemático</string>
-    <string name="cinematic_player_desc">Habilita una interfaz inmersiva con carátula en movimiento y degradado suave.</string>
+    <string name="cinematic_player_desc">Interfaz inmersiva con carátula en movimiento</string>
     <string name="shortcut_playlists">Playlists</string>
     <string name="backup">Respaldo</string>
     <string name="security">Seguridad</string>
@@ -565,8 +565,8 @@
 
     <!-- Player Gradient Background -->
     <string name="player_background_title">Fondo del reproductor</string>
-    <string name="player_gradient_background">Fondo de gradientes dinámicos</string>
-    <string name="player_gradient_background_desc">Muestra gradientes ambientales difuminados con los colores del cover actual</string>
+    <string name="player_gradient_background">Fondo degradado</string>
+    <string name="player_gradient_background_desc">Gradientes dinámicos con colores de la carátula</string>
 
     <!-- Hidden Songs / Blacklist -->
     <string name="hide_from_library">Ocultar de la biblioteca</string>

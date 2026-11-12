@@ -13,7 +13,7 @@
 
     <string name="general">General</string>
     <string name="cinematic_player">Cinematic Player</string>
-    <string name="cinematic_player_desc">Enables an immersive interface with moving cover art and smooth gradients.</string>
+    <string name="cinematic_player_desc">Immersive interface with moving artwork</string>
     <string name="shortcut_playlists">Playlists</string>
     <string name="backup">Backup</string>
     <string name="security">Security</string>
@@ -564,8 +564,8 @@
 
     <!-- Player Gradient Background -->
     <string name="player_background_title">Player Background</string>
-    <string name="player_gradient_background">Dynamic gradient background</string>
-    <string name="player_gradient_background_desc">Display blurred ambient gradients based on current song artwork</string>
+    <string name="player_gradient_background">Gradient Background</string>
+    <string name="player_gradient_background_desc">Dynamic ambient gradients from song cover</string>
 
     <!-- Hidden Songs / Blacklist -->
     <string name="hide_from_library">Hide from library</string>
