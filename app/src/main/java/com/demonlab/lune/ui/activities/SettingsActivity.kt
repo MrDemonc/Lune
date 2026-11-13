@@ -462,10 +462,12 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Slider(
-                        value = tempCrossfade.toFloat(),
+                        state = rememberSliderState(
+                            value = tempCrossfade.toFloat(),
+                            steps = 11,
+                            trackRange = 0f..12f
+                        ),
                         onValueChange = { tempCrossfade = it.toInt() },
-                        valueRange = 0f..12f,
-                        steps = 11,
                         colors = SliderDefaults.colors(
                             thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                             activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
@@ -784,7 +786,8 @@ fun SettingsScreen(
     val librarySectionTitle = stringResource(R.string.library_organization)
     val backupSectionTitle = stringResource(R.string.backup)
     val privacyAiSectionTitle = stringResource(R.string.privacy_ai_title)
-    val systemAboutSectionTitle = stringResource(R.string.system_about)
+    val systemSectionTitle = stringResource(R.string.system)
+    val aboutSectionTitle = stringResource(R.string.about)
 
     // ─── Índice Completo de Búsqueda ───
     val allSearchableSettings = remember(
@@ -826,7 +829,8 @@ fun SettingsScreen(
         librarySectionTitle,
         backupSectionTitle,
         privacyAiSectionTitle,
-        systemAboutSectionTitle
+        systemSectionTitle,
+        aboutSectionTitle
     ) {
         val hasExportDestination = !autoSyncBackupUri.isNullOrBlank()
         val hiddenCount = settingsManager.hiddenSongIds.size
@@ -1289,12 +1293,12 @@ fun SettingsScreen(
                 onClick = { showResetAiDialog = true }
             ),
 
-            // ── 7. SISTEMA Y ACERCA DE ──
+            // ── 7. SISTEMA ──
             SearchableSetting(
                 id = "haptic_vibration",
                 title = context.getString(R.string.haptic_vibration),
                 description = context.getString(R.string.haptic_vibration_desc),
-                section = systemAboutSectionTitle,
+                section = systemSectionTitle,
                 icon = Icons.Default.PhoneAndroid,
                 keywords = listOf("vibracion", "vibration", "haptico", "haptic", "tactil"),
                 onClick = {
@@ -1307,7 +1311,7 @@ fun SettingsScreen(
                 id = "scroll_to_top_button",
                 title = context.getString(R.string.scroll_to_top_button),
                 description = context.getString(R.string.scroll_to_top_button_desc),
-                section = systemAboutSectionTitle,
+                section = systemSectionTitle,
                 icon = Icons.Default.KeyboardArrowUp,
                 keywords = listOf("scroll", "arriba", "volver arriba", "boton arriba"),
                 onClick = {
@@ -1320,7 +1324,7 @@ fun SettingsScreen(
                 id = "widget_customization",
                 title = context.getString(R.string.widget_customization),
                 description = context.getString(R.string.widget_customization_desc),
-                section = systemAboutSectionTitle,
+                section = systemSectionTitle,
                 icon = Icons.Default.Widgets,
                 keywords = listOf("widget", "widgets", "pantalla inicio", "home screen"),
                 onClick = { context.startActivity(Intent(context, WidgetCustomizationActivity::class.java)) }
@@ -1341,7 +1345,7 @@ fun SettingsScreen(
                     "pl" -> context.getString(R.string.lang_polish)
                     else -> context.getString(R.string.lang_system)
                 },
-                section = systemAboutSectionTitle,
+                section = systemSectionTitle,
                 icon = Icons.Default.Language,
                 keywords = listOf("idioma", "language", "lenguaje", "traduccion"),
                 onClick = { showLanguageDialog = true }
@@ -1350,7 +1354,7 @@ fun SettingsScreen(
                 id = "permissions",
                 title = context.getString(R.string.permissions),
                 description = context.getString(R.string.permissions_desc),
-                section = systemAboutSectionTitle,
+                section = aboutSectionTitle,
                 icon = Icons.Default.Security,
                 keywords = listOf("permissions", "permisos", "storage", "notifications", "security"),
                 onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
@@ -1359,7 +1363,7 @@ fun SettingsScreen(
                 id = "donate",
                 title = context.getString(R.string.donate_title),
                 description = context.getString(R.string.donate_desc),
-                section = systemAboutSectionTitle,
+                section = aboutSectionTitle,
                 icon = Icons.Default.Favorite,
                 keywords = listOf("donate", "donar", "donacion", "support", "patreon"),
                 onClick = { showDonateDialog = true }
@@ -1368,7 +1372,7 @@ fun SettingsScreen(
                 id = "about",
                 title = context.getString(R.string.about),
                 description = "Lune v${BuildConfig.VERSION_NAME}",
-                section = systemAboutSectionTitle,
+                section = aboutSectionTitle,
                 icon = Icons.Default.Info,
                 keywords = listOf("about", "acerca", "info", "version", "changelog", "github"),
                 onClick = { context.startActivity(Intent(context, AboutActivity::class.java)) }
@@ -1972,13 +1976,6 @@ fun SettingsScreen(
                             tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
                         ) {
                             ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = stringResource(R.string.reset_ai_habits),
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
                                 supportingContent = {
                                     Text(
                                         text = stringResource(R.string.reset_ai_habits_desc),
@@ -2002,16 +1999,22 @@ fun SettingsScreen(
                                     }
                                 },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                            )
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.reset_ai_habits),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // ──────────────────────────────────────────────
-                    // 7. SISTEMA Y ACERCA DE
+                    // 7. SISTEMA
                     // ──────────────────────────────────────────────
-                    SettingsSection(title = systemAboutSectionTitle) {
+                    SettingsSection(title = systemSectionTitle) {
                         SettingsPreferenceItem(
                             headlineText = stringResource(R.string.haptic_vibration),
                             supportingText = stringResource(R.string.haptic_vibration_desc),
@@ -2082,15 +2085,22 @@ fun SettingsScreen(
                                 else -> stringResource(R.string.lang_system)
                             },
                             icon = Icons.Default.Language,
-                            position = SectionPosition.MIDDLE,
+                            position = SectionPosition.LAST,
                             onClick = { showLanguageDialog = true }
                         )
+                    }
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ──────────────────────────────────────────────
+                    // 8. ABOUT
+                    // ──────────────────────────────────────────────
+                    SettingsSection(title = aboutSectionTitle) {
                         SettingsPreferenceItem(
                             headlineText = stringResource(R.string.permissions),
                             supportingText = stringResource(R.string.permissions_desc),
                             icon = Icons.Default.Security,
-                            position = SectionPosition.MIDDLE,
+                            position = SectionPosition.FIRST,
                             onClick = { context.startActivity(Intent(context, PermissionsActivity::class.java)) }
                         )
 
@@ -2100,7 +2110,7 @@ fun SettingsScreen(
                             icon = Icons.Default.Favorite,
                             position = SectionPosition.MIDDLE,
                             onClick = { showDonateDialog = true }
-                        )
+                        ) 
 
                         SettingsPreferenceItem(
                             headlineText = stringResource(R.string.about),

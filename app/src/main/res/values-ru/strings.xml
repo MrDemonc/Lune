@@ -598,4 +598,24 @@
     <string name="update_sheet_subtitle">Что нового в этой версии Lune</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">Погнали! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Тема</string>
+    <string name="theme_mode_title">Режим темы</string>
+    <string name="player_modes_title">Режимы плеера</string>
+    <string name="advanced_audio_settings">Расширенные настройки звука</string>
+    <string name="advanced_audio_settings_desc">Значок Hi-Fi, 32-битный float, режим AAudio и кроссфейд</string>
+    <string name="search_settings">Поиск настроек…</string>
+    <string name="no_settings_found">Настройки не найдены</string>
+    <string name="no_settings_found_desc">Попробуйте использовать другие ключевые слова</string>
+    <string name="privacy_ai_title">Конфиденциальность и локальный ИИ</string>
+    <string name="reset_ai_habits">Сбросить обучение и привычки ИИ</string>
+    <string name="reset_ai_habits_desc">Очистить изученные музыкальные предпочтения и историю миксов</string>
+    <string name="reset_ai_habits_confirm">Вы уверены, что хотите сбросить все локальные рекомендации и привычки ИИ? Это действие нельзя отменить.</string>
+    <string name="reset_ai_habits_success">Обучение и привычки ИИ успешно сброшены</string>
+    <string name="manage_audio_folders">Управление аудиопапками</string>
+    <string name="manage_audio_folders_desc">Выберите папки для добавления или исключения из медиатеки</string>
+    <string name="system">Система</string>
+    <string name="library_organization">Медиатека и организация</string>
+    <string name="progress_bar_classic">Классический</string>
 </resources>

@@ -596,4 +596,24 @@
     <string name="update_sheet_subtitle">إليك الجديد في تطبيق Lune</string>
     <string name="update_sheet_version_transition">v%1$s ← v%2$s</string>
     <string name="update_sheet_dismiss_btn">لننطلق مع الموسيقى! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">المظهر</string>
+    <string name="theme_mode_title">وضع المظهر</string>
+    <string name="player_modes_title">أوضاع المشغل</string>
+    <string name="advanced_audio_settings">إعدادات الصوت المتقدمة</string>
+    <string name="advanced_audio_settings_desc">شارة Hi-Fi، ومعالجة 32 بت عائم، ووضع AAudio والتلاشي المتبادل</string>
+    <string name="search_settings">بحث في الإعدادات…</string>
+    <string name="no_settings_found">لم يتم العثور على إعدادات</string>
+    <string name="no_settings_found_desc">جرب البحث بكلمات مفتاحية مختلفة</string>
+    <string name="privacy_ai_title">الخصوصية والذكاء الاصطناعي على الجهاز</string>
+    <string name="reset_ai_habits">إعادة تعيين تعلم الذكاء الاصطناعي والعادات</string>
+    <string name="reset_ai_habits_desc">مسح تفضيلات الاستماع وسجل الميكسات المتعلمة</string>
+    <string name="reset_ai_habits_confirm">هل أنت متأكد من أنك تريد إعادة تعيين جميع توصيات الذكاء الاصطناعي وبيانات العادات على الجهاز؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="reset_ai_habits_success">تمت إعادة تعيين تعلم الذكاء الاصطناعي والعادات بنجاح</string>
+    <string name="manage_audio_folders">إدارة مجلدات الصوت</string>
+    <string name="manage_audio_folders_desc">تحديد المجلدات لتضمينها أو استبعادها من المكتبة</string>
+    <string name="system">النظام</string>
+    <string name="library_organization">المكتبة والتنظيم</string>
+    <string name="progress_bar_classic">كلاسيكي</string>
 </resources>

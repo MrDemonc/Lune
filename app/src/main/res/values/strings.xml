@@ -617,7 +617,7 @@
     <string name="reset_ai_habits_success">AI learning and habits reset successfully</string>
     <string name="manage_audio_folders">Manage Audio Folders</string>
     <string name="manage_audio_folders_desc">Select folders to include or exclude from library</string>
-    <string name="system_about">System &amp; About</string>
+    <string name="system">System</string>
     <string name="library_organization">Library &amp; Organization</string>
     <string name="progress_bar_classic">Classic</string>
 </resources>

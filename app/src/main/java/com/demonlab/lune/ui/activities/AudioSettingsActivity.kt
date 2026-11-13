@@ -116,10 +116,12 @@ fun AudioSettingsScreen(onBack: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Slider(
-                        value = tempCrossfade.toFloat(),
+                        state = rememberSliderState(
+                            value = tempCrossfade.toFloat(),
+                            steps = 11,
+                            trackRange = 0f..12f
+                        ),
                         onValueChange = { tempCrossfade = it.toInt() },
-                        valueRange = 0f..12f,
-                        steps = 11,
                         colors = SliderDefaults.colors(
                             thumbColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,
                             activeTrackColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary,

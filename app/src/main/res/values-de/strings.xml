@@ -595,4 +595,24 @@
     <string name="update_sheet_subtitle">Das ist neu in Lune</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">Abrocken! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Design</string>
+    <string name="theme_mode_title">Design-Modus</string>
+    <string name="player_modes_title">Player-Modi</string>
+    <string name="advanced_audio_settings">Erweiterte Audio-Einstellungen</string>
+    <string name="advanced_audio_settings_desc">Hi-Fi-Badge, 32-Bit-Float, AAudio-Modus &amp; Überblendung</string>
+    <string name="search_settings">Einstellungen suchen…</string>
+    <string name="no_settings_found">Keine Einstellungen gefunden</string>
+    <string name="no_settings_found_desc">Versuche es mit anderen Suchbegriffen</string>
+    <string name="privacy_ai_title">Datenschutz &amp; Lokale KI</string>
+    <string name="reset_ai_habits">KI-Lernen &amp; Hörgewohnheiten zurücksetzen</string>
+    <string name="reset_ai_habits_desc">Gelernte Hörgewohnheiten und Mix-Verlauf löschen</string>
+    <string name="reset_ai_habits_confirm">Möchtest du wirklich alle lokalen KI-Empfehlungen und Hörgewohnheiten zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="reset_ai_habits_success">KI-Lernen und Hörgewohnheiten erfolgreich zurückgesetzt</string>
+    <string name="manage_audio_folders">Audio-Ordner verwalten</string>
+    <string name="manage_audio_folders_desc">Ordner auswählen, die in die Bibliothek aufgenommen oder ausgeschlossen werden sollen</string>
+    <string name="system">System</string>
+    <string name="library_organization">Bibliothek &amp; Organisation</string>
+    <string name="progress_bar_classic">Klassisch</string>
 </resources>

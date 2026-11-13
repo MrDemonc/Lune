@@ -1371,14 +1371,16 @@ fun VolumeBoostDialog(
                             }
 
                             Slider(
-                                value = boostGain.toFloat(),
+                                state = rememberSliderState(
+                                    value = boostGain.toFloat(),
+                                    steps = 28,
+                                    trackRange = 100f..3000f
+                                ),
                                 onValueChange = { newVal ->
                                     val rounded = ((newVal / 100).roundToInt() * 100).coerceIn(100, 3000)
                                     boostGain = rounded
                                     playbackManager.setLoudnessEnabled(true, rounded)
                                 },
-                                valueRange = 100f..3000f,
-                                steps = 28,
                                 modifier = Modifier
                                     .weight(1f)
                                     .padding(horizontal = 8.dp),

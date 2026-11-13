@@ -596,4 +596,24 @@
     <string name="update_sheet_subtitle">快来看看 Lune 的新功能吧</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">摇滚起来！🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">主题</string>
+    <string name="theme_mode_title">主题模式</string>
+    <string name="player_modes_title">播放器模式</string>
+    <string name="advanced_audio_settings">高级音频设置</string>
+    <string name="advanced_audio_settings_desc">Hi-Fi 标识、32位浮点、AAudio 模式与淡入淡出</string>
+    <string name="search_settings">搜索设置…</string>
+    <string name="no_settings_found">未找到相关设置</string>
+    <string name="no_settings_found_desc">尝试使用不同的关键词搜索</string>
+    <string name="privacy_ai_title">隐私与设备端 AI</string>
+    <string name="reset_ai_habits">重置 AI 学习与偏好习惯</string>
+    <string name="reset_ai_habits_desc">清除已学习的收听喜好与混音历史记录</string>
+    <string name="reset_ai_habits_confirm">确定要重置所有设备端 AI 推荐与习惯数据吗？此操作无法撤销。</string>
+    <string name="reset_ai_habits_success">已成功重置 AI 学习与习惯数据</string>
+    <string name="manage_audio_folders">管理音频文件夹</string>
+    <string name="manage_audio_folders_desc">选择要包含在音乐库中或排除的文件夹</string>
+    <string name="system">系统</string>
+    <string name="library_organization">音乐库与整理</string>
+    <string name="progress_bar_classic">经典</string>
 </resources>

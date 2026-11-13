@@ -594,4 +594,24 @@
     <string name="update_sheet_subtitle">قابلیت‌های جدید در لونه</string>
     <string name="update_sheet_version_transition">v%1$s ← v%2$s</string>
     <string name="update_sheet_dismiss_btn">بزن بریم! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">تم</string>
+    <string name="theme_mode_title">حالت تم</string>
+    <string name="player_modes_title">حالت‌های پخش‌کننده</string>
+    <string name="advanced_audio_settings">تنظیمات پیشرفته صدا</string>
+    <string name="advanced_audio_settings_desc">نشان Hi-Fi، فلوت ۳۲ بیتی، حالت AAudio و کراس‌فید</string>
+    <string name="search_settings">جستجوی تنظیمات…</string>
+    <string name="no_settings_found">تنظیماتی پیدا نشد</string>
+    <string name="no_settings_found_desc">با کلمات کلیدی دیگری جستجو کنید</string>
+    <string name="privacy_ai_title">حریم خصوصی و هوش مصنوعی روی دستگاه</string>
+    <string name="reset_ai_habits">بازنشانی یادگیری و عادت‌های هوش مصنوعی</string>
+    <string name="reset_ai_habits_desc">پاک کردن سلیقه‌های یادگرفته‌شده و تاریخچه میکس‌ها</string>
+    <string name="reset_ai_habits_confirm">آیا مطمئن هستید که می‌خواهید تمام داده‌های پیشنهادات و عادت‌های هوش مصنوعی روی دستگاه را بازنشانی کنید؟ این عمل غیرقابل بازگشت است.</string>
+    <string name="reset_ai_habits_success">یادگیری و عادت‌های هوش مصنوعی با موفقیت بازنشانی شد</string>
+    <string name="manage_audio_folders">مدیریت پوشه‌های صوتی</string>
+    <string name="manage_audio_folders_desc">انتخاب پوشه‌ها برای اضافه یا حذف کردن از آهنگ‌ها</string>
+    <string name="system">سیستم</string>
+    <string name="library_organization">کتابخانه و سازمان‌دهی</string>
+    <string name="progress_bar_classic">کلاسیک</string>
 </resources>

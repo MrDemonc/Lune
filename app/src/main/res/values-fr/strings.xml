@@ -598,4 +598,24 @@
     <string name="update_sheet_subtitle">Découvrez les nouveautés de Lune</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">C\'est parti ! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Thème</string>
+    <string name="theme_mode_title">Mode du thème</string>
+    <string name="player_modes_title">Modes du lecteur</string>
+    <string name="advanced_audio_settings">Paramètres audio avancés</string>
+    <string name="advanced_audio_settings_desc">Badge Hi-Fi, float 32 bits, mode AAudio et fondu enchaîné</string>
+    <string name="search_settings">Rechercher des paramètres…</string>
+    <string name="no_settings_found">Aucun paramètre trouvé</string>
+    <string name="no_settings_found_desc">Essayez de chercher avec d\'autres mots-clés</string>
+    <string name="privacy_ai_title">Confidentialité &amp; IA sur l\'appareil</string>
+    <string name="reset_ai_habits">Réinitialiser l\'apprentissage IA et les habitudes</string>
+    <string name="reset_ai_habits_desc">Effacer les préférences d\'écoute apprises et l\'historique des mixes</string>
+    <string name="reset_ai_habits_confirm">Voulez-vous vraiment réinitialiser toutes les recommandations et habitudes de l\'IA sur l\'appareil ? Cette action est irréversible.</string>
+    <string name="reset_ai_habits_success">Apprentissage IA et habitudes réinitialisés avec succès</string>
+    <string name="manage_audio_folders">Gérer les dossiers audio</string>
+    <string name="manage_audio_folders_desc">Sélectionner les dossiers à inclure ou exclure de la bibliothèque</string>
+    <string name="system">Système</string>
+    <string name="library_organization">Bibliothèque &amp; Organisation</string>
+    <string name="progress_bar_classic">Classique</string>
 </resources>

@@ -601,4 +601,24 @@
     <string name="update_sheet_subtitle">Zobacz, co nowego w Lune</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">Dajemy czadu! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Motyw</string>
+    <string name="theme_mode_title">Tryb motywu</string>
+    <string name="player_modes_title">Tryby odtwarzacza</string>
+    <string name="advanced_audio_settings">Zaawansowane ustawienia dźwięku</string>
+    <string name="advanced_audio_settings_desc">Znacznik Hi-Fi, 32-bit float, tryb AAudio i płynne przejścia</string>
+    <string name="search_settings">Szukaj w ustawieniach…</string>
+    <string name="no_settings_found">Nie znaleziono ustawień</string>
+    <string name="no_settings_found_desc">Spróbuj wyszukać za pomocą innych słów kluczowych</string>
+    <string name="privacy_ai_title">Prywatność i lokalne AI</string>
+    <string name="reset_ai_habits">Zresetuj naukę AI i nawyki</string>
+    <string name="reset_ai_habits_desc">Wyczyść wyuczone preferencje słuchania i historię miksów</string>
+    <string name="reset_ai_habits_confirm">Czy na pewno chcesz zresetować wszystkie lokalne rekomendacje AI i dane nawyków? Tej operacji nie można cofnąć.</string>
+    <string name="reset_ai_habits_success">Pomyślnie zresetowano naukę AI i nawyki</string>
+    <string name="manage_audio_folders">Zarządzaj folderami audio</string>
+    <string name="manage_audio_folders_desc">Wybierz foldery do uwzględnienia lub wykluczenia z biblioteki</string>
+    <string name="system">System</string>
+    <string name="library_organization">Biblioteka i organizacja</string>
+    <string name="progress_bar_classic">Klasyczny</string>
 </resources>

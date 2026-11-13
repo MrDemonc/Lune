@@ -598,4 +598,24 @@
     <string name="update_sheet_subtitle">Veja as novidades do Lune nesta versão</string>
     <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
     <string name="update_sheet_dismiss_btn">Bora curtir! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Tema</string>
+    <string name="theme_mode_title">Modo do tema</string>
+    <string name="player_modes_title">Modos do reprodutor</string>
+    <string name="advanced_audio_settings">Configurações avançadas de áudio</string>
+    <string name="advanced_audio_settings_desc">Selo Hi-Fi, ponto flutuante de 32 bits, modo AAudio e crossfade</string>
+    <string name="search_settings">Pesquisar configurações…</string>
+    <string name="no_settings_found">Nenhuma configuração encontrada</string>
+    <string name="no_settings_found_desc">Tente pesquisar com palavras-chave diferentes</string>
+    <string name="privacy_ai_title">Privacidade e IA no dispositivo</string>
+    <string name="reset_ai_habits">Redefinir aprendizado e hábitos da IA</string>
+    <string name="reset_ai_habits_desc">Limpar preferências de reprodução aprendidas e histórico de mixes</string>
+    <string name="reset_ai_habits_confirm">Tem certeza de que deseja redefinir todas as recomendações de IA e dados de hábitos no dispositivo? Esta ação não pode ser desfeita.</string>
+    <string name="reset_ai_habits_success">Aprendizado e hábitos da IA redefinidos com sucesso</string>
+    <string name="manage_audio_folders">Gerenciar pastas de áudio</string>
+    <string name="manage_audio_folders_desc">Selecione pastas para incluir ou excluir da biblioteca</string>
+    <string name="system">Sistema</string>
+    <string name="library_organization">Biblioteca e organização</string>
+    <string name="progress_bar_classic">Clássico</string>
 </resources>
