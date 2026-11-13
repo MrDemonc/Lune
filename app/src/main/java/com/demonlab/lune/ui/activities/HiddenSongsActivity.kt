@@ -160,7 +160,7 @@ fun HiddenSongsScreen(onBack: () -> Unit) {
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
+                        containerColor = if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface,
                         scrolledContainerColor = if (hasBlurBackground) Color.Transparent else MaterialTheme.colorScheme.surface,
                         titleContentColor = if (hasBlurBackground) blurColors.textColor else MaterialTheme.colorScheme.onSurface
                     )

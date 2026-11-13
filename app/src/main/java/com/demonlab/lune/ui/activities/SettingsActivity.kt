@@ -1497,7 +1497,7 @@ fun SettingsScreen(
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
+                                containerColor = if (isBlurActive) Color.Transparent else MaterialTheme.colorScheme.surface,
                                 scrolledContainerColor = if (isBlurActive) Color.Transparent else MaterialTheme.colorScheme.surface,
                                 titleContentColor = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSurface
                             )
@@ -1556,7 +1556,7 @@ fun SettingsScreen(
                             },
                             scrollBehavior = scrollBehavior,
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
+                                containerColor = if (isBlurActive) Color.Transparent else MaterialTheme.colorScheme.surface,
                                 scrolledContainerColor = if (isBlurActive) Color.Transparent else MaterialTheme.colorScheme.surface,
                                 titleContentColor = if (isBlurActive) Color.White else MaterialTheme.colorScheme.onSurface
                             )
