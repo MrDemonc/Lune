@@ -490,14 +490,14 @@ fun AboutScreen() {
                 // 2. Author Section (MrDemonc)
                 SettingsSection(title = stringResource(R.string.author)) {
                     Surface(
+                        onClick = {
+                            runCatching { uriHandler.openUri("https://github.com/MrDemonc") }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 1.dp)
-                            .clip(RoundedCornerShape(24.dp))
                             .bounceClick()
-                            .clickable {
-                                runCatching { uriHandler.openUri("https://github.com/MrDemonc") }
-                            },
+                            .clip(RoundedCornerShape(24.dp)),
                         shape = RoundedCornerShape(24.dp),
                         color = cardBg,
                         tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
@@ -553,14 +553,14 @@ fun AboutScreen() {
                 // 3. Credits Section (Desukia)
                 SettingsSection(title = stringResource(R.string.credits)) {
                     Surface(
+                        onClick = {
+                            runCatching { uriHandler.openUri("https://github.com/desukia") }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 1.dp)
-                            .clip(RoundedCornerShape(24.dp))
                             .bounceClick()
-                            .clickable {
-                                runCatching { uriHandler.openUri("https://github.com/desukia") }
-                            },
+                            .clip(RoundedCornerShape(24.dp)),
                         shape = RoundedCornerShape(24.dp),
                         color = cardBg,
                         tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
@@ -635,18 +635,18 @@ fun AboutScreen() {
                             }
 
                             Surface(
+                                onClick = {
+                                    runCatching {
+                                        uriHandler.openUri(
+                                            contributor.html_url.ifEmpty { "https://github.com/${contributor.login}" }
+                                        )
+                                    }
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 1.dp)
-                                    .clip(shape)
                                     .bounceClick()
-                                    .clickable {
-                                        runCatching {
-                                            uriHandler.openUri(
-                                                contributor.html_url.ifEmpty { "https://github.com/${contributor.login}" }
-                                            )
-                                        }
-                                    },
+                                    .clip(shape),
                                 shape = shape,
                                 color = cardBg,
                                 tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
@@ -900,6 +900,7 @@ fun DonateDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .bounceClick()
+                            .clip(RoundedCornerShape(20.dp))
                     ) {
                         Row(
                             modifier = Modifier
@@ -965,6 +966,7 @@ fun DonateDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .bounceClick()
+                            .clip(RoundedCornerShape(20.dp))
                     ) {
                         Column(
                             modifier = Modifier

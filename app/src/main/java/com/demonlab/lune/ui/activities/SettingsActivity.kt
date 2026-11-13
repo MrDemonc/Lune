@@ -2208,23 +2208,7 @@ fun SettingsPreferenceItem(
     val headlineColor = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.onSurface
     val supportingColor = if (hasBlurBackground) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
-    val clickModifier = if (onClick != null) {
-        Modifier
-            .bounceClick()
-            .clip(shape)
-            .clickable(onClick = onClick)
-    } else Modifier
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 1.dp)
-            .clip(shape)
-            .then(clickModifier),
-        shape = shape,
-        color = cardBg,
-        tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
-    ) {
+    val content = @Composable {
         ListItem(
             supportingContent = supportingText?.let { { Text(it, color = supportingColor) } },
             leadingContent = {
@@ -2249,6 +2233,34 @@ fun SettingsPreferenceItem(
             )
         ) {
             Text(headlineText, fontWeight = FontWeight.Bold, color = headlineColor)
+        }
+    }
+
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 1.dp)
+                .bounceClick()
+                .clip(shape),
+            shape = shape,
+            color = cardBg,
+            tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
+        ) {
+            content()
+        }
+    } else {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 1.dp)
+                .clip(shape),
+            shape = shape,
+            color = cardBg,
+            tonalElevation = if (hasBlurBackground) 0.dp else 1.dp
+        ) {
+            content()
         }
     }
 }
