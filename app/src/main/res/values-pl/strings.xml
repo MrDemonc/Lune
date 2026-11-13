@@ -299,6 +299,8 @@
     <string name="credits">Twórcy i podziękowania</string>
     <string name="credits_desc">Testy, sugestie projektowe oraz logo</string>
     <string name="creator_desc">Twórca i osoba utrzymująca odtwarzacz Lune Music</string>
+    <string name="contributors">Współtwórcy</string>
+    <string name="contributions_count">%1 wkładów</string>
     <string name="gesture">Gesty</string>
     <string name="gesture_desc">Dostosuj gesty aplikacji</string>
     <string name="enable_gestures">Włącz gesty</string>

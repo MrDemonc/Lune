@@ -287,6 +287,8 @@
     <string name="credits">دم این بچه‌ها گرم</string>
     <string name="credits_desc">کسایی که تو تست، طراحی و لوگو کمک کردن</string>
     <string name="creator_desc">کدنویس و خالق اصلی اپ Lune</string>
+    <string name="contributors">مشارکت‌کنندگان</string>
+    <string name="contributions_count">%1 مشارکت</string>
     <string name="gesture">ژست‌های حرکتی</string>
     <string name="gesture_desc">سوایپ و ژست‌ها رو تنظیم کن</string>
     <string name="enable_gestures">روشن کردن ژست‌های حرکتی</string>

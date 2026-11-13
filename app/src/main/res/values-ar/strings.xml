@@ -287,6 +287,8 @@
     <string name="credits">الاعتمادات</string>
     <string name="credits_desc">الاختبار، اقتراحات التصميم، والشعار</string>
     <string name="creator_desc">منشئ ومشرف مشغل الموسيقى Lune</string>
+    <string name="contributors">المساهمون</string>
+    <string name="contributions_count">%1 مساهمة</string>
     <string name="gesture">الإيماءات</string>
     <string name="gesture_desc">تخصيص إيماءات التطبيق</string>
     <string name="enable_gestures">تفعيل الإيماءات</string>

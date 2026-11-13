@@ -299,6 +299,8 @@
     <string name="credits">致谢</string>
     <string name="credits_desc">测试、设计建议和图标</string>
     <string name="creator_desc">Lune 音乐播放器的创建者和维护者</string>
+    <string name="contributors">贡献者</string>
+    <string name="contributions_count">%1 次贡献</string>
     <string name="gesture">手势</string>
     <string name="gesture_desc">自定义应用手势</string>
     <string name="enable_gestures">启用手势</string>

@@ -288,6 +288,8 @@
     <string name="credits">Mitwirkende</string>
     <string name="credits_desc">Tests, Designvorschläge und Logo</string>
     <string name="creator_desc">Ersteller und Betreuer von Lune Music Player</string>
+    <string name="contributors">Mitwirkende</string>
+    <string name="contributions_count">%1 Beiträge</string>
     <string name="gesture">Gesten</string>
     <string name="gesture_desc">App-Gesten anpassen</string>
     <string name="enable_gestures">Gesten aktivieren</string>

@@ -299,6 +299,8 @@
     <string name="credits">Créditos</string>
     <string name="credits_desc">Pruebas, sugerencias de diseño y logo</string>
     <string name="creator_desc">Creador y mantenedor de lune music player</string>
+    <string name="contributors">Contribuidores</string>
+    <string name="contributions_count">%1$d contribuciones</string>
     <string name="gesture">Gestos</string>
     <string name="gesture_desc">Configuracion de gestos</string>
     <string name="enable_gestures">Activar gestos</string>

@@ -305,6 +305,8 @@
     <string name="credits">Credits</string>
     <string name="credits_desc">Testing, design suggestions, and logo</string>
     <string name="creator_desc">Creator and maintainer of lune music player</string>
+    <string name="contributors">Contributors</string>
+    <string name="contributions_count">%1$d contributions</string>
     <string name="gesture">Gesture</string>
     <string name="gesture_desc">Customize the app gestures</string>
     <string name="enable_gestures">Enable gestures</string>

@@ -288,6 +288,8 @@
     <string name="credits">Crédits</string>
     <string name="credits_desc">Tests, suggestions de design et logo</string>
     <string name="creator_desc">Créateur et mainteneur du lecteur Lune Music</string>
+    <string name="contributors">Contributeurs</string>
+    <string name="contributions_count">%1 contributions</string>
     <string name="gesture">Gestes</string>
     <string name="gesture_desc">Configuration des gestes</string>
     <string name="enable_gestures">Activer les gestes</string>

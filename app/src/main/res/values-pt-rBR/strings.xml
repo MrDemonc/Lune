@@ -286,7 +286,9 @@
     <string name="visualizer_mini_player">Mostrar no Mini Player</string> 
     <string name="credits">Créditos</string> 
     <string name="credits_desc">Testes, sugestões de design e logo</string> 
-    <string name="creator_desc">Criador e mantenedor do lune music player</string> 
+    <string name="creator_desc">Criador e mantenedor do lune music player</string>
+    <string name="contributors">Contribuidores</string>
+    <string name="contributions_count">%1 contribuições</string> 
     <string name="gesture">Gestos</string>
     <string name="gesture_desc">Configuração de gestos</string>
     <string name="enable_gestures">Ativar gestos</string>

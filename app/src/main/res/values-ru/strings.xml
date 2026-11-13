@@ -288,6 +288,8 @@
     <string name="credits">Благодарности</string>
     <string name="credits_desc">Тестирование, дизайн и логотип</string>
     <string name="creator_desc">Создатель и разработчик Lune Music Player</string>
+    <string name="contributors">Участники</string>
+    <string name="contributions_count">%1 контрибуций</string>
     <string name="gesture">Жесты</string>
     <string name="gesture_desc">Настройка жестов приложения</string>
     <string name="enable_gestures">Включить жесты</string>
