@@ -623,4 +623,9 @@
     <string name="system">System</string>
     <string name="library_organization">Biblioteka i organizacja</string>
     <string name="progress_bar_classic">Klasyczny</string>
+    <string name="lyrics_on_cover_title">Tekst utworu na okładce</string>
+    <string name="lyrics_on_cover_desc">Wyświetlaj zsynchronizowany tekst w obszarze okładki po dotknięciu przycisku tekstu</string>
+    <string name="open_full_lyrics">Zobacz pełny tekst</string>
+    <string name="show_album_cover">Pokaż okładkę</string>
+    <string name="align_lyrics">Wyrównaj tekst</string>
 </resources>

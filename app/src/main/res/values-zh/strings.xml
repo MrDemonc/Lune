@@ -618,4 +618,9 @@
     <string name="system">系统</string>
     <string name="library_organization">音乐库与整理</string>
     <string name="progress_bar_classic">经典</string>
+    <string name="lyrics_on_cover_title">封面歌词</string>
+    <string name="lyrics_on_cover_desc">点击歌词按钮时在专辑封面区域显示同步歌词</string>
+    <string name="open_full_lyrics">查看完整歌词</string>
+    <string name="show_album_cover">显示封面</string>
+    <string name="align_lyrics">对齐歌词</string>
 </resources>

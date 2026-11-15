@@ -277,6 +277,20 @@ class PlaybackManager private constructor(private val context: Context) {
     var isFullPlayerVisualizerEnabled by mutableStateOf(settings.isFullPlayerVisualizerEnabled)
     var isMiniPlayerVisualizerEnabled by mutableStateOf(settings.isMiniPlayerVisualizerEnabled)
     
+    // Cover Lyrics
+    var showCoverLyrics by mutableStateOf(settings.showCoverLyrics)
+
+    fun toggleCoverLyrics() {
+        val next = !showCoverLyrics
+        showCoverLyrics = next
+        settings.showCoverLyrics = next
+    }
+
+    fun setCoverLyricsShowing(showing: Boolean) {
+        showCoverLyrics = showing
+        settings.showCoverLyrics = showing
+    }
+    
     private val _visualizerData = MutableStateFlow(FloatArray(48) { 0.1f })
     val visualizerData = _visualizerData.asStateFlow()
     private var visualizer: Visualizer? = null

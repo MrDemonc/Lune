@@ -620,4 +620,9 @@
     <string name="system">Système</string>
     <string name="library_organization">Bibliothèque &amp; Organisation</string>
     <string name="progress_bar_classic">Classique</string>
+    <string name="lyrics_on_cover_title">Paroles sur la pochette</string>
+    <string name="lyrics_on_cover_desc">Afficher les paroles synchronisées sur la pochette en appuyant sur le bouton des paroles</string>
+    <string name="open_full_lyrics">Voir les paroles complètes</string>
+    <string name="show_album_cover">Afficher la pochette</string>
+    <string name="align_lyrics">Aligner les paroles</string>
 </resources>

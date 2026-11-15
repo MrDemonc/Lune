@@ -616,4 +616,9 @@
     <string name="system">سیستم</string>
     <string name="library_organization">کتابخانه و سازمان‌دهی</string>
     <string name="progress_bar_classic">کلاسیک</string>
+    <string name="lyrics_on_cover_title">متن آهنگ روی کاور</string>
+    <string name="lyrics_on_cover_desc">نمایش متن آهنگ همگام‌سازی شده در ناحیه کاور با ضربه زدن روی دکمه متن</string>
+    <string name="open_full_lyrics">مشاهده متن کامل</string>
+    <string name="show_album_cover">نمایش کاور</string>
+    <string name="align_lyrics">تراز متن ترانه</string>
 </resources>

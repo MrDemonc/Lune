@@ -618,4 +618,9 @@
     <string name="system">النظام</string>
     <string name="library_organization">المكتبة والتنظيم</string>
     <string name="progress_bar_classic">كلاسيكي</string>
+    <string name="lyrics_on_cover_title">كلمات الأغاني على الغلاف</string>
+    <string name="lyrics_on_cover_desc">عرض كلمات الأغاني المتزامنة في منطقة الغلاف عند الضغط على زر كلمات الأغاني</string>
+    <string name="open_full_lyrics">عرض كلمات الأغاني كاملة</string>
+    <string name="show_album_cover">إظهار الغلاف</string>
+    <string name="align_lyrics">محاذاة الكلمات</string>
 </resources>

@@ -431,6 +431,22 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_mini_player_minimized", value).apply()
         }
 
+    private val _isLyricsOnCoverEnabled = mutableStateOf(prefs.getBoolean("is_lyrics_on_cover_enabled", false))
+    var isLyricsOnCoverEnabled: Boolean
+        get() = _isLyricsOnCoverEnabled.value
+        set(value) {
+            _isLyricsOnCoverEnabled.value = value
+            prefs.edit().putBoolean("is_lyrics_on_cover_enabled", value).apply()
+        }
+
+    private val _showCoverLyrics = mutableStateOf(prefs.getBoolean("show_cover_lyrics", false))
+    var showCoverLyrics: Boolean
+        get() = _showCoverLyrics.value
+        set(value) {
+            _showCoverLyrics.value = value
+            prefs.edit().putBoolean("show_cover_lyrics", value).apply()
+        }
+
     private val _isBlurEnabled = mutableStateOf(prefs.getBoolean("is_blur_enabled", true))
     var isBlurEnabled: Boolean
         get() = _isBlurEnabled.value
@@ -475,9 +491,13 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_blur_controls_enabled", value).apply()
         }
 
+    private val _lyricsTextAlignment = mutableStateOf(prefs.getInt("lyrics_text_alignment", 0))
     var lyricsTextAlignment: Int
-        get() = prefs.getInt("lyrics_text_alignment", 0)
-        set(value) = prefs.edit().putInt("lyrics_text_alignment", value).apply()
+        get() = _lyricsTextAlignment.value
+        set(value) {
+            _lyricsTextAlignment.value = value
+            prefs.edit().putInt("lyrics_text_alignment", value).apply()
+        }
 
     var lyricsSpeedIndex: Int
         get() = prefs.getInt("lyrics_speed_index", 0)

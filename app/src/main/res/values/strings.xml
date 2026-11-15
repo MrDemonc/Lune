@@ -622,4 +622,9 @@
     <string name="system">System</string>
     <string name="library_organization">Library &amp; Organization</string>
     <string name="progress_bar_classic">Classic</string>
+    <string name="lyrics_on_cover_title">Lyrics on cover</string>
+    <string name="lyrics_on_cover_desc">Display synchronized lyrics in the album cover area when tapping the lyrics button</string>
+    <string name="open_full_lyrics">View full lyrics</string>
+    <string name="show_album_cover">Show album cover</string>
+    <string name="align_lyrics">Align lyrics</string>
 </resources>

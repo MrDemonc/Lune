@@ -620,4 +620,9 @@
     <string name="system">Sistema</string>
     <string name="library_organization">Biblioteca e organização</string>
     <string name="progress_bar_classic">Clássico</string>
+    <string name="lyrics_on_cover_title">Letras na capa</string>
+    <string name="lyrics_on_cover_desc">Exibir letras sincronizadas na área da capa ao tocar no botão de letra</string>
+    <string name="open_full_lyrics">Ver letras completas</string>
+    <string name="show_album_cover">Mostrar capa</string>
+    <string name="align_lyrics">Alinhar letras</string>
 </resources>

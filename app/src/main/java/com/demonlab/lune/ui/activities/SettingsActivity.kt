@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Security
@@ -909,6 +910,15 @@ fun SettingsScreen(
                 section = playerSectionTitle,
                 icon = Icons.Default.PlayCircle,
                 keywords = listOf("player", "reproductor", "caratula", "cover", "onda", "waveform", "controles", "personalizar"),
+                onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
+            ),
+            SearchableSetting(
+                id = "lyrics_on_cover",
+                title = context.getString(R.string.lyrics_on_cover_title),
+                description = context.getString(R.string.lyrics_on_cover_desc),
+                section = playerSectionTitle,
+                icon = Icons.Default.Lyrics,
+                keywords = listOf("lyrics", "letras", "cover", "caratula", "portada", "lrc", "sincronizadas"),
                 onClick = { context.startActivity(Intent(context, PlayerCustomizationActivity::class.java)) }
             ),
             SearchableSetting(

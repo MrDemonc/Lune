@@ -620,4 +620,9 @@
     <string name="system">Система</string>
     <string name="library_organization">Медиатека и организация</string>
     <string name="progress_bar_classic">Классический</string>
+    <string name="lyrics_on_cover_title">Текст на обложке</string>
+    <string name="lyrics_on_cover_desc">Показывать синхронизированный текст в области обложки при нажатии на кнопку текста</string>
+    <string name="open_full_lyrics">Открыть полный текст</string>
+    <string name="show_album_cover">Показать обложку</string>
+    <string name="align_lyrics">Выравнивание текста</string>
 </resources>

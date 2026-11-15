@@ -617,4 +617,9 @@
     <string name="system">System</string>
     <string name="library_organization">Bibliothek &amp; Organisation</string>
     <string name="progress_bar_classic">Klassisch</string>
+    <string name="lyrics_on_cover_title">Songtexte auf dem Cover</string>
+    <string name="lyrics_on_cover_desc">Synchronisierte Songtexte im Cover-Bereich anzeigen, wenn die Songtext-Taste gedrückt wird</string>
+    <string name="open_full_lyrics">Vollständige Songtexte anzeigen</string>
+    <string name="show_album_cover">Cover anzeigen</string>
+    <string name="align_lyrics">Songtext ausrichten</string>
 </resources>

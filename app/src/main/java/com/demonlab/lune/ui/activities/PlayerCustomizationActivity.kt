@@ -119,6 +119,7 @@ fun PlayerCustomizationScreen(
     var controlsColorPalette by remember { mutableIntStateOf(settingsManager.controlsColorPalette) }
     var isPlayerGradientBackgroundEnabled by remember { mutableStateOf(settingsManager.isPlayerGradientBackgroundEnabled) }
     var useQuickPlayer by remember { mutableStateOf(settingsManager.useQuickPlayer) }
+    var isLyricsOnCoverEnabled by remember { mutableStateOf(settingsManager.isLyricsOnCoverEnabled) }
     var isGesturesEnabled by remember { mutableStateOf(settingsManager.isGesturesEnabled) }
     var swipeUpAction by remember { mutableIntStateOf(settingsManager.swipeUpAction) }
     var showSwipeUpOptions by remember { mutableStateOf(false) }
@@ -1179,6 +1180,34 @@ fun PlayerCustomizationScreen(
                                 thumbContent = {
                                     Icon(
                                         imageVector = if (useQuickPlayer) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Section: Lyrics
+                SettingsSection(title = stringResource(R.string.option_lyrics)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.lyrics_on_cover_title),
+                        supportingText = stringResource(R.string.lyrics_on_cover_desc),
+                        icon = Icons.Default.Lyrics,
+                        position = SectionPosition.SINGLE,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = isLyricsOnCoverEnabled,
+                                onCheckedChange = {
+                                    isLyricsOnCoverEnabled = it
+                                    settingsManager.isLyricsOnCoverEnabled = it
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (isLyricsOnCoverEnabled) Icons.Default.Check else Icons.Default.Close,
                                         contentDescription = null,
                                         modifier = Modifier.size(SwitchDefaults.IconSize)
                                     )
