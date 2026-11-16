@@ -628,4 +628,12 @@
     <string name="open_full_lyrics">Ver letras completas</string>
     <string name="show_album_cover">Mostrar carátula</string>
     <string name="align_lyrics">Alinear letras</string>
+    <string name="select_this_folder">Seleccionar esta carpeta</string>
+    <string name="detected_folders">Carpetas detectadas</string>
+    <string name="storage_explorer">Explorador de almacenamiento</string>
+    <string name="system_folder_picker">Seleccionar con selector del sistema</string>
+    <string name="folder_included">Incluida en la biblioteca</string>
+    <string name="folder_excluded">Excluida de la biblioteca</string>
+    <string name="folder_selected_toast">Carpeta seleccionada: %1$s</string>
+    <string name="songs_count_format">%1$d canciones</string>
 </resources>

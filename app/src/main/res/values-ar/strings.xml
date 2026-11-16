@@ -623,4 +623,12 @@
     <string name="open_full_lyrics">عرض كلمات الأغاني كاملة</string>
     <string name="show_album_cover">إظهار الغلاف</string>
     <string name="align_lyrics">محاذاة الكلمات</string>
+    <string name="select_this_folder">تحديد هذا المجلد</string>
+    <string name="detected_folders">المجلدات المكتشفة</string>
+    <string name="storage_explorer">مستكشف التخزين</string>
+    <string name="system_folder_picker">تحديد باستخدام منتقي النظام</string>
+    <string name="folder_included">مضمن في المكتبة</string>
+    <string name="folder_excluded">مستبعد من المكتبة</string>
+    <string name="folder_selected_toast">تم تحديد المجلد: %1$s</string>
+    <string name="songs_count_format">%1$d أغنية</string>
 </resources>

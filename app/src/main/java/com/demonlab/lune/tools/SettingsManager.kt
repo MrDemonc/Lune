@@ -36,9 +36,13 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("options_order", "like,shuffle,repeat,crossfade,automix,timer,eq") ?: "like,shuffle,repeat,crossfade,automix,timer,eq"
         set(value) = prefs.edit().putString("options_order", value).apply()
 
+    private val _hiddenFolders = mutableStateOf(prefs.getStringSet("hidden_folders", emptySet()) ?: emptySet())
     var hiddenFolders: Set<String>
-        get() = prefs.getStringSet("hidden_folders", emptySet()) ?: emptySet()
-        set(value) = prefs.edit().putStringSet("hidden_folders", value).apply()
+        get() = _hiddenFolders.value
+        set(value) {
+            _hiddenFolders.value = value
+            prefs.edit().putStringSet("hidden_folders", value).apply()
+        }
 
     private val _hiddenSongIds = mutableStateOf(prefs.getStringSet("hidden_song_ids", emptySet()) ?: emptySet())
     var hiddenSongIds: Set<String>

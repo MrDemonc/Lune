@@ -625,4 +625,12 @@
     <string name="open_full_lyrics">Ver letras completas</string>
     <string name="show_album_cover">Mostrar capa</string>
     <string name="align_lyrics">Alinhar letras</string>
+    <string name="select_this_folder">Selecionar esta pasta</string>
+    <string name="detected_folders">Pastas detectadas</string>
+    <string name="storage_explorer">Explorador de armazenamento</string>
+    <string name="system_folder_picker">Selecionar com seletor do sistema</string>
+    <string name="folder_included">Incluída na biblioteca</string>
+    <string name="folder_excluded">Excluída da biblioteca</string>
+    <string name="folder_selected_toast">Pasta selecionada: %1$s</string>
+    <string name="songs_count_format">%1$d músicas</string>
 </resources>

@@ -2,6 +2,7 @@ package com.demonlab.lune.ui.activities
 
 import android.os.Bundle
 import android.content.Intent
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -219,6 +220,41 @@ fun SettingsScreen(
     var showArtistSortDialog by remember { mutableStateOf(false) }
     var showPlaylistSortDialog by remember { mutableStateOf(false) }
     var showSectionCustomizationDialog by remember { mutableStateOf(false) }
+    var musicFolderUri by remember { mutableStateOf(settingsManager.musicFolderUri) }
+    val initialSafUri = remember {
+        try {
+            val musicDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MUSIC)
+            if (musicDir.exists()) {
+                android.provider.DocumentsContract.buildTreeDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:${musicDir.name}"
+                )
+            } else null
+        } catch (_: Exception) { null }
+    }
+    val safAudioFolderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                settingsManager.musicFolderUri = uri.toString()
+                settingsManager.isInitialFolderScanPending = true
+                musicFolderUri = uri.toString()
+                val folderName = uri.lastPathSegment?.substringAfterLast(":") ?: uri.lastPathSegment ?: ""
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.folder_selected_toast, folderName),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     // ─── Section 5: Copia de Seguridad y Datos ───
     val backupManager = remember { PlaylistBackupManager(context) }
@@ -1160,7 +1196,7 @@ fun SettingsScreen(
                 section = librarySectionTitle,
                 icon = Icons.Default.Folder,
                 keywords = listOf("carpetas", "folders", "archivos", "importar", "directorio"),
-                onClick = { context.startActivity(Intent(context, FolderBrowserActivity::class.java)) }
+                onClick = { safAudioFolderLauncher.launch(initialSafUri) }
             ),
             SearchableSetting(
                 id = "hidden_songs",
@@ -1826,12 +1862,24 @@ fun SettingsScreen(
                             }
                         )
 
+                        val currentFolderName = musicFolderUri?.let { uriStr ->
+                            try {
+                                val uri = Uri.parse(uriStr)
+                                uri.lastPathSegment?.substringAfterLast(":") ?: uri.lastPathSegment
+                            } catch (_: Exception) { null }
+                        }
+                        val folderSupportingText = if (!currentFolderName.isNullOrBlank()) {
+                            "$currentFolderName • ${stringResource(R.string.manage_audio_folders_desc)}"
+                        } else {
+                            stringResource(R.string.manage_audio_folders_desc)
+                        }
+
                         SettingsPreferenceItem(
                             headlineText = stringResource(R.string.manage_audio_folders),
-                            supportingText = stringResource(R.string.manage_audio_folders_desc),
+                            supportingText = folderSupportingText,
                             icon = Icons.Default.Folder,
                             position = SectionPosition.MIDDLE,
-                            onClick = { context.startActivity(Intent(context, FolderBrowserActivity::class.java)) }
+                            onClick = { safAudioFolderLauncher.launch(initialSafUri) }
                         )
 
                         val hiddenCount = settingsManager.hiddenSongIds.size

@@ -247,6 +247,11 @@
             android:exported="false"
             android:label="@string/hidden_songs"
             android:theme="@style/Theme.Lune" />
+        <activity
+            android:name=".ui.activities.FolderBrowserActivity"
+            android:exported="false"
+            android:label="@string/manage_audio_folders"
+            android:theme="@style/Theme.Lune" />
 
         <service
             android:name=".tools.MusicService"
