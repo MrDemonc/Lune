@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -35,6 +36,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -653,14 +655,21 @@ fun EqualizerScreen(onBack: () -> Unit) {
                         // Reverb Presets
                         val reverbNames = listOf("None", "Small Room", "Medium Room", "Large Room", "Medium Hall", "Large Hall", "Plate")
                         val reverbValues = listOf(0, 1, 2, 3, 4, 5, 6)
-                        var currentReverb by remember { mutableStateOf(playbackManager.reverbPreset) }
+                        val isSpatialOn = playbackManager.isSpatialAudioEnabled
+                        val reverbAlpha by animateFloatAsState(
+                            targetValue = if (isSpatialOn) 1f else 0.5f,
+                            label = "reverbAlpha"
+                        )
+                        var currentReverb by remember { mutableStateOf(if (isSpatialOn) playbackManager.reverbPreset else 0) }
 
-                        LaunchedEffect(playbackManager.reverbPreset) {
-                            currentReverb = playbackManager.reverbPreset
+                        LaunchedEffect(playbackManager.reverbPreset, isSpatialOn) {
+                            currentReverb = if (isSpatialOn) playbackManager.reverbPreset else 0
                         }
 
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .alpha(reverbAlpha),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -686,14 +695,21 @@ fun EqualizerScreen(onBack: () -> Unit) {
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        LazyRow(
+                            modifier = Modifier.alpha(reverbAlpha),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             items(reverbNames.size) { index ->
-                                val isActive = currentReverb == reverbValues[index]
+                                val targetPreset = reverbValues[index]
+                                val isActive = currentReverb == targetPreset
                                 FilterChip(
                                     selected = isActive,
                                     onClick = {
-                                        currentReverb = reverbValues[index]
-                                        playbackManager.updateReverbPreset(reverbValues[index])
+                                        if (targetPreset > 0 && !playbackManager.isSpatialAudioEnabled) {
+                                            playbackManager.updateSpatialAudioEnabled(true)
+                                        }
+                                        currentReverb = targetPreset
+                                        playbackManager.updateReverbPreset(targetPreset)
                                     },
                                     label = { Text(reverbNames[index]) },
                                     border = null,

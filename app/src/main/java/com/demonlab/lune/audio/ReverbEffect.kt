@@ -53,21 +53,25 @@ class ReverbEffect {
             val enabled = preset != 0
             if (Build.VERSION.SDK_INT >= 31) {
                 reverb?.let {
-                    it.applyPreset(preset)
-                    it.enabled = enabled
+                    if (!enabled) it.enabled = false
+                    if (preset != 0) it.applyPreset(preset)
+                    if (enabled) it.enabled = true
                 }
                 secondaryReverb?.let {
-                    it.applyPreset(preset)
-                    it.enabled = enabled
+                    if (!enabled) it.enabled = false
+                    if (preset != 0) it.applyPreset(preset)
+                    if (enabled) it.enabled = true
                 }
             } else {
                 reverbLegacy?.let {
+                    if (!enabled) it.enabled = false
                     it.setPreset(preset.toShort())
-                    it.enabled = enabled
+                    if (enabled) it.enabled = true
                 }
                 secondaryReverbLegacy?.let {
+                    if (!enabled) it.enabled = false
                     it.setPreset(preset.toShort())
-                    it.enabled = enabled
+                    if (enabled) it.enabled = true
                 }
             }
         } catch (t: Throwable) {

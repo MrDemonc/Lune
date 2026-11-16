@@ -400,24 +400,29 @@ class MusicService : MediaLibraryService() {
             val virt = Virtualizer(0, sessionId).apply {
                 enabled = settingsManager.isSpatialAudioEnabled
                 if (strengthSupported) {
-                    setStrength(800.toShort())
-                    currentSpatialStrength = 800.toShort()
+                    val strength = if (settingsManager.isSpatialAudioEnabled) 800.toShort() else 0.toShort()
+                    setStrength(strength)
+                    currentSpatialStrength = strength
                 }
             }
             if (isSecondary) secondaryVirtualizer = virt else virtualizer = virt
         } catch (t: Throwable) { t.printStackTrace() }
 
         try {
+            val effectiveReverbPreset = if (settingsManager.isSpatialAudioEnabled) settingsManager.reverbPreset else 0
+            if (!settingsManager.isSpatialAudioEnabled && settingsManager.reverbPreset != 0) {
+                settingsManager.reverbPreset = 0
+            }
             if (isSecondary) {
                 loudnessEffect?.setup(sessionId, true, settingsManager.isLoudnessEnabled, settingsManager.loudnessGain)
-                reverbEffect?.setup(sessionId, true, settingsManager.reverbPreset)
+                reverbEffect?.setup(sessionId, true, effectiveReverbPreset)
             } else {
                 val loud = LoudnessEffect().apply {
                     setup(sessionId, false, settingsManager.isLoudnessEnabled, settingsManager.loudnessGain)
                 }
                 loudnessEffect = loud
                 val rev = ReverbEffect().apply {
-                    setup(sessionId, false, settingsManager.reverbPreset)
+                    setup(sessionId, false, effectiveReverbPreset)
                 }
                 reverbEffect = rev
             }
@@ -2376,6 +2381,9 @@ class MusicService : MediaLibraryService() {
     }
 
     fun setReverbPreset(preset: Int) {
+        if (preset != 0 && !settingsManager.isSpatialAudioEnabled) {
+            setSpatialAudioEnabled(true)
+        }
         if (preset == 0) {
             executeEffectTransition(true) {
                 reverbEffect?.setPreset(0)
@@ -2422,37 +2430,45 @@ class MusicService : MediaLibraryService() {
     fun setSpatialAudioEnabled(enabled: Boolean) {
         spatialRampJob?.cancel()
         spatialRampJob = serviceScope.launch {
-            val target = if (enabled) 800.toShort() else 0.toShort()
-            val start = currentSpatialStrength
-            val steps = 15
-
-            if (enabled) {
-                virtualizer?.enabled = true
-                secondaryVirtualizer?.enabled = true
-            }
-
-            for (i in 0..steps) {
-                val progress = i.toFloat() / steps
-                val eased = if (enabled) 1f - (1f - progress) * (1f - progress)
-                            else progress * progress
-                val value = (start + (target - start) * eased)
-                    .toInt().coerceIn(0, 1000).toShort()
-                if (virtualizer?.strengthSupported == true) {
-                    virtualizer?.setStrength(value)
-                }
-                if (secondaryVirtualizer?.strengthSupported == true) {
-                    secondaryVirtualizer?.setStrength(value)
-                }
-                delay(10)
-            }
-
-            currentSpatialStrength = target
-
             if (!enabled) {
+                // When disabling spatial audio, Reverb must also be turned off immediately
+                // inside executeEffectTransition to avoid DSP feedback loop / loud pops on Android 11 / MIUI 12.5 HALs.
+                settingsManager.reverbPreset = 0
                 executeEffectTransition(true) {
+                    reverbEffect?.setPreset(0)
+                    if (virtualizer?.strengthSupported == true) {
+                        virtualizer?.setStrength(0.toShort())
+                    }
+                    if (secondaryVirtualizer?.strengthSupported == true) {
+                        secondaryVirtualizer?.setStrength(0.toShort())
+                    }
                     virtualizer?.enabled = false
                     secondaryVirtualizer?.enabled = false
                 }
+                currentSpatialStrength = 0.toShort()
+            } else {
+                val target = 800.toShort()
+                val start = currentSpatialStrength
+                val steps = 15
+
+                virtualizer?.enabled = true
+                secondaryVirtualizer?.enabled = true
+
+                for (i in 0..steps) {
+                    val progress = i.toFloat() / steps
+                    val eased = 1f - (1f - progress) * (1f - progress)
+                    val value = (start + (target - start) * eased)
+                        .toInt().coerceIn(0, 1000).toShort()
+                    if (virtualizer?.strengthSupported == true) {
+                        virtualizer?.setStrength(value)
+                    }
+                    if (secondaryVirtualizer?.strengthSupported == true) {
+                        secondaryVirtualizer?.setStrength(value)
+                    }
+                    delay(10)
+                }
+
+                currentSpatialStrength = target
             }
         }
     }

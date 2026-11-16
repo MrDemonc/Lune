@@ -245,7 +245,7 @@ class PlaybackManager private constructor(private val context: Context) {
         private set
     var isTuning432 by mutableStateOf(settings.isTuning432)
         private set
-    var reverbPreset by mutableStateOf(settings.reverbPreset)
+    var reverbPreset by mutableStateOf(if (settings.isSpatialAudioEnabled) settings.reverbPreset else 0)
         private set
     var balance by mutableStateOf(settings.balance)
         private set
@@ -279,6 +279,12 @@ class PlaybackManager private constructor(private val context: Context) {
     
     // Cover Lyrics
     var showCoverLyrics by mutableStateOf(settings.showCoverLyrics)
+
+    init {
+        if (!settings.isSpatialAudioEnabled && settings.reverbPreset != 0) {
+            settings.reverbPreset = 0
+        }
+    }
 
     fun toggleCoverLyrics() {
         val next = !showCoverLyrics
@@ -1393,12 +1399,24 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun toggleSpatialAudio() {
-        isSpatialAudioEnabled = !isSpatialAudioEnabled
-        settings.isSpatialAudioEnabled = isSpatialAudioEnabled
-        musicService?.setSpatialAudioEnabled(isSpatialAudioEnabled)
+        updateSpatialAudioEnabled(!isSpatialAudioEnabled)
+    }
+
+    fun updateSpatialAudioEnabled(enabled: Boolean) {
+        if (isSpatialAudioEnabled == enabled) return
+        isSpatialAudioEnabled = enabled
+        settings.isSpatialAudioEnabled = enabled
+        if (!enabled && reverbPreset != 0) {
+            reverbPreset = 0
+            settings.reverbPreset = 0
+        }
+        musicService?.setSpatialAudioEnabled(enabled)
     }
 
     fun updateReverbPreset(preset: Int) {
+        if (preset != 0 && !isSpatialAudioEnabled) {
+            updateSpatialAudioEnabled(true)
+        }
         reverbPreset = preset
         settings.reverbPreset = preset
         musicService?.setReverbPreset(preset)
