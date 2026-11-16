@@ -449,6 +449,7 @@ fun SortBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 24.dp)
             ) {
                 Box(
@@ -1289,9 +1290,14 @@ fun PlayerOptionsBottomSheet(
     val blurColors = rememberBlurSheetColors(currentSong)
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,
@@ -1355,6 +1361,7 @@ fun PlayerOptionsBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 24.dp)
             ) {
                 Box(
@@ -1713,8 +1720,14 @@ fun VisualizerSettingsBottomSheet(
         }
     }
 
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+
     ModalBottomSheet(
         onDismissRequest = onClose,
+        sheetState = sheetState,
         containerColor = blurColors.containerColor,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = null,

@@ -584,50 +584,86 @@ class PlaybackManager private constructor(private val context: Context) {
             return
         }
 
+        val isMusicPlaying = isPlaying || (musicService?.isPlaying() == true)
+        if (!isMusicPlaying) return
+
         val sessionId = musicService?.getAudioSessionId() ?: 0
         if (sessionId == 0) return
 
         try {
-            visualizer?.release()
+            try {
+                visualizer?.enabled = false
+                visualizer?.release()
+            } catch (_: Throwable) {}
+            visualizer = null
+
             visualizer = Visualizer(sessionId).apply {
-                captureSize = Visualizer.getCaptureSizeRange()[1]
+                val range = Visualizer.getCaptureSizeRange()
+                captureSize = 512.coerceIn(range[0], range[1])
+
                 setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
-                    override fun onWaveFormDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {}
-                    override fun onFftDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
-                        if (data == null) return
-                        val barCount = 48
-                        val newMagnitudes = FloatArray(barCount)
-                        
-                        // Spreading frequency capture across a wider range
-                        for (i in 0 until barCount) {
-                            val index = 2 + (i * 4) // Skip DC/Nyquist and sample every 2nd frequency
-                            if (index + 1 >= data.size) break
-                            
-                            val real = data[index].toInt()
-                            val imag = data[index + 1].toInt()
-                            val magnitude = Math.sqrt((real * real + imag * imag).toDouble()).toFloat()
-                            
-                            // Normalize with a much lower divisor (32f) for maximum "growth"
-                            val normalized = (magnitude / 32f).coerceIn(0.1f, 1.2f)
-                            
-                            // Exponential Moving Average (EMA) smoothing
-                            newMagnitudes[i] = lastMagnitudes[i] + smoothingFactor * (normalized - lastMagnitudes[i])
-                        }
-                        
-                        lastMagnitudes = newMagnitudes
-                        _visualizerData.value = newMagnitudes
+                    override fun onWaveFormDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
+                        processVisualizerData(data, isFft = false)
                     }
-                }, Visualizer.getMaxCaptureRate() / 2, false, true)
+                    override fun onFftDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
+                        processVisualizerData(data, isFft = true)
+                    }
+                }, Visualizer.getMaxCaptureRate(), true, true)
                 enabled = true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("PlaybackManager", "Error starting visualizer", e)
+        }
+    }
+
+    private fun processVisualizerData(data: ByteArray?, isFft: Boolean) {
+        if (data == null || data.isEmpty()) return
+        val barCount = 48
+        val newMagnitudes = FloatArray(barCount)
+
+        if (isFft) {
+            // Check if FFT has non-zero data (many Android HALs return all zeros in offload mode)
+            val hasSignal = data.any { it.toInt() != 0 }
+            if (!hasSignal) return // Let waveform data capture handle it
+
+            val step = maxOf(1, (data.size / 2) / barCount)
+            for (i in 0 until barCount) {
+                val idx = (i * step) * 2 + 2
+                if (idx + 1 >= data.size) break
+                val r = data[idx].toFloat()
+                val im = data[idx + 1].toFloat()
+                val mag = Math.hypot(r.toDouble(), im.toDouble()).toFloat()
+                val normalized = (mag / 32f).coerceIn(0.08f, 1.2f)
+                newMagnitudes[i] = lastMagnitudes[i] + smoothingFactor * (normalized - lastMagnitudes[i])
+            }
+            lastMagnitudes = newMagnitudes
+            _visualizerData.value = newMagnitudes
+        } else {
+            // Raw PCM waveform: 8-bit unsigned (0..255), 128 is center/silence
+            val chunkSize = data.size / barCount
+            if (chunkSize <= 0) return
+            for (i in 0 until barCount) {
+                var maxDev = 0f
+                val start = i * chunkSize
+                val end = minOf(start + chunkSize, data.size)
+                for (j in start until end) {
+                    val sample = (data[j].toInt() and 0xFF) - 128
+                    val abs = Math.abs(sample).toFloat()
+                    if (abs > maxDev) maxDev = abs
+                }
+                val normalized = (maxDev / 48f).coerceIn(0.08f, 1.2f)
+                newMagnitudes[i] = lastMagnitudes[i] + smoothingFactor * (normalized - lastMagnitudes[i])
+            }
+            lastMagnitudes = newMagnitudes
+            _visualizerData.value = newMagnitudes
         }
     }
 
     fun stopVisualizer() {
-        visualizer?.enabled = false
-        visualizer?.release()
+        try {
+            visualizer?.enabled = false
+            visualizer?.release()
+        } catch (_: Throwable) {}
         visualizer = null
         val resetData = FloatArray(48) { 0.1f }
         lastMagnitudes = resetData
@@ -945,6 +981,7 @@ class PlaybackManager private constructor(private val context: Context) {
         isPlaying = false
         isTransitioning = false
         musicService?.pause()
+        stopVisualizer()
         stopStatsTracking()
     }
 
@@ -962,6 +999,7 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         isPlaying = true
         musicService?.resume()
+        startVisualizer()
         startStatsTracking()
     }
 
@@ -970,6 +1008,7 @@ class PlaybackManager private constructor(private val context: Context) {
         isPlaying = false
         isTransitioning = false
         musicService?.stopSelf()
+        stopVisualizer()
         stopStatsTracking()
     }
 

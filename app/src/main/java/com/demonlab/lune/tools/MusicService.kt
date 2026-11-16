@@ -223,6 +223,7 @@ class MusicService : MediaLibraryService() {
         }
         releaseWakeLock()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+        PlaybackManager.getInstance(applicationContext).stopVisualizer()
         updatePlaybackState()
         stopWidgetUpdateTimer()
         updateWidget()
@@ -1067,6 +1068,7 @@ class MusicService : MediaLibraryService() {
                             } catch (e: Throwable) {}
                         }
                         updatePlaybackState()
+                        pm.startVisualizer()
 
                         // Load metadata/notifications AFTER starting for instant audio response
                         serviceScope.launch {
@@ -1329,6 +1331,7 @@ class MusicService : MediaLibraryService() {
                 val newSessionId = mediaPlayer?.audioSessionId ?: 0
                 if (newSessionId != 0) {
                     setupAudioFx(newSessionId, false)
+                    PlaybackManager.getInstance(applicationContext).startVisualizer()
                 }
 
                 secondaryEqualizer = null
@@ -1471,6 +1474,7 @@ class MusicService : MediaLibraryService() {
         }
         releaseWakeLock()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+        PlaybackManager.getInstance(applicationContext).stopVisualizer()
         updatePlaybackState()
         stopWidgetUpdateTimer()
         updateWidget()
@@ -1536,6 +1540,7 @@ class MusicService : MediaLibraryService() {
             return
         }
         pm.updatePlayingState(true)
+        pm.startVisualizer()
         updatePlaybackState()
         startWidgetUpdateTimer()
         updateWidget()
@@ -1700,6 +1705,7 @@ class MusicService : MediaLibraryService() {
                         if (andPlay) {
                             acquireWakeLock()
                             start()
+                            pm.startVisualizer()
                         }
                         pm.updatePlayingState(andPlay)
                         if (andPlay) {

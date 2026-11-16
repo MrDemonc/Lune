@@ -2676,6 +2676,7 @@ fun MainScreen(
                                         isPlaying = isPlaying,
                                         progress = playbackProgress,
                                         showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
+                                        visualizerData = playbackManager.visualizerData.collectAsState().value,
                                         currentOutputIcon = playbackManager.currentOutputIcon,
                                         coverShape = coverShape,
                                         coverScale = coverScale,
