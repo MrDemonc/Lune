@@ -106,6 +106,7 @@ fun EditCategoryCoversSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = blurColors.containerColor,
         dragHandle = null,
+        scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
     ) {
         AppBlurBackdrop(
@@ -113,7 +114,8 @@ fun EditCategoryCoversSheet(
             isDarkTheme = blurColors.isDark,
             currentSong = currentSong,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            isSheet = true
         ) {
             Column(
                 modifier = Modifier

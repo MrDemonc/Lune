@@ -24,6 +24,21 @@
     <string name="bass_label">بیسِ کار</string>
     <string name="spatial_audio_label">صدای سه‌بعدی</string>
     <string name="loudness_label">بلندی صدا</string>
+    <string name="volume_boost_title">تقویت صدای اضافی</string>
+    <string name="volume_boost_desc">تقویت صدا فراتر از حد مجاز گوشی</string>
+    <string name="volume_boost_enable_switch">فراتر رفتن از حد صدا</string>
+    <string name="volume_boost_warning_off">این گزینه صدا را بیش از حد معمول ۱۰۰٪ گوشی تقویت می‌کند. گوش دادن با صدای بیش از حد می‌تواند به شنوایی یا بلندگوها آسیب دائمی بزند. با احتیاط استفاده کنید.</string>
+    <string name="volume_boost_level_safe_title">تقویت ایمن (+۰ تا +۱۰ دسی‌بل)</string>
+    <string name="volume_boost_level_safe_desc">سطح ایمن. مناسب برای آهنگ‌های کم‌صدا بدون افت کیفیت.</string>
+    <string name="volume_boost_level_med_title">تقویت متوسط (+۱۱ تا +۲۰ دسی‌بل)</string>
+    <string name="volume_boost_level_med_desc">احتیاط: ممکن است باعث افت کیفیت بلندگو و خستگی گوش با هندزفری شود.</string>
+    <string name="volume_boost_level_high_title">تقویت بسیار شدید! (+۲۱ تا +۳۰ دسی‌بل)</string>
+    <string name="volume_boost_level_high_desc">خطر! استفاده طولانی‌مدت در این سطح می‌تواند باعث افت شنوایی دائمی و سوختن بلندگوها شود.</string>
+    <string name="section_equalizer">اکولایزر</string>
+    <string name="section_audio_effects">افکت‌های صوتی</string>
+    <string name="section_volume_gain">صدا و قدرت</string>
+    <string name="section_balance_tuning">بالانس و تیونینگ</string>
+    <string name="section_dynamics_processing">پردازش داینامیک</string>
     <string name="reverb_label">اکو (Reverb)</string>
     <string name="balance_label">بالانس چپ و راست</string>
     <string name="balance_reset">ریست کردن بالانس</string>
@@ -49,7 +64,8 @@
     <string name="save_changes">سیو کردن تغییرات</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">ادامه</string>
+    <string name="tab_home">خانه</string>
+    <string name="tab_resume">خانه</string>
     <string name="tab_mixes">میکس‌های هوش مصنوعی</string>
     <string name="tab_genres">سبک‌ها</string>
 
@@ -271,6 +287,8 @@
     <string name="credits">دم این بچه‌ها گرم</string>
     <string name="credits_desc">کسایی که تو تست، طراحی و لوگو کمک کردن</string>
     <string name="creator_desc">کدنویس و خالق اصلی اپ Lune</string>
+    <string name="contributors">مشارکت‌کنندگان</string>
+    <string name="contributions_count">%1 مشارکت</string>
     <string name="gesture">ژست‌های حرکتی</string>
     <string name="gesture_desc">سوایپ و ژست‌ها رو تنظیم کن</string>
     <string name="enable_gestures">روشن کردن ژست‌های حرکتی</string>
@@ -402,6 +420,7 @@
 
     <!-- Donate -->
     <string name="donate_title">یه قهوه مهمونم کن!</string>
+    <string name="donate_desc">از توسعه برنامه Lune حمایت کنید</string>
     <string name="paypal">پی‌پال</string>
     <string name="monero">مونرو (کریپتو)</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -437,6 +456,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">پخش سریع</string>
+    <string name="use_quick_player_desc">پخش فایل‌های صوتی از برنامه‌های خارجی در یک پنجره پیش‌نمایش شناور به جای برنامه کامل</string>
     <string name="open_in_lune">باز کردن در Lune</string>
     <string name="close">بستن</string>
     <string name="cd_open_in_lune">باز کردن در Lune</string>
@@ -535,4 +555,78 @@
     <string name="player_background_title">پس‌زمینه پخش‌کننده</string>
     <string name="player_gradient_background">پس‌زمینه گرادیان پویا</string>
     <string name="player_gradient_background_desc">نمایش گرادیان‌های محو محیطی بر اساس کاور آهنگ فعلی</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">پنهان کردن از کتابخانه</string>
+    <string name="hide_song_desc">این آهنگ بدون حذف از دستگاه، از کتابخانه و پیشنهادات پنهان می‌شود. می‌توانید هر زمان آن را از تنظیمات بازیابی کنید.</string>
+    <string name="hide">پنهان کردن</string>
+    <string name="song_hidden_success">آهنگ از کتابخانه پنهان شد</string>
+    <string name="hidden_songs">آهنگ‌های پنهان‌شده</string>
+    <string name="hidden_songs_desc">مدیریت و بازیابی آهنگ‌های پنهان‌شده از کتابخانه</string>
+    <string name="hidden_songs_count">%d آهنگ پنهان‌شده</string>
+    <string name="no_hidden_songs">هیچ آهنگ پنهان‌شده‌ای وجود ندارد</string>
+    <string name="no_hidden_songs_desc">آهنگ‌هایی که از کتابخانه پنهان می‌کنید اینجا نمایش داده می‌شوند تا بتوانید آن‌ها را بازیابی کنید</string>
+    <string name="restore_all">بازیابی همه</string>
+    <string name="song_restored_success">\"%s\" به کتابخانه بازیابی شد</string>
+    <string name="all_songs_restored">همه آهنگ‌ها به کتابخانه بازیابی شدند</string>
+    <string name="default_sorting">مرتب‌سازی پیش‌فرض</string>
+    <string name="default_album_sorting">ترتیب پیش‌فرض آلبوم‌ها</string>
+    <string name="default_artist_sorting">ترتیب پیش‌فرض هنرمندان</string>
+    <string name="default_playlist_sorting">ترتیب پیش‌فرض لیست‌های پخش</string>
+    <string name="filter_duration_title">حذف فایل‌های صوتی کوتاه</string>
+    <string name="filter_duration_off">خاموش</string>
+    <string name="option_filter_short_audios">فیلتر</string>
+    <string name="filter_duration_description">حذف فایل‌های صوتی بسیار کوتاه (مانند یادداشت‌های صوتی، زنگ‌ها و جلوه‌های صوتی) از کتابخانه و صف‌های پخش.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">آیکون برنامه</string>
+    <string name="app_icon_desc">ظاهر مورد علاقه خود را برای آیکون Lune در صفحه اصلی انتخاب کنید.</string>
+    <string name="app_icon_default">پیش‌فرض</string>
+    <string name="app_icon_dynamic">رنگ پویا</string>
+    <string name="app_icon_mono_white">تک‌رنگ سفید</string>
+    <string name="app_icon_mono_black">تک‌رنگ مشکی</string>
+    <string name="app_icon_msg_default">رنگ بنفش اصیل و بی‌نظیر Lune. هرگز قدیمی نمی‌شود! 💜</string>
+    <string name="app_icon_msg_dynamic">مثل آفتاب‌پرست! هماهنگ با تصویر زمینه شما مثل یک نماد مد واقعی. 🎨</string>
+    <string name="app_icon_msg_mono_white">مینیمالیسم خالص. آنقدر درخشان که سایر آیکون‌ها عینک آفتابی نیاز دارند! ☀️</string>
+    <string name="app_icon_msg_mono_black">حالت مخفی فعال شد. شیک، مرموز و بهترین دوست نمایشگرهای OLED! 🕶️</string>
+    <string name="app_icon_applied">آیکون برنامه به‌روز شد!</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">به‌روزرسانی جدید</string>
+    <string name="update_sheet_subtitle">قابلیت‌های جدید در لونه</string>
+    <string name="update_sheet_version_transition">v%1$s ← v%2$s</string>
+    <string name="update_sheet_dismiss_btn">بزن بریم! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">تم</string>
+    <string name="theme_mode_title">حالت تم</string>
+    <string name="player_modes_title">حالت‌های پخش‌کننده</string>
+    <string name="advanced_audio_settings">تنظیمات پیشرفته صدا</string>
+    <string name="advanced_audio_settings_desc">نشان Hi-Fi، فلوت ۳۲ بیتی، حالت AAudio و کراس‌فید</string>
+    <string name="search_settings">جستجوی تنظیمات…</string>
+    <string name="no_settings_found">تنظیماتی پیدا نشد</string>
+    <string name="no_settings_found_desc">با کلمات کلیدی دیگری جستجو کنید</string>
+    <string name="privacy_ai_title">حریم خصوصی و هوش مصنوعی روی دستگاه</string>
+    <string name="reset_ai_habits">بازنشانی یادگیری و عادت‌های هوش مصنوعی</string>
+    <string name="reset_ai_habits_desc">پاک کردن سلیقه‌های یادگرفته‌شده و تاریخچه میکس‌ها</string>
+    <string name="reset_ai_habits_confirm">آیا مطمئن هستید که می‌خواهید تمام داده‌های پیشنهادات و عادت‌های هوش مصنوعی روی دستگاه را بازنشانی کنید؟ این عمل غیرقابل بازگشت است.</string>
+    <string name="reset_ai_habits_success">یادگیری و عادت‌های هوش مصنوعی با موفقیت بازنشانی شد</string>
+    <string name="manage_audio_folders">مدیریت پوشه‌های صوتی</string>
+    <string name="manage_audio_folders_desc">انتخاب پوشه‌ها برای اضافه یا حذف کردن از آهنگ‌ها</string>
+    <string name="system">سیستم</string>
+    <string name="library_organization">کتابخانه و سازمان‌دهی</string>
+    <string name="progress_bar_classic">کلاسیک</string>
+    <string name="lyrics_on_cover_title">متن آهنگ روی کاور</string>
+    <string name="lyrics_on_cover_desc">نمایش متن آهنگ همگام‌سازی شده در ناحیه کاور با ضربه زدن روی دکمه متن</string>
+    <string name="open_full_lyrics">مشاهده متن کامل</string>
+    <string name="show_album_cover">نمایش کاور</string>
+    <string name="align_lyrics">تراز متن ترانه</string>
+    <string name="select_this_folder">انتخاب این پوشه</string>
+    <string name="detected_folders">پوشه‌های پیدا شده</string>
+    <string name="storage_explorer">مرورگر حافظه</string>
+    <string name="system_folder_picker">انتخاب با مرورگر سیستم</string>
+    <string name="folder_included">در کتابخانه موجود است</string>
+    <string name="folder_excluded">از کتابخانه مستثنی شده</string>
+    <string name="folder_selected_toast">پوشه انتخاب شد: %1$s</string>
+    <string name="songs_count_format">%1$d آهنگ</string>
 </resources>

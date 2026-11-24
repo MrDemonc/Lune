@@ -136,6 +136,17 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun restorePlaybackState(songs: List<Song> = emptyList()) {
+        val svc = musicService
+        // If music is already playing or actively loaded in service, NEVER overwrite with old disk state!
+        if (isPlaying || svc?.isPlaying() == true) {
+            stateRestored = true
+            return
+        }
+        if (currentSong != null && svc?.hasPlayer() == true) {
+            stateRestored = true
+            return
+        }
+
         val saved = playbackStateSaver.restore() ?: run {
             stateRestored = true
             return
@@ -168,8 +179,14 @@ class PlaybackManager private constructor(private val context: Context) {
         val plId = saved.playlistId
         val shuffle = if (plId != null) settings.getPlaylistShuffle(plId) else settings.isShuffle
 
-        currentSong = restoredCurrent
-        activePlaylist = finalQueue
+        if (currentSong == null) {
+            currentSong = restoredCurrent
+        }
+        if (activePlaylist.isEmpty()) {
+            activePlaylist = finalQueue
+        } else if (songs.isNotEmpty() && activePlaylist.size <= 1 && restoredSongs.isNotEmpty()) {
+            activePlaylist = finalQueue
+        }
         activePlaylistId = saved.playlistId
         activePlaylistName = saved.playlistName
         queueSections = saved.queueSections
@@ -195,20 +212,24 @@ class PlaybackManager private constructor(private val context: Context) {
 
         frontQueueInsertCount = saved.frontQueueInsertCount
         isQueueFinished = false
-        isPlaying = false
+        if (svc?.isPlaying() == true) {
+            isPlaying = true
+        } else if (!isPlaying) {
+            isPlaying = false
+        }
         stateRestored = true
 
         // If music is already playing in service, do NOT disrupt it
-        if (musicService?.isPlaying() == true || musicService?.hasPlayer() == true) {
+        if (svc?.isPlaying() == true || svc?.hasPlayer() == true) {
             return
         }
 
         // Restore playback position (always paused — user taps play to resume)
         try {
-            if (musicService != null) {
-                musicService?.restorePlayback(restoredCurrent, saved.playbackPositionMs, andPlay = false)
+            if (svc != null) {
+                svc.restorePlayback(currentSong ?: restoredCurrent, saved.playbackPositionMs, andPlay = false)
             } else {
-                pendingRestoreSong = restoredCurrent
+                pendingRestoreSong = currentSong ?: restoredCurrent
                 pendingRestorePosition = saved.playbackPositionMs
                 pendingRestorePlay = false
             }
@@ -224,7 +245,7 @@ class PlaybackManager private constructor(private val context: Context) {
         private set
     var isTuning432 by mutableStateOf(settings.isTuning432)
         private set
-    var reverbPreset by mutableStateOf(settings.reverbPreset)
+    var reverbPreset by mutableStateOf(if (settings.isSpatialAudioEnabled) settings.reverbPreset else 0)
         private set
     var balance by mutableStateOf(settings.balance)
         private set
@@ -255,6 +276,26 @@ class PlaybackManager private constructor(private val context: Context) {
     // Visualizer
     var isFullPlayerVisualizerEnabled by mutableStateOf(settings.isFullPlayerVisualizerEnabled)
     var isMiniPlayerVisualizerEnabled by mutableStateOf(settings.isMiniPlayerVisualizerEnabled)
+    
+    // Cover Lyrics
+    var showCoverLyrics by mutableStateOf(settings.showCoverLyrics)
+
+    init {
+        if (!settings.isSpatialAudioEnabled && settings.reverbPreset != 0) {
+            settings.reverbPreset = 0
+        }
+    }
+
+    fun toggleCoverLyrics() {
+        val next = !showCoverLyrics
+        showCoverLyrics = next
+        settings.showCoverLyrics = next
+    }
+
+    fun setCoverLyricsShowing(showing: Boolean) {
+        showCoverLyrics = showing
+        settings.showCoverLyrics = showing
+    }
     
     private val _visualizerData = MutableStateFlow(FloatArray(48) { 0.1f })
     val visualizerData = _visualizerData.asStateFlow()
@@ -307,6 +348,28 @@ class PlaybackManager private constructor(private val context: Context) {
             val binder = service as MusicService.MusicBinder
             musicService = binder.getService()
             isBound = true
+
+            val svc = musicService
+            if (svc != null && (svc.isPlaying() || svc.hasPlayer())) {
+                // If service is already active, cancel any pending restore that would pause or overwrite it
+                pendingRestoreSong = null
+                val svcSong = svc.currentSong()
+                if (svcSong != null) {
+                    currentSong = svcSong
+                }
+                isPlaying = svc.isPlaying()
+                stateRestored = true
+            } else {
+                pendingRestoreSong?.let { song ->
+                    try {
+                        musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
+                    } catch (e: Exception) {
+                        Log.e("PlaybackManager", "Error restoring pending playback: ${e.message}", e)
+                    }
+                    pendingRestoreSong = null
+                }
+            }
+
             pendingPlaySong?.let { 
                 try {
                     musicService?.playSong(it)
@@ -314,14 +377,6 @@ class PlaybackManager private constructor(private val context: Context) {
                     Log.e("PlaybackManager", "Error playing pending song: ${e.message}", e)
                 }
                 pendingPlaySong = null
-            }
-            pendingRestoreSong?.let { song ->
-                try {
-                    musicService?.restorePlayback(song, pendingRestorePosition, pendingRestorePlay)
-                } catch (e: Exception) {
-                    Log.e("PlaybackManager", "Error restoring pending playback: ${e.message}", e)
-                }
-                pendingRestoreSong = null
             }
         }
 
@@ -529,50 +584,86 @@ class PlaybackManager private constructor(private val context: Context) {
             return
         }
 
+        val isMusicPlaying = isPlaying || (musicService?.isPlaying() == true)
+        if (!isMusicPlaying) return
+
         val sessionId = musicService?.getAudioSessionId() ?: 0
         if (sessionId == 0) return
 
         try {
-            visualizer?.release()
+            try {
+                visualizer?.enabled = false
+                visualizer?.release()
+            } catch (_: Throwable) {}
+            visualizer = null
+
             visualizer = Visualizer(sessionId).apply {
-                captureSize = Visualizer.getCaptureSizeRange()[1]
+                val range = Visualizer.getCaptureSizeRange()
+                captureSize = 512.coerceIn(range[0], range[1])
+
                 setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
-                    override fun onWaveFormDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {}
-                    override fun onFftDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
-                        if (data == null) return
-                        val barCount = 48
-                        val newMagnitudes = FloatArray(barCount)
-                        
-                        // Spreading frequency capture across a wider range
-                        for (i in 0 until barCount) {
-                            val index = 2 + (i * 4) // Skip DC/Nyquist and sample every 2nd frequency
-                            if (index + 1 >= data.size) break
-                            
-                            val real = data[index].toInt()
-                            val imag = data[index + 1].toInt()
-                            val magnitude = Math.sqrt((real * real + imag * imag).toDouble()).toFloat()
-                            
-                            // Normalize with a much lower divisor (32f) for maximum "growth"
-                            val normalized = (magnitude / 32f).coerceIn(0.1f, 1.2f)
-                            
-                            // Exponential Moving Average (EMA) smoothing
-                            newMagnitudes[i] = lastMagnitudes[i] + smoothingFactor * (normalized - lastMagnitudes[i])
-                        }
-                        
-                        lastMagnitudes = newMagnitudes
-                        _visualizerData.value = newMagnitudes
+                    override fun onWaveFormDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
+                        processVisualizerData(data, isFft = false)
                     }
-                }, Visualizer.getMaxCaptureRate() / 2, false, true)
+                    override fun onFftDataCapture(v: Visualizer?, data: ByteArray?, samplingRate: Int) {
+                        processVisualizerData(data, isFft = true)
+                    }
+                }, Visualizer.getMaxCaptureRate(), true, true)
                 enabled = true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("PlaybackManager", "Error starting visualizer", e)
+        }
+    }
+
+    private fun processVisualizerData(data: ByteArray?, isFft: Boolean) {
+        if (data == null || data.isEmpty()) return
+        val barCount = 48
+        val newMagnitudes = FloatArray(barCount)
+
+        if (isFft) {
+            // Check if FFT has non-zero data (many Android HALs return all zeros in offload mode)
+            val hasSignal = data.any { it.toInt() != 0 }
+            if (!hasSignal) return // Let waveform data capture handle it
+
+            val step = maxOf(1, (data.size / 2) / barCount)
+            for (i in 0 until barCount) {
+                val idx = (i * step) * 2 + 2
+                if (idx + 1 >= data.size) break
+                val r = data[idx].toFloat()
+                val im = data[idx + 1].toFloat()
+                val mag = Math.hypot(r.toDouble(), im.toDouble()).toFloat()
+                val normalized = (mag / 32f).coerceIn(0.08f, 1.2f)
+                newMagnitudes[i] = lastMagnitudes[i] + smoothingFactor * (normalized - lastMagnitudes[i])
+            }
+            lastMagnitudes = newMagnitudes
+            _visualizerData.value = newMagnitudes
+        } else {
+            // Raw PCM waveform: 8-bit unsigned (0..255), 128 is center/silence
+            val chunkSize = data.size / barCount
+            if (chunkSize <= 0) return
+            for (i in 0 until barCount) {
+                var maxDev = 0f
+                val start = i * chunkSize
+                val end = minOf(start + chunkSize, data.size)
+                for (j in start until end) {
+                    val sample = (data[j].toInt() and 0xFF) - 128
+                    val abs = Math.abs(sample).toFloat()
+                    if (abs > maxDev) maxDev = abs
+                }
+                val normalized = (maxDev / 48f).coerceIn(0.08f, 1.2f)
+                newMagnitudes[i] = lastMagnitudes[i] + smoothingFactor * (normalized - lastMagnitudes[i])
+            }
+            lastMagnitudes = newMagnitudes
+            _visualizerData.value = newMagnitudes
         }
     }
 
     fun stopVisualizer() {
-        visualizer?.enabled = false
-        visualizer?.release()
+        try {
+            visualizer?.enabled = false
+            visualizer?.release()
+        } catch (_: Throwable) {}
         visualizer = null
         val resetData = FloatArray(48) { 0.1f }
         lastMagnitudes = resetData
@@ -890,6 +981,7 @@ class PlaybackManager private constructor(private val context: Context) {
         isPlaying = false
         isTransitioning = false
         musicService?.pause()
+        stopVisualizer()
         stopStatsTracking()
     }
 
@@ -907,6 +999,7 @@ class PlaybackManager private constructor(private val context: Context) {
         }
         isPlaying = true
         musicService?.resume()
+        startVisualizer()
         startStatsTracking()
     }
 
@@ -915,6 +1008,7 @@ class PlaybackManager private constructor(private val context: Context) {
         isPlaying = false
         isTransitioning = false
         musicService?.stopSelf()
+        stopVisualizer()
         stopStatsTracking()
     }
 
@@ -1045,7 +1139,7 @@ class PlaybackManager private constructor(private val context: Context) {
             "ALBUM" -> if (caseSensitive) compareBy<Song> { it.album }.thenBy { it.trackNumber }.thenBy { it.title } else compareBy<Song> { it.album.lowercase(java.util.Locale.getDefault()) }.thenBy { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             "DURATION" -> compareBy<Song> { it.duration }
             "DATE_ADDED" -> compareBy<Song> { it.dateAdded }
-            "TRACK_NUMBER" -> compareBy<Song> { it.trackNumber }
+            "TRACK_NUMBER" -> if (caseSensitive) compareBy<Song> { it.trackNumber }.thenBy { it.title } else compareBy<Song> { it.trackNumber }.thenBy { it.title.lowercase(java.util.Locale.getDefault()) }
             else -> if (caseSensitive) compareBy<Song> { it.title } else compareBy<Song> { it.title.lowercase(java.util.Locale.getDefault()) }
         }
         
@@ -1344,12 +1438,24 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun toggleSpatialAudio() {
-        isSpatialAudioEnabled = !isSpatialAudioEnabled
-        settings.isSpatialAudioEnabled = isSpatialAudioEnabled
-        musicService?.setSpatialAudioEnabled(isSpatialAudioEnabled)
+        updateSpatialAudioEnabled(!isSpatialAudioEnabled)
+    }
+
+    fun updateSpatialAudioEnabled(enabled: Boolean) {
+        if (isSpatialAudioEnabled == enabled) return
+        isSpatialAudioEnabled = enabled
+        settings.isSpatialAudioEnabled = enabled
+        if (!enabled && reverbPreset != 0) {
+            reverbPreset = 0
+            settings.reverbPreset = 0
+        }
+        musicService?.setSpatialAudioEnabled(enabled)
     }
 
     fun updateReverbPreset(preset: Int) {
+        if (preset != 0 && !isSpatialAudioEnabled) {
+            updateSpatialAudioEnabled(true)
+        }
         reverbPreset = preset
         settings.reverbPreset = preset
         musicService?.setReverbPreset(preset)
@@ -1368,17 +1474,22 @@ class PlaybackManager private constructor(private val context: Context) {
     }
 
     fun toggleLoudness() {
-        isLoudnessEnabled = !isLoudnessEnabled
-        settings.isLoudnessEnabled = isLoudnessEnabled
-        if (!isLoudnessEnabled) {
-            loudnessGain = 0
-            settings.loudnessGain = 0
+        setLoudnessEnabled(!isLoudnessEnabled)
+    }
+
+    fun setLoudnessEnabled(enabled: Boolean, gain: Int? = null) {
+        isLoudnessEnabled = enabled
+        settings.isLoudnessEnabled = enabled
+        if (!enabled) {
             musicService?.setLoudnessEnabled(false) {
                 musicService?.setLoudnessGain(0)
             }
         } else {
+            val targetGain = gain ?: (if (loudnessGain > 0) loudnessGain else 1000)
+            loudnessGain = targetGain
+            settings.loudnessGain = targetGain
             musicService?.setLoudnessEnabled(true)
-            musicService?.setLoudnessGain(loudnessGain)
+            musicService?.setLoudnessGain(targetGain)
         }
     }
 

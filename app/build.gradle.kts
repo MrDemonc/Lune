@@ -1,5 +1,8 @@
 import java.io.FileInputStream
+import java.net.HttpURLConnection
+import java.net.URI
 import java.util.Properties
+import groovy.json.JsonSlurper
 
 
 val keystorePropertiesFile = layout.projectDirectory.file("../keystore.properties").asFile
@@ -27,8 +30,8 @@ android {
         applicationId = "com.demonlab.lune"
         minSdk = 24
         targetSdk = 37
-        versionCode = 14
-        versionName = "1.5.6"
+        versionCode = 15
+        versionName = "1.5.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -149,6 +152,93 @@ androidComponents {
             enabled = false
         }
     }
+}
+
+val copyChangelogs = tasks.register("copyChangelogs") {
+    val changelogDir = rootProject.file("fastlane/metadata/android/en-US/changelog")
+    val assetsChangelogDir = layout.projectDirectory.dir("src/main/assets/changelogs").asFile
+
+    inputs.dir(changelogDir)
+    outputs.dir(assetsChangelogDir)
+
+    doLast {
+        val latestFile = changelogDir.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".txt") }
+            ?.mapNotNull { file ->
+                file.name.removeSuffix(".txt").toIntOrNull()?.let { code -> code to file }
+            }
+            ?.maxByOrNull { it.first }
+            ?.second
+
+        assetsChangelogDir.mkdirs()
+        assetsChangelogDir.listFiles()?.forEach { file ->
+            if (latestFile == null || file.name != latestFile.name) {
+                file.delete()
+            }
+        }
+
+        if (latestFile != null) {
+            latestFile.copyTo(File(assetsChangelogDir, latestFile.name), overwrite = true)
+        }
+    }
+}
+
+val updateContributors = tasks.register("updateContributors") {
+    val contributorsFile = layout.projectDirectory.file("src/main/assets/contributors.json").asFile
+    val avatarsDir = layout.projectDirectory.dir("src/main/assets/avatars").asFile
+    outputs.file(contributorsFile)
+    outputs.dir(avatarsDir)
+
+    doLast {
+        try {
+            val url = URI("https://api.github.com/repos/MrDemonc/Lune/contributors").toURL()
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "Lune-Android-Build")
+            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+
+            if (connection.responseCode == 200) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                contributorsFile.parentFile.mkdirs()
+                contributorsFile.writeText(responseText)
+                println("Successfully updated contributors from GitHub (${contributorsFile.length()} bytes)")
+
+                avatarsDir.mkdirs()
+                val parsed = JsonSlurper().parseText(responseText) as? List<*>
+                parsed?.filterIsInstance<Map<String, *>>()?.forEach { userMap ->
+                    val login = userMap["login"] as? String ?: return@forEach
+                    val avatarUrl = userMap["avatar_url"] as? String ?: return@forEach
+                    val targetFile = File(avatarsDir, "$login.png")
+                    if (!targetFile.exists()) {
+                        try {
+                            val imgConn = URI(avatarUrl).toURL().openConnection() as HttpURLConnection
+                            imgConn.setRequestProperty("User-Agent", "Lune-Android-Build")
+                            imgConn.connectTimeout = 5000
+                            imgConn.readTimeout = 5000
+                            if (imgConn.responseCode == 200) {
+                                targetFile.outputStream().use { out ->
+                                    imgConn.inputStream.copyTo(out)
+                                }
+                                println("Downloaded avatar for contributor: $login")
+                            }
+                        } catch (e: Exception) {
+                            println("Could not download avatar for $login: ${e.message}")
+                        }
+                    }
+                }
+            } else {
+                println("Could not update contributors (HTTP ${connection.responseCode}). Keeping existing cached contributors.")
+            }
+        } catch (e: Exception) {
+            println("Skipping contributors update (offline or network error: ${e.message}). Keeping existing cached contributors.")
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(copyChangelogs, updateContributors)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

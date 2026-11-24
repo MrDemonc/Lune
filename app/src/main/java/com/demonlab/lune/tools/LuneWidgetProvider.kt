@@ -353,8 +353,7 @@ class LuneWidgetProvider : AppWidgetProvider() {
                 }
             }
 
-            views.setOnClickPendingIntent(R.id.widget_play_pause, getServicePendingIntent(context,
-                if (isPlaying) MusicService.ACTION_PAUSE else MusicService.ACTION_PLAY))
+            views.setOnClickPendingIntent(R.id.widget_play_pause, getServicePendingIntent(context, MusicService.ACTION_PLAY_PAUSE))
             views.setOnClickPendingIntent(R.id.widget_prev, getServicePendingIntent(context, MusicService.ACTION_PREVIOUS))
             views.setOnClickPendingIntent(R.id.widget_next, getServicePendingIntent(context, MusicService.ACTION_NEXT))
 
@@ -365,10 +364,20 @@ class LuneWidgetProvider : AppWidgetProvider() {
             val intent = Intent(context, MusicService::class.java).apply {
                 this.action = action
             }
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && action == MusicService.ACTION_PLAY) {
-                PendingIntent.getForegroundService(context, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                PendingIntent.getForegroundService(
+                    context,
+                    action.hashCode(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             } else {
-                PendingIntent.getService(context, action.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
+                PendingIntent.getService(
+                    context,
+                    action.hashCode(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             }
         }
 

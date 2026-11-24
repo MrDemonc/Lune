@@ -25,6 +25,21 @@
     <string name="bass_label">EXTRA BASS</string>
     <string name="spatial_audio_label">Räumliches Audio</string>
     <string name="loudness_label">Lautstärke</string>
+    <string name="volume_boost_title">Extra-Lautstärke-Boost</string>
+    <string name="volume_boost_desc">Verstärkt das Audio über das Limit des Telefons hinaus</string>
+    <string name="volume_boost_enable_switch">Lautstärkelimit überschreiten</string>
+    <string name="volume_boost_warning_off">Diese Option verstärkt den Ton über das 100%-Limit hinaus. Zu lautes Hören kann das Gehör dauerhaft schädigen oder die Lautsprecher beschädigen. Mit Vorsicht verwenden.</string>
+    <string name="volume_boost_level_safe_title">Sicherer Boost (+0 dB bis +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Sicherer Bereich. Empfohlen für leise aufgenommene Titel ohne Verzerrung.</string>
+    <string name="volume_boost_level_med_title">Moderater Boost (+11 dB bis +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Vorsicht: Kann leichte Lautsprecherverzerrungen und Ermüdung bei Kopfhörern verursachen.</string>
+    <string name="volume_boost_level_high_title">Extremer Boost! (+21 dB bis +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Gefahr! Zu hoher Pegel kann dauerhafte Hörschäden und Lautsprecherschäden verursachen.</string>
+    <string name="section_equalizer">Equalizer</string>
+    <string name="section_audio_effects">Audioeffekte</string>
+    <string name="section_volume_gain">Lautstärke &amp; Verstärkung</string>
+    <string name="section_balance_tuning">Balance &amp; Tonhöhe</string>
+    <string name="section_dynamics_processing">Dynamikprozessor</string>
     <string name="reverb_label">Hall</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Balance zurücksetzen</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">Änderungen speichern</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Übersicht</string>
+    <string name="tab_home">Start</string>
+    <string name="tab_resume">Start</string>
     <string name="tab_mixes">KI-Mixe</string>
     <string name="tab_genres">Genres</string>
 
@@ -272,6 +288,8 @@
     <string name="credits">Mitwirkende</string>
     <string name="credits_desc">Tests, Designvorschläge und Logo</string>
     <string name="creator_desc">Ersteller und Betreuer von Lune Music Player</string>
+    <string name="contributors">Mitwirkende</string>
+    <string name="contributions_count">%1 Beiträge</string>
     <string name="gesture">Gesten</string>
     <string name="gesture_desc">App-Gesten anpassen</string>
     <string name="enable_gestures">Gesten aktivieren</string>
@@ -403,6 +421,7 @@
 
     <!-- Donate -->
     <string name="donate_title">Unterstütze das Projekt</string>
+    <string name="donate_desc">Unterstütze die Entwicklung von Lune</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -438,6 +457,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Schnellwiedergabe</string>
+    <string name="use_quick_player_desc">Audiodateien aus externen Apps in einer schwebenden Vorschau statt in der vollständigen App abspielen</string>
     <string name="open_in_lune">In Lune öffnen</string>
     <string name="close">Schließen</string>
     <string name="cd_open_in_lune">In Lune öffnen</string>
@@ -536,4 +556,78 @@
     <string name="player_background_title">Player-Hintergrund</string>
     <string name="player_gradient_background">Dynamischer Farbverlauf-Hintergrund</string>
     <string name="player_gradient_background_desc">Verschwommene Umgebungsverläufe basierend auf dem aktuellen Cover anzeigen</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Aus Bibliothek ausblenden</string>
+    <string name="hide_song_desc">Dieser Titel wird aus Ihrer Bibliothek und den Empfehlungen ausgeblendet, ohne vom Gerät gelöscht zu werden. Sie können ihn jederzeit in den Einstellungen wiederherstellen.</string>
+    <string name="hide">Ausblenden</string>
+    <string name="song_hidden_success">Titel aus Bibliothek ausgeblendet</string>
+    <string name="hidden_songs">Ausgeblendete Titel</string>
+    <string name="hidden_songs_desc">Aus der Bibliothek entfernte Titel verwalten und wiederherstellen</string>
+    <string name="hidden_songs_count">%d ausgeblendete Titel</string>
+    <string name="no_hidden_songs">Keine ausgeblendeten Titel</string>
+    <string name="no_hidden_songs_desc">Titel, die Sie aus der Bibliothek ausblenden, werden hier angezeigt, damit Sie sie wiederherstellen können</string>
+    <string name="restore_all">Alle wiederherstellen</string>
+    <string name="song_restored_success">\"%s\" in Bibliothek wiederhergestellt</string>
+    <string name="all_songs_restored">Alle Titel wurden in der Bibliothek wiederhergestellt</string>
+    <string name="default_sorting">Standardsortierung</string>
+    <string name="default_album_sorting">Standard-Albenreihenfolge</string>
+    <string name="default_artist_sorting">Standard-Interpretenreihenfolge</string>
+    <string name="default_playlist_sorting">Standard-Playlistreihenfolge</string>
+    <string name="filter_duration_title">Kurze Audiodateien ausschließen</string>
+    <string name="filter_duration_off">Aus</string>
+    <string name="option_filter_short_audios">Filter</string>
+    <string name="filter_duration_description">Schließen Sie sehr kurze Audiodateien (wie Sprachmemos, Klingeltöne und Soundeffekte) aus Ihrer Bibliothek und Wiedergabewarteschlange aus.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">App-Symbol</string>
+    <string name="app_icon_desc">Wähle deinen Lieblingslook für das Lune-Symbol auf deinem Startbildschirm.</string>
+    <string name="app_icon_default">Standard</string>
+    <string name="app_icon_dynamic">Dynamische Farbe</string>
+    <string name="app_icon_mono_white">Monochrom weiß</string>
+    <string name="app_icon_mono_black">Monochrom schwarz</string>
+    <string name="app_icon_msg_default">Das klassische, unverwechselbare Lune-Lila. Kommt nie aus der Mode! 💜</string>
+    <string name="app_icon_msg_dynamic">Chamäleon-Modus. Passt perfekt zu deinem Hintergrundbild wie ein Mode-Profi! 🎨</string>
+    <string name="app_icon_msg_mono_white">Purer Minimalismus. So hell, dass deine anderen Symbole eine Sonnenbrille brauchen! ☀️</string>
+    <string name="app_icon_msg_mono_black">Tarnmodus aktiviert. Elegant, geheimnisvoll und der beste Freund jedes OLED-Displays! 🕶️</string>
+    <string name="app_icon_applied">App-Symbol aktualisiert!</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">Neues Update</string>
+    <string name="update_sheet_subtitle">Das ist neu in Lune</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">Abrocken! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Design</string>
+    <string name="theme_mode_title">Design-Modus</string>
+    <string name="player_modes_title">Player-Modi</string>
+    <string name="advanced_audio_settings">Erweiterte Audio-Einstellungen</string>
+    <string name="advanced_audio_settings_desc">Hi-Fi-Badge, 32-Bit-Float, AAudio-Modus &amp; Überblendung</string>
+    <string name="search_settings">Einstellungen suchen…</string>
+    <string name="no_settings_found">Keine Einstellungen gefunden</string>
+    <string name="no_settings_found_desc">Versuche es mit anderen Suchbegriffen</string>
+    <string name="privacy_ai_title">Datenschutz &amp; Lokale KI</string>
+    <string name="reset_ai_habits">KI-Lernen &amp; Hörgewohnheiten zurücksetzen</string>
+    <string name="reset_ai_habits_desc">Gelernte Hörgewohnheiten und Mix-Verlauf löschen</string>
+    <string name="reset_ai_habits_confirm">Möchtest du wirklich alle lokalen KI-Empfehlungen und Hörgewohnheiten zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="reset_ai_habits_success">KI-Lernen und Hörgewohnheiten erfolgreich zurückgesetzt</string>
+    <string name="manage_audio_folders">Audio-Ordner verwalten</string>
+    <string name="manage_audio_folders_desc">Ordner auswählen, die in die Bibliothek aufgenommen oder ausgeschlossen werden sollen</string>
+    <string name="system">System</string>
+    <string name="library_organization">Bibliothek &amp; Organisation</string>
+    <string name="progress_bar_classic">Klassisch</string>
+    <string name="lyrics_on_cover_title">Songtexte auf dem Cover</string>
+    <string name="lyrics_on_cover_desc">Synchronisierte Songtexte im Cover-Bereich anzeigen, wenn die Songtext-Taste gedrückt wird</string>
+    <string name="open_full_lyrics">Vollständige Songtexte anzeigen</string>
+    <string name="show_album_cover">Cover anzeigen</string>
+    <string name="align_lyrics">Songtext ausrichten</string>
+    <string name="select_this_folder">Diesen Ordner auswählen</string>
+    <string name="detected_folders">Erkannte Ordner</string>
+    <string name="storage_explorer">Speicher-Explorer</string>
+    <string name="system_folder_picker">Mit Systemauswahl wählen</string>
+    <string name="folder_included">In Bibliothek enthalten</string>
+    <string name="folder_excluded">Aus Bibliothek ausgeschlossen</string>
+    <string name="folder_selected_toast">Ordner ausgewählt: %1$s</string>
+    <string name="songs_count_format">%1$d Titel</string>
 </resources>

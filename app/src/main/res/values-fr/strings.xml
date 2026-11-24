@@ -25,6 +25,21 @@
     <string name="bass_label">EXTRA BASSES</string>
     <string name="spatial_audio_label">Audio Spatial</string>
     <string name="loudness_label">Loudness</string>
+    <string name="volume_boost_title">Amplificateur de volume</string>
+    <string name="volume_boost_desc">Amplifie le son au-delà de la limite maximale du téléphone</string>
+    <string name="volume_boost_enable_switch">Dépasser la limite de volume</string>
+    <string name="volume_boost_warning_off">Cette option amplifie le son au-delà de la limite standard de 100%. Une écoute prolongée à volume excessif peut causer des lésions auditives permanentes ou endommager les haut-parleurs. À utiliser avec précaution.</string>
+    <string name="volume_boost_level_safe_title">Boost modéré (+0 dB à +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">Niveau sûr. Recommandé pour les pistes enregistrées à faible volume sans distorsion.</string>
+    <string name="volume_boost_level_med_title">Boost intermédiaire (+11 dB à +20 dB)</string>
+    <string name="volume_boost_level_med_desc">Attention : Peut causer une légère distorsion des haut-parleurs et une fatigue auditive.</string>
+    <string name="volume_boost_level_high_title">Boost extrême ! (+21 dB à +30 dB)</string>
+    <string name="volume_boost_level_high_desc">Danger ! Une écoute prolongée à ce niveau peut causer des dommages auditifs irréversibles.</string>
+    <string name="section_equalizer">Égaliseur</string>
+    <string name="section_audio_effects">Effets audio</string>
+    <string name="section_volume_gain">Volume et gain</string>
+    <string name="section_balance_tuning">Balance et tonalité</string>
+    <string name="section_dynamics_processing">Traitement dynamique</string>
     <string name="reverb_label">Reverb</string>
     <string name="balance_label">Balance</string>
     <string name="balance_reset">Réinitialiser la balance</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">Enregistrer les modifications</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">Résumé</string>
+    <string name="tab_home">Accueil</string>
+    <string name="tab_resume">Accueil</string>
     <string name="tab_mixes">Mix IA</string>
     <string name="tab_genres">Genres</string>
 
@@ -272,6 +288,8 @@
     <string name="credits">Crédits</string>
     <string name="credits_desc">Tests, suggestions de design et logo</string>
     <string name="creator_desc">Créateur et mainteneur du lecteur Lune Music</string>
+    <string name="contributors">Contributeurs</string>
+    <string name="contributions_count">%1 contributions</string>
     <string name="gesture">Gestes</string>
     <string name="gesture_desc">Configuration des gestes</string>
     <string name="enable_gestures">Activer les gestes</string>
@@ -406,6 +424,7 @@
 
     <!-- Donate -->
     <string name="donate_title">Soutenez le Projet</string>
+    <string name="donate_desc">Soutenez le développement de Lune</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -441,6 +460,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">Lecture rapide</string>
+    <string name="use_quick_player_desc">Lire les fichiers audio d\'applications externes dans un aperçu flottant au lieu de l\'application complète</string>
     <string name="open_in_lune">Ouvrir dans Lune</string>
     <string name="close">Fermer</string>
     <string name="cd_open_in_lune">Ouvrir dans Lune</string>
@@ -539,4 +559,78 @@
     <string name="player_background_title">Arrière-plan du lecteur</string>
     <string name="player_gradient_background">Arrière-plan en dégradés dynamiques</string>
     <string name="player_gradient_background_desc">Afficher des dégradés ambiants floutés basés sur la pochette du morceau actuel</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">Masquer de la bibliothèque</string>
+    <string name="hide_song_desc">Ce morceau sera masqué de votre bibliothèque et de vos recommandations sans être supprimé de votre appareil. Vous pouvez le restaurer à tout moment dans les Paramètres.</string>
+    <string name="hide">Masquer</string>
+    <string name="song_hidden_success">Morceau masqué de la bibliothèque</string>
+    <string name="hidden_songs">Morceaux masqués</string>
+    <string name="hidden_songs_desc">Gérer et restaurer les morceaux masqués de la bibliothèque</string>
+    <string name="hidden_songs_count">%d morceaux masqués</string>
+    <string name="no_hidden_songs">Aucun morceau masqué</string>
+    <string name="no_hidden_songs_desc">Les morceaux masqués de la bibliothèque apparaîtront ici pour que vous puissiez les restaurer</string>
+    <string name="restore_all">Tout restaurer</string>
+    <string name="song_restored_success">\"%s\" restauré dans la bibliothèque</string>
+    <string name="all_songs_restored">Tous les morceaux ont été restaurés dans la bibliothèque</string>
+    <string name="default_sorting">Tri par défaut</string>
+    <string name="default_album_sorting">Ordre par défaut des albums</string>
+    <string name="default_artist_sorting">Ordre par défaut des artistes</string>
+    <string name="default_playlist_sorting">Ordre par défaut des playlists</string>
+    <string name="filter_duration_title">Exclure les audios courts</string>
+    <string name="filter_duration_off">Désact.</string>
+    <string name="option_filter_short_audios">Filtre</string>
+    <string name="filter_duration_description">Excluez les fichiers audio très courts (comme les mémos vocaux, sonneries et effets sonores) de votre bibliothèque et files d\'attente.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">Icône de l\'application</string>
+    <string name="app_icon_desc">Choisissez votre style préféré pour l\'icône de Lune sur votre écran d\'accueil.</string>
+    <string name="app_icon_default">Par défaut</string>
+    <string name="app_icon_dynamic">Couleur dynamique</string>
+    <string name="app_icon_mono_white">Monochrome blanc</string>
+    <string name="app_icon_mono_black">Monochrome noir</string>
+    <string name="app_icon_msg_default">Le violet classique et inimitable de Lune. Indémodable ! 💜</string>
+    <string name="app_icon_msg_dynamic">Caméléon. S\'accorde avec votre fond d\'écran comme une icône de mode ! 🎨</string>
+    <string name="app_icon_msg_mono_white">Minimalisme pur. Si éclatant que vos autres icônes auront besoin de lunettes de soleil ! ☀️</string>
+    <string name="app_icon_msg_mono_black">Mode furtif activé. Élégant, mystérieux et le meilleur ami des écrans OLED ! 🕶️</string>
+    <string name="app_icon_applied">Icône de l\'application mise à jour !</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">Nouvelle mise à jour</string>
+    <string name="update_sheet_subtitle">Découvrez les nouveautés de Lune</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">C\'est parti ! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">Thème</string>
+    <string name="theme_mode_title">Mode du thème</string>
+    <string name="player_modes_title">Modes du lecteur</string>
+    <string name="advanced_audio_settings">Paramètres audio avancés</string>
+    <string name="advanced_audio_settings_desc">Badge Hi-Fi, float 32 bits, mode AAudio et fondu enchaîné</string>
+    <string name="search_settings">Rechercher des paramètres…</string>
+    <string name="no_settings_found">Aucun paramètre trouvé</string>
+    <string name="no_settings_found_desc">Essayez de chercher avec d\'autres mots-clés</string>
+    <string name="privacy_ai_title">Confidentialité &amp; IA sur l\'appareil</string>
+    <string name="reset_ai_habits">Réinitialiser l\'apprentissage IA et les habitudes</string>
+    <string name="reset_ai_habits_desc">Effacer les préférences d\'écoute apprises et l\'historique des mixes</string>
+    <string name="reset_ai_habits_confirm">Voulez-vous vraiment réinitialiser toutes les recommandations et habitudes de l\'IA sur l\'appareil ? Cette action est irréversible.</string>
+    <string name="reset_ai_habits_success">Apprentissage IA et habitudes réinitialisés avec succès</string>
+    <string name="manage_audio_folders">Gérer les dossiers audio</string>
+    <string name="manage_audio_folders_desc">Sélectionner les dossiers à inclure ou exclure de la bibliothèque</string>
+    <string name="system">Système</string>
+    <string name="library_organization">Bibliothèque &amp; Organisation</string>
+    <string name="progress_bar_classic">Classique</string>
+    <string name="lyrics_on_cover_title">Paroles sur la pochette</string>
+    <string name="lyrics_on_cover_desc">Afficher les paroles synchronisées sur la pochette en appuyant sur le bouton des paroles</string>
+    <string name="open_full_lyrics">Voir les paroles complètes</string>
+    <string name="show_album_cover">Afficher la pochette</string>
+    <string name="align_lyrics">Aligner les paroles</string>
+    <string name="select_this_folder">Sélectionner ce dossier</string>
+    <string name="detected_folders">Dossiers détectés</string>
+    <string name="storage_explorer">Explorateur de stockage</string>
+    <string name="system_folder_picker">Sélectionner avec le sélecteur système</string>
+    <string name="folder_included">Inclus dans la bibliothèque</string>
+    <string name="folder_excluded">Exclu de la bibliothèque</string>
+    <string name="folder_selected_toast">Dossier sélectionné : %1$s</string>
+    <string name="songs_count_format">%1$d chansons</string>
 </resources>

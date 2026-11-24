@@ -65,6 +65,7 @@ class MusicService : MediaLibraryService() {
     }
 
     private var lunePlayerAdapter: LuneAudioPlayerAdapter? = null
+    private var activeSong: Song? = null
     private var mediaPlayer: MediaPlayer? = null
     private var secondaryPlayer: MediaPlayer? = null
     private var isCrossfading = false
@@ -222,6 +223,7 @@ class MusicService : MediaLibraryService() {
         }
         releaseWakeLock()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+        PlaybackManager.getInstance(applicationContext).stopVisualizer()
         updatePlaybackState()
         stopWidgetUpdateTimer()
         updateWidget()
@@ -399,24 +401,29 @@ class MusicService : MediaLibraryService() {
             val virt = Virtualizer(0, sessionId).apply {
                 enabled = settingsManager.isSpatialAudioEnabled
                 if (strengthSupported) {
-                    setStrength(800.toShort())
-                    currentSpatialStrength = 800.toShort()
+                    val strength = if (settingsManager.isSpatialAudioEnabled) 800.toShort() else 0.toShort()
+                    setStrength(strength)
+                    currentSpatialStrength = strength
                 }
             }
             if (isSecondary) secondaryVirtualizer = virt else virtualizer = virt
         } catch (t: Throwable) { t.printStackTrace() }
 
         try {
+            val effectiveReverbPreset = if (settingsManager.isSpatialAudioEnabled) settingsManager.reverbPreset else 0
+            if (!settingsManager.isSpatialAudioEnabled && settingsManager.reverbPreset != 0) {
+                settingsManager.reverbPreset = 0
+            }
             if (isSecondary) {
                 loudnessEffect?.setup(sessionId, true, settingsManager.isLoudnessEnabled, settingsManager.loudnessGain)
-                reverbEffect?.setup(sessionId, true, settingsManager.reverbPreset)
+                reverbEffect?.setup(sessionId, true, effectiveReverbPreset)
             } else {
                 val loud = LoudnessEffect().apply {
                     setup(sessionId, false, settingsManager.isLoudnessEnabled, settingsManager.loudnessGain)
                 }
                 loudnessEffect = loud
                 val rev = ReverbEffect().apply {
-                    setup(sessionId, false, settingsManager.reverbPreset)
+                    setup(sessionId, false, effectiveReverbPreset)
                 }
                 reverbEffect = rev
             }
@@ -495,8 +502,9 @@ class MusicService : MediaLibraryService() {
             }
             else -> {
                 val currentOrPending = currentSong() ?: pm.currentSong ?: pm.pendingPlaySong
-                if (currentOrPending != null && isPlaying()) {
-                    showNotification(currentOrPending, true)
+                if (currentOrPending != null) {
+                    isNotificationDismissed = false
+                    showNotification(currentOrPending, isPlaying(), keepForeground = true)
                 }
             }
         }
@@ -936,6 +944,8 @@ class MusicService : MediaLibraryService() {
         }
     }
 
+    private var currentAssetFileDescriptor: android.content.res.AssetFileDescriptor? = null
+
     private fun setPlayerDataSource(player: MediaPlayer, song: Song): Boolean {
         try {
             player.setDataSource(applicationContext, song.uri)
@@ -946,8 +956,15 @@ class MusicService : MediaLibraryService() {
 
         if (song.uri.scheme == "content") {
             try {
-                applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")?.use { afd ->
-                    player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                val afd = applicationContext.contentResolver.openAssetFileDescriptor(song.uri, "r")
+                if (afd != null) {
+                    try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+                    currentAssetFileDescriptor = afd
+                    if (afd.declaredLength < 0) {
+                        player.setDataSource(afd.fileDescriptor)
+                    } else {
+                        player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.declaredLength)
+                    }
                     return true
                 }
             } catch (e: Throwable) {
@@ -984,6 +1001,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun playSong(song: Song) {
+        activeSong = song
         crossfadeJob?.cancel()
         crossfadeJob = null
         isNotificationDismissed = false
@@ -1002,6 +1020,8 @@ class MusicService : MediaLibraryService() {
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
+        try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+        currentAssetFileDescriptor = null
         secondaryPlayer?.setOnCompletionListener(null)
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
@@ -1048,6 +1068,7 @@ class MusicService : MediaLibraryService() {
                             } catch (e: Throwable) {}
                         }
                         updatePlaybackState()
+                        pm.startVisualizer()
 
                         // Load metadata/notifications AFTER starting for instant audio response
                         serviceScope.launch {
@@ -1310,6 +1331,7 @@ class MusicService : MediaLibraryService() {
                 val newSessionId = mediaPlayer?.audioSessionId ?: 0
                 if (newSessionId != 0) {
                     setupAudioFx(newSessionId, false)
+                    PlaybackManager.getInstance(applicationContext).startVisualizer()
                 }
 
                 secondaryEqualizer = null
@@ -1452,6 +1474,7 @@ class MusicService : MediaLibraryService() {
         }
         releaseWakeLock()
         PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+        PlaybackManager.getInstance(applicationContext).stopVisualizer()
         updatePlaybackState()
         stopWidgetUpdateTimer()
         updateWidget()
@@ -1497,6 +1520,8 @@ class MusicService : MediaLibraryService() {
             } else {
                 pm.updatePlayingState(false)
                 updateWidget()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
                 return
             }
         }
@@ -1515,6 +1540,7 @@ class MusicService : MediaLibraryService() {
             return
         }
         pm.updatePlayingState(true)
+        pm.startVisualizer()
         updatePlaybackState()
         startWidgetUpdateTimer()
         updateWidget()
@@ -1623,6 +1649,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun restorePlayback(song: Song, positionMs: Long, andPlay: Boolean) {
+        activeSong = song
         crossfadeJob?.cancel()
         crossfadeJob = null
         isCrossfading = false
@@ -1631,6 +1658,8 @@ class MusicService : MediaLibraryService() {
         if (andPlay) {
             requestAudioFocus()
             acquireWakeLock()
+            // Promote service to foreground immediately with the active song
+            showNotification(song, true)
         }
 
         isPlayerPrepared = false
@@ -1638,6 +1667,8 @@ class MusicService : MediaLibraryService() {
         mediaPlayer?.setOnCompletionListener(null)
         mediaPlayer?.setOnErrorListener(null)
         mediaPlayer?.release()
+        try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+        currentAssetFileDescriptor = null
         secondaryPlayer?.setOnCompletionListener(null)
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
@@ -1674,6 +1705,7 @@ class MusicService : MediaLibraryService() {
                         if (andPlay) {
                             acquireWakeLock()
                             start()
+                            pm.startVisualizer()
                         }
                         pm.updatePlayingState(andPlay)
                         if (andPlay) {
@@ -2049,8 +2081,8 @@ class MusicService : MediaLibraryService() {
         } catch (_: Exception) {}
     }
 
-    private fun currentSong(): Song? {
-        return PlaybackManager.getInstance(this).currentSong
+    fun currentSong(): Song? {
+        return activeSong ?: PlaybackManager.getInstance(this).currentSong
     }
 
     private fun showNotification(song: Song, isPlaying: Boolean, art: android.graphics.Bitmap? = null, keepForeground: Boolean = false) {
@@ -2189,6 +2221,7 @@ class MusicService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        activeSong = null
         becomingNoisyReceiver?.let { unregisterReceiver(it) }
         effectTransitionJob?.cancel()
         spatialRampJob?.cancel()
@@ -2214,6 +2247,8 @@ class MusicService : MediaLibraryService() {
             t.printStackTrace()
         }
         mediaPlayer?.release()
+        try { currentAssetFileDescriptor?.close() } catch (_: Throwable) {}
+        currentAssetFileDescriptor = null
         secondaryPlayer?.release()
         mediaSession?.let {
             try {
@@ -2352,6 +2387,9 @@ class MusicService : MediaLibraryService() {
     }
 
     fun setReverbPreset(preset: Int) {
+        if (preset != 0 && !settingsManager.isSpatialAudioEnabled) {
+            setSpatialAudioEnabled(true)
+        }
         if (preset == 0) {
             executeEffectTransition(true) {
                 reverbEffect?.setPreset(0)
@@ -2398,37 +2436,45 @@ class MusicService : MediaLibraryService() {
     fun setSpatialAudioEnabled(enabled: Boolean) {
         spatialRampJob?.cancel()
         spatialRampJob = serviceScope.launch {
-            val target = if (enabled) 800.toShort() else 0.toShort()
-            val start = currentSpatialStrength
-            val steps = 15
-
-            if (enabled) {
-                virtualizer?.enabled = true
-                secondaryVirtualizer?.enabled = true
-            }
-
-            for (i in 0..steps) {
-                val progress = i.toFloat() / steps
-                val eased = if (enabled) 1f - (1f - progress) * (1f - progress)
-                            else progress * progress
-                val value = (start + (target - start) * eased)
-                    .toInt().coerceIn(0, 1000).toShort()
-                if (virtualizer?.strengthSupported == true) {
-                    virtualizer?.setStrength(value)
-                }
-                if (secondaryVirtualizer?.strengthSupported == true) {
-                    secondaryVirtualizer?.setStrength(value)
-                }
-                delay(10)
-            }
-
-            currentSpatialStrength = target
-
             if (!enabled) {
+                // When disabling spatial audio, Reverb must also be turned off immediately
+                // inside executeEffectTransition to avoid DSP feedback loop / loud pops on Android 11 / MIUI 12.5 HALs.
+                settingsManager.reverbPreset = 0
                 executeEffectTransition(true) {
+                    reverbEffect?.setPreset(0)
+                    if (virtualizer?.strengthSupported == true) {
+                        virtualizer?.setStrength(0.toShort())
+                    }
+                    if (secondaryVirtualizer?.strengthSupported == true) {
+                        secondaryVirtualizer?.setStrength(0.toShort())
+                    }
                     virtualizer?.enabled = false
                     secondaryVirtualizer?.enabled = false
                 }
+                currentSpatialStrength = 0.toShort()
+            } else {
+                val target = 800.toShort()
+                val start = currentSpatialStrength
+                val steps = 15
+
+                virtualizer?.enabled = true
+                secondaryVirtualizer?.enabled = true
+
+                for (i in 0..steps) {
+                    val progress = i.toFloat() / steps
+                    val eased = 1f - (1f - progress) * (1f - progress)
+                    val value = (start + (target - start) * eased)
+                        .toInt().coerceIn(0, 1000).toShort()
+                    if (virtualizer?.strengthSupported == true) {
+                        virtualizer?.setStrength(value)
+                    }
+                    if (secondaryVirtualizer?.strengthSupported == true) {
+                        secondaryVirtualizer?.setStrength(value)
+                    }
+                    delay(10)
+                }
+
+                currentSpatialStrength = target
             }
         }
     }

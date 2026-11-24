@@ -25,6 +25,21 @@
     <string name="bass_label">增强低音</string>
     <string name="spatial_audio_label">空间音频</string>
     <string name="loudness_label">响度</string>
+    <string name="volume_boost_title">额外音量增强</string>
+    <string name="volume_boost_desc">将音频放大至超过手机的最大限制</string>
+    <string name="volume_boost_enable_switch">突破音量限制</string>
+    <string name="volume_boost_warning_off">此选项允许您将声音放大到超过标准的100%限制。音量过大可能会导致永久性听力损伤或损坏设备扬声器。请谨慎使用。</string>
+    <string name="volume_boost_level_safe_title">安全增强 (+0 dB 至 +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">安全级别。推荐用于录音音量较小的音轨，无失真。</string>
+    <string name="volume_boost_level_med_title">中度增强 (+11 dB 至 +20 dB)</string>
+    <string name="volume_boost_level_med_desc">注意：可能会导致扬声器轻微失真并在使用耳机时引起耳朵疲劳。</string>
+    <string name="volume_boost_level_high_title">极限增强！(+21 dB 至 +30 dB)</string>
+    <string name="volume_boost_level_high_desc">危险！在此级别下长时间收听可能会造成永久性听力损伤并损坏扬声器。</string>
+    <string name="section_equalizer">均衡器</string>
+    <string name="section_audio_effects">音频效果</string>
+    <string name="section_volume_gain">音量与增益</string>
+    <string name="section_balance_tuning">平衡与音调</string>
+    <string name="section_dynamics_processing">动态处理</string>
     <string name="reverb_label">混响</string>
     <string name="balance_label">平衡</string>
     <string name="balance_reset">重置平衡</string>
@@ -50,7 +65,8 @@
     <string name="save_changes">保存更改</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">概览</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_resume">首页</string>
     <string name="tab_mixes">AI 混音</string>
     <string name="tab_genres">流派</string>
 
@@ -283,6 +299,8 @@
     <string name="credits">致谢</string>
     <string name="credits_desc">测试、设计建议和图标</string>
     <string name="creator_desc">Lune 音乐播放器的创建者和维护者</string>
+    <string name="contributors">贡献者</string>
+    <string name="contributions_count">%1 次贡献</string>
     <string name="gesture">手势</string>
     <string name="gesture_desc">自定义应用手势</string>
     <string name="enable_gestures">启用手势</string>
@@ -420,6 +438,7 @@
 
     <!-- Donate -->
     <string name="donate_title">支持项目</string>
+    <string name="donate_desc">支持 Lune 的持续开发</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -455,6 +474,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">快捷播放</string>
+    <string name="use_quick_player_desc">在悬浮小窗中播放外部音频文件，而不是打开完整应用</string>
     <string name="open_in_lune">在 Lune 中打开</string>
     <string name="close">关闭</string>
     <string name="cd_open_in_lune">在 Lune 中打开</string>
@@ -537,4 +557,78 @@
     <string name="player_background_title">播放器背景</string>
     <string name="player_gradient_background">动态渐变背景</string>
     <string name="player_gradient_background_desc">根据当前歌曲封面显示模糊的环境渐变背景</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">从曲库中隐藏</string>
+    <string name="hide_song_desc">此歌曲将从曲库和推荐中隐藏，但不会从设备中删除。你可以随时在设置中恢复。</string>
+    <string name="hide">隐藏</string>
+    <string name="song_hidden_success">已从曲库中隐藏该歌曲</string>
+    <string name="hidden_songs">已隐藏的歌曲</string>
+    <string name="hidden_songs_desc">管理并恢复从曲库中隐藏的歌曲</string>
+    <string name="hidden_songs_count">%d 首隐藏歌曲</string>
+    <string name="no_hidden_songs">没有隐藏的歌曲</string>
+    <string name="no_hidden_songs_desc">你从曲库隐藏的歌曲将显示在此处，以便你恢复</string>
+    <string name="restore_all">全部恢复</string>
+    <string name="song_restored_success">已恢复 \"%s\" 到曲库</string>
+    <string name="all_songs_restored">所有歌曲均已恢复到曲库</string>
+    <string name="default_sorting">默认排序</string>
+    <string name="default_album_sorting">专辑默认排序</string>
+    <string name="default_artist_sorting">艺术家默认排序</string>
+    <string name="default_playlist_sorting">播放列表默认排序</string>
+    <string name="filter_duration_title">排除短音频文件</string>
+    <string name="filter_duration_off">关闭</string>
+    <string name="option_filter_short_audios">过滤</string>
+    <string name="filter_duration_description">从您的资料库和播放队列中排除极短的音频文件（例如语音消息、铃声和提示音效）。</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">应用图标</string>
+    <string name="app_icon_desc">为主屏幕上的 Lune 启动器图标选择您喜欢的外观。</string>
+    <string name="app_icon_default">默认</string>
+    <string name="app_icon_dynamic">动态色彩</string>
+    <string name="app_icon_mono_white">单色白底</string>
+    <string name="app_icon_mono_black">单色黑底</string>
+    <string name="app_icon_msg_default">经典而独特的 Lune 紫色。永不过时！💜</string>
+    <string name="app_icon_msg_dynamic">变色龙。与您的壁纸完美契合，如同时尚先锋！🎨</string>
+    <string name="app_icon_msg_mono_white">极致简约。如此明亮，甚至让其他图标都需要戴墨镜！☀️</string>
+    <string name="app_icon_msg_mono_black">潜行模式启动。优雅、神秘，OLED 屏幕的最佳拍档！🕶️</string>
+    <string name="app_icon_applied">应用图标已更新！</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">全新版本更新</string>
+    <string name="update_sheet_subtitle">快来看看 Lune 的新功能吧</string>
+    <string name="update_sheet_version_transition">v%1$s → v%2$s</string>
+    <string name="update_sheet_dismiss_btn">摇滚起来！🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">主题</string>
+    <string name="theme_mode_title">主题模式</string>
+    <string name="player_modes_title">播放器模式</string>
+    <string name="advanced_audio_settings">高级音频设置</string>
+    <string name="advanced_audio_settings_desc">Hi-Fi 标识、32位浮点、AAudio 模式与淡入淡出</string>
+    <string name="search_settings">搜索设置…</string>
+    <string name="no_settings_found">未找到相关设置</string>
+    <string name="no_settings_found_desc">尝试使用不同的关键词搜索</string>
+    <string name="privacy_ai_title">隐私与设备端 AI</string>
+    <string name="reset_ai_habits">重置 AI 学习与偏好习惯</string>
+    <string name="reset_ai_habits_desc">清除已学习的收听喜好与混音历史记录</string>
+    <string name="reset_ai_habits_confirm">确定要重置所有设备端 AI 推荐与习惯数据吗？此操作无法撤销。</string>
+    <string name="reset_ai_habits_success">已成功重置 AI 学习与习惯数据</string>
+    <string name="manage_audio_folders">管理音频文件夹</string>
+    <string name="manage_audio_folders_desc">选择要包含在音乐库中或排除的文件夹</string>
+    <string name="system">系统</string>
+    <string name="library_organization">音乐库与整理</string>
+    <string name="progress_bar_classic">经典</string>
+    <string name="lyrics_on_cover_title">封面歌词</string>
+    <string name="lyrics_on_cover_desc">点击歌词按钮时在专辑封面区域显示同步歌词</string>
+    <string name="open_full_lyrics">查看完整歌词</string>
+    <string name="show_album_cover">显示封面</string>
+    <string name="align_lyrics">对齐歌词</string>
+    <string name="select_this_folder">选择此文件夹</string>
+    <string name="detected_folders">已检测到的文件夹</string>
+    <string name="storage_explorer">存储浏览</string>
+    <string name="system_folder_picker">使用系统选择器选择</string>
+    <string name="folder_included">已包含在音乐库中</string>
+    <string name="folder_excluded">已从音乐库排除</string>
+    <string name="folder_selected_toast">已选择文件夹：%1$s</string>
+    <string name="songs_count_format">%1$d 首歌曲</string>
 </resources>

@@ -4,6 +4,10 @@
     <color name="launcher_soft_tone">#FFFFFFFF</color>
     <color name="launcher_dark_tone">#FF554492</color>
 
+    <color name="ic_dynamic_background">#FF283E6B</color>
+    <color name="ic_dynamic_soft_tone">#FFD8E2FF</color>
+    <color name="ic_dynamic_dark_tone">#FF1A2A4A</color>
+
     <color name="placeholder_background">#FF1E1B24</color>
     <color name="placeholder_soft_tone">#FF524375</color>
     <color name="placeholder_dark_tone">#FFE8DFFC</color>

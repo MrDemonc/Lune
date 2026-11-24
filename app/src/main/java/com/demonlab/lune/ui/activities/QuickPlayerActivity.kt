@@ -57,7 +57,9 @@ import com.demonlab.lune.ui.theme.LuneTheme
 import com.demonlab.lune.ui.theme.getControlsPrimaryColor
 import com.demonlab.lune.ui.utils.bounceClick
 import com.demonlab.lune.ui.utils.formatDuration
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 class QuickPlayerActivity : ComponentActivity() {
 
@@ -65,6 +67,13 @@ class QuickPlayerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val settingsManager = SettingsManager.getInstance(this)
+        if (!settingsManager.useQuickPlayer) {
+            forwardToFullPlayer(intent)
+            finish()
+            return
+        }
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
@@ -81,10 +90,10 @@ class QuickPlayerActivity : ComponentActivity() {
 
         setContent {
             val context = LocalContext.current
-            val settingsManager = remember { SettingsManager.getInstance(context) }
+            val rememberedSettings = remember { SettingsManager.getInstance(context) }
             val playbackManager = remember { PlaybackManager.getInstance(context) }
 
-            val isDarkTheme = when (settingsManager.themeMode) {
+            val isDarkTheme = when (rememberedSettings.themeMode) {
                 1 -> false
                 2 -> true
                 else -> isSystemInDarkTheme()
@@ -102,15 +111,26 @@ class QuickPlayerActivity : ComponentActivity() {
 
             LaunchedEffect(targetUri) {
                 if (targetUri != null) {
-                    val s = SongResolver.resolveSongFromUri(context, targetUri)
-                    if (s != null) {
-                        val resolved = SongResolver.resolvePlaybackQueue(context, s)
-                        resolvedSong = resolved.song
-                        playlist = resolved.queue
+                    val resolvedData = withContext(Dispatchers.IO) {
+                        try {
+                            val s = SongResolver.resolveSongFromUri(context, targetUri)
+                            if (s != null) {
+                                val resolved = SongResolver.resolvePlaybackQueue(context, s)
+                                Triple(resolved.song, resolved.queue, resolved.playlistName)
+                            } else null
+                        } catch (e: Throwable) {
+                            null
+                        }
+                    }
+
+                    if (resolvedData != null) {
+                        val (song, queue, playlistName) = resolvedData
+                        resolvedSong = song
+                        playlist = queue
 
                         // If not already playing this song, start playback immediately
-                        if (playbackManager.currentSong?.uri != resolved.song.uri || !playbackManager.isPlaying) {
-                            playbackManager.play(resolved.song, resolved.queue, playlistName = resolved.playlistName)
+                        if (playbackManager.currentSong?.uri != song.uri || !playbackManager.isPlaying) {
+                            playbackManager.play(song, queue, playlistName = playlistName)
                         }
                     }
                 }
@@ -121,9 +141,9 @@ class QuickPlayerActivity : ComponentActivity() {
             LuneTheme(
                 darkTheme = isDarkTheme,
                 dynamicColor = true,
-                useCustomColors = settingsManager.useCustomColors,
-                customColorPalette = settingsManager.customColorPalette,
-                useAmoledPitchBlack = settingsManager.useAmoledPitchBlack
+                useCustomColors = rememberedSettings.useCustomColors,
+                customColorPalette = rememberedSettings.customColorPalette,
+                useAmoledPitchBlack = rememberedSettings.useAmoledPitchBlack
             ) {
                 BackHandler {
                     finish()
@@ -132,7 +152,7 @@ class QuickPlayerActivity : ComponentActivity() {
                 QuickPlayerDialogScreen(
                     song = activeSong,
                     playbackManager = playbackManager,
-                    settingsManager = settingsManager,
+                    settingsManager = rememberedSettings,
                     isDarkTheme = isDarkTheme,
                     hasSiblings = playlist.size > 1,
                     onClose = {
@@ -146,7 +166,35 @@ class QuickPlayerActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        val settingsManager = SettingsManager.getInstance(this)
+        if (!settingsManager.useQuickPlayer) {
+            forwardToFullPlayer(intent)
+            finish()
+            return
+        }
         handleIntent(intent)
+    }
+
+    private fun forwardToFullPlayer(intent: Intent?) {
+        val uri = intent?.data ?: intent?.clipData?.let {
+            if (it.itemCount > 0) it.getItemAt(0).uri else null
+        }
+        if (uri != null) {
+            try {
+                grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) {}
+            try {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) {}
+        }
+        val fullAppIntent = Intent(this, Lune::class.java).apply {
+            action = intent?.action ?: Intent.ACTION_VIEW
+            data = intent?.data
+            clipData = intent?.clipData
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            putExtra(Lune.EXTRA_EXPAND_PLAYER, true)
+        }
+        startActivity(fullAppIntent)
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -154,6 +202,9 @@ class QuickPlayerActivity : ComponentActivity() {
             if (it.itemCount > 0) it.getItemAt(0).uri else null
         }
         if (uri != null) {
+            try {
+                grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) {}
             // Take persistable permission if available
             try {
                 contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)

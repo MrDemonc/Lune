@@ -345,12 +345,18 @@ class MusicProvider(private val context: Context) {
         val audioFolderUriStr = settingsManager.musicFolderUri
         if (!audioFolderUriStr.isNullOrBlank()) {
             try {
-                val uri = Uri.parse(audioFolderUriStr)
-                val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
-                if (!pathSegment.isNullOrBlank()) {
-                    val customFolder = File(Environment.getExternalStorageDirectory(), pathSegment)
-                    if (customFolder.exists()) scanDirForMissing(customFolder)
+                val customFolder = if (audioFolderUriStr.startsWith("/")) {
+                    File(audioFolderUriStr)
+                } else {
+                    val uri = Uri.parse(audioFolderUriStr)
+                    if (uri.scheme == "file") {
+                        File(uri.path ?: audioFolderUriStr)
+                    } else {
+                        val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
+                        if (!pathSegment.isNullOrBlank()) File(Environment.getExternalStorageDirectory(), pathSegment) else null
+                    }
                 }
+                if (customFolder != null && customFolder.exists()) scanDirForMissing(customFolder)
             } catch (_: Exception) {}
         }
 
@@ -412,12 +418,18 @@ class MusicProvider(private val context: Context) {
         val audioFolderUriStr = settingsManager.musicFolderUri
         if (!audioFolderUriStr.isNullOrBlank()) {
             try {
-                val uri = Uri.parse(audioFolderUriStr)
-                val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
-                if (!pathSegment.isNullOrBlank()) {
-                    val customFolder = File(Environment.getExternalStorageDirectory(), pathSegment)
-                    if (customFolder.exists()) collectAudioFiles(customFolder)
+                val customFolder = if (audioFolderUriStr.startsWith("/")) {
+                    File(audioFolderUriStr)
+                } else {
+                    val uri = Uri.parse(audioFolderUriStr)
+                    if (uri.scheme == "file") {
+                        File(uri.path ?: audioFolderUriStr)
+                    } else {
+                        val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
+                        if (!pathSegment.isNullOrBlank()) File(Environment.getExternalStorageDirectory(), pathSegment) else null
+                    }
                 }
+                if (customFolder != null && customFolder.exists()) collectAudioFiles(customFolder)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

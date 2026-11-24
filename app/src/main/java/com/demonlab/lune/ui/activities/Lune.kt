@@ -19,6 +19,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.demonlab.lune.ui.viewmodels.MusicViewModel
 import com.demonlab.lune.data.Playlist
@@ -158,6 +159,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.PopupProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -168,6 +171,7 @@ import com.demonlab.lune.tools.MusicProvider
 import com.demonlab.lune.tools.PlaybackManager
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.Song
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -213,18 +217,30 @@ class Lune : AppCompatActivity() {
             val uri = intent.data ?: intent.clipData?.let { if (it.itemCount > 0) it.getItemAt(0).uri else null }
             if (uri != null) {
                 try {
+                    grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+                try {
                     contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 } catch (_: Exception) {}
-                val song = SongResolver.resolveSongFromUri(this, uri)
-                if (song != null) {
-                    val resolved = SongResolver.resolvePlaybackQueue(this, song)
-                    PlaybackManager.getInstance(this).play(
-                        resolved.song,
-                        resolved.queue,
-                        resolved.playlistId,
-                        category = resolved.playlistName
-                    )
-                    pendingExpandPlayer.value = true
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val song = SongResolver.resolveSongFromUri(this@Lune, uri)
+                        if (song != null) {
+                            val resolved = SongResolver.resolvePlaybackQueue(this@Lune, song)
+                            withContext(Dispatchers.Main) {
+                                PlaybackManager.getInstance(this@Lune).play(
+                                    resolved.song,
+                                    resolved.queue,
+                                    resolved.playlistId,
+                                    playlistName = resolved.playlistName,
+                                    category = resolved.playlistName
+                                )
+                                pendingExpandPlayer.value = true
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }
@@ -251,7 +267,8 @@ class Lune : AppCompatActivity() {
             val playbackManager = remember { PlaybackManager.getInstance(context) }
 
             // Stable Tab IDs
-            val TAB_RESUME = "RESUME"
+            val TAB_HOME = "HOME"
+            val TAB_RESUME = "HOME"
             val TAB_MIXES = "MIXES"
             val TAB_ALL = "ALL"
             val TAB_FAVORITES = "FAVORITES"
@@ -261,7 +278,8 @@ class Lune : AppCompatActivity() {
             val TAB_FOLDERS = "FOLDERS"
 
             // LIFTED STRINGS
-            val sTabResume = stringResource(R.string.tab_resume)
+            val sTabHome = stringResource(R.string.tab_home)
+            val sTabResume = sTabHome
             val sTabMixes = stringResource(R.string.tab_mixes)
             val sTabAll = stringResource(R.string.tab_all)
             val sTabFavorites = stringResource(R.string.tab_favorites)
@@ -297,19 +315,33 @@ class Lune : AppCompatActivity() {
                 ) {
                     OnboardingScreen(onStartClick = {
                         settingsManager.isFirstRun = false
+                        settingsManager.lastKnownVersionCode = com.demonlab.lune.BuildConfig.VERSION_CODE
+                        settingsManager.lastKnownVersionName = com.demonlab.lune.BuildConfig.VERSION_NAME
                         showOnboarding = false
                     })
                 }
                 return@setContent
             }
 
-            val rawAllSongs = musicViewModel.filteredSongs
+            val rawAllSongs = remember(
+                musicViewModel.filteredSongs,
+                settingsManager.hiddenSongIds,
+                settingsManager.hiddenSongPaths,
+                settingsManager.isFilterDurationEnabled,
+                settingsManager.filterMinDurationSeconds
+            ) {
+                musicViewModel.filteredSongs
+            }
             val initialFolder = remember {
                 val savedDefault = settingsManager.defaultSectionTab
-                if (savedDefault.isNotEmpty()) savedDefault else TAB_RESUME
+                val resolved = if (savedDefault == "RESUME") "HOME" else savedDefault
+                if (resolved.isNotEmpty()) resolved else TAB_HOME
             }
             var selectedFolder by rememberSaveable { mutableStateOf(initialFolder) }
-            var defaultSectionTab by remember { mutableStateOf(settingsManager.defaultSectionTab) }
+            var defaultSectionTab by remember {
+                val def = settingsManager.defaultSectionTab
+                mutableStateOf(if (def == "RESUME") "HOME" else def)
+            }
             
             // Handle Shortcut Navigation
             LaunchedEffect(shortcutFolder.value) {
@@ -331,9 +363,9 @@ class Lune : AppCompatActivity() {
             LaunchedEffect(musicViewModel.allSongs) {
                 if (musicViewModel.allSongs.isNotEmpty()) {
                     try {
-                        if (!playbackManager.stateRestored) {
+                        if (!playbackManager.stateRestored && !playbackManager.isPlaying && playbackManager.currentSong == null) {
                             playbackManager.restorePlaybackState(musicViewModel.allSongs)
-                        } else if (playbackManager.activePlaylist.size <= 1 && playbackManager.currentSong != null) {
+                        } else if (playbackManager.activePlaylist.size <= 1 && playbackManager.currentSong != null && !playbackManager.isPlaying) {
                             playbackManager.restorePlaybackState(musicViewModel.allSongs)
                         }
                     } catch (e: Exception) {
@@ -496,7 +528,7 @@ class Lune : AppCompatActivity() {
             }
             val folders = remember(visibleFolders, rawAllSongs, sTabPlaylists, isSectionCustomizationEnabled, hiddenSectionTabs, showAiSection, defaultSectionTab) {
                 val hasFavorites = rawAllSongs.any { it.isFavorite }
-                val base = mutableListOf("RESUME")
+                val base = mutableListOf("HOME")
                 if (showAiSection) base.add("MIXES")
                 base.add("ALL")
                 base.add("PLAYLISTS")
@@ -507,17 +539,18 @@ class Lune : AppCompatActivity() {
                 if (visibleFolders.isNotEmpty()) base.add("FOLDERS")
                 if (isSectionCustomizationEnabled) {
                     base.removeAll(hiddenSectionTabs)
-                    if ("RESUME" !in base && defaultSectionTab != "RESUME") base.add(0, "RESUME")
+                    if ("HOME" !in base && defaultSectionTab != "HOME" && defaultSectionTab != "RESUME") base.add(0, "HOME")
                 }
-                if (defaultSectionTab.isNotEmpty() && defaultSectionTab in base) {
-                    base.remove(defaultSectionTab)
-                    base.add(0, defaultSectionTab)
+                val effectiveDefault = if (defaultSectionTab == "RESUME") "HOME" else defaultSectionTab
+                if (effectiveDefault.isNotEmpty() && effectiveDefault in base) {
+                    base.remove(effectiveDefault)
+                    base.add(0, effectiveDefault)
                 }
                 base
             }
             LaunchedEffect(folders) {
                 if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
-                    selectedFolder = folders.firstOrNull() ?: TAB_RESUME
+                    selectedFolder = folders.firstOrNull() ?: TAB_HOME
                 }
             }
             val visibleSongs = remember(rawAllSongs, hiddenFolders.value) {
@@ -525,7 +558,7 @@ class Lune : AppCompatActivity() {
             }
             val filteredSongs = remember(visibleSongs, selectedFolder) {
                 when (selectedFolder) {
-                    TAB_RESUME, TAB_MIXES, TAB_ALL, TAB_ALBUMS, TAB_ARTISTS, "GENRES" -> visibleSongs
+                    TAB_HOME, "RESUME", TAB_MIXES, TAB_ALL, TAB_ALBUMS, TAB_ARTISTS, "GENRES" -> visibleSongs
                     TAB_FAVORITES -> visibleSongs.filter { it.isFavorite }
                     else -> visibleSongs.filter { it.folderName == selectedFolder }
                 }
@@ -679,7 +712,8 @@ fun MainScreen(
         }
     }
     val expansionProgress = playerExpansionFraction.value
-    val sTabResume = stringResource(R.string.tab_resume)
+    val sTabHome = stringResource(R.string.tab_home)
+    val sTabResume = sTabHome
     val sTabMixes = stringResource(R.string.tab_mixes)
     val sTabAll = stringResource(R.string.tab_all)
     val sTabFavorites = stringResource(R.string.tab_favorites)
@@ -704,9 +738,46 @@ fun MainScreen(
     val coroutineScope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var songToDelete by remember { mutableStateOf<Song?>(null) }
+    var pendingDeleteSong by remember { mutableStateOf<Song?>(null) }
+    val deleteLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        val song = pendingDeleteSong
+        if (song != null) {
+            if (result.resultCode == Activity.RESULT_OK) {
+                playbackManager.removeFromQueue(song.id)
+                musicViewModel.confirmDeleteAfterPermission(song) {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.song_deleted),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+            } else {
+                musicViewModel.undoDeleteSong(song)
+            }
+        }
+        pendingDeleteSong = null
+    }
+    var showHideDialog by remember { mutableStateOf(false) }
+    var songToHide by remember { mutableStateOf<Song?>(null) }
     var undoSecondsRemaining by remember { mutableIntStateOf(0) }
     var undoProgress by remember { mutableFloatStateOf(1f) }
     var selectedPlaylist by remember { mutableStateOf<com.demonlab.lune.data.Playlist?>(null) }
+    
+    val currentVersionCode = com.demonlab.lune.BuildConfig.VERSION_CODE
+    val currentVersionName = com.demonlab.lune.BuildConfig.VERSION_NAME
+    val lastVersionCode = settingsManager.lastKnownVersionCode
+    val lastVersionName = settingsManager.lastKnownVersionName
+
+    var showUpdateSheet by remember {
+        mutableStateOf(!settingsManager.isFirstRun && lastVersionCode < currentVersionCode)
+    }
+
+    val updateChangelog = remember(currentVersionCode) {
+        com.demonlab.lune.tools.ChangelogManager.getChangelog(context, currentVersionCode)
+    }
     
     val isDarkThemeMini = when (themeMode) {
         1 -> false
@@ -717,9 +788,7 @@ fun MainScreen(
         (if (isDarkThemeMini) settingsManager.isBlurDarkMode else settingsManager.isBlurLightMode)
     val listActiveControlsColor = if (useCustomControlsColor) getControlsPrimaryColor(useCustomControlsColor, controlsColorPalette) else null
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState(initialHeightOffset = -Float.MAX_VALUE)
-    )
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     
     var showMenu by remember { mutableStateOf(false) }
     var selectedAlbum by remember { mutableStateOf<Album?>(null) }
@@ -762,15 +831,19 @@ fun MainScreen(
 
     val contextId = remember(selectedFolder) {
         when (selectedFolder) {
-            "RESUME", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
+            "HOME", "RESUME", "ALL", "ALBUMS", "ARTISTS", "GENRES" -> -100L
             "FAVORITES" -> -200L
             else -> selectedFolder.hashCode().toLong()
         }
     }
-    val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum, selectedFolderItem) {
+    val currentSortKey = remember(selectedFolder, selectedPlaylist, selectedAlbum, selectedFolderItem, isAlbumView) {
         when {
             selectedPlaylist != null -> "playlist_${selectedPlaylist?.id}"
-            selectedAlbum != null -> "album_${selectedAlbum?.name}"
+            selectedAlbum != null -> {
+                if (isAlbumView) "album_${selectedAlbum?.name}"
+                else if (selectedFolder == "GENRES") "genre_${selectedAlbum?.name}"
+                else "artist_${selectedAlbum?.name}"
+            }
             selectedFolderItem != null -> "folder_item_$selectedFolderItem"
             else -> "folder_$selectedFolder"
         }
@@ -964,7 +1037,7 @@ fun MainScreen(
 
     LaunchedEffect(folders) {
         if (selectedFolder !in folders && selectedFolder.isNotEmpty()) {
-            onSelectedFolderChange("RESUME")
+            onSelectedFolderChange("HOME")
         }
         if (isSectionCustomizationEnabled && playbackManager.activeCategory != null && playbackManager.activeCategory !in folders) {
             playbackManager.stopAndClearQueue()
@@ -1128,26 +1201,28 @@ fun MainScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             // Countdown
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    progress = { undoProgress },
-                                    modifier = Modifier.fillMaxSize(),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 2.dp,
-                                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                )
-                                Text(
-                                    text = undoSecondsRemaining.toString(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            if (undoSecondsRemaining > 0) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        progress = { undoProgress },
+                                        modifier = Modifier.fillMaxSize(),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        strokeWidth = 2.dp,
+                                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                    )
+                                    Text(
+                                        text = undoSecondsRemaining.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.width(12.dp))
                             }
-                            
-                            Spacer(modifier = Modifier.width(12.dp))
                             
                             // Message
                             Text(
@@ -1204,7 +1279,7 @@ fun MainScreen(
                     MaterialTheme.colorScheme.primary
                 }
 
-                LargeTopAppBar(
+                TopAppBar(
                     title = { 
                         val customTitle by settingsManager.customTitleFlow.collectAsState()
                         val appDefaultTitle = if (customTitle.isEmpty()) "Lune" else customTitle
@@ -1331,7 +1406,7 @@ fun MainScreen(
 
                     val pageFilteredSongs = remember(visibleSongs, folder) {
                         when (folder) {
-                            "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> visibleSongs
+                            "HOME", "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> visibleSongs
                             "ARTISTS" -> visibleSongs
                             "GENRES" -> visibleSongs
                             "FAVORITES" -> visibleSongs.filter { it.isFavorite }
@@ -1346,7 +1421,7 @@ fun MainScreen(
 
                     val pageContextId = remember(folder) {
                         when (folder) {
-                            "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> -100L
+                            "HOME", "RESUME", "MIXES", "ALL", "ALBUMS", "FOLDERS" -> -100L
                             "FAVORITES" -> -200L
                             else -> folder.hashCode().toLong()
                         }
@@ -1354,7 +1429,7 @@ fun MainScreen(
 
                     val pageCurrentScreen = remember(folder, pageFilteredSongs.isEmpty()) {
                         when {
-                            folder == "RESUME" -> "RESUME"
+                            folder == "HOME" || folder == "RESUME" -> "HOME"
                             folder == "MIXES" -> "MIXES"
                             folder == "ALBUMS" -> "ALBUM_GRID"
                             folder == "ARTISTS" -> "ARTIST_GRID"
@@ -1370,8 +1445,8 @@ fun MainScreen(
 
                     when (pageCurrentScreen) {
 
-                        "RESUME" -> {
-                            com.demonlab.lune.ui.screens.ResumeScreen(
+                        "HOME", "RESUME" -> {
+                            com.demonlab.lune.ui.screens.HomeScreen(
                                 viewModel = musicViewModel,
                                 allSongs = pageFilteredSongs,
                                 allPlaylists = musicViewModel.playlists,
@@ -1486,7 +1561,7 @@ fun MainScreen(
                                     if (viewStyle == 0) {
                                         AlbumGrid(
                                             albums = albumsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = true },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
@@ -1497,7 +1572,7 @@ fun MainScreen(
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = albumsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = true },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = currentSong?.album?.hashCode()?.toLong()
@@ -1545,7 +1620,7 @@ fun MainScreen(
                                     if (viewStyle == 0) {
                                         AlbumGrid(
                                             albums = artistsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
@@ -1556,7 +1631,7 @@ fun MainScreen(
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = artistsList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = currentSong?.artist?.hashCode()?.toLong()
@@ -1606,7 +1681,7 @@ fun MainScreen(
                                     if (viewStyle == 0) {
                                         AlbumGrid(
                                             albums = genresList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             isDarkTheme = isDarkThemeMini,
@@ -1617,7 +1692,7 @@ fun MainScreen(
                                     } else {
                                         AlbumStackedCarousel(
                                             albums = genresList,
-                                            onAlbumClick = { selectedAlbum = it },
+                                            onAlbumClick = { selectedAlbum = it; isAlbumView = false },
                                             bottomPadding = bottomPadding,
                                             hasBlurBackground = hasBlurBackgroundMini && currentSong != null,
                                             activePlaylistId = null
@@ -1992,7 +2067,7 @@ fun MainScreen(
                             val isCurrentListPlaying = playbackManager.activePlaylistId == pageContextId && playbackManager.activeCategory == folder
                             var localShuffleState by remember(pageContextId) { mutableStateOf(settingsManager.getPlaylistShuffle(pageContextId)) }
                             val isShuffleActive = if (folder == "ALL" || isCurrentListPlaying) playbackManager.isShuffle else localShuffleState
-                            val hasHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
+                            val hasHeader = folder == "ALL" || folder == "FAVORITES" || (!listOf("HOME", "RESUME", "ALBUMS", "PLAYLISTS").contains(folder))
                             val isGridMode = folder == "ALL" && tracksViewStyle == 1
                             val pageMainGridState = remember(folder) { LazyGridState() }
 
@@ -2214,6 +2289,7 @@ fun MainScreen(
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 containerColor = blurColors.containerColor,
                 dragHandle = null,
+                scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
                 contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
             ) {
                 AppBlurBackdrop(
@@ -2221,7 +2297,8 @@ fun MainScreen(
                     isDarkTheme = blurColors.isDark,
                     currentSong = currentSong,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    isSheet = true
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp)) {
                         Box(
@@ -2522,7 +2599,8 @@ fun MainScreen(
                                         useCustomControlsColor = useCustomControlsColor,
                                         controlsColorPalette = controlsColorPalette,
                                         showSearchText = false,
-                                        sTabResume = sTabResume,
+                                        sTabHome = sTabHome,
+                                        sTabResume = sTabHome,
                                         sTabMixes = sTabMixes,
                                         sTabAll = sTabAll,
                                         sTabFavorites = sTabFavorites,
@@ -2582,7 +2660,7 @@ fun MainScreen(
                                             when (currentActiveFolder) {
                                                 "ALL" -> activeCat == "ALL" && activeId == -100L
                                                 "FAVORITES" -> activeCat == "FAVORITES" && activeId == -200L
-                                                "RESUME", "MIXES", "ALBUMS", "ARTISTS", "GENRES", "FOLDERS", "PLAYLISTS" -> false
+                                                "HOME", "RESUME", "MIXES", "ALBUMS", "ARTISTS", "GENRES", "FOLDERS", "PLAYLISTS" -> false
                                                 else -> activeCat == currentActiveFolder && activeId == currentActiveFolder.hashCode().toLong()
                                             }
                                         }
@@ -2598,6 +2676,7 @@ fun MainScreen(
                                         isPlaying = isPlaying,
                                         progress = playbackProgress,
                                         showWaveform = playbackManager.isMiniPlayerVisualizerEnabled,
+                                        visualizerData = playbackManager.visualizerData.collectAsState().value,
                                         currentOutputIcon = playbackManager.currentOutputIcon,
                                         coverShape = coverShape,
                                         coverScale = coverScale,
@@ -2645,7 +2724,8 @@ fun MainScreen(
                                         useCustomControlsColor = useCustomControlsColor,
                                         controlsColorPalette = controlsColorPalette,
                                         showSearchText = true,
-                                        sTabResume = sTabResume,
+                                        sTabHome = sTabHome,
+                                        sTabResume = sTabHome,
                                         sTabMixes = sTabMixes,
                                         sTabAll = sTabAll,
                                         sTabFavorites = sTabFavorites,
@@ -2677,7 +2757,8 @@ fun MainScreen(
                             isDarkTheme = isDarkThemeMini,
                             useCustomControlsColor = useCustomControlsColor,
                             controlsColorPalette = controlsColorPalette,
-                            sTabResume = sTabResume,
+                            sTabHome = sTabHome,
+                            sTabResume = sTabHome,
                             sTabMixes = sTabMixes,
                             sTabAll = sTabAll,
                             sTabFavorites = sTabFavorites,
@@ -2811,12 +2892,12 @@ fun MainScreen(
                 playbackManager.play(matchedSongs.first(), matchedSongs, playlistId = -300L, category = "ALL", shuffleMode = shuffleOn)
                 onCurrentSongChange(matchedSongs.first())
                 onIsPlayingChange(true)
-                onSelectedFolderChange("RESUME")
+                onSelectedFolderChange("HOME")
                 showSearchScreen = false
             },
             onNavigateToAlbum = { album ->
                 selectedAlbum = album
-                isAlbumView = album.artist.isNotEmpty()
+                isAlbumView = true
                 showSearchScreen = false
                 onSelectedFolderChange("ALBUMS")
             },
@@ -2898,6 +2979,10 @@ fun MainScreen(
             onDeleteClick = {
                 songToDelete = optionsSong
                 showDeleteDialog = true
+            },
+            onHideClick = {
+                songToHide = optionsSong
+                showHideDialog = true
             }
         )
     }
@@ -2955,84 +3040,184 @@ fun MainScreen(
     }
 
     if (showDeleteDialog && songToDelete != null) {
-        val blurColors = rememberBlurSheetColors()
-        AlertDialog(
+        val targetSong = songToDelete!!
+        val blurColors = rememberBlurSheetColors(targetSong)
+
+        Dialog(
             onDismissRequest = { showDeleteDialog = false },
-            containerColor = blurColors.containerColor,
-            shape = RoundedCornerShape(28.dp),
-            title = { 
-                Text(
-                    stringResource(R.string.delete_song),
-                    fontWeight = FontWeight.Bold,
-                    color = blurColors.textColor
-                ) 
-            },
-            text = { 
-                Text(
-                    stringResource(R.string.delete_song_warning),
-                    color = blurColors.textSecondaryColor
-                ) 
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val song = songToDelete!!
-                        showDeleteDialog = false
-                        
-                        // Fix: If current song is deleted, skip to next (respect pause state)
-                        if (currentSong?.id == song.id) {
-                            playbackManager.playNextFromService(startPlayback = isPlaying)
-                        }
-                        
-                        musicViewModel.prepareDeleteSong(song)
-                        coroutineScope.launch {
-                            val totalTime = 8000L
-                            val startTime = System.currentTimeMillis()
-                            
-                            val timerJob = launch {
-                                while (System.currentTimeMillis() - startTime < totalTime) {
-                                    val elapsed = System.currentTimeMillis() - startTime
-                                    undoProgress = 1f - (elapsed.toFloat() / totalTime)
-                                    undoSecondsRemaining = ((totalTime - elapsed) / 1000).toInt() + 1
-                                    kotlinx.coroutines.delay(50)
-                                }
-                                undoProgress = 0f
-                                undoSecondsRemaining = 0
-                            }
-                            
-                            val result = snackbarHostState.showSnackbar(
-                                message = context.getString(R.string.song_deleted),
-                                actionLabel = context.getString(R.string.restore_music),
-                                duration = SnackbarDuration.Indefinite
-                            )
-                            
-                            timerJob.cancel()
-                            
-                            if (result == SnackbarResult.ActionPerformed) {
-                                musicViewModel.undoDeleteSong(song)
-                            } else {
-                                musicViewModel.deleteSongPermanently(song.id, song.path, song.uri)
-                            }
-                        }
-                        
-                        // Auto-dismiss indefinite snackbar after 8s
-                        coroutineScope.launch {
-                             kotlinx.coroutines.delay(8000)
-                             snackbarHostState.currentSnackbarData?.dismiss()
-                        }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier.bounceClick()
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AppBlurBackdrop(
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark,
+                currentSong = targetSong,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 400.dp),
+                shape = RoundedCornerShape(28.dp),
+                isSheet = true
+            ) {
+                Surface(
+                    color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }, modifier = Modifier.bounceClick()) {
-                    Text(stringResource(R.string.cancel), color = blurColors.textSecondaryColor)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.delete_song),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.delete_song_warning),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = blurColors.textSecondaryColor
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showDeleteDialog = false },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.cancel),
+                                    color = blurColors.textSecondaryColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    val song = targetSong
+                                    showDeleteDialog = false
+                                    
+                                    // If current song is deleted, skip to next (respect pause state)
+                                    if (currentSong?.id == song.id) {
+                                        playbackManager.playNextFromService(startPlayback = isPlaying)
+                                    }
+                                    
+                                    musicViewModel.prepareDeleteSong(song)
+                                    musicViewModel.deleteSong(
+                                        song = song,
+                                        onNeedsIntentSender = { intentSender ->
+                                            pendingDeleteSong = song
+                                            deleteLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+                                        },
+                                        onDeleted = {
+                                            playbackManager.removeFromQueue(song.id)
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    message = context.getString(R.string.song_deleted),
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            }
+                                        }
+                                    )
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(stringResource(R.string.delete), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
-        )
+        }
+    }
+
+    if (showHideDialog && songToHide != null) {
+        val targetSong = songToHide!!
+        val blurColors = rememberBlurSheetColors(targetSong)
+
+        Dialog(
+            onDismissRequest = { showHideDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AppBlurBackdrop(
+                hasBlurBackground = blurColors.hasBlur,
+                isDarkTheme = blurColors.isDark,
+                currentSong = targetSong,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .widthIn(max = 400.dp),
+                shape = RoundedCornerShape(28.dp),
+                isSheet = true
+            ) {
+                Surface(
+                    color = if (blurColors.hasBlur) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.hide_from_library),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = blurColors.textColor
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.hide_song_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = blurColors.textSecondaryColor
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showHideDialog = false },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.cancel),
+                                    color = blurColors.textSecondaryColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    val song = targetSong
+                                    showHideDialog = false
+
+                                    if (currentSong?.id == song.id) {
+                                        playbackManager.playNextFromService(startPlayback = isPlaying)
+                                    }
+                                    playbackManager.removeFromQueue(song.id)
+                                    settingsManager.hideSong(song)
+                                    Toast.makeText(context, context.getString(R.string.song_hidden_success), Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.bounceClick()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.hide),
+                                    fontWeight = FontWeight.Bold,
+                                    color = blurColors.primaryTint
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showMainAddToPlaylistDialog && optionsSong != null) {
@@ -3051,6 +3236,7 @@ fun MainScreen(
             containerColor = blurColors.containerColor,
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             dragHandle = null,
+            scrimColor = if (blurColors.hasBlur && !blurColors.isDark) Color.Black.copy(alpha = 0.14f) else BottomSheetDefaults.ScrimColor,
             contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
         ) {
             AppBlurBackdrop(
@@ -3058,7 +3244,8 @@ fun MainScreen(
                 isDarkTheme = blurColors.isDark,
                 currentSong = currentSong,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                isSheet = true
             ) {
                 Column(
                     modifier = Modifier
@@ -3086,7 +3273,7 @@ fun MainScreen(
                         val isSelected = selectedFolder == folder
                         val isDefaultSection = defaultSectionTab == folder
                         val label = when (folder) {
-                            "RESUME" -> sTabResume
+                            "HOME", "RESUME" -> sTabHome
                             "MIXES" -> sTabMixes
                             "ALL" -> sTabAll
                             "FAVORITES" -> sTabFavorites
@@ -3125,7 +3312,7 @@ fun MainScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         val iconTint = if (isSelected) (if (blurColors.hasBlur && blurColors.isDark) Color.Black else MaterialTheme.colorScheme.onPrimary) else blurColors.textSecondaryColor
                                         when (folder) {
-                                            "RESUME" -> Icon(Icons.Default.History, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                                            "HOME", "RESUME" -> Icon(Icons.Default.Home, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
                                             "MIXES" -> Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
                                             "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
                                             "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
@@ -3184,6 +3371,19 @@ fun MainScreen(
             }
         }
     }
+
+    if (showUpdateSheet) {
+        UpdateChangelogSheet(
+            previousVersionName = lastVersionName,
+            currentVersionName = currentVersionName,
+            changelogItems = updateChangelog,
+            onDismiss = {
+                settingsManager.lastKnownVersionCode = currentVersionCode
+                settingsManager.lastKnownVersionName = currentVersionName
+                showUpdateSheet = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -3200,7 +3400,8 @@ fun UnifiedHeaderPill(
     useCustomControlsColor: Boolean = false,
     controlsColorPalette: Int = 0,
     showSearchText: Boolean = true,
-    sTabResume: String,
+    sTabHome: String = "",
+    sTabResume: String = sTabHome,
     sTabMixes: String,
     sTabAll: String,
     sTabFavorites: String,
@@ -3342,7 +3543,7 @@ fun UnifiedHeaderPill(
             ) {
                 // LEFT SIDE: Active Section Pill
                 val activeLabel = when(selectedFolder) {
-                    "RESUME" -> sTabResume
+                    "HOME", "RESUME" -> if (sTabHome.isNotBlank()) sTabHome else sTabResume
                     "MIXES" -> sTabMixes
                     "ALL" -> sTabAll
                     "FAVORITES" -> sTabFavorites
@@ -3380,7 +3581,7 @@ fun UnifiedHeaderPill(
                             contentAlignment = Alignment.Center
                         ) {
                             when (selectedFolder) {
-                                "RESUME" -> Icon(Icons.Default.History, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
+                                "HOME", "RESUME" -> Icon(Icons.Default.Home, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                                 "MIXES" -> Icon(Icons.Default.AutoAwesome, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                                 "ALL" -> Icon(Icons.Default.LibraryMusic, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))
                                 "ALBUMS" -> Icon(Icons.Default.Album, contentDescription = activeLabel, tint = onSelected, modifier = Modifier.size(22.dp))

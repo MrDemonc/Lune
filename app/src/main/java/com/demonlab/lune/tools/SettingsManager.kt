@@ -3,6 +3,7 @@ package com.demonlab.lune.tools
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.font.FontFamily
 import com.demonlab.lune.ui.theme.quicksand
@@ -23,13 +24,110 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("is_first_run", true)
         set(value) = prefs.edit().putBoolean("is_first_run", value).apply()
 
+    var lastKnownVersionCode: Int
+        get() = prefs.getInt("last_known_version_code", 0)
+        set(value) = prefs.edit().putInt("last_known_version_code", value).apply()
+
+    var lastKnownVersionName: String
+        get() = prefs.getString("last_known_version_name", "") ?: ""
+        set(value) = prefs.edit().putString("last_known_version_name", value).apply()
+
     var optionsOrder: String
         get() = prefs.getString("options_order", "like,shuffle,repeat,crossfade,automix,timer,eq") ?: "like,shuffle,repeat,crossfade,automix,timer,eq"
         set(value) = prefs.edit().putString("options_order", value).apply()
 
+    private val _hiddenFolders = mutableStateOf(prefs.getStringSet("hidden_folders", emptySet()) ?: emptySet())
     var hiddenFolders: Set<String>
-        get() = prefs.getStringSet("hidden_folders", emptySet()) ?: emptySet()
-        set(value) = prefs.edit().putStringSet("hidden_folders", value).apply()
+        get() = _hiddenFolders.value
+        set(value) {
+            _hiddenFolders.value = value
+            prefs.edit().putStringSet("hidden_folders", value).apply()
+        }
+
+    private val _hiddenSongIds = mutableStateOf(prefs.getStringSet("hidden_song_ids", emptySet()) ?: emptySet())
+    var hiddenSongIds: Set<String>
+        get() = _hiddenSongIds.value
+        set(value) {
+            _hiddenSongIds.value = value
+            prefs.edit().putStringSet("hidden_song_ids", value).apply()
+        }
+
+    private val _hiddenSongPaths = mutableStateOf(prefs.getStringSet("hidden_song_paths", emptySet()) ?: emptySet())
+    var hiddenSongPaths: Set<String>
+        get() = _hiddenSongPaths.value
+        set(value) {
+            _hiddenSongPaths.value = value
+            prefs.edit().putStringSet("hidden_song_paths", value).apply()
+        }
+
+    fun hideSong(song: Song) {
+        val ids = hiddenSongIds.toMutableSet()
+        ids.add(song.id.toString())
+        hiddenSongIds = ids
+
+        if (song.path.isNotBlank()) {
+            val paths = hiddenSongPaths.toMutableSet()
+            paths.add(song.path)
+            hiddenSongPaths = paths
+        }
+    }
+
+    fun unhideSong(song: Song) {
+        val ids = hiddenSongIds.toMutableSet()
+        ids.remove(song.id.toString())
+        hiddenSongIds = ids
+
+        if (song.path.isNotBlank()) {
+            val paths = hiddenSongPaths.toMutableSet()
+            paths.remove(song.path)
+            hiddenSongPaths = paths
+        }
+    }
+
+    fun restoreAllHiddenSongs() {
+        hiddenSongIds = emptySet()
+        hiddenSongPaths = emptySet()
+    }
+
+    fun isSongHidden(song: Song): Boolean {
+        if (hiddenSongIds.contains(song.id.toString())) return true
+        if (song.path.isNotBlank() && hiddenSongPaths.contains(song.path)) return true
+        return false
+    }
+
+    fun isSongHidden(songId: Long, songPath: String = ""): Boolean {
+        if (hiddenSongIds.contains(songId.toString())) return true
+        if (songPath.isNotBlank() && hiddenSongPaths.contains(songPath)) return true
+        return false
+    }
+
+    private val _isFilterDurationEnabled = mutableStateOf(prefs.getBoolean("is_filter_duration_enabled", false))
+    var isFilterDurationEnabled: Boolean
+        get() = _isFilterDurationEnabled.value
+        set(value) {
+            _isFilterDurationEnabled.value = value
+            prefs.edit().putBoolean("is_filter_duration_enabled", value).apply()
+        }
+
+    private val _filterMinDurationSeconds = mutableIntStateOf(prefs.getInt("filter_min_duration_seconds", 30))
+    var filterMinDurationSeconds: Int
+        get() = _filterMinDurationSeconds.intValue
+        set(value) {
+            _filterMinDurationSeconds.intValue = value
+            prefs.edit().putInt("filter_min_duration_seconds", value).apply()
+        }
+
+    fun isSongFiltered(song: Song): Boolean {
+        if (isSongHidden(song)) return true
+        if (isFilterDurationEnabled && song.duration < filterMinDurationSeconds * 1000L) return true
+        return false
+    }
+
+    fun isSongFiltered(songId: Long, songPath: String = "", duration: Long = 0L): Boolean {
+        if (isSongHidden(songId, songPath)) return true
+        if (isFilterDurationEnabled && duration > 0L && duration < filterMinDurationSeconds * 1000L) return true
+        return false
+    }
 
     // Deprecated: used for backward compatibility if needed, but we use hiddenFolders now
     var showWhatsappAudio: Boolean
@@ -80,8 +178,26 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("sort_option", "ALPHABETICAL") ?: "ALPHABETICAL"
         set(value) = prefs.edit().putString("sort_option", value).apply()
 
+    var defaultAlbumSortOption: String
+        get() = prefs.getString("default_album_sort_option", "TRACK_NUMBER") ?: "TRACK_NUMBER"
+        set(value) = prefs.edit().putString("default_album_sort_option", value).apply()
+
+    var defaultArtistSortOption: String
+        get() = prefs.getString("default_artist_sort_option", "ALPHABETICAL") ?: "ALPHABETICAL"
+        set(value) = prefs.edit().putString("default_artist_sort_option", value).apply()
+
+    var defaultPlaylistSortOption: String
+        get() = prefs.getString("default_playlist_sort_option", "CUSTOM") ?: "CUSTOM"
+        set(value) = prefs.edit().putString("default_playlist_sort_option", value).apply()
+
     fun getSortOption(key: String): String {
-        return prefs.getString("sort_option_$key", sortOption) ?: sortOption
+        val defaultOpt = when {
+            key.startsWith("album_") -> defaultAlbumSortOption
+            key.startsWith("artist_") -> defaultArtistSortOption
+            key.startsWith("playlist_") -> defaultPlaylistSortOption
+            else -> sortOption
+        }
+        return prefs.getString("sort_option_$key", defaultOpt) ?: defaultOpt
     }
 
     fun setSortOption(key: String, option: String) {
@@ -149,7 +265,11 @@ class SettingsManager(context: Context) {
         set(value) = prefs.edit().putBoolean("is_sort_ascending", value).apply()
 
     fun getIsSortAscending(key: String): Boolean {
-        return prefs.getBoolean("is_sort_ascending_$key", isSortAscending)
+        val defaultAscending = when {
+            key.startsWith("album_") -> true
+            else -> isSortAscending
+        }
+        return prefs.getBoolean("is_sort_ascending_$key", defaultAscending)
     }
 
     fun setIsSortAscending(key: String, ascending: Boolean) {
@@ -238,6 +358,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("language", "system") ?: "system"
         set(value) = prefs.edit().putString("language", value).apply()
 
+    var appIcon: String
+        get() = prefs.getString("app_icon", "default") ?: "default"
+        set(value) = prefs.edit().putString("app_icon", value).apply()
+
     var customTitle: String
         get() = prefs.getString("custom_title", "") ?: ""
         set(value) {
@@ -311,12 +435,32 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_mini_player_minimized", value).apply()
         }
 
+    private val _isLyricsOnCoverEnabled = mutableStateOf(prefs.getBoolean("is_lyrics_on_cover_enabled", false))
+    var isLyricsOnCoverEnabled: Boolean
+        get() = _isLyricsOnCoverEnabled.value
+        set(value) {
+            _isLyricsOnCoverEnabled.value = value
+            prefs.edit().putBoolean("is_lyrics_on_cover_enabled", value).apply()
+        }
+
+    private val _showCoverLyrics = mutableStateOf(prefs.getBoolean("show_cover_lyrics", false))
+    var showCoverLyrics: Boolean
+        get() = _showCoverLyrics.value
+        set(value) {
+            _showCoverLyrics.value = value
+            prefs.edit().putBoolean("show_cover_lyrics", value).apply()
+        }
+
     private val _isBlurEnabled = mutableStateOf(prefs.getBoolean("is_blur_enabled", true))
     var isBlurEnabled: Boolean
         get() = _isBlurEnabled.value
         set(value) {
             _isBlurEnabled.value = value
             prefs.edit().putBoolean("is_blur_enabled", value).apply()
+            if (value) {
+                isBlurCinematicMode = true
+                isBlurControlsEnabled = true
+            }
         }
 
     private val _isBlurDarkMode = mutableStateOf(prefs.getBoolean("is_blur_dark_mode", true))
@@ -335,7 +479,7 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_blur_light_mode", value).apply()
         }
 
-    private val _isBlurCinematicMode = mutableStateOf(prefs.getBoolean("is_blur_cinematic_mode", false))
+    private val _isBlurCinematicMode = mutableStateOf(prefs.getBoolean("is_blur_cinematic_mode", true))
     var isBlurCinematicMode: Boolean
         get() = _isBlurCinematicMode.value
         set(value) {
@@ -343,7 +487,7 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_blur_cinematic_mode", value).apply()
         }
 
-    private val _isBlurControlsEnabled = mutableStateOf(prefs.getBoolean("is_blur_controls_enabled", false))
+    private val _isBlurControlsEnabled = mutableStateOf(prefs.getBoolean("is_blur_controls_enabled", true))
     var isBlurControlsEnabled: Boolean
         get() = _isBlurControlsEnabled.value
         set(value) {
@@ -351,9 +495,13 @@ class SettingsManager(context: Context) {
             prefs.edit().putBoolean("is_blur_controls_enabled", value).apply()
         }
 
+    private val _lyricsTextAlignment = mutableStateOf(prefs.getInt("lyrics_text_alignment", 0))
     var lyricsTextAlignment: Int
-        get() = prefs.getInt("lyrics_text_alignment", 0)
-        set(value) = prefs.edit().putInt("lyrics_text_alignment", value).apply()
+        get() = _lyricsTextAlignment.value
+        set(value) {
+            _lyricsTextAlignment.value = value
+            prefs.edit().putInt("lyrics_text_alignment", value).apply()
+        }
 
     var lyricsSpeedIndex: Int
         get() = prefs.getInt("lyrics_speed_index", 0)
@@ -501,6 +649,14 @@ class SettingsManager(context: Context) {
         set(value) {
             _isPlayerGradientBackgroundEnabled.value = value
             prefs.edit().putBoolean("is_player_gradient_background_enabled", value).apply()
+        }
+
+    private val _useQuickPlayer = mutableStateOf(prefs.getBoolean("use_quick_player", true))
+    var useQuickPlayer: Boolean
+        get() = _useQuickPlayer.value
+        set(value) {
+            _useQuickPlayer.value = value
+            prefs.edit().putBoolean("use_quick_player", value).apply()
         }
 
     var playbackSpeed: Float

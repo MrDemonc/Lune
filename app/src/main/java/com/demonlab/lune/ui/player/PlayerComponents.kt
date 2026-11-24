@@ -816,6 +816,7 @@ fun FullPlayer(
 ) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
+    val playbackManager = remember { PlaybackManager.getInstance(context) }
 
 
     val activity = context as? Activity
@@ -823,6 +824,8 @@ fun FullPlayer(
     var isGesturesEnabled by remember { mutableStateOf(settingsManager.isGesturesEnabled) }
     var swipeUpAction by remember { mutableIntStateOf(settingsManager.swipeUpAction) }
     var useAmoledPitchBlack by remember { mutableStateOf(settingsManager.useAmoledPitchBlack) }
+    var isLyricsOnCoverEnabled by remember { mutableStateOf(settingsManager.isLyricsOnCoverEnabled) }
+    val showCoverLyrics = playbackManager.showCoverLyrics
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -830,6 +833,7 @@ fun FullPlayer(
                 isGesturesEnabled = settingsManager.isGesturesEnabled
                 swipeUpAction = settingsManager.swipeUpAction
                 useAmoledPitchBlack = settingsManager.useAmoledPitchBlack
+                isLyricsOnCoverEnabled = settingsManager.isLyricsOnCoverEnabled
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -863,7 +867,6 @@ fun FullPlayer(
         }
     }
 
-    val playbackManager = remember { PlaybackManager.getInstance(context) }
     LaunchedEffect(song.id) {
         playbackManager.preloadSurroundingArtwork()
     }
@@ -1024,7 +1027,7 @@ fun FullPlayer(
             !playbackManager.activePlaylistName.isNullOrBlank() -> playbackManager.activePlaylistName!!
             playbackManager.activeCategory == "ALL" -> context.getString(R.string.tab_all)
             playbackManager.activeCategory == "FAVORITES" -> context.getString(R.string.tab_favorites)
-            playbackManager.activeCategory == "RESUME" -> context.getString(R.string.tab_resume)
+            playbackManager.activeCategory == "HOME" || playbackManager.activeCategory == "RESUME" -> context.getString(R.string.tab_home)
             playbackManager.activeCategory == "ALBUMS" -> song.album.ifBlank { context.getString(R.string.tab_albums_real) }
             playbackManager.activeCategory == "ARTISTS" -> song.artist.ifBlank { context.getString(R.string.tab_artists) }
             playbackManager.activeCategory == "FOLDERS" -> song.folderName.ifBlank { context.getString(R.string.tab_folders) }
@@ -1640,7 +1643,20 @@ fun FullPlayer(
                                 }
                             }
                         } else {
-                            Box(modifier = mod)
+                            if (isLyricsOnCoverEnabled && showCoverLyrics) {
+                                CoverLyricsView(
+                                    song = song,
+                                    playbackManager = playbackManager,
+                                    isDarkTheme = true,
+                                    hasBlurBackground = true,
+                                    isGradientEnabled = isGradientEnabled,
+                                    isAmoled = isAmoled,
+                                    onOpenFullLyrics = onShowLyrics,
+                                    modifier = mod
+                                )
+                            } else {
+                                Box(modifier = mod)
+                            }
                         }
                     } else {
                         val baseRadiusPx = when (coverShape) {
@@ -1656,6 +1672,7 @@ fun FullPlayer(
                         val activeShape = remember(currentRadiusPx) {
                             RoundedCornerShape(with(density) { currentRadiusPx.toDp() })
                         }
+                        val isCoverLyricsActive = isLyricsOnCoverEnabled && showCoverLyrics
                         val glowProgress = favoriteGlowAnim.value
 
                         Box(
@@ -1679,8 +1696,8 @@ fun FullPlayer(
                                         scaleY = currentCoverScale
                                         translationX = currentCoverTransX
                                         translationY = currentCoverTransY
-                                        shape = activeShape
-                                        clip = isExpandingOrCollapsing
+                                        shape = if (isCoverLyricsActive) RoundedCornerShape(0.dp) else activeShape
+                                        clip = isExpandingOrCollapsing && !isCoverLyricsActive
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -1688,13 +1705,13 @@ fun FullPlayer(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .graphicsLayer {
-                                            scaleX = coverBounceScale.value
-                                            scaleY = coverBounceScale.value
+                                            scaleX = if (isCoverLyricsActive) 1f else coverBounceScale.value
+                                            scaleY = if (isCoverLyricsActive) 1f else coverBounceScale.value
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     // Resplandor difuminado con degradé adaptado al Dynamic Color y forma de la carátula
-                                    if (glowProgress > 0.001f) {
+                                    if (glowProgress > 0.001f && !isCoverLyricsActive) {
                                         Canvas(
                                             modifier = Modifier.fillMaxSize()
                                         ) {
@@ -1743,34 +1760,56 @@ fun FullPlayer(
                                         }
                                     }
 
-                                    Crossfade(
-                                        targetState = song.toArtwork(),
-                                        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
-                                        label = "FullPlayerCoverCrossfade"
-                                    ) { targetSong ->
-                                        if (coverShape == 2 && coverVinylEffect) {
-                                            VinylRecordAsyncCover(
-                                                model = targetSong.coverUrl ?: targetSong.uri,
-                                                rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                                    AnimatedContent(
+                                        targetState = isCoverLyricsActive,
+                                        transitionSpec = {
+                                            fadeIn(tween(250, easing = LinearOutSlowInEasing)) togetherWith
+                                                fadeOut(tween(200, easing = FastOutLinearInEasing))
+                                        },
+                                        label = "CoverOrLyricsCrossfade"
+                                    ) { lyricsShowing ->
+                                        if (lyricsShowing) {
+                                            CoverLyricsView(
+                                                song = song,
+                                                playbackManager = playbackManager,
+                                                isDarkTheme = isDarkTheme,
+                                                hasBlurBackground = hasBlurBackground,
+                                                isGradientEnabled = isGradientEnabled,
+                                                isAmoled = isAmoled,
+                                                onOpenFullLyrics = onShowLyrics,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         } else {
-                                            Surface(
-                                                shape = activeShape,
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
-                                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                                tonalElevation = if (isExpandingOrCollapsing) 4.dp else 8.dp,
-                                                shadowElevation = if (isExpandingOrCollapsing) 0.dp else 6.dp
-                                            ) {
-                                                SongCoverImage(
-                                                    coverUrl = targetSong.coverUrl ?: targetSong.uri,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    shape = activeShape,
-                                                    iconScale = 0.68f
-                                                )
+                                            Crossfade(
+                                                targetState = song.toArtwork(),
+                                                animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+                                                label = "FullPlayerCoverCrossfade"
+                                            ) { targetSong ->
+                                                if (coverShape == 2 && coverVinylEffect) {
+                                                    VinylRecordAsyncCover(
+                                                        model = targetSong.coverUrl ?: targetSong.uri,
+                                                        rotation = if (coverSpin && isPlaying) spinRotation else 0f,
+                                                        modifier = Modifier.fillMaxSize()
+                                                    )
+                                                } else {
+                                                    Surface(
+                                                        shape = activeShape,
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .rotate(if (coverShape == 2 && coverSpin && isPlaying) spinRotation else 0f),
+                                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                                        tonalElevation = if (isExpandingOrCollapsing) 4.dp else 8.dp,
+                                                        shadowElevation = if (isExpandingOrCollapsing) 0.dp else 6.dp
+                                                    ) {
+                                                        SongCoverImage(
+                                                            coverUrl = targetSong.coverUrl ?: targetSong.uri,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            shape = activeShape,
+                                                            iconScale = 0.68f
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -1780,6 +1819,7 @@ fun FullPlayer(
                     }
                 }
 
+                val isCoverLyricsActive = isLyricsOnCoverEnabled && showCoverLyrics
                 if (isFloatingWindow) {
                     BoxWithConstraints(
                         modifier = Modifier
@@ -1790,9 +1830,9 @@ fun FullPlayer(
                         val maxCoverDim = minOf(maxWidth, maxHeight)
                         val coverModifier = Modifier
                             .size(maxCoverDim)
-                            .scale(coverScale)
+                            .scale(if (isCoverLyricsActive) 1f else coverScale)
                             .songSwipeGestures(
-                                enabled = isGesturesEnabled && expansionFraction >= 0.95f,
+                                enabled = isGesturesEnabled && expansionFraction >= 0.95f && !isCoverLyricsActive,
                                 onNext = handleNext,
                                 onPrevious = handlePrevious
                             )
@@ -1803,9 +1843,9 @@ fun FullPlayer(
                         Modifier
                             .weight(1f, fill = false)
                             .aspectRatio(1f, matchHeightConstraintsFirst = true)
-                            .scale(coverScale)
+                            .scale(if (isCoverLyricsActive) 1f else coverScale)
                             .songSwipeGestures(
-                                enabled = isGesturesEnabled && expansionFraction >= 0.95f,
+                                enabled = isGesturesEnabled && expansionFraction >= 0.95f && !isCoverLyricsActive,
                                 onNext = handleNext,
                                 onPrevious = handlePrevious
                             )
@@ -1813,9 +1853,9 @@ fun FullPlayer(
                         Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .scale(coverScale)
+                            .scale(if (isCoverLyricsActive) 1f else coverScale)
                             .songSwipeGestures(
-                                enabled = isGesturesEnabled && expansionFraction >= 0.95f,
+                                enabled = isGesturesEnabled && expansionFraction >= 0.95f && !isCoverLyricsActive,
                                 onNext = handleNext,
                                 onPrevious = handlePrevious
                             )
@@ -1872,10 +1912,18 @@ fun FullPlayer(
 
                 val pillBg = if (useBlurControls) blurContainerColor else if (isAmoled) Color(0xFF222222) else if (isDarkTheme) Color.Black.copy(alpha = 0.40f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
                 val hasLyrics = playbackManager.currentLyrics != null
-                val lyricsIconColor = if (hasLyrics) {
+                val isCoverLyricsActive = isLyricsOnCoverEnabled && showCoverLyrics
+                val lyricsIconColor = if (isCoverLyricsActive) {
+                    if (useBlurControls) activePrimary else MaterialTheme.colorScheme.primary
+                } else if (hasLyrics) {
                     if (useBlurControls) Color.White else MaterialTheme.colorScheme.primary
                 } else {
                     if (useBlurControls) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                }
+                val lyricsBtnBg = if (isCoverLyricsActive) {
+                    if (useBlurControls) activePrimary.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    pillBg
                 }
 
                 Row(
@@ -1883,14 +1931,20 @@ fun FullPlayer(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        onClick = { onShowLyrics() },
+                        onClick = {
+                            if (isLyricsOnCoverEnabled) {
+                                playbackManager.toggleCoverLyrics()
+                            } else {
+                                onShowLyrics()
+                            }
+                        },
                         shape = RoundedCornerShape(
                             topStart = if (isFloatingWindow) 18.dp else 24.dp,
                             bottomStart = if (isFloatingWindow) 18.dp else 24.dp,
                             topEnd = 4.dp,
                             bottomEnd = 4.dp
                         ),
-                        color = pillBg,
+                        color = lyricsBtnBg,
                         modifier = Modifier.size(btnSize).bounceClick()
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -2515,7 +2569,11 @@ fun FullPlayer(
                 },
                 onShowLyrics = {
                     showOptionsSheet = false
-                    onShowLyrics()
+                    if (isLyricsOnCoverEnabled) {
+                        playbackManager.setCoverLyricsShowing(true)
+                    } else {
+                        onShowLyrics()
+                    }
                 }
             )
         }

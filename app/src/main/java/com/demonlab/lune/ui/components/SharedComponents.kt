@@ -110,6 +110,7 @@ fun AppBlurBackdrop(
     currentSong: Song? = null,
     modifier: Modifier = Modifier,
     shape: androidx.compose.ui.graphics.Shape = androidx.compose.ui.graphics.RectangleShape,
+    isSheet: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val context = LocalContext.current
@@ -142,13 +143,13 @@ fun AppBlurBackdrop(
                     window.isNavigationBarContrastEnforced = false
                 }
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-                val useLightIcons = isDarkTheme || hasBlurBackground
+                val useLightIcons = if (isSheet) isDarkTheme else (isDarkTheme || hasBlurBackground)
                 insetsController.isAppearanceLightNavigationBars = !useLightIcons
             }
         }
     }
-    val baseBgColor = if (isDarkTheme) Color(0xFF141416) else MaterialTheme.colorScheme.surface
-    val fallbackBlurBg = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)
+    val baseBgColor = if (isDarkTheme) Color(0xFF141416) else if (isSheet) Color.White else MaterialTheme.colorScheme.surface
+    val fallbackBlurBg = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.96f) else if (isSheet) Color(0xFFF7F7FA).copy(alpha = 0.96f) else Color(0xFFF2F2F7).copy(alpha = 0.96f)
     Box(
         modifier = modifier
             .clip(shape)
@@ -159,7 +160,7 @@ fun AppBlurBackdrop(
                 modifier = Modifier
                     .matchParentSize()
                     .blur(80.dp)
-                    .alpha(if (isDarkTheme) 0.35f else 0.45f)
+                    .alpha(if (isDarkTheme) 0.35f else if (isSheet) 0.60f else 0.45f)
             ) {
                 val req = remember(currentSong.id, currentSong.coverUrl) {
                     coil.request.ImageRequest.Builder(context)
@@ -174,10 +175,15 @@ fun AppBlurBackdrop(
                     contentScale = ContentScale.Crop
                 )
             }
+            val overlayColor = if (isDarkTheme) {
+                Color.Black.copy(alpha = 0.50f)
+            } else {
+                if (isSheet) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.20f)
+            }
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(Color.Black.copy(alpha = if (isDarkTheme) 0.50f else 0.20f))
+                    .background(overlayColor)
             )
         }
         content()
@@ -223,7 +229,7 @@ fun rememberBlurSheetColors(currentSong: Song? = null): BlurSheetColors {
                 if (controlsColorPalette == 6) {
                     if (isDarkTheme) Color.White else Color(0xFF141316)
                 } else primaryTint
-            } else (if (isDarkTheme) Color.White else MaterialTheme.colorScheme.primary),
+            } else (if (isDarkTheme) Color.White else Color(0xFF141316)),
             itemBorderColor = if (isDarkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.08f),
             useCustomControlsColor = useCustomControlsColor,
             controlsColorPalette = controlsColorPalette
@@ -1347,13 +1353,16 @@ fun OptionButton(
 ) {
     val haptic = LocalHapticFeedback.current
     val blurColors = rememberBlurSheetColors()
+    val isDark = blurColors.isDark
     val activeBg = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.primary
-    val inactiveBg = if (blurColors.hasBlur) Color.White.copy(alpha = 0.18f) else MaterialTheme.colorScheme.secondaryContainer
-    val activeTint = if (blurColors.hasBlur) (if (blurColors.isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onPrimary
-    val inactiveTint = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSecondaryContainer
-    val labelColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val inactiveBg = if (blurColors.hasBlur) {
+        if (isDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.08f)
+    } else MaterialTheme.colorScheme.secondaryContainer
+    val activeTint = if (blurColors.hasBlur) (if (isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onPrimary
+    val inactiveTint = if (blurColors.hasBlur) (if (isDark) Color.White else Color(0xFF141316)) else MaterialTheme.colorScheme.onSecondaryContainer
+    val labelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onSurfaceVariant
     val sublabelBg = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primaryContainer
-    val sublabelColor = if (blurColors.hasBlur) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+    val sublabelColor = if (blurColors.hasBlur) blurColors.textColor else MaterialTheme.colorScheme.onPrimaryContainer
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

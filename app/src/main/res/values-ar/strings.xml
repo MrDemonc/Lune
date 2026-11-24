@@ -24,6 +24,21 @@
     <string name="bass_label">جهير إضافي (EXTRA BASS)</string>
     <string name="spatial_audio_label">صوت مكاني</string>
     <string name="loudness_label">جهارة الصوت</string>
+    <string name="volume_boost_title">تضخيم الصوت الإضافي</string>
+    <string name="volume_boost_desc">تضخيم الصوت بما يتجاوز الحد الأقصى للهاتف</string>
+    <string name="volume_boost_enable_switch">تجاوز حد الصوت</string>
+    <string name="volume_boost_warning_off">يتيح هذا الخيار تضخيم الصوت بما يتجاوز حد 100% القياسي. الاستماع بمستويات صوت عالية قد يسبب ضرراً دائماً في السمع أو تلف مكبرات الصوت. استخدمه بحذر.</string>
+    <string name="volume_boost_level_safe_title">زيادة آمنة (+0 dB إلى +10 dB)</string>
+    <string name="volume_boost_level_safe_desc">مستوى آمن. موصى به للمقاطع ذات الصوت المنخفض بدون تشويش.</string>
+    <string name="volume_boost_level_med_title">زيادة متوسطة (+11 dB إلى +20 dB)</string>
+    <string name="volume_boost_level_med_desc">تنبيه: قد يحدث تشويش خفيف في مكبرات الصوت وإرهاق عند استخدام السماعات.</string>
+    <string name="volume_boost_level_high_title">تضخيم فائق الخطورة! (+21 dB إلى +30 dB)</string>
+    <string name="volume_boost_level_high_desc">خطر! الاستخدام المطول قد يسبب تلفاً دائماً للسمع وتعطل مكبرات الصوت.</string>
+    <string name="section_equalizer">معادل الصوت</string>
+    <string name="section_audio_effects">مؤثرات الصوت</string>
+    <string name="section_volume_gain">مستوى الصوت والتضخيم</string>
+    <string name="section_balance_tuning">التوازن والطبقة</string>
+    <string name="section_dynamics_processing">معالجة الديناميكيات</string>
     <string name="reverb_label">صدى</string>
     <string name="balance_label">توازن</string>
     <string name="balance_reset">إعادة ضبط التوازن</string>
@@ -49,7 +64,8 @@
     <string name="save_changes">حفظ التغييرات</string>
 
     <!-- Library Tabs -->
-    <string name="tab_resume">متابعة</string>
+    <string name="tab_home">الرئيسية</string>
+    <string name="tab_resume">الرئيسية</string>
     <string name="tab_mixes">خلطات AI</string>
     <string name="tab_genres">الأنواع</string>
 
@@ -271,6 +287,8 @@
     <string name="credits">الاعتمادات</string>
     <string name="credits_desc">الاختبار، اقتراحات التصميم، والشعار</string>
     <string name="creator_desc">منشئ ومشرف مشغل الموسيقى Lune</string>
+    <string name="contributors">المساهمون</string>
+    <string name="contributions_count">%1 مساهمة</string>
     <string name="gesture">الإيماءات</string>
     <string name="gesture_desc">تخصيص إيماءات التطبيق</string>
     <string name="enable_gestures">تفعيل الإيماءات</string>
@@ -404,6 +422,7 @@
 
     <!-- Donate -->
     <string name="donate_title">ادعم المشروع</string>
+    <string name="donate_desc">ادعم تطوير تطبيق Lune</string>
     <string name="paypal">PayPal</string>
     <string name="monero">Monero</string>
     <string name="monero_address">88s5Re4p6a3P9TtqaG1G2Yeq5Ppp1w1npXebyLjktuxYgurFAGn4GRbKuPKGbx1pD1bBwohtAriL7JqB12ECp4SnMN1T3q9</string>
@@ -439,6 +458,7 @@
 
     <!-- Quick Player -->
     <string name="quick_player">تشغيل سريع</string>
+    <string name="use_quick_player_desc">تشغيل الملفات الصوتية من التطبيقات الخارجية في نافذة معاينة عائمة بدلاً من التطبيق الكامل</string>
     <string name="open_in_lune">فتح في Lune</string>
     <string name="close">إغلاق</string>
     <string name="cd_open_in_lune">فتح في Lune</string>
@@ -537,4 +557,78 @@
     <string name="player_background_title">خلفية المشغل</string>
     <string name="player_gradient_background">خلفية تدرجات ديناميكية</string>
     <string name="player_gradient_background_desc">عرض تدرجات ضبابية محيطية مستخرجة من غلاف الأغنية الحالية</string>
+
+    <!-- Hidden Songs / Blacklist -->
+    <string name="hide_from_library">إخفاء من المكتبة</string>
+    <string name="hide_song_desc">سيتم إخفاء هذه الأغنية من مكتبتك والتوصيات دون حذفها من جهازك. يمكنك استعادتها في أي وقت من الإعدادات.</string>
+    <string name="hide">إخفاء</string>
+    <string name="song_hidden_success">تم إخفاء الأغنية من المكتبة</string>
+    <string name="hidden_songs">الأغاني المخفية</string>
+    <string name="hidden_songs_desc">إدارة واستعادة الأغاني المخفية من مكتبتك</string>
+    <string name="hidden_songs_count">%d أغاني مخفية</string>
+    <string name="no_hidden_songs">لا توجد أغاني مخفية</string>
+    <string name="no_hidden_songs_desc">ستظهر الأغاني التي تخفيها من المكتبة هنا حتى تتمكن من استعادتها</string>
+    <string name="restore_all">استعادة الكل</string>
+    <string name="song_restored_success">تمت استعادة \"%s\" إلى المكتبة</string>
+    <string name="all_songs_restored">تمت استعادة جميع الأغاني إلى المكتبة</string>
+    <string name="default_sorting">الترتيب الافتراضي</string>
+    <string name="default_album_sorting">الترتيب الافتراضي للألبومات</string>
+    <string name="default_artist_sorting">الترتيب الافتراضي للفنانين</string>
+    <string name="default_playlist_sorting">الترتيب الافتراضي لقوائم التشغيل</string>
+    <string name="filter_duration_title">استبعاد الملفات الصوتية القصيرة</string>
+    <string name="filter_duration_off">إيقاف</string>
+    <string name="option_filter_short_audios">تصفية</string>
+    <string name="filter_duration_description">استبعاد الملفات الصوتية القصيرة جداً (مثل الملاحظات الصوتية ونغمات الرنين والمؤثرات الصوتية) من مكتبتك وقوائم التشغيل.</string>
+
+    <!-- App Icon Customization -->
+    <string name="app_icon_title">أيقونة التطبيق</string>
+    <string name="app_icon_desc">اختر مظهرك المفضل لأيقونة مشغل Lune على شاشتك الرئيسية.</string>
+    <string name="app_icon_default">افتراضي</string>
+    <string name="app_icon_dynamic">لون ديناميكي</string>
+    <string name="app_icon_mono_white">أحادي اللون أبيض</string>
+    <string name="app_icon_mono_black">أحادي اللون أسود</string>
+    <string name="app_icon_msg_default">لون Lune الكلاسيكي المميز. لا يبطل أبدًا! 💜</string>
+    <string name="app_icon_msg_dynamic">حرباء حقيقية. يتطابق مع خلفية شاشتك كأيقونة للموضة! 🎨</string>
+    <string name="app_icon_msg_mono_white">بساطة نقية. مشرق للغاية لدرجة أن أيقوناتك الأخرى قد تحتاج نظارات شمسية! ☀️</string>
+    <string name="app_icon_msg_mono_black">وضع التخفي مفعل. أنيق وغامض وأفضل صديق لشاشات OLED! 🕶️</string>
+    <string name="app_icon_applied">تم تحديث أيقونة التطبيق!</string>
+
+    <!-- Offline Update Changelog Sheet -->
+    <string name="update_sheet_title">تحديث جديد</string>
+    <string name="update_sheet_subtitle">إليك الجديد في تطبيق Lune</string>
+    <string name="update_sheet_version_transition">v%1$s ← v%2$s</string>
+    <string name="update_sheet_dismiss_btn">لننطلق مع الموسيقى! 🎸</string>
+
+    <!-- Settings Redesign Strings -->
+    <string name="theme">المظهر</string>
+    <string name="theme_mode_title">وضع المظهر</string>
+    <string name="player_modes_title">أوضاع المشغل</string>
+    <string name="advanced_audio_settings">إعدادات الصوت المتقدمة</string>
+    <string name="advanced_audio_settings_desc">شارة Hi-Fi، ومعالجة 32 بت عائم، ووضع AAudio والتلاشي المتبادل</string>
+    <string name="search_settings">بحث في الإعدادات…</string>
+    <string name="no_settings_found">لم يتم العثور على إعدادات</string>
+    <string name="no_settings_found_desc">جرب البحث بكلمات مفتاحية مختلفة</string>
+    <string name="privacy_ai_title">الخصوصية والذكاء الاصطناعي على الجهاز</string>
+    <string name="reset_ai_habits">إعادة تعيين تعلم الذكاء الاصطناعي والعادات</string>
+    <string name="reset_ai_habits_desc">مسح تفضيلات الاستماع وسجل الميكسات المتعلمة</string>
+    <string name="reset_ai_habits_confirm">هل أنت متأكد من أنك تريد إعادة تعيين جميع توصيات الذكاء الاصطناعي وبيانات العادات على الجهاز؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="reset_ai_habits_success">تمت إعادة تعيين تعلم الذكاء الاصطناعي والعادات بنجاح</string>
+    <string name="manage_audio_folders">إدارة مجلدات الصوت</string>
+    <string name="manage_audio_folders_desc">تحديد المجلدات لتضمينها أو استبعادها من المكتبة</string>
+    <string name="system">النظام</string>
+    <string name="library_organization">المكتبة والتنظيم</string>
+    <string name="progress_bar_classic">كلاسيكي</string>
+    <string name="lyrics_on_cover_title">كلمات الأغاني على الغلاف</string>
+    <string name="lyrics_on_cover_desc">عرض كلمات الأغاني المتزامنة في منطقة الغلاف عند الضغط على زر كلمات الأغاني</string>
+    <string name="open_full_lyrics">عرض كلمات الأغاني كاملة</string>
+    <string name="show_album_cover">إظهار الغلاف</string>
+    <string name="align_lyrics">محاذاة الكلمات</string>
+    <string name="select_this_folder">تحديد هذا المجلد</string>
+    <string name="detected_folders">المجلدات المكتشفة</string>
+    <string name="storage_explorer">مستكشف التخزين</string>
+    <string name="system_folder_picker">تحديد باستخدام منتقي النظام</string>
+    <string name="folder_included">مضمن في المكتبة</string>
+    <string name="folder_excluded">مستبعد من المكتبة</string>
+    <string name="folder_selected_toast">تم تحديد المجلد: %1$s</string>
+    <string name="songs_count_format">%1$d أغنية</string>
 </resources>

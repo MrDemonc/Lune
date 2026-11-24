@@ -1,11 +1,16 @@
 package com.demonlab.lune.ui.viewmodels
 
 import android.app.Application
+import android.app.RecoverableSecurityException
+import android.content.IntentSender
 import android.database.ContentObserver
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import androidx.documentfile.provider.DocumentFile
+import java.io.File
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -37,7 +42,20 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     val visuallyDeletedIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
     val filteredSongs: List<Song>
-        get() = allSongs.filter { it.id !in visuallyDeletedIds }
+        get() {
+            val settings = SettingsManager.getInstance(getApplication())
+            val hiddenIds = settings.hiddenSongIds
+            val hiddenPaths = settings.hiddenSongPaths
+            val filterDurationEnabled = settings.isFilterDurationEnabled
+            val minDurationMs = if (filterDurationEnabled) settings.filterMinDurationSeconds * 1000L else 0L
+
+            return allSongs.filter { song ->
+                song.id !in visuallyDeletedIds &&
+                song.id.toString() !in hiddenIds &&
+                (song.path.isBlank() || song.path !in hiddenPaths) &&
+                (!filterDurationEnabled || song.duration >= minDurationMs)
+            }
+        }
 
     var isLoading by mutableStateOf(false)
         private set
@@ -71,7 +89,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (cached.isNotEmpty() && allSongs.isEmpty()) {
                 allSongs = cached
-                updateRandomResumeArtists(cached)
+                updateRandomResumeArtists(filteredSongs)
             } else if (allSongs.isEmpty()) {
                 isLoading = true
             }
@@ -87,7 +105,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val refreshed = musicProvider.refreshLibrary()
             if (refreshed.isNotEmpty()) {
                 allSongs = refreshed
-                updateRandomResumeArtists(refreshed, force = false)
+                updateRandomResumeArtists(filteredSongs, force = false)
             }
             isLoading = false
         }
@@ -127,7 +145,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             if (synced != allSongs) {
                 allSongs = synced
             }
-            updateRandomResumeArtists(synced)
+            updateRandomResumeArtists(filteredSongs)
         } else {
             // If sync returned empty but we already had songs, don't clear the list.
             // This prevents the "no songs" bug when permissions or MediaStore fail temporarily.
@@ -367,7 +385,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val ids = withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getSongIdsForPlaylist(playlistId)
             }
-            val songMap = allSongs.associateBy { it.id }
+            val songMap = filteredSongs.associateBy { it.id }
             callback(ids.mapNotNull { songMap[it] })
         }
     }
@@ -376,7 +394,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val songIds = playlistMappings.filter { it.playlistId == playlistId }
             .sortedWith(compareBy({ it.position }, { it.addedAt }))
             .map { it.songId }
-        val songMap = allSongs.associateBy { it.id }
+        val songMap = filteredSongs.associateBy { it.id }
         return songIds.mapNotNull { songMap[it] }
     }
 
@@ -489,6 +507,143 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun undoDeleteSong(song: Song) {
         visuallyDeletedIds.remove(song.id)
+    }
+
+    fun deleteSong(
+        song: Song,
+        onNeedsIntentSender: (IntentSender) -> Unit,
+        onDeleted: () -> Unit,
+        onError: () -> Unit = {}
+    ) {
+        val context = getApplication<Application>()
+        val settingsManager = SettingsManager.getInstance(context)
+        viewModelScope.launch {
+            // 1. Try SAF folder if configured
+            val folderUriString = settingsManager.musicFolderUri
+            if (folderUriString != null) {
+                val deletedViaSaf = withContext(Dispatchers.IO) {
+                    try {
+                        val folderUri = Uri.parse(folderUriString)
+                        val tree = DocumentFile.fromTreeUri(context, folderUri)
+                        if (tree != null && tree.canWrite()) {
+                            val fileName = File(song.path).name
+                            val fileInSaf = tree.findFile(fileName)
+                            if (fileInSaf?.delete() == true) {
+                                try {
+                                    context.contentResolver.delete(song.uri, null, null)
+                                } catch (_: Exception) {}
+                                true
+                            } else false
+                        } else false
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
+                if (deletedViaSaf) {
+                    onSongSuccessfullyDeleted(song)
+                    onDeleted()
+                    return@launch
+                }
+            }
+
+            // 2. Direct file delete (works on API <= 28 or with file write permissions)
+            val deletedDirectly = withContext(Dispatchers.IO) {
+                try {
+                    val file = File(song.path)
+                    if (file.exists() && file.delete()) {
+                        try {
+                            context.contentResolver.delete(song.uri, null, null)
+                        } catch (_: Exception) {}
+                        true
+                    } else false
+                } catch (_: Exception) {
+                    false
+                }
+            }
+            if (deletedDirectly) {
+                onSongSuccessfullyDeleted(song)
+                onDeleted()
+                return@launch
+            }
+
+            // 3. On Android 11+ (API 30+), MediaStore.createDeleteRequest is required
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try {
+                    val pendingIntent = MediaStore.createDeleteRequest(context.contentResolver, listOf(song.uri))
+                    onNeedsIntentSender(pendingIntent.intentSender)
+                    return@launch
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // 4. On Android 10 (API 29) or fallback: try contentResolver.delete and catch RecoverableSecurityException
+            var recoverableSender: IntentSender? = null
+            val deletedViaResolver = withContext(Dispatchers.IO) {
+                try {
+                    context.contentResolver.delete(song.uri, null, null) > 0
+                } catch (e: SecurityException) {
+                    if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q && e is RecoverableSecurityException) {
+                        recoverableSender = e.userAction.actionIntent.intentSender
+                    }
+                    false
+                } catch (e: Exception) {
+                    false
+                }
+            }
+
+            val sender = recoverableSender
+            if (sender != null) {
+                onNeedsIntentSender(sender)
+                return@launch
+            }
+
+            if (deletedViaResolver) {
+                onSongSuccessfullyDeleted(song)
+                onDeleted()
+            } else {
+                undoDeleteSong(song)
+                onError()
+            }
+        }
+    }
+
+    fun confirmDeleteAfterPermission(song: Song, onDeleted: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                withContext(Dispatchers.IO) {
+                    try {
+                        val context = getApplication<Application>()
+                        context.contentResolver.delete(song.uri, null, null)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+            onSongSuccessfullyDeleted(song)
+            onDeleted()
+        }
+    }
+
+    fun onSongSuccessfullyDeleted(song: Song) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val db = MusicDatabase.getDatabase(getApplication())
+                    val override = db.songOverrideDao().getOverrideForSong(song.id)
+                    if (override != null) {
+                        db.songOverrideDao().deleteOverride(override)
+                    }
+                    db.playlistDao().removeSongFromAllPlaylists(song.id)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            allSongs = allSongs.filter { it.id != song.id }
+            visuallyDeletedIds.remove(song.id)
+            loadSongs()
+            loadPlaylists()
+        }
     }
 
     fun deleteSongPermanently(songId: Long, songData: String, songUri: android.net.Uri) {
