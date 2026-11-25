@@ -4,4 +4,5 @@
 - Renamed Summary section to Home/Inicio across the entire app with updated icons.
 - Added option to filter out short audio tracks.
 - Added offline update changelog sheet to view new features after updating.
+- New Lyrics options.
 - Performance improvements, smoother animations, and blur backdrop fixes.
