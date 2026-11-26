@@ -2714,7 +2714,7 @@ fun AudioDetailsBottomSheet(
         ((effectiveBitrate ?: 0) >= 2304000)
 
     val isHiFi = !isHiRes && (song.isHiFi ||
-        format in listOf("FLAC", "WAV", "ALAC", "APE", "AIFF") ||
+        format in listOf("FLAC", "WAV", "ALAC", "APE", "AIFF", "WV", "WAVPACK") ||
         ((effectiveBitrate ?: 0) > 320000))
 
     val isHq = !isHiRes && !isHiFi && ((effectiveBitrate ?: 0) >= 256000)

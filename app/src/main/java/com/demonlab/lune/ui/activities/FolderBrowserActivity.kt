@@ -177,7 +177,7 @@ fun FolderBrowserScreen(
                     ?.sortedBy { it.name.lowercase() }
                     ?.map { it.name to it.absolutePath } ?: emptyList()
                 val songs = file.listFiles { f ->
-                    f.isFile && f.extension.lowercase() in setOf("mp3", "flac", "wav", "aac", "ogg", "m4a", "wma", "opus", "alac")
+                    f.isFile && f.extension.lowercase() in setOf("mp3", "flac", "wav", "aac", "ogg", "m4a", "wma", "opus", "alac", "wv")
                 }?.sortedBy { it.name.lowercase() }?.map { it.name to it.absolutePath } ?: emptyList()
                 subdirs to songs
             }

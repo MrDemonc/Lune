@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import com.demonlab.lune.data.MusicDatabase
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -129,7 +130,7 @@ class MusicProvider(private val context: Context) {
         val projection = projectionList.toTypedArray()
 
         val audioExtensions = setOf(
-            "mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wma", "alac", "dsf", "dff"
+            "mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wma", "alac", "dsf", "dff", "wv"
         )
 
         // Include songs flagged by MediaStore as IS_MUSIC, or any audio file that is not a system sound (ringtone/alarm/notification)
@@ -219,7 +220,7 @@ class MusicProvider(private val context: Context) {
                 album = CharsetUtils.sanitizeText(album)
 
                 val folderName = data.substringBeforeLast("/").substringAfterLast("/")
-                val isHiFiFile = extension == "flac" || extension == "wav" || extension == "alac" || extension == "dsf" || extension == "dff"
+                val isHiFiFile = extension == "flac" || extension == "wav" || extension == "alac" || extension == "dsf" || extension == "dff" || extension == "wv"
                 val isHiFi = settingsManager.enableHiFi && isHiFiFile
                 val format = when (extension) {
                     "mp3" -> "MP3"
@@ -231,6 +232,7 @@ class MusicProvider(private val context: Context) {
                     "wma" -> "WMA"
                     "alac" -> "ALAC"
                     "dsf", "dff" -> "DSD"
+                    "wv" -> "WV"
                     else -> extension.uppercase()
                 }
 
@@ -243,12 +245,30 @@ class MusicProvider(private val context: Context) {
                     ((file.length() * 8) / (duration / 1000f)).toInt()
                 } else null
 
-                val bitrate = mediaStoreBitrate ?: calculatedBitrate
+                var bitrate = mediaStoreBitrate ?: calculatedBitrate
 
                 var sampleRate: Int? = null
                 var bitDepth: Int? = null
                 var isHiRes = false
-                if (isHiFiFile && file.exists()) {
+                if (extension == "wv" && file.exists()) {
+                    val wvMeta = com.demonlab.lune.audio.WavPackDecoder.parseFile(file)
+                    if (wvMeta != null) {
+                        sampleRate = wvMeta.sampleRate
+                        bitDepth = wvMeta.bitDepth
+                        if (duration <= 0L && wvMeta.durationMs > 0L) duration = wvMeta.durationMs
+                        if (bitrate == null && wvMeta.bitrate != null) bitrate = wvMeta.bitrate
+                        if ((sampleRate >= 48000 && bitDepth >= 24) || sampleRate >= 88200) {
+                            isHiRes = true
+                        }
+                        if (override == null) {
+                            wvMeta.title?.takeIf { it.isNotBlank() }?.let { title = CharsetUtils.sanitizeText(it) }
+                            wvMeta.artist?.takeIf { it.isNotBlank() }?.let { artist = CharsetUtils.sanitizeText(it) }
+                            wvMeta.album?.takeIf { it.isNotBlank() }?.let { album = CharsetUtils.sanitizeText(it) }
+                            wvMeta.genre?.takeIf { it.isNotBlank() }?.let { genre = CharsetUtils.sanitizeText(it) }
+                            if (wvMeta.trackNumber > 0) trackNumber = wvMeta.trackNumber
+                        }
+                    }
+                } else if (isHiFiFile && file.exists()) {
                     try {
                         val audioFile = org.jaudiotagger.audio.AudioFileIO.read(file)
                         val header = audioFile.audioHeader
@@ -343,6 +363,7 @@ class MusicProvider(private val context: Context) {
         if (documentsDir.exists()) scanDirForMissing(documentsDir)
 
         val audioFolderUriStr = settingsManager.musicFolderUri
+        val safMissingUris = mutableSetOf<Uri>()
         if (!audioFolderUriStr.isNullOrBlank()) {
             try {
                 val customFolder = if (audioFolderUriStr.startsWith("/")) {
@@ -358,13 +379,76 @@ class MusicProvider(private val context: Context) {
                 }
                 if (customFolder != null && customFolder.exists()) scanDirForMissing(customFolder)
             } catch (_: Exception) {}
+
+            // Also scan via SAF DocumentFile when musicFolderUri is a content:// tree URI
+            // (Required on Android 11+ because File.listFiles() hides non-MediaStore files like .wv)
+            if (!audioFolderUriStr.startsWith("/")) {
+                try {
+                    val treeUri = Uri.parse(audioFolderUriStr)
+                    if (treeUri.scheme == "content") {
+                        val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
+                        val existingUris = songList.map { it.uri }.toSet()
+                        fun scanSafTree(dir: DocumentFile, maxDepth: Int = 8) {
+                            if (maxDepth <= 0 || !dir.isDirectory) return
+                            for (child in dir.listFiles()) {
+                                val name = child.name ?: continue
+                                if (child.isDirectory) {
+                                    if (!name.startsWith(".")) {
+                                        scanSafTree(child, maxDepth - 1)
+                                    }
+                                } else if (child.isFile && child.length() > 0L) {
+                                    val ext = name.substringAfterLast('.', "").lowercase()
+                                    if (ext in audioExtensions && child.uri !in existingUris) {
+                                        val derivedPath = derivePrimaryStoragePath(child.uri)
+                                        if (derivedPath == null || !indexedPaths.contains(derivedPath)) {
+                                            if (derivedPath != null) {
+                                                val directFile = File(derivedPath)
+                                                if (directFile.exists() && directFile.canRead()) {
+                                                    missingFiles.add(directFile)
+                                                    continue
+                                                }
+                                            }
+                                            safMissingUris.add(child.uri)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (treeDoc != null) scanSafTree(treeDoc)
+                    }
+                } catch (_: Exception) {}
+            }
         }
+
+        // Query MediaStore.Files for .wv files anywhere on external storage (useful on Android <= 10 or OEMs)
+        try {
+            val filesUri = MediaStore.Files.getContentUri("external")
+            val filesSelection = "(${MediaStore.Files.FileColumns.DATA} LIKE '%.wv' OR ${MediaStore.Files.FileColumns.DATA} LIKE '%.WV')"
+            context.contentResolver.query(
+                filesUri,
+                arrayOf(MediaStore.Files.FileColumns.DATA),
+                filesSelection,
+                null,
+                null
+            )?.use { cursor ->
+                val dataCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                if (dataCol != -1) {
+                    while (cursor.moveToNext()) {
+                        val path = cursor.getString(dataCol) ?: continue
+                        val f = File(path)
+                        if (f.exists() && f.length() > 0L && !indexedPaths.contains(f.absolutePath.trim())) {
+                            missingFiles.add(f)
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
 
         if (missingFiles.isNotEmpty()) {
             val missingPaths = mutableListOf<String>()
             for (f in missingFiles) {
                 try {
-                    val resolved = SongResolver.resolveSongFromUri(context, Uri.fromFile(f))
+                    val resolved = SongResolver.resolveSongFromUri(context, Uri.fromFile(f), skipCacheLookup = true)
                     if (resolved != null) {
                         songList.add(resolved)
                         missingPaths.add(f.absolutePath)
@@ -380,6 +464,22 @@ class MusicProvider(private val context: Context) {
             }
         }
 
+        if (safMissingUris.isNotEmpty()) {
+            val seenPaths = songList.map { it.path.trim() }.filter { it.isNotBlank() }.toHashSet()
+            for (uri in safMissingUris) {
+                try {
+                    val resolved = SongResolver.resolveSongFromUri(context, uri, skipCacheLookup = true)
+                    if (resolved != null) {
+                        if (resolved.path.isBlank() || seenPaths.add(resolved.path.trim())) {
+                            songList.add(resolved)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         songList.sortBy { it.title.lowercase() }
         saveToCache(songList)
         songList
@@ -388,7 +488,7 @@ class MusicProvider(private val context: Context) {
     suspend fun refreshLibrary(): List<Song> = withContext(Dispatchers.IO) {
         if (!hasReadPermission()) return@withContext emptyList()
 
-        val audioExtensions = setOf("mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wma", "alac", "dsf", "dff")
+        val audioExtensions = setOf("mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wma", "alac", "dsf", "dff", "wv")
         val filesToScan = mutableSetOf<String>()
 
         fun collectAudioFiles(dir: File, maxDepth: Int = 8) {
@@ -456,5 +556,12 @@ class MusicProvider(private val context: Context) {
         }
 
         syncSongs()
+    }
+
+    private fun derivePrimaryStoragePath(uri: Uri): String? {
+        val last = uri.lastPathSegment ?: return null
+        if (!last.startsWith("primary:")) return null
+        val rel = last.removePrefix("primary:")
+        return File(Environment.getExternalStorageDirectory(), rel).absolutePath
     }
 }

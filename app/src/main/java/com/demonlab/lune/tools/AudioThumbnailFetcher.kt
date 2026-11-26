@@ -81,23 +81,29 @@ class AudioThumbnailFetcher(
                     }
                 }
             }
-            if (!filePath.isNullOrBlank()) {
+            val artwork = if (!filePath.isNullOrBlank()) {
                 val file = java.io.File(filePath)
                 if (file.exists() && file.canRead()) {
-                    val audioFile = org.jaudiotagger.audio.AudioFileIO.read(file)
-                    val artwork = audioFile.tag?.firstArtwork?.binaryData
-                    if (artwork != null && artwork.isNotEmpty()) {
-                        val bitmap = runCatching {
-                            BitmapFactory.decodeByteArray(artwork, 0, artwork.size)
-                        }.getOrNull()
-                        if (bitmap != null) {
-                            return DrawableResult(
-                                drawable = bitmap.toDrawable(context.resources),
-                                isSampled = false,
-                                dataSource = DataSource.DISK
-                            )
-                        }
+                    if (file.extension.equals("wv", ignoreCase = true)) {
+                        com.demonlab.lune.audio.WavPackDecoder.extractCoverArt(file)
+                    } else {
+                        org.jaudiotagger.audio.AudioFileIO.read(file).tag?.firstArtwork?.binaryData
                     }
+                } else null
+            } else if (isWavPackContentUri(context, uri)) {
+                com.demonlab.lune.audio.WavPackDecoder.extractCoverArt(context, uri)
+            } else null
+
+            if (artwork != null && artwork.isNotEmpty()) {
+                val bitmap = runCatching {
+                    BitmapFactory.decodeByteArray(artwork, 0, artwork.size)
+                }.getOrNull()
+                if (bitmap != null) {
+                    return DrawableResult(
+                        drawable = bitmap.toDrawable(context.resources),
+                        isSampled = false,
+                        dataSource = DataSource.DISK
+                    )
                 }
             }
         } catch (_: Throwable) {
@@ -121,12 +127,39 @@ class AudioThumbnailFetcher(
                         str.endsWith(".m4a") ||
                         str.endsWith(".opus") ||
                         str.endsWith(".aac") ||
+                        str.endsWith(".wv") ||
+                        isWavPackContentUri(context, data) ||
                         runCatching { context.contentResolver.getType(data)?.startsWith("audio/") == true }.getOrDefault(false)
                 if (isAudio) {
                     return AudioThumbnailFetcher(data, options, context)
                 }
             }
             return null
+        }
+    }
+
+    companion object {
+        private fun isWavPackContentUri(context: Context, uri: Uri): Boolean {
+            if (uri.toString().substringBefore('?').substringAfterLast('.', "").equals("wv", ignoreCase = true)) {
+                return true
+            }
+            return runCatching {
+                val type = context.contentResolver.getType(uri)
+                if (type?.contains("wavpack", ignoreCase = true) == true) {
+                    true
+                } else if (uri.scheme == "content") {
+                    var isWvName = false
+                    context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                        if (c.moveToFirst()) {
+                            val idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                            if (idx != -1) {
+                                isWvName = c.getString(idx)?.endsWith(".wv", ignoreCase = true) == true
+                            }
+                        }
+                    }
+                    isWvName
+                } else false
+            }.getOrDefault(false)
         }
     }
 }

@@ -70,6 +70,7 @@ class MusicService : MediaLibraryService() {
     private var secondaryPlayer: MediaPlayer? = null
     private var isCrossfading = false
     private var crossfadeJob: Job? = null
+    private var wvDecodeJob: Job? = null
     @Volatile private var isPlayerPrepared = false
     @Volatile private var isSecondaryPrepared = false
     private var mediaSession: MediaLibrarySession? = null
@@ -213,6 +214,8 @@ class MusicService : MediaLibraryService() {
 
     private fun pauseForTransientFocusLoss() {
         pauseTimeoutJob?.cancel()
+        wvDecodeJob?.cancel()
+        wvDecodeJob = null
         crossfadeJob?.cancel()
         crossfadeJob = null
         try {
@@ -946,7 +949,16 @@ class MusicService : MediaLibraryService() {
 
     private var currentAssetFileDescriptor: android.content.res.AssetFileDescriptor? = null
 
-    private fun setPlayerDataSource(player: MediaPlayer, song: Song): Boolean {
+    private fun setPlayerDataSource(player: MediaPlayer, song: Song, decodedWavFile: File? = null): Boolean {
+        if (decodedWavFile != null) {
+            try {
+                player.setDataSource(decodedWavFile.absolutePath)
+                return true
+            } catch (e: Exception) {
+                Log.w("MusicService", "Decoded WAV setDataSource failed for ${song.title}: ${e.message}")
+            }
+        }
+
         try {
             player.setDataSource(applicationContext, song.uri)
             return true
@@ -1002,6 +1014,10 @@ class MusicService : MediaLibraryService() {
 
     fun playSong(song: Song) {
         activeSong = song
+        wvDecodeJob?.cancel()
+        wvDecodeJob = null
+        wvDecodeJob?.cancel()
+        wvDecodeJob = null
         crossfadeJob?.cancel()
         crossfadeJob = null
         isNotificationDismissed = false
@@ -1027,9 +1043,30 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer?.release()
         secondaryPlayer = null
 
+        if (com.demonlab.lune.audio.WavPackDecoder.isWavPackPathOrUri(song.path, song.uri, song.format)) {
+            wvDecodeJob = serviceScope.launch {
+                val decodedWav = withContext(Dispatchers.IO) {
+                    com.demonlab.lune.audio.WavPackDecoder.getOrDecodeWav(applicationContext, song.path, song.uri)
+                }
+                if (!isActive || activeSong?.id != song.id) return@launch
+                if (decodedWav == null) {
+                    Log.e("MusicService", "Failed to decode WavPack song: ${song.title} (${song.uri})")
+                    releaseWakeLock()
+                    PlaybackManager.getInstance(applicationContext).updatePlayingState(false)
+                    return@launch
+                }
+                prepareAndStartMediaPlayer(song, decodedWav)
+            }
+            return
+        }
+
+        prepareAndStartMediaPlayer(song, null)
+    }
+
+    private fun prepareAndStartMediaPlayer(song: Song, decodedWavFile: File?) {
         val player = MediaPlayer()
         configurePlayer(player)
-        val loaded = setPlayerDataSource(player, song)
+        val loaded = setPlayerDataSource(player, song, decodedWavFile)
         if (!loaded) {
             Log.e("MusicService", "Failed to load data source for song: ${song.title} (${song.uri})")
             try {
@@ -1224,8 +1261,11 @@ class MusicService : MediaLibraryService() {
                 var prepared = false
                 withContext(Dispatchers.IO) {
                     try {
+                        val decodedWav = if (com.demonlab.lune.audio.WavPackDecoder.isWavPackPathOrUri(nextSong.path, nextSong.uri, nextSong.format)) {
+                            com.demonlab.lune.audio.WavPackDecoder.getOrDecodeWav(applicationContext, nextSong.path, nextSong.uri)
+                        } else null
                         secondaryPlayer?.let { secPlayer ->
-                            if (setPlayerDataSource(secPlayer, nextSong)) {
+                            if (setPlayerDataSource(secPlayer, nextSong, decodedWav)) {
                                 secPlayer.setVolume(0f, 0f)
                                 secPlayer.prepare()
                                 prepared = true
@@ -1443,6 +1483,19 @@ class MusicService : MediaLibraryService() {
             } catch (_: Exception) {}
         }
 
+        if (bitmap == null && com.demonlab.lune.audio.WavPackDecoder.isWavPackPathOrUri(song.path, song.uri, song.format)) {
+            try {
+                val pic = if (song.path.isNotBlank()) {
+                    com.demonlab.lune.audio.WavPackDecoder.extractCoverArt(java.io.File(song.path))
+                } else {
+                    com.demonlab.lune.audio.WavPackDecoder.extractCoverArt(this, song.uri)
+                }
+                if (pic != null && pic.isNotEmpty()) {
+                    bitmap = android.graphics.BitmapFactory.decodeByteArray(pic, 0, pic.size)
+                }
+            } catch (_: Throwable) {}
+        }
+
         return bitmap
     }
 
@@ -1464,6 +1517,8 @@ class MusicService : MediaLibraryService() {
             stopSelf()
         }
 
+        wvDecodeJob?.cancel()
+        wvDecodeJob = null
         crossfadeJob?.cancel()
         crossfadeJob = null
         try {
@@ -1650,6 +1705,8 @@ class MusicService : MediaLibraryService() {
 
     fun restorePlayback(song: Song, positionMs: Long, andPlay: Boolean) {
         activeSong = song
+        wvDecodeJob?.cancel()
+        wvDecodeJob = null
         crossfadeJob?.cancel()
         crossfadeJob = null
         isCrossfading = false
@@ -1845,6 +1902,24 @@ class MusicService : MediaLibraryService() {
                 } catch (e: Throwable) {
                     e.printStackTrace()
                 }
+            }
+
+            // 1.5 Try APEv2 embedded lyrics for WavPack (.wv)
+            if (com.demonlab.lune.audio.WavPackDecoder.isWavPackPathOrUri(song.path, song.uri, song.format)) {
+                try {
+                    val wvLyrics = if (song.path.isNotBlank()) {
+                        com.demonlab.lune.audio.WavPackDecoder.extractLyrics(File(song.path))
+                    } else {
+                        com.demonlab.lune.audio.WavPackDecoder.extractLyrics(applicationContext, song.uri)
+                    }
+                    if (!wvLyrics.isNullOrBlank()) {
+                        val sanitized = CharsetUtils.sanitizeText(wvLyrics)
+                        withContext(Dispatchers.Main) {
+                            playbackManager.updateLyrics(sanitized)
+                        }
+                        return@launch
+                    }
+                } catch (_: Throwable) {}
             }
 
             // 2. Try to extract embedded lyrics via Jaudiotagger (Best for FLAC/Vorbis/ID3)
