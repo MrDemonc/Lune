@@ -149,6 +149,10 @@
                 <data android:mimeType="application/x-ogg" />
                 <data android:mimeType="application/flac" />
                 <data android:mimeType="application/x-flac" />
+                <data android:mimeType="audio/x-wavpack" />
+                <data android:mimeType="audio/wavpack" />
+                <data android:mimeType="application/x-wavpack" />
+                <data android:mimeType="application/wavpack" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -164,6 +168,25 @@
                 <data android:pathPattern=".*\\.ogg" />
                 <data android:pathPattern=".*\\.opus" />
                 <data android:pathPattern=".*\\.aac" />
+                <data android:pathPattern=".*\\.wv" />
+                <data android:pathPattern=".*\\..*\\.wv" />
+                <data android:pathPattern=".*\\..*\\..*\\.wv" />
+                <data android:pathPattern=".*\\.WV" />
+                <data android:pathPattern=".*\\..*\\.WV" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.wv" />
+                <data android:pathPattern=".*\\..*\\.wv" />
+                <data android:pathPattern=".*\\..*\\..*\\.wv" />
+                <data android:pathPattern=".*\\.WV" />
+                <data android:pathPattern=".*\\..*\\.WV" />
             </intent-filter>
         </activity>
 

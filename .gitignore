@@ -41,6 +41,9 @@ com_crashlytics_export_strings.xml
 secrets.properties
 keystore.properties
 
+# Kotlin
+.kotlin/
+
 # VsCode
 .vscode/
 

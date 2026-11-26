@@ -15,7 +15,7 @@ import kotlin.math.abs
 object SongResolver {
     private const val TAG = "SongResolver"
 
-    fun resolveSongFromUri(context: Context, uri: Uri): Song? {
+    fun resolveSongFromUri(context: Context, uri: Uri, skipCacheLookup: Boolean = false): Song? {
         // 1. Check if it's already a MediaStore URI with ID
         val parsedId = runCatching {
             if (uri.authority == "media" || uri.toString().contains("audio/media")) {
@@ -23,21 +23,22 @@ object SongResolver {
             } else null
         }.getOrNull()
 
-        val provider = MusicProvider(context)
-        val cachedSongs = runCatching { provider.getCachedSongs() }.getOrDefault(emptyList())
+        if (!skipCacheLookup) {
+            val provider = MusicProvider(context)
+            val cachedSongs = runCatching { provider.getCachedSongs() }.getOrDefault(emptyList())
 
-        if (parsedId != null && parsedId > 0) {
-            val cached = cachedSongs.find { it.id == parsedId }
-            if (cached != null) return cached
-        }
+            if (parsedId != null && parsedId > 0) {
+                val cached = cachedSongs.find { it.id == parsedId }
+                if (cached != null) return cached
+            }
 
-        // 2. Check if cached by matching URI or file path
-        val uriStr = uri.toString()
-        val pathStr = uri.path
-        val cachedMatch = cachedSongs.find { 
-            it.uri == uri || (pathStr != null && it.path.isNotBlank() && it.path == pathStr) 
+            // 2. Check if cached by matching URI or file path
+            val pathStr = uri.path
+            val cachedMatch = cachedSongs.find {
+                it.uri == uri || (pathStr != null && it.path.isNotBlank() && it.path == pathStr)
+            }
+            if (cachedMatch != null) return cachedMatch
         }
-        if (cachedMatch != null) return cachedMatch
 
         // 3. Fallback: Parse directly via MediaMetadataRetriever and ContentResolver
         return parseFromMetadata(context, uri, parsedId)
@@ -114,11 +115,40 @@ object SongResolver {
                     }
                 }
             } catch (_: Throwable) {}
+            if (resolvedPath.isEmpty()) {
+                val seg = uri.lastPathSegment
+                if (seg != null && seg.startsWith("primary:")) {
+                    resolvedPath = File(android.os.Environment.getExternalStorageDirectory(), seg.removePrefix("primary:")).absolutePath
+                }
+            }
+        }
+
+        var sampleRate: Int? = null
+        var bitDepth: Int? = null
+        val isWavPack = extension == "wv" || mimeType?.contains("wavpack", ignoreCase = true) == true
+
+        if (isWavPack) {
+            val wvMeta = if (resolvedPath.isNotBlank() && File(resolvedPath).let { it.exists() && it.canRead() }) {
+                com.demonlab.lune.audio.WavPackDecoder.parseFile(File(resolvedPath))
+            } else {
+                com.demonlab.lune.audio.WavPackDecoder.parseUri(context, uri)
+            }
+            if (wvMeta != null) {
+                sampleRate = wvMeta.sampleRate
+                bitDepth = wvMeta.bitDepth
+                if (duration == 0L && wvMeta.durationMs > 0L) duration = wvMeta.durationMs
+                if (bitrate == null && wvMeta.bitrate != null) bitrate = wvMeta.bitrate
+                if (!wvMeta.title.isNullOrBlank()) title = wvMeta.title
+                if (!wvMeta.artist.isNullOrBlank()) artist = wvMeta.artist
+                if (!wvMeta.album.isNullOrBlank()) album = wvMeta.album
+                if (!wvMeta.genre.isNullOrBlank()) genre = wvMeta.genre
+                if (wvMeta.trackNumber > 0) trackNumber = wvMeta.trackNumber
+            }
         }
 
         // Jaudiotagger fallback for formats where MediaMetadataRetriever fails (especially WAV, DSF)
         // or where title/artist/album are missing
-        if (title.isNullOrBlank() || artist.isNullOrBlank() || album.isNullOrBlank() || extension == "wav") {
+        if (extension != "wv" && (title.isNullOrBlank() || artist.isNullOrBlank() || album.isNullOrBlank() || extension == "wav")) {
             try {
                 val fileToRead: File? = if (resolvedPath.isNotBlank()) File(resolvedPath) else null
                 if (fileToRead != null && fileToRead.exists() && fileToRead.canRead()) {
@@ -159,7 +189,12 @@ object SongResolver {
         val folderName = if (filePath.isNotBlank()) {
             filePath.substringBeforeLast("/").substringAfterLast("/").ifEmpty { "Downloads" }
         } else {
-            "Downloads"
+            val docPath = uri.lastPathSegment?.substringAfterLast(":")
+            if (!docPath.isNullOrBlank() && docPath.contains("/")) {
+                docPath.substringBeforeLast("/").substringAfterLast("/").ifEmpty { "Downloads" }
+            } else {
+                "Downloads"
+            }
         }
 
         val format = when (extension) {
@@ -172,16 +207,19 @@ object SongResolver {
             "wma" -> "WMA"
             "alac" -> "ALAC"
             "dsf", "dff" -> "DSD"
+            "wv" -> "WV"
             else -> when {
                 mimeType?.contains("flac", ignoreCase = true) == true -> "FLAC"
                 mimeType?.contains("ogg", ignoreCase = true) == true -> "OGG"
                 mimeType?.contains("mp4", ignoreCase = true) == true || mimeType?.contains("m4a", ignoreCase = true) == true -> "AAC"
+                mimeType?.contains("wavpack", ignoreCase = true) == true -> "WV"
                 mimeType?.contains("wav", ignoreCase = true) == true -> "WAV"
                 else -> extension.uppercase().ifEmpty { "AUDIO" }
             }
         }
 
-        val isHiFi = extension in listOf("flac", "wav", "alac", "dsf", "dff") || (bitrate != null && bitrate > 320000)
+        val isHiFi = extension in listOf("flac", "wav", "alac", "dsf", "dff", "wv") || (bitrate != null && bitrate > 320000)
+        val isHiRes = ((sampleRate ?: 0) >= 48000 && (bitDepth ?: 0) >= 24) || (sampleRate ?: 0) >= 88200 || extension in listOf("dsf", "dff")
 
         // Stable non-zero synthetic ID for external files
         val id = existingId ?: -abs(uri.toString().hashCode().toLong().let { if (it == 0L) 1L else it })
@@ -206,7 +244,9 @@ object SongResolver {
             format = format,
             bitrate = bitrate,
             trackNumber = trackNumber,
-            isHiRes = isHiFi
+            isHiRes = isHiRes,
+            sampleRate = sampleRate,
+            bitDepth = bitDepth
         )
     }
 
@@ -215,7 +255,7 @@ object SongResolver {
             val file = File(currentSong.path)
             val parent = file.parentFile
             if (parent != null && parent.isDirectory && parent.canRead()) {
-                val audioExtensions = setOf("mp3", "flac", "wav", "m4a", "ogg", "opus", "aac", "wma", "alac", "dsf", "dff")
+                val audioExtensions = setOf("mp3", "flac", "wav", "m4a", "ogg", "opus", "aac", "wma", "alac", "dsf", "dff", "wv")
                 val files = parent.listFiles { f ->
                     f.isFile && f.extension.lowercase() in audioExtensions
                 }?.sortedBy { it.name } ?: emptyList()

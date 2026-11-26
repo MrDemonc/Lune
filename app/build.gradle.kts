@@ -25,6 +25,7 @@ ksp {
 android {
     namespace = "com.demonlab.lune"
     compileSdk = 37
+    compileSdkMinor = 2
 
     defaultConfig {
         applicationId = "com.demonlab.lune"
@@ -41,8 +42,8 @@ android {
     val keyPassword = keystoreProperties.getProperty("keyPassword")
 
     val keystoreFile = storePath?.takeIf { it.isNotBlank() }?.let {
-        rootProject.file(it).takeIf { f -> f.exists() && f.length() > 0 }
-            ?: file(it).takeIf { f -> f.exists() && f.length() > 0 }
+        isolated.rootProject.projectDirectory.file(it).asFile.takeIf { f -> f.exists() && f.length() > 0 }
+            ?: layout.projectDirectory.file(it).asFile.takeIf { f -> f.exists() && f.length() > 0 }
     }
 
     val isSigningConfigured = keystoreFile != null &&
@@ -155,7 +156,7 @@ androidComponents {
 }
 
 val copyChangelogs = tasks.register("copyChangelogs") {
-    val changelogDir = rootProject.file("fastlane/metadata/android/en-US/changelog")
+    val changelogDir = isolated.rootProject.projectDirectory.dir("fastlane/metadata/android/en-US/changelog").asFile
     val assetsChangelogDir = layout.projectDirectory.dir("src/main/assets/changelogs").asFile
 
     inputs.dir(changelogDir)

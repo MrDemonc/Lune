@@ -166,7 +166,8 @@ fun SearchScreen(
         if (searchTerms.isEmpty()) return@remember SearchResults(emptyList(), emptyList(), emptyMap(), emptyMap(), emptyMap())
         
         val matchedSongs = allSongs.filter { song ->
-            val searchTarget = "${song.title} ${song.artist} ${song.album}".normalizeForSearch()
+            val fileName = song.path.substringAfterLast("/")
+            val searchTarget = "${song.title} ${song.artist} ${song.album} ${song.format} $fileName".normalizeForSearch()
             searchTerms.all { term -> searchTarget.contains(term) }
         }
         val matchedSongIds = matchedSongs.map { it.id }.toHashSet()
