@@ -184,10 +184,13 @@ val copyChangelogs = tasks.register("copyChangelogs") {
 }
 
 val updateContributors = tasks.register("updateContributors") {
+    group = "maintenance"
+    description = "Manually fetches contributors and avatars from GitHub into src/main/assets."
     val contributorsFile = layout.projectDirectory.file("src/main/assets/contributors.json").asFile
     val avatarsDir = layout.projectDirectory.dir("src/main/assets/avatars").asFile
     outputs.file(contributorsFile)
     outputs.dir(avatarsDir)
+    outputs.upToDateWhen { false }
 
     doLast {
         try {
@@ -238,7 +241,7 @@ val updateContributors = tasks.register("updateContributors") {
 }
 
 tasks.named("preBuild") {
-    dependsOn(copyChangelogs, updateContributors)
+    dependsOn(copyChangelogs)
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
